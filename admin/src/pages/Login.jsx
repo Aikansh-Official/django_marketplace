@@ -1,18 +1,18 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, User, AlertCircle, Loader2 } from 'lucide-react';
+import { Lock, User, Loader2 } from 'lucide-react';
 import logoImg from '../assets/LPUTrade_logo.jpeg';
+import toast from 'react-hot-toast';
+import ThemeBackground from '../components/ThemeBackground';
 
 export default function Login({ setAuth }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
 
     try {
@@ -60,65 +60,57 @@ export default function Login({ setAuth }) {
       }
 
     } catch (err) {
-      setError(err.message || 'Login failed. Please try again.');
+      toast.error(err.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-ink-900 flex items-center justify-center p-4 relative overflow-hidden font-sans">
-      {/* Decorative Blur Backgrounds */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-500 rounded-full blur-[150px] opacity-20 pointer-events-none"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-brand-600 rounded-full blur-[150px] opacity-20 pointer-events-none"></div>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden font-sans">
+      <ThemeBackground />
 
-      <div className="w-full max-w-md bg-ink-800/80 backdrop-blur-xl border border-gray-700 p-8 rounded-2xl shadow-2xl relative z-10">
+      {/* Login Card */}
+      <div className="w-full max-w-md bg-white/80 backdrop-blur-md border border-white/20 p-10 rounded-md shadow-2xl relative z-10">
         
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 rounded-full bg-ink-900 p-1 border-2 border-brand-500 shadow-[0_0_20px_rgba(251,86,7,0.4)] mb-4">
-             <img src={logoImg} alt="Logo" className="w-full h-full rounded-full object-cover" />
+        <div className="flex flex-col items-center mb-10">
+          <div className="w-20 h-20 rounded-md bg-white p-1.5 border border-gray-100 shadow-xl mb-5 rotate-3 hover:rotate-0 transition-transform">
+             <img src={logoImg} alt="Logo" className="w-full h-full rounded-md object-cover" />
           </div>
-          <h2 className="text-2xl font-bold text-white tracking-wide uppercase">LPUTrade</h2>
-          <p className="text-brand-400 text-sm tracking-[0.2em] font-bold mt-1">ADMIN PORTAL</p>
+          <h2 className="text-3xl font-black text-gray-900 tracking-tight">LPUTrade</h2>
+          <p className="text-brand-500 text-xs tracking-[0.3em] font-bold mt-1">ADMIN PORTAL</p>
         </div>
 
-        {error && (
-          <div className="mb-6 bg-red-500/10 border border-red-500/50 rounded-lg p-4 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-200">{error}</p>
-          </div>
-        )}
-
-        <form onSubmit={handleLogin} className="space-y-5">
+        <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">Username or Email</label>
+            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-wider mb-2">Username or Email</label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <User className="h-5 w-5 text-gray-500" />
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <User className="h-5 w-5 text-gray-400" />
               </div>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className="w-full bg-ink-900 border border-gray-700 text-white rounded-lg pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all placeholder-gray-500"
+                className="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-md pl-12 pr-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all placeholder-gray-400"
                 placeholder="admin"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">Password</label>
+            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-wider mb-2">Password</label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className="h-5 w-5 text-gray-500" />
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Lock className="h-5 w-5 text-gray-400" />
               </div>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full bg-ink-900 border border-gray-700 text-white rounded-lg pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all placeholder-gray-500"
+                className="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-md pl-12 pr-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all placeholder-gray-400"
                 placeholder="••••••••"
               />
             </div>
@@ -127,9 +119,9 @@ export default function Login({ setAuth }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg shadow-brand-500/30 transition-all duration-300 flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed mt-2"
+            className="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-4 px-4 rounded-md shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed mt-4 active:scale-[0.98]"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In'}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign in'}
           </button>
         </form>
 

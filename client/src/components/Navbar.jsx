@@ -34,7 +34,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="fixed top-0 w-full z-50 glass">
+    <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-white/20 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           
@@ -52,7 +52,7 @@ export default function Navbar() {
               </div>
               <input
                 type="text"
-                className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-full leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-1 focus:ring-brand-500 sm:text-sm transition-all"
+                className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-md leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm transition-all shadow-sm"
                 placeholder="Search for books, calculators, electronics..."
               />
             </div>
@@ -62,22 +62,22 @@ export default function Navbar() {
             <div className="hidden md:flex items-center space-x-4">
             {userProfile ? (
               <div className="flex items-center space-x-4">
-                <span className="text-sm font-bold text-ink-900 uppercase">
+                <span className="text-sm font-semibold text-gray-900">
                   Hi, {userProfile.first_name || userProfile.username}
                 </span>
                 <button onClick={handleLogout} className="text-ink-800 hover:text-brand-600 transition-colors">
                   <LogOut className="h-5 w-5" />
                 </button>
-                <Link to="/sell" className="px-5 py-2.5 bg-brand-500 text-white rounded-sm font-bold text-sm hover:bg-brand-600 transition-colors uppercase tracking-wider">
+                <Link to="/sell" className="bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg">
                   Sell Item
                 </Link>
               </div>
             ) : (
               <>
-                <Link to="/login" className="text-ink-800 hover:text-brand-600 font-bold transition-colors uppercase text-sm tracking-wider">
+                <Link to="/login" className="text-gray-700 hover:text-brand-600 font-semibold transition-colors">
                   Log in
                 </Link>
-                <Link to="/register" className="px-5 py-2.5 bg-brand-500 text-white rounded-sm font-bold text-sm hover:bg-brand-600 transition-colors uppercase tracking-wider">
+                <Link to="/register" className="bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg">
                   Sign up
                 </Link>
               </>

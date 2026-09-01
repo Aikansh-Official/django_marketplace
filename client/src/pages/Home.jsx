@@ -33,35 +33,35 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col bg-gray-100 min-h-screen">
+    <div className="flex flex-col min-h-[calc(100vh-140px)] w-full">
       {/* Search Header (OLX style) */}
-      <div className="bg-gray-100 py-4 border-b border-gray-200 shadow-sm">
+      <div className="bg-white/80 backdrop-blur-md py-4 border-b border-gray-200 shadow-sm relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 flex bg-white border-2 border-gray-800 rounded-md p-2 items-center focus-within:border-brand-500">
-            <Search className="h-5 w-5 text-gray-500 mr-2" />
+          <div className="flex-1 flex bg-white border-2 border-gray-200 hover:border-brand-300 rounded-md p-2 items-center focus-within:border-brand-500 transition-colors shadow-sm">
+            <Search className="h-5 w-5 text-gray-400 mr-2" />
             <input 
               type="text" 
-              placeholder="Find Cars, Mobile Phones and more..." 
-              className="w-full outline-none text-gray-800"
+              placeholder="Find Textbooks, Electronics and more..." 
+              className="w-full outline-none text-gray-800 bg-transparent font-medium placeholder-gray-400"
             />
           </div>
-          <div className="sm:w-1/3 flex bg-white border-2 border-gray-800 rounded-md p-2 items-center focus-within:border-brand-500">
-            <MapPin className="h-5 w-5 text-gray-500 mr-2" />
+          <div className="sm:w-1/3 flex bg-white border-2 border-gray-200 hover:border-brand-300 rounded-md p-2 items-center focus-within:border-brand-500 transition-colors shadow-sm">
+            <MapPin className="h-5 w-5 text-gray-400 mr-2" />
             <input 
               type="text" 
               placeholder="LPU Campus, Phagwara" 
-              className="w-full outline-none text-gray-800"
+              className="w-full outline-none text-gray-800 bg-transparent font-medium placeholder-gray-400"
               defaultValue="LPU Campus"
             />
           </div>
-          <button className="bg-gray-800 text-white font-bold py-3 px-6 rounded-md hover:bg-gray-900 transition-colors uppercase tracking-wider">
+          <button className="bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 px-8 rounded-md transition-all shadow-md hover:shadow-lg">
             Search
           </button>
         </div>
       </div>
 
       {/* Categories Banner */}
-      <div className="bg-white border-b shadow-sm hidden md:block">
+      <div className="bg-white/70 backdrop-blur-md border-b border-gray-100 shadow-sm hidden md:block relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <ul className="flex gap-6 text-sm font-semibold text-gray-700 overflow-x-auto whitespace-nowrap">
             <li className="cursor-pointer hover:text-brand-600 uppercase font-bold">All Categories</li>
@@ -97,7 +97,7 @@ export default function Home() {
                                 || 'https://placehold.co/400x300?text=No+Image';
 
               return (
-                <Link to={`/listing/${listing.id}`} key={listing.id} className="bg-white border border-gray-200 rounded-md overflow-hidden hover:shadow-md transition-shadow group flex flex-col">
+                <Link to={`/listing/${listing.id}`} key={listing.id} className="bg-white border border-gray-100 rounded-md overflow-hidden hover:shadow-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-shadow group flex flex-col">
                   {/* Image Container */}
                   <div className="relative h-48 w-full bg-gray-100 p-2 flex items-center justify-center">
                     <img 
@@ -109,7 +109,7 @@ export default function Home() {
                       <Heart className="h-5 w-5" />
                     </button>
                     {listing.transaction_type === 'RENT' && (
-                      <div className="absolute top-3 left-3 bg-brand-500 text-white text-xs font-bold px-2 py-1 rounded shadow-sm">
+                      <div className="absolute top-3 left-3 bg-brand-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm">
                         FOR RENT
                       </div>
                     )}
@@ -140,7 +140,7 @@ export default function Home() {
         
         {listings.length > 0 && (
           <div className="flex justify-center mt-10">
-            <button className="border-2 border-gray-900 text-gray-900 font-bold py-3 px-8 rounded hover:bg-gray-900 hover:text-white transition-colors">
+            <button className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-medium py-3 px-8 rounded-md transition-all shadow-sm">
               Load more
             </button>
           </div>

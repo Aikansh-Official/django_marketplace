@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import AdminLayout from './layouts/AdminLayout';
 import Dashboard from './pages/Dashboard';
 import Students from './pages/Students';
@@ -35,6 +36,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <Toaster position="bottom-right" toastOptions={{ className: 'font-sans font-medium rounded-md shadow-lg', duration: 4000 }} />
       <Routes>
         <Route path="/login" element={<Login setAuth={setIsAuthenticated} />} />
         

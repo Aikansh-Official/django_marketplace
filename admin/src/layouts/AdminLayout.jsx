@@ -61,7 +61,7 @@ export default function AdminLayout({ setAuth }) {
               className={({ isActive }) => 
                 `flex items-center gap-3 px-4 py-3 rounded-md transition-colors ${
                   isActive 
-                    ? 'bg-brand-600 text-white font-bold' 
+                    ? 'bg-brand-600 text-white font-bold shadow-md' 
                     : 'text-gray-400 hover:bg-gray-800 hover:text-white font-medium'
                 }`
               }
@@ -84,7 +84,7 @@ export default function AdminLayout({ setAuth }) {
           </div>
           <button 
             onClick={handleSignOut}
-            className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-md font-bold text-sm text-red-400 hover:bg-red-500 hover:text-white transition-colors border border-red-500/20 hover:border-red-500"
+            className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-md font-semibold text-sm text-red-400 hover:bg-red-500 hover:text-white transition-colors border border-red-500/20 hover:border-red-500 hover:shadow-md"
           >
             <LogOut className="h-4 w-4" /> Sign Out
           </button>
@@ -92,15 +92,15 @@ export default function AdminLayout({ setAuth }) {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
+      <div className="flex-1 flex flex-col overflow-hidden bg-gray-50 relative">
         
         {/* Top Header */}
-        <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8 sticky top-0 z-20">
+        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-8 sticky top-0 z-20">
           <h2 className="text-2xl font-bold text-gray-800">Overview</h2>
           
           <div className="flex items-center gap-6">
              {/* Realtime Clock Widget */}
-             <div className="flex items-center gap-2 text-gray-700 bg-gray-100 px-4 py-2 rounded-md font-semibold text-sm border border-gray-200 shadow-sm whitespace-nowrap">
+             <div className="flex items-center gap-2 text-gray-700 bg-white/50 backdrop-blur-sm px-4 py-2 rounded-md font-semibold text-sm border border-gray-200 shadow-sm whitespace-nowrap">
                <Clock className="h-4 w-4 text-brand-500" />
                <span>{time.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
                <span className="text-gray-300 mx-1">|</span>
@@ -112,7 +112,7 @@ export default function AdminLayout({ setAuth }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto p-8 relative">
+        <main className="flex-1 overflow-auto p-8 relative z-10">
           <Outlet />
         </main>
       </div>

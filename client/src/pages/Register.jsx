@@ -5,6 +5,8 @@ import * as z from 'zod';
 import { GraduationCap, Loader2, Check, X } from 'lucide-react';
 import axios from 'axios';
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
+import ThemeBackground from '../components/ThemeBackground';
 
 const schema = z.object({
   first_name: z.string().min(1, { message: 'Name is required' }),
@@ -64,7 +66,7 @@ export default function Register() {
 
     try {
       await axios.post('http://localhost:8000/api/auth/register/', data);
-      alert('Registration successful! Please log in.');
+      toast.success('Registration successful! Please log in.');
       navigate('/login');
     } catch (error) {
       console.error(error);
@@ -82,123 +84,125 @@ export default function Register() {
         
         if (!handled) {
             const msg = errorsData.detail || 'Registration failed. Please try again.';
-            alert(msg);
+            toast.error(msg);
         }
       } else {
-        alert('An unexpected error occurred.');
+        toast.error('An unexpected error occurred.');
       }
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-brand-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-lg w-full space-y-8 glass p-10 rounded-xl shadow-xl border-t-4 border-t-brand-500">
+    <div className="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative z-10">
+      <ThemeBackground />
+      <div className="max-w-xl w-full bg-white/80 backdrop-blur-md border border-white/20 p-10 rounded-md shadow-2xl space-y-8">
         <div>
-          <div className="mx-auto h-12 w-12 bg-cream-100 rounded-full flex items-center justify-center text-brand-600 mb-4 border border-brand-200">
+          <div className="mx-auto h-16 w-16 bg-brand-50 rounded-md flex items-center justify-center text-brand-600 mb-6 shadow-sm border border-brand-100 rotate-3 hover:rotate-0 transition-transform">
             <GraduationCap className="h-8 w-8" />
           </div>
-          <h2 className="text-center text-3xl font-black text-ink-900 tracking-tight uppercase">
+          <h2 className="text-center text-3xl font-black text-gray-900 tracking-tight">
             Join LPUTrade
           </h2>
-          <p className="mt-2 text-center text-sm text-ink-800 font-medium">
+          <p className="mt-2 text-center text-sm font-medium text-gray-500">
             Only verified college students allowed.
           </p>
         </div>
         
         <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <div className="space-y-4">
+          <div className="space-y-5">
             
             {/* ROW 1: Full Name */}
             <div>
-              <label className="block text-xs font-bold text-ink-800 uppercase tracking-wide">Full Name</label>
+              <label className="block text-[11px] font-black text-gray-400 uppercase tracking-wider mb-2">Full Name</label>
               <input
                 {...register('first_name')}
-                className="mt-1 block w-full px-3 py-2 border border-cream-300 rounded-sm shadow-sm focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm bg-white"
+                className="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-md px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all placeholder-gray-400"
                 placeholder="e.g. John Doe"
               />
-              {errors.first_name && <p className="text-red-500 text-xs mt-1">{errors.first_name.message}</p>}
+              {errors.first_name && <p className="text-red-500 text-xs font-medium mt-1.5">{errors.first_name.message}</p>}
             </div>
             
             {/* ROW 2: Username & Phone Number */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-5">
                <div>
-                  <label className="block text-xs font-bold text-ink-800 uppercase tracking-wide">Username</label>
-                  <div className="relative mt-1">
+                  <label className="block text-[11px] font-black text-gray-400 uppercase tracking-wider mb-2">Username</label>
+                  <div className="relative">
                     <input
                       {...register('username')}
-                      className={`block w-full px-3 py-2 border rounded-sm shadow-sm focus:outline-none sm:text-sm bg-white pr-10 ${
-                        usernameStatus === 'taken' ? 'border-red-500 focus:ring-red-500 focus:border-red-500' :
-                        usernameStatus === 'available' ? 'border-green-500 focus:ring-green-500 focus:border-green-500' :
-                        'border-cream-300 focus:ring-brand-500 focus:border-brand-500'
+                      className={`w-full border text-gray-900 font-medium rounded-md px-4 py-3.5 focus:outline-none focus:ring-2 focus:bg-white transition-all placeholder-gray-400 pr-10 ${
+                        usernameStatus === 'taken' ? 'bg-red-50 border-red-200 focus:ring-red-500' :
+                        usernameStatus === 'available' ? 'bg-green-50 border-green-200 focus:ring-green-500' :
+                        'bg-gray-50 border-gray-200 focus:ring-brand-500'
                       }`}
+                      placeholder="Username"
                     />
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
                       {usernameStatus === 'checking' && <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />}
                       {usernameStatus === 'available' && <Check className="h-4 w-4 text-green-500" />}
                       {usernameStatus === 'taken' && <X className="h-4 w-4 text-red-500" />}
                     </div>
                   </div>
-                  {errors.username && <p className="text-red-500 text-xs mt-1">{errors.username.message}</p>}
-                  {usernameStatus === 'available' && !errors.username && <p className="text-green-600 text-xs mt-1 font-medium">Username is available!</p>}
+                  {errors.username && <p className="text-red-500 text-xs font-medium mt-1.5">{errors.username.message}</p>}
+                  {usernameStatus === 'available' && !errors.username && <p className="text-green-600 text-xs font-medium mt-1.5">Username is available!</p>}
                </div>
                
                <div>
-                  <label className="block text-xs font-bold text-ink-800 uppercase tracking-wide">Phone Number</label>
+                  <label className="block text-[11px] font-black text-gray-400 uppercase tracking-wider mb-2">Phone Number</label>
                   <input
                     {...register('phone_number')}
-                    className="mt-1 block w-full px-3 py-2 border border-cream-300 rounded-sm shadow-sm focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm bg-white"
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-md px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all placeholder-gray-400"
                     placeholder="9876543210"
                   />
-                  {errors.phone_number && <p className="text-red-500 text-xs mt-1">{errors.phone_number.message}</p>}
+                  {errors.phone_number && <p className="text-red-500 text-xs font-medium mt-1.5">{errors.phone_number.message}</p>}
                </div>
             </div>
 
             {/* ROW 3: Email */}
             <div>
-              <label className="block text-xs font-bold text-ink-800 uppercase tracking-wide">College Email</label>
+              <label className="block text-[11px] font-black text-gray-400 uppercase tracking-wider mb-2">College Email</label>
               <input
                 type="email"
                 {...register('email')}
-                className="mt-1 block w-full px-3 py-2 border border-cream-300 rounded-sm shadow-sm focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm bg-white"
+                className="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-md px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all placeholder-gray-400"
                 placeholder="student@college.edu"
               />
-              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
+              {errors.email && <p className="text-red-500 text-xs font-medium mt-1.5">{errors.email.message}</p>}
             </div>
 
             {/* ROW 4: Passwords */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-5">
                 <div>
-                <label className="block text-xs font-bold text-ink-800 uppercase tracking-wide">Password</label>
+                <label className="block text-[11px] font-black text-gray-400 uppercase tracking-wider mb-2">Password</label>
                 <input
                     type="password"
                     {...register('password')}
-                    className="mt-1 block w-full px-3 py-2 border border-cream-300 rounded-sm shadow-sm focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm bg-white"
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-md px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all placeholder-gray-400"
                 />
-                {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
+                {errors.password && <p className="text-red-500 text-xs font-medium mt-1.5">{errors.password.message}</p>}
                 </div>
                 <div>
-                <label className="block text-xs font-bold text-ink-800 uppercase tracking-wide">Confirm</label>
+                <label className="block text-[11px] font-black text-gray-400 uppercase tracking-wider mb-2">Confirm</label>
                 <input
                     type="password"
                     {...register('password_confirm')}
-                    className="mt-1 block w-full px-3 py-2 border border-cream-300 rounded-sm shadow-sm focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm bg-white"
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-md px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all placeholder-gray-400"
                 />
-                {errors.password_confirm && <p className="text-red-500 text-xs mt-1">{errors.password_confirm.message}</p>}
+                {errors.password_confirm && <p className="text-red-500 text-xs font-medium mt-1.5">{errors.password_confirm.message}</p>}
                 </div>
             </div>
           </div>
 
-          <div>
+          <div className="pt-2">
             <button
               type="submit"
               disabled={isSubmitting || usernameStatus === 'checking' || usernameStatus === 'taken'}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-sm shadow-md text-sm font-bold text-white bg-brand-500 hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 transition-colors uppercase tracking-wider"
+              className="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-4 px-4 rounded-md shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed active:scale-[0.98]"
             >
               {isSubmitting ? 'Registering...' : 'Create Account'}
             </button>
           </div>
-          <div className="text-center">
-            <Link to="/login" className="font-bold text-sm text-ink-900 hover:text-brand-600 uppercase transition-colors">
+          <div className="text-center pt-2">
+            <Link to="/login" className="font-bold text-sm text-gray-500 hover:text-brand-600 transition-colors">
               Already have an account? Sign in
             </Link>
           </div>

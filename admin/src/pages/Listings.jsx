@@ -21,7 +21,7 @@ export default function Listings() {
   }, []);
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+    <div className="bg-white/80 backdrop-blur-md rounded-md border border-white/50 shadow-md overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
         <div>
           <h2 className="text-xl font-bold text-gray-900">All Listings</h2>
@@ -47,7 +47,7 @@ export default function Listings() {
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white/50 divide-y divide-gray-200">
             {loading ? (
               <tr>
                 <td colSpan="4" className="px-6 py-10 text-center text-sm text-gray-500">Loading listings...</td>

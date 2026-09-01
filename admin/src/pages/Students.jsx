@@ -11,7 +11,8 @@ export default function Students() {
     const fetchStudents = async () => {
       try {
         const response = await axios.get('http://localhost:8000/api/auth/users/');
-        setStudents(response.data);
+        const studentsOnly = response.data.filter(user => !user.is_staff && !user.is_superuser);
+        setStudents(studentsOnly);
       } catch (error) {
         console.error('Error fetching students:', error);
       } finally {
@@ -22,7 +23,8 @@ export default function Students() {
   }, []);
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden relative">
+    <>
+    <div className="bg-white/80 backdrop-blur-md rounded-md border border-white/50 shadow-md overflow-hidden relative">
       <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
         <div>
           <h2 className="text-xl font-bold text-gray-900">Registered Students</h2>
@@ -48,7 +50,7 @@ export default function Students() {
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white/50 divide-y divide-gray-200">
             {loading ? (
               <tr>
                 <td colSpan="4" className="px-6 py-10 text-center text-sm text-gray-500">Loading students...</td>
@@ -90,7 +92,7 @@ export default function Students() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                      <button 
                        onClick={() => setSelectedStudent(student)}
-                       className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-md text-xs font-bold text-gray-700 bg-white hover:bg-gray-50 hover:text-brand-600 transition-colors"
+                       className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-md text-xs font-semibold text-gray-700 bg-white hover:bg-gray-50 hover:text-brand-600 shadow-sm transition-all"
                      >
                        <Eye className="h-4 w-4" /> View Details
                      </button>
@@ -101,11 +103,12 @@ export default function Students() {
           </tbody>
         </table>
       </div>
+      </div>
 
       {/* Student Details Modal - Landscape */}
       {selectedStudent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden animate-in fade-in zoom-in duration-200 border border-gray-100">
+          <div className="bg-white/90 backdrop-blur-md rounded-md shadow-2xl w-full max-w-4xl overflow-hidden animate-in fade-in zoom-in duration-200 border border-white/20">
             <div className="px-8 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/80">
               <h3 className="text-lg font-black text-gray-900 tracking-tight">Student Profile</h3>
               <button 
@@ -205,10 +208,10 @@ export default function Students() {
               
               {/* Bottom Actions */}
               <div className="mt-8 pt-6 border-t border-gray-100 flex justify-end gap-4 bg-white">
-                 <button className="px-6 py-2.5 border border-red-200 text-red-600 rounded-lg text-sm font-bold hover:bg-red-50 hover:border-red-300 transition-colors">
+                 <button className="px-6 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-md text-sm font-semibold hover:bg-gray-50 transition-all shadow-sm">
                    Suspend User
                  </button>
-                 <button className="px-6 py-2.5 bg-brand-600 rounded-lg text-sm font-bold text-white hover:bg-brand-700 shadow-md shadow-brand-500/20 transition-all">
+                 <button className="px-6 py-2.5 bg-brand-500 rounded-md text-sm font-semibold text-white hover:bg-brand-600 shadow-md hover:shadow-lg transition-all">
                    Reset Password
                  </button>
               </div>
@@ -217,6 +220,6 @@ export default function Students() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

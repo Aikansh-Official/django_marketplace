@@ -2,7 +2,7 @@ import { Save } from 'lucide-react';
 
 export default function Settings() {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden max-w-3xl">
+    <div className="bg-white/80 backdrop-blur-md rounded-md border border-white/50 shadow-md overflow-hidden max-w-3xl">
       <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
         <div>
           <h2 className="text-xl font-bold text-gray-900">Platform Settings</h2>
@@ -43,13 +43,13 @@ export default function Settings() {
         <div>
            <h3 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Email Domains</h3>
            <p className="text-sm text-gray-500 mb-3">Allowed domains for student verification.</p>
-           <input type="text" defaultValue="lpu.in, lpu.co.in" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-brand-500" />
+           <input type="text" defaultValue="lpu.in, lpu.co.in" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500" />
         </div>
 
       </div>
 
       <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
-         <button className="flex items-center gap-2 bg-ink-900 text-white px-6 py-2 rounded-md font-bold hover:bg-gray-800 transition-colors">
+         <button className="flex items-center gap-2 bg-ink-900 text-white px-6 py-2.5 rounded-md font-semibold hover:bg-gray-800 shadow-md hover:shadow-lg transition-all">
             <Save className="h-4 w-4" /> Save Settings
          </button>
       </div>
