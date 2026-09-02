@@ -4,6 +4,10 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import CreateListing from './pages/CreateListing';
+import EditListing from './pages/EditListing';
+import ProductDetail from './pages/ProductDetail';
+import MyListings from './pages/MyListings';
 import { Toaster } from 'react-hot-toast';
 
 function App() {
@@ -19,7 +23,11 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              {/* Add more routes here later */}
+              <Route path="/sell" element={<CreateListing />} />
+              <Route path="/create-listing" element={<CreateListing />} />
+              <Route path="/edit-listing/:id" element={<EditListing />} />
+              <Route path="/listing/:id" element={<ProductDetail />} />
+              <Route path="/my-listings" element={<MyListings />} />
             </Routes>
           </main>
           <Footer />

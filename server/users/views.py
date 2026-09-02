@@ -2,8 +2,12 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from rest_framework.throttling import ScopedRateThrottle
 from django.contrib.auth import get_user_model
-from .serializers import UserRegistrationSerializer, UserListSerializer
+from django.utils import timezone
+import random
+from .models import OTPVerification
+from .serializers import UserRegistrationSerializer, UserListSerializer, SendOTPSerializer, VerifyOTPSerializer
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.conf import settings
@@ -40,6 +44,9 @@ def set_jwt_cookies(response, access_token, refresh_token=None):
         )
 
 class CustomTokenObtainPairView(TokenObtainPairView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'login'
+
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
         if response.status_code == 200:
@@ -90,15 +97,60 @@ class LogoutView(APIView):
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'signup'
     serializer_class = UserRegistrationSerializer
+
+class SendOTPView(APIView):
+    permission_classes = (AllowAny,)
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'signup'
+
+    def post(self, request):
+        serializer = SendOTPSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            otp = str(random.randint(100000, 999999))
+            
+            OTPVerification.objects.update_or_create(
+                email=email,
+                defaults={'otp': otp, 'is_verified': False, 'created_at': timezone.now()}
+            )
+            
+            print(f"\n=========================================\nOTP FOR {email}: {otp}\n=========================================\n")
+            
+            return Response({"message": "OTP sent successfully."})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class VerifyOTPView(APIView):
+    permission_classes = (AllowAny,)
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'signup'
+
+    def post(self, request):
+        serializer = VerifyOTPSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            otp = serializer.validated_data['otp']
+            
+            try:
+                record = OTPVerification.objects.get(email=email)
+                if not record.is_valid():
+                    return Response({"error": "OTP has expired. Please request a new one."}, status=status.HTTP_400_BAD_REQUEST)
+                if record.otp != otp:
+                    return Response({"error": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
+                
+                record.is_verified = True
+                record.save()
+                return Response({"message": "Email verified successfully."})
+            except OTPVerification.DoesNotExist:
+                return Response({"error": "OTP not found for this email."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class UserListView(generics.ListAPIView):
     # This view is for the admin dashboard to fetch all users
-    # In a real scenario, permission_classes = (IsAdminUser,) might be used
-    # But to allow easy testing via our separate frontend, we'll allow authenticated users or anyone for now.
-    # Let's keep it somewhat secure but accessible if tested locally.
     queryset = User.objects.all().order_by('-date_joined')
-    permission_classes = (AllowAny,) # Set to AllowAny temporarily for easy testing, should be IsAdminUser
+    permission_classes = (IsAdminUser,)
     serializer_class = UserListSerializer
 
 class UserProfileView(generics.RetrieveAPIView):

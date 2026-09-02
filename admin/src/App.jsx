@@ -39,9 +39,9 @@ function App() {
       <Toaster position="bottom-right" toastOptions={{ className: 'font-sans font-medium rounded-md shadow-lg', duration: 4000 }} />
       <Routes>
         <Route path="/login" element={<Login setAuth={setIsAuthenticated} />} />
-        
-        <Route 
-          path="/" 
+
+        <Route
+          path="/"
           element={
             <ProtectedRoute isAuthenticated={isAuthenticated}>
               <AdminLayout setAuth={setIsAuthenticated} />
