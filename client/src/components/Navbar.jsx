@@ -16,12 +16,29 @@ export default function Navbar() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-            if (token) {
+      const token = localStorage.getItem('access');
+      if (token) {
         try {
           const response = await axios.get(`${API_BASE}/auth/profile/`);
           setUserProfile(response.data);
+          localStorage.setItem('user', JSON.stringify(response.data));
         } catch (error) {
           console.error("Failed to fetch profile", error);
+          if (error.response?.status === 401) {
+            localStorage.removeItem('access');
+            localStorage.removeItem('refresh');
+            localStorage.removeItem('user');
+            setUserProfile(null);
+          }
+        }
+      } else {
+        // Also check if valid cookie exists
+        try {
+          const response = await axios.get(`${API_BASE}/auth/profile/`);
+          setUserProfile(response.data);
+          localStorage.setItem('user', JSON.stringify(response.data));
+        } catch (error) {
+          setUserProfile(null);
         }
       }
     };
@@ -37,9 +54,15 @@ export default function Navbar() {
     return () => window.removeEventListener('open-auth-modal', handleOpenAuthModal);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await axios.post(`${API_BASE}/auth/logout/`);
+    } catch (e) {
+      // Ignore network error during logout
+    }
     localStorage.removeItem('access');
     localStorage.removeItem('refresh');
+    localStorage.removeItem('user');
     setUserProfile(null);
     navigate('/');
   };

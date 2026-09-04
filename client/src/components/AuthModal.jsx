@@ -112,6 +112,13 @@ function LoginForm({ onSwitch, onSuccess }) {
   const onSubmit = async (data) => {
     try {
       const response = await axios.post(`${API_BASE}/auth/login/`, data);
+      if (response.data.access) {
+        localStorage.setItem('access', response.data.access);
+        localStorage.setItem('refresh', response.data.refresh);
+      }
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
       toast.success('Successfully logged in!');
       onSuccess();
       window.location.reload(); // Refresh to update navbar state
@@ -258,6 +265,14 @@ function RegisterForm({ onSwitch, onSuccess }) {
         username: data.username,
         password: data.password
       });
+
+      if (loginResponse.data.access) {
+        localStorage.setItem('access', loginResponse.data.access);
+        localStorage.setItem('refresh', loginResponse.data.refresh);
+      }
+      if (loginResponse.data.user) {
+        localStorage.setItem('user', JSON.stringify(loginResponse.data.user));
+      }
 
       toast.success('Registration successful! Automatically logged in.');
       onSuccess();

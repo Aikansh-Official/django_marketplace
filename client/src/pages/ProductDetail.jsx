@@ -45,7 +45,8 @@ export default function ProductDetail() {
   // Fetch current user & listing details
   useEffect(() => {
     const fetchCurrentProfile = async () => {
-            if (token) {
+      const token = localStorage.getItem('access');
+      if (token) {
         try {
           const res = await axios.get(`${API_BASE}/auth/profile/`);
           setCurrentUserId(res.data.id);
@@ -61,7 +62,6 @@ export default function ProductDetail() {
     const fetchListing = async () => {
       setLoading(true);
       try {
-                const headers = token ? { Authorization: `Bearer ${token}` } : {};
         const res = await axios.get(`${API_BASE}/marketplace/listings/${id}/`);
         setListing(res.data);
         setActiveImageIndex(0);
@@ -95,11 +95,9 @@ export default function ProductDetail() {
   const handleStatusChange = async (newStatus) => {
     setStatusUpdating(true);
     try {
-            const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const res = await axios.patch(
         `${API_BASE}/marketplace/listings/${id}/status/`,
-        { status: newStatus },
-        { headers }
+        { status: newStatus }
       );
       setListing((prev) => ({ ...prev, status: res.data.status }));
       toast.success(`Status updated to ${newStatus}`);
@@ -115,7 +113,6 @@ export default function ProductDetail() {
   const handleDelete = async () => {
     setDeleting(true);
     try {
-            const headers = token ? { Authorization: `Bearer ${token}` } : {};
       await axios.delete(`${API_BASE}/marketplace/listings/${id}/`);
       toast.success('Listing deleted successfully');
       navigate('/my-listings');

@@ -32,7 +32,6 @@ export default function MyListings() {
   const fetchMyListings = async () => {
     setLoading(true);
     try {
-            const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const url = statusFilter === 'ALL'
         ? `${API_BASE}/marketplace/my-listings/`
         : `${API_BASE}/marketplace/my-listings/?status=${statusFilter}`;
@@ -53,11 +52,9 @@ export default function MyListings() {
 
   const handleStatusChange = async (listingId, newStatus) => {
     try {
-            const headers = token ? { Authorization: `Bearer ${token}` } : {};
       await axios.patch(
         `${API_BASE}/marketplace/listings/${listingId}/status/`,
-        { status: newStatus },
-        { headers }
+        { status: newStatus }
       );
       toast.success(`Listing status updated to ${newStatus}`);
       fetchMyListings();
@@ -71,7 +68,6 @@ export default function MyListings() {
     if (!deleteModalId) return;
     setDeleting(true);
     try {
-            const headers = token ? { Authorization: `Bearer ${token}` } : {};
       await axios.delete(`${API_BASE}/marketplace/listings/${deleteModalId}/`);
       toast.success('Listing deleted.');
       setDeleteModalId(null);

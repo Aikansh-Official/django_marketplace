@@ -13,7 +13,7 @@ User = get_user_model()
 
 email = 'admin@lputrade.com'
 username = 'admin'
-password = os.environ.get('ADMIN_PASSWORD', 'adminpassword123')
+password = 'adminpassword123'
 
 if not User.objects.filter(username=username).exists():
     user = User.objects.create_superuser(

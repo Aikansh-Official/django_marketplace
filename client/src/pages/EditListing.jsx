@@ -78,10 +78,8 @@ export default function EditListing() {
         const catRes = await axios.get(`${API_BASE}/marketplace/categories/`);
         setCategories(catRes.data);
 
-                const headers = token ? { Authorization: `Bearer ${token}` } : {};
         const listingRes = await axios.get(
-          `${API_BASE}/marketplace/listings/${id}/`,
-          { headers }
+          `${API_BASE}/marketplace/listings/${id}/`
         );
 
         const data = listingRes.data;
@@ -127,7 +125,8 @@ export default function EditListing() {
       return;
     }
 
-        if (!token) {
+    const token = localStorage.getItem('access');
+    if (!token) {
       toast.error('Please login to upload images.');
       return;
     }
@@ -162,7 +161,6 @@ export default function EditListing() {
           formData,
           {
             headers: {
-              Authorization: `Bearer ${token}`,
               'Content-Type': 'multipart/form-data',
             },
           }
@@ -214,7 +212,6 @@ export default function EditListing() {
     }
 
     setLoading(true);
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
     const payload = {
       title: title.trim(),
@@ -237,8 +234,7 @@ export default function EditListing() {
     try {
       await axios.patch(
         `${API_BASE}/marketplace/listings/${id}/`,
-        payload,
-        { headers }
+        payload
       );
       toast.success('Listing updated successfully!');
       navigate(`/listing/${id}`);

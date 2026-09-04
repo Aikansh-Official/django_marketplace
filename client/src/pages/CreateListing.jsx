@@ -86,8 +86,8 @@ export default function CreateListing() {
       } catch (err) {
         console.error('Failed to load categories', err);
       }
-
-            if (token) {
+      const token = localStorage.getItem('access');
+      if (token) {
         try {
           const profileRes = await axios.get(`${API_BASE}/auth/profile/`);
           setUserProfile(profileRes.data);
@@ -113,7 +113,8 @@ export default function CreateListing() {
       return;
     }
 
-        if (!token) {
+    const token = localStorage.getItem('access');
+    if (!token) {
       toast.error('Please login to upload images.');
       return;
     }
@@ -148,7 +149,6 @@ export default function CreateListing() {
           formData,
           {
             headers: {
-              Authorization: `Bearer ${token}`,
               'Content-Type': 'multipart/form-data',
             },
           }
@@ -210,7 +210,6 @@ export default function CreateListing() {
     }
 
     setLoading(true);
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
     const payload = {
       title: title.trim(),
@@ -233,8 +232,7 @@ export default function CreateListing() {
     try {
       const response = await axios.post(
         `${API_BASE}/marketplace/listings/`,
-        payload,
-        { headers }
+        payload
       );
       toast.success('Listing created successfully!');
       navigate(`/listing/${response.data.id}`);

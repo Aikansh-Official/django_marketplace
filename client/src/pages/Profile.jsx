@@ -16,8 +16,8 @@ export default function Profile() {
   });
 
   const fetchProfile = async () => {
+    const token = localStorage.getItem('access');
     try {
-            if (!token) return;
       const res = await axios.get(`${API_BASE}/auth/profile/`);
       setProfile(res.data);
       setFormData({

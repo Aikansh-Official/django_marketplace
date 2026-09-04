@@ -54,9 +54,13 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             refresh_token = response.data.get('refresh')
             set_jwt_cookies(response, access_token, refresh_token)
             
-            # Remove tokens from response body strictly into cookies
-            del response.data['access']
-            del response.data['refresh']
+            # Attach user details for client convenience
+            try:
+                username = request.data.get('username')
+                user = User.objects.get(username=username)
+                response.data['user'] = UserListSerializer(user).data
+            except Exception:
+                pass
             response.data['message'] = 'Successfully logged in.'
             
         return response
@@ -74,10 +78,6 @@ class CustomTokenRefreshView(TokenRefreshView):
         if response.status_code == 200:
             access_token = response.data.get('access')
             set_jwt_cookies(response, access_token)
-            
-            del response.data['access']
-            if 'refresh' in response.data:
-                del response.data['refresh']
             response.data['message'] = 'Token refreshed successfully.'
             
         return response

@@ -25,17 +25,24 @@ export default function Login({ setAuth }) {
         password
       });
 
+      if (loginRes.data.access) {
+        localStorage.setItem('admin_access', loginRes.data.access);
+        localStorage.setItem('admin_refresh', loginRes.data.refresh);
+      }
+
       // 2. Fetch Profile to check Admin status
       const profileRes = await axios.get(`${API_BASE}/auth/profile/`);
       const profileData = profileRes.data;
 
       if (profileData.is_staff || profileData.is_superuser) {
         // Success - store in localStorage and update state
-                        localStorage.setItem('admin_user', JSON.stringify(profileData));
+        localStorage.setItem('admin_user', JSON.stringify(profileData));
         setAuth(true);
         navigate('/');
       } else {
-        // Not an admin
+        localStorage.removeItem('admin_access');
+        localStorage.removeItem('admin_refresh');
+        localStorage.removeItem('admin_user');
         throw new Error('You do not have administrative privileges.');
       }
 
