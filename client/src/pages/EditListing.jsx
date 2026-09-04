@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 import toast from 'react-hot-toast';
+import { compressImage } from '../utils/compressImage';
 import {
   UploadCloud,
   X,
@@ -72,13 +75,12 @@ export default function EditListing() {
     const fetchData = async () => {
       setFetching(true);
       try {
-        const catRes = await axios.get('http://localhost:8000/api/marketplace/categories/');
+        const catRes = await axios.get(`${API_BASE}/marketplace/categories/`);
         setCategories(catRes.data);
 
-        const token = localStorage.getItem('access');
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
         const listingRes = await axios.get(
-          `http://localhost:8000/api/marketplace/listings/${id}/`,
+          `${API_BASE}/marketplace/listings/${id}/`,
           { headers }
         );
 
@@ -113,8 +115,10 @@ export default function EditListing() {
     fetchData();
   }, [id]);
 
-  // Image Handlers
-  const handleFileUpload = (e) => {
+  // Image Handlers — uploads file to Cloudinary via backend
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
 
@@ -123,17 +127,58 @@ export default function EditListing() {
       return;
     }
 
-    files.forEach((file) => {
+        if (!token) {
+      toast.error('Please login to upload images.');
+      return;
+    }
+
+    setUploading(true);
+    let uploadedCount = 0;
+
+    for (const file of files) {
       if (!file.type.startsWith('image/')) {
         toast.error(`${file.name} is not an image.`);
-        return;
+        continue;
       }
-      const reader = new FileReader();
-      reader.onload = (uploadEvent) => {
-        setImages((prev) => [...prev, uploadEvent.target.result]);
-      };
-      reader.readAsDataURL(file);
-    });
+      if (file.size > 15 * 1024 * 1024) {
+        toast.error(`${file.name} exceeds 15MB limit.`);
+        continue;
+      }
+
+      // Compress large images before uploading
+      const compressed = await compressImage(file, {
+        maxWidth: 1200,
+        maxHeight: 1200,
+        quality: 0.75,
+        maxSizeKB: 500,
+      });
+
+      const formData = new FormData();
+      formData.append('image', compressed);
+
+      try {
+        const res = await axios.post(
+          `${API_BASE}/marketplace/upload-image/`,
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        );
+        setImages((prev) => [...prev, res.data.url]);
+        uploadedCount++;
+      } catch (err) {
+        console.error(`Failed to upload ${file.name}`, err);
+        toast.error(`Failed to upload ${file.name}.`);
+      }
+    }
+
+    if (uploadedCount > 0) {
+      toast.success(`${uploadedCount} image${uploadedCount > 1 ? 's' : ''} uploaded!`);
+    }
+    setUploading(false);
   };
 
   const handleAddImageUrl = () => {
@@ -169,8 +214,7 @@ export default function EditListing() {
     }
 
     setLoading(true);
-    const token = localStorage.getItem('access');
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
     const payload = {
       title: title.trim(),
@@ -192,7 +236,7 @@ export default function EditListing() {
 
     try {
       await axios.patch(
-        `http://localhost:8000/api/marketplace/listings/${id}/`,
+        `${API_BASE}/marketplace/listings/${id}/`,
         payload,
         { headers }
       );
@@ -268,13 +312,18 @@ export default function EditListing() {
               accept="image/*"
               onChange={handleFileUpload}
               className="hidden"
+              disabled={uploading}
             />
             <label
               htmlFor="edit-file-upload"
-              className="cursor-pointer bg-brand-50 hover:bg-brand-100 border border-brand-200 text-brand-700 text-xs font-semibold px-4 py-2 rounded-md transition-colors inline-flex items-center gap-1.5"
+              className={`border border-brand-200 text-brand-700 text-xs font-semibold px-4 py-2 rounded-md transition-colors inline-flex items-center gap-1.5 ${uploading ? 'bg-brand-100 opacity-60 pointer-events-none' : 'cursor-pointer bg-brand-50 hover:bg-brand-100'}`}
             >
-              <UploadCloud className="w-4 h-4" />
-              Upload New Images
+              {uploading ? (
+                <div className="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <UploadCloud className="w-4 h-4" />
+              )}
+              {uploading ? 'Uploading...' : 'Upload New Images'}
             </label>
 
             <div className="flex-1 flex gap-2">

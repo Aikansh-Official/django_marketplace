@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { ShieldCheck, Mail, Calendar, Eye, X, Phone, Globe, Star } from 'lucide-react';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
 export default function Students() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,7 +12,7 @@ export default function Students() {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/api/auth/users/');
+                const response = await axios.get(`${API_BASE}/auth/users/`);
         const studentsOnly = response.data.filter(user => !user.is_staff && !user.is_superuser);
         setStudents(studentsOnly);
       } catch (error) {
@@ -21,6 +23,19 @@ export default function Students() {
     };
     fetchStudents();
   }, []);
+
+  const handleDeleteUser = async (userId) => {
+    if (window.confirm("Are you sure you want to permanently delete this user? This action cannot be undone.")) {
+      try {
+                await axios.delete(`${API_BASE}/auth/users/${userId}/`);
+        setStudents(students.filter(s => s.id !== userId));
+        setSelectedStudent(null);
+      } catch (error) {
+        console.error("Failed to delete user", error);
+        alert("Failed to delete user.");
+      }
+    }
+  };
 
   return (
     <>
@@ -208,11 +223,11 @@ export default function Students() {
               
               {/* Bottom Actions */}
               <div className="mt-8 pt-6 border-t border-gray-100 flex justify-end gap-4 bg-white">
-                 <button className="px-6 py-2.5 border border-gray-200 text-gray-700 bg-white rounded-md text-sm font-semibold hover:bg-gray-50 transition-all shadow-sm">
-                   Suspend User
-                 </button>
-                 <button className="px-6 py-2.5 bg-brand-500 rounded-md text-sm font-semibold text-white hover:bg-brand-600 shadow-md hover:shadow-lg transition-all">
-                   Reset Password
+                 <button 
+                   onClick={() => handleDeleteUser(selectedStudent.id)}
+                   className="px-6 py-2.5 bg-red-500 rounded-md text-sm font-semibold text-white hover:bg-red-600 shadow-md hover:shadow-lg transition-all"
+                 >
+                   Delete User
                  </button>
               </div>
 

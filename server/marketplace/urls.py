@@ -1,7 +1,8 @@
 from django.urls import path
 from .views import (
     ListingListCreateView, ListingDetailView, MyListingsView,
-    ToggleListingStatusView, AdminListingList, CategoryListView, SeedDataView
+    ToggleListingStatusView, AdminListingList, CategoryListView,
+    UploadImageView
 )
 
 urlpatterns = [
@@ -11,5 +12,5 @@ urlpatterns = [
     path('my-listings/', MyListingsView.as_view(), name='my-listings'),
     path('categories/', CategoryListView.as_view(), name='category-list'),
     path('admin/listings/', AdminListingList.as_view(), name='admin-listing-list'),
-    path('seed/', SeedDataView.as_view(), name='seed-data'),
+    path('upload-image/', UploadImageView.as_view(), name='upload-image'),
 ]

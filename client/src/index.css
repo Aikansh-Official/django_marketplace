@@ -17,3 +17,22 @@
 .glass-dark {
   @apply bg-gray-900/70 backdrop-blur-md border border-gray-700/50 shadow-sm;
 }
+
+/* Custom Thin Scrollbar */
+::-webkit-scrollbar {
+  width: 4px; /* ekdum kam */
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; 
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1; /* default grey-ish color */
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; 
+}

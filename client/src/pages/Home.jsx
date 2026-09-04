@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 import {
   Search,
   MapPin,
@@ -15,20 +17,11 @@ import {
   CheckCircle2,
   ShieldCheck,
   Eye,
-  Filter
+  Filter,
+  Package
 } from 'lucide-react';
 import CategoryIcon from '../components/CategoryIcon';
 
-const LPU_LOCATION_FILTERS = [
-  { value: 'ALL', label: 'All LPU Campus' },
-  { value: 'BH-', label: 'Boys Hostels (BH-1 to BH-8)' },
-  { value: 'GH-', label: 'Girls Hostels (GH-1 to GH-6)' },
-  { value: 'Block 34', label: 'Block 34 (CS / Tech)' },
-  { value: 'Central Library', label: 'Central Library' },
-  { value: 'Uni-Mall', label: 'Uni-Mall' },
-  { value: 'Law Gate', label: 'Law Gate' },
-  { value: 'Main Gate', label: 'Main Gate' },
-];
 
 const TRANSACTION_FILTERS = [
   { value: 'ALL', label: 'All Modes' },
@@ -56,7 +49,6 @@ export default function Home() {
   // Filters State
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [searchQuery, setSearchQuery] = useState('');
-  const [locationFilter, setLocationFilter] = useState('ALL');
   const [transactionType, setTransactionType] = useState('ALL');
   const [conditionFilter, setConditionFilter] = useState('ALL');
   const [sortBy, setSortBy] = useState('newest');
@@ -66,7 +58,7 @@ export default function Home() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get('http://localhost:8000/api/marketplace/categories/');
+        const res = await axios.get(`${API_BASE}/marketplace/categories/`);
         setCategories(res.data);
       } catch (err) {
         console.error('Failed to load categories', err);
@@ -86,9 +78,6 @@ export default function Home() {
       if (searchQuery.trim()) {
         params.append('search', searchQuery.trim());
       }
-      if (locationFilter && locationFilter !== 'ALL') {
-        params.append('location', locationFilter);
-      }
       if (transactionType && transactionType !== 'ALL') {
         params.append('transaction_type', transactionType);
       }
@@ -100,7 +89,7 @@ export default function Home() {
       }
 
       const response = await axios.get(
-        `http://localhost:8000/api/marketplace/listings/?${params.toString()}`
+        `${API_BASE}/marketplace/listings/?${params.toString()}`
       );
       setListings(response.data);
       setError(null);
@@ -114,7 +103,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchListings();
-  }, [selectedCategory, locationFilter, transactionType, conditionFilter, sortBy]);
+  }, [selectedCategory, transactionType, conditionFilter, sortBy]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -177,21 +166,6 @@ export default function Home() {
               )}
             </div>
 
-            {/* Campus Location Filter Dropdown */}
-            <div className="sm:w-64 flex bg-white border-2 border-gray-200 hover:border-brand-300 rounded-md px-3 py-2 items-center focus-within:border-brand-500 transition-colors shadow-sm">
-              <MapPin className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
-              <select
-                value={locationFilter}
-                onChange={(e) => setLocationFilter(e.target.value)}
-                className="w-full outline-none text-gray-800 bg-transparent text-xs font-semibold cursor-pointer"
-              >
-                {LPU_LOCATION_FILTERS.map((loc) => (
-                  <option key={loc.value} value={loc.value}>
-                    {loc.label}
-                  </option>
-                ))}
-              </select>
-            </div>
 
             {/* Search CTA */}
             <button
@@ -211,11 +185,10 @@ export default function Home() {
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
             <button
               onClick={() => handleCategoryClick('ALL')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${
-                selectedCategory === 'ALL'
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${selectedCategory === 'ALL'
                   ? 'bg-brand-500 text-white border-brand-500 shadow-sm'
                   : 'bg-white border-gray-200 text-gray-700 hover:border-brand-300'
-              }`}
+                }`}
             >
               <span>All Categories</span>
             </button>
@@ -226,11 +199,10 @@ export default function Home() {
                 <button
                   key={cat.id}
                   onClick={() => handleCategoryClick(cat.slug)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap border ${
-                    isSelected
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap border ${isSelected
                       ? 'bg-brand-500 text-white border-brand-500 shadow-sm'
                       : 'bg-white border-gray-200 text-gray-700 hover:border-brand-300'
-                  }`}
+                    }`}
                 >
                   <CategoryIcon
                     name={cat.icon}
@@ -326,25 +298,35 @@ export default function Home() {
             <Tag className="w-12 h-12 text-gray-300 mx-auto" />
             <h3 className="text-lg font-bold text-gray-800">No matching items found</h3>
             <p className="text-xs text-gray-500 max-w-sm mx-auto">
-              Try adjusting your search terms, campus location filter, or be the first student to post this item!
+              Try adjusting your search terms, or be the first student to post this item!
             </p>
-            <div className="pt-2">
-              <Link
-                to="/sell"
-                className="bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2.5 px-6 rounded-md text-xs inline-flex items-center gap-1.5 transition-all shadow-md"
-              >
-                <Plus className="w-4 h-4" />
-                Sell an Item
-              </Link>
-            </div>
+            {localStorage.getItem('access') ? (
+              <div className="pt-2">
+                <Link
+                  to="/sell"
+                  className="bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2.5 px-6 rounded-md text-xs inline-flex items-center gap-1.5 transition-all shadow-md"
+                >
+                  <Plus className="w-4 h-4" />
+                  Sell an Item
+                </Link>
+              </div>
+            ) : (
+              <div className="pt-2">
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { mode: 'login' } }))}
+                  className="bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2.5 px-6 rounded-md text-xs inline-flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                >
+                  Login to Sell
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
             {listings.map((listing) => {
               const primaryImage =
                 listing.images?.find((img) => img.is_primary)?.image_url ||
-                listing.images?.[0]?.image_url ||
-                'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=800&q=80';
+                listing.images?.[0]?.image_url
 
               const isFav = favorites[listing.id];
 
@@ -356,20 +338,26 @@ export default function Home() {
                 >
                   {/* Image Container */}
                   <div className="relative h-48 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
-                    <img
-                      src={primaryImage}
-                      alt={listing.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
+                    {primaryImage ? (
+                      <img
+                        src={primaryImage}
+                        alt={listing.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-100 group-hover:bg-gray-200 transition-colors">
+                        <Package className="w-8 h-8 mb-2 opacity-50" />
+                        <span className="text-[10px] font-semibold uppercase tracking-wider opacity-60">No Image</span>
+                      </div>
+                    )}
 
                     {/* Favorite Button */}
                     <button
                       onClick={(e) => toggleFavorite(e, listing.id)}
-                      className={`absolute top-2.5 right-2.5 p-1.5 rounded-full shadow-sm transition-all z-10 ${
-                        isFav
+                      className={`absolute top-2.5 right-2.5 p-1.5 rounded-full shadow-sm transition-all z-10 ${isFav
                           ? 'bg-red-50 text-red-500'
                           : 'bg-white/80 hover:bg-white text-gray-400 hover:text-red-500'
-                      }`}
+                        }`}
                     >
                       <Heart
                         className="h-4 w-4"

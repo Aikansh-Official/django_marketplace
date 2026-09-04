@@ -1,5 +1,8 @@
 from rest_framework import serializers
 from .models import Listing, ListingImage, Category
+from .cloudinary_upload import (
+    upload_base64_to_cloudinary, is_base64_image, is_url
+)
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -78,25 +81,36 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
             'status', 'category', 'uploaded_images', 'primary_image_index'
         ]
 
+    def _process_image(self, img_data):
+        """
+        Process a single image entry:
+        - If it's a base64 data URI → upload to Cloudinary, return the URL
+        - If it's a regular URL → return as-is
+        """
+        if is_base64_image(img_data):
+            try:
+                result = upload_base64_to_cloudinary(img_data)
+                return result['url']
+            except Exception as e:
+                raise serializers.ValidationError(
+                    f"Failed to upload image to Cloudinary: {str(e)}"
+                )
+        elif is_url(img_data):
+            return img_data
+        else:
+            raise serializers.ValidationError(
+                "Invalid image data. Provide a valid URL or base64 data URI."
+            )
+
     def create(self, validated_data):
         uploaded_images = validated_data.pop('uploaded_images', [])
         primary_index = validated_data.pop('primary_image_index', 0)
-        
+
+        # Seller is set by the view (authenticated user required)
         request = self.context.get('request')
-        if request and request.user and request.user.is_authenticated:
-            validated_data['seller'] = request.user
-        else:
-            # Fallback to first user for dev/testing if unauthenticated
-            first_user = User.objects.first()
-            if not first_user:
-                first_user = User.objects.create_user(
-                    username='lpu_student',
-                    email='student@lpu.in',
-                    first_name='Anshuman',
-                    is_verified_student=True,
-                    college_domain='lpu.in'
-                )
-            validated_data['seller'] = first_user
+        if not request or not request.user or not request.user.is_authenticated:
+            raise serializers.ValidationError("Authentication required to create a listing.")
+        validated_data['seller'] = request.user
 
         # Default fallback contacts from seller profile if left blank
         seller = validated_data['seller']
@@ -107,11 +121,12 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
 
         listing = Listing.objects.create(**validated_data)
 
-        # Create images
+        # Process and create images
         for index, img_data in enumerate(uploaded_images):
+            image_url = self._process_image(img_data)
             ListingImage.objects.create(
                 listing=listing,
-                image_url=img_data,
+                image_url=image_url,
                 is_primary=(index == primary_index)
             )
 
@@ -129,9 +144,10 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
             # If new images provided, replace existing images
             instance.images.all().delete()
             for index, img_data in enumerate(uploaded_images):
+                image_url = self._process_image(img_data)
                 ListingImage.objects.create(
                     listing=instance,
-                    image_url=img_data,
+                    image_url=image_url,
                     is_primary=(index == primary_index)
                 )
 

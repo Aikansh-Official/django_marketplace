@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Tag, MapPin, Eye, EyeOff } from 'lucide-react';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
 export default function Listings() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -9,7 +11,7 @@ export default function Listings() {
   useEffect(() => {
     const fetchListings = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/api/marketplace/admin/listings/');
+                const response = await axios.get(`${API_BASE}/marketplace/admin/listings/`);
         setListings(response.data);
       } catch (error) {
         console.error('Error fetching listings:', error);

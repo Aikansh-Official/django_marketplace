@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import axios from 'axios';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 import toast from 'react-hot-toast';
 import { X, Loader2, Check, GraduationCap } from 'lucide-react';
 
@@ -48,19 +50,23 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
       <div className="flex min-h-full p-4 sm:p-6">
         <div className="m-auto w-full max-w-4xl bg-white rounded-md shadow-2xl flex flex-col md:flex-row overflow-hidden animate-in fade-in zoom-in duration-200">
 
-          {/* Left Side - Image Cover */}
-          <div className="hidden md:block md:w-1/2 relative bg-gray-100">
-            <img
-              src="https://www.admissionindia.net/wp-content/uploads/banner-lpu.jpg"
-              alt="University Campus"
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-brand-900/40 to-transparent"></div>
-            <div className="absolute inset-0 p-10 flex flex-col justify-end text-white">
-              <div className="bg-white/20 backdrop-blur-md p-6 rounded-md border border-white/20">
-                <h3 className="text-2xl font-black mb-2 leading-tight">Exclusive Campus Marketplace</h3>
-                <p className="text-brand-50 text-sm font-medium">Buy and sell textbooks, electronics, and essentials securely with verified students.</p>
+          {/* Left Side - Branding */}
+          <div className="hidden md:flex md:w-1/2 relative bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 p-12 flex-col justify-center items-center text-center text-white overflow-hidden">
+            {/* Background decoration */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10">
+              <div className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-white blur-3xl"></div>
+              <div className="absolute -bottom-24 -right-24 w-64 h-64 rounded-full bg-white blur-3xl"></div>
+            </div>
+
+            <div className="relative z-10 flex flex-col items-center">
+              <div className="w-24 h-24 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 shadow-lg border border-white/30 overflow-hidden">
+                <img src="src\assets\LPUTrade_logo.jpeg" alt="LPUTrade Logo" className="w-full h-full object-cover" />
               </div>
+              <h2 className="text-4xl font-black mb-4 tracking-tight">LPUTrade</h2>
+              <div className="w-16 h-1 bg-brand-400 rounded-full mb-6"></div>
+              <p className="text-brand-100 text-lg leading-relaxed font-medium">
+                The exclusive campus marketplace. Buy, sell, and trade textbooks, electronics, and essentials securely with verified students.
+              </p>
             </div>
           </div>
 
@@ -105,9 +111,7 @@ function LoginForm({ onSwitch, onSuccess }) {
 
   const onSubmit = async (data) => {
     try {
-      const response = await axios.post('http://localhost:8000/api/auth/login/', data);
-      localStorage.setItem('access', response.data.access);
-      localStorage.setItem('refresh', response.data.refresh);
+      const response = await axios.post(`${API_BASE}/auth/login/`, data);
       toast.success('Successfully logged in!');
       onSuccess();
       window.location.reload(); // Refresh to update navbar state
@@ -191,7 +195,7 @@ function RegisterForm({ onSwitch, onSuccess }) {
     const checkAvailability = async () => {
       setUsernameStatus('checking');
       try {
-        const response = await axios.get(`http://localhost:8000/api/auth/check-username/?username=${usernameValue}`);
+        const response = await axios.get(`${API_BASE}/auth/check-username/?username=${usernameValue}`);
         if (response.data.available) {
           setUsernameStatus('available');
           clearErrors("username");
@@ -214,7 +218,7 @@ function RegisterForm({ onSwitch, onSuccess }) {
 
     setIsLoading(true);
     try {
-      await axios.post('http://localhost:8000/api/auth/send-otp/', { email: watch('email') });
+      await axios.post(`${API_BASE}/auth/send-otp/`, { email: watch('email') });
       toast.success("OTP sent to your email! (Check server console)");
       setStep(2);
     } catch (e) {
@@ -229,7 +233,7 @@ function RegisterForm({ onSwitch, onSuccess }) {
 
     setIsLoading(true);
     try {
-      await axios.post('http://localhost:8000/api/auth/verify-otp/', {
+      await axios.post(`${API_BASE}/auth/verify-otp/`, {
         email: watch('email'),
         otp: watch('otp')
       });
@@ -247,15 +251,13 @@ function RegisterForm({ onSwitch, onSuccess }) {
 
     setIsLoading(true);
     try {
-      await axios.post('http://localhost:8000/api/auth/register/', data);
+      await axios.post(`${API_BASE}/auth/register/`, data);
 
       // Auto login after successful registration
-      const loginResponse = await axios.post('http://localhost:8000/api/auth/login/', {
+      const loginResponse = await axios.post(`${API_BASE}/auth/login/`, {
         username: data.username,
         password: data.password
       });
-      localStorage.setItem('access', loginResponse.data.access);
-      localStorage.setItem('refresh', loginResponse.data.refresh);
 
       toast.success('Registration successful! Automatically logged in.');
       onSuccess();
@@ -313,8 +315,8 @@ function RegisterForm({ onSwitch, onSuccess }) {
                     maxLength={8}
                     {...register('username')}
                     className={`w-full border text-gray-900 font-medium rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:border-brand-500 transition-all pr-10 ${usernameStatus === 'taken' ? 'bg-red-50 border-red-200 focus:ring-red-500 focus:border-red-500' :
-                        usernameStatus === 'available' ? 'bg-green-50 border-green-200 focus:ring-green-500 focus:border-green-500' :
-                          'bg-gray-50 border-gray-200 focus:ring-brand-500'
+                      usernameStatus === 'available' ? 'bg-green-50 border-green-200 focus:ring-green-500 focus:border-green-500' :
+                        'bg-gray-50 border-gray-200 focus:ring-brand-500'
                       }`}
                     placeholder="e.g. 12200000"
                   />

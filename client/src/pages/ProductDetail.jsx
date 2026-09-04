@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 import toast from 'react-hot-toast';
 import {
   MapPin,
@@ -43,12 +45,9 @@ export default function ProductDetail() {
   // Fetch current user & listing details
   useEffect(() => {
     const fetchCurrentProfile = async () => {
-      const token = localStorage.getItem('access');
-      if (token) {
+            if (token) {
         try {
-          const res = await axios.get('http://localhost:8000/api/auth/profile/', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          const res = await axios.get(`${API_BASE}/auth/profile/`);
           setCurrentUserId(res.data.id);
         } catch (e) {
           console.error('Could not fetch user profile', e);
@@ -62,9 +61,8 @@ export default function ProductDetail() {
     const fetchListing = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem('access');
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get(`http://localhost:8000/api/marketplace/listings/${id}/`, { headers });
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await axios.get(`${API_BASE}/marketplace/listings/${id}/`);
         setListing(res.data);
         setActiveImageIndex(0);
 
@@ -72,7 +70,7 @@ export default function ProductDetail() {
         if (res.data.category?.slug) {
           try {
             const relatedRes = await axios.get(
-              `http://localhost:8000/api/marketplace/listings/?category=${res.data.category.slug}`
+              `${API_BASE}/marketplace/listings/?category=${res.data.category.slug}`
             );
             setRelatedListings(
               relatedRes.data.filter((item) => String(item.id) !== String(id)).slice(0, 4)
@@ -97,10 +95,9 @@ export default function ProductDetail() {
   const handleStatusChange = async (newStatus) => {
     setStatusUpdating(true);
     try {
-      const token = localStorage.getItem('access');
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const res = await axios.patch(
-        `http://localhost:8000/api/marketplace/listings/${id}/status/`,
+        `${API_BASE}/marketplace/listings/${id}/status/`,
         { status: newStatus },
         { headers }
       );
@@ -118,9 +115,8 @@ export default function ProductDetail() {
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      const token = localStorage.getItem('access');
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      await axios.delete(`http://localhost:8000/api/marketplace/listings/${id}/`, { headers });
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      await axios.delete(`${API_BASE}/marketplace/listings/${id}/`);
       toast.success('Listing deleted successfully');
       navigate('/my-listings');
     } catch (err) {
@@ -168,9 +164,9 @@ export default function ProductDetail() {
   const isOwner = listing.is_seller || (currentUserId && listing.seller?.id === currentUserId);
   const images = listing.images && listing.images.length > 0
     ? listing.images
-    : [{ id: 1, image_url: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=800&q=80' }];
+    : [];
 
-  const currentImage = images[activeImageIndex]?.image_url || images[0]?.image_url;
+  const currentImage = images[activeImageIndex]?.image_url;
 
   // Contact helper URLs
   const rawPhone = listing.contact_phone || listing.seller?.phone_number || '';
@@ -290,11 +286,18 @@ export default function ProductDetail() {
           {/* Hero Image Container */}
           <div className="bg-white border border-gray-200 rounded-md overflow-hidden shadow-sm">
             <div className="relative h-80 sm:h-[420px] w-full bg-gray-100 flex items-center justify-center group">
-              <img
-                src={currentImage}
-                alt={listing.title}
-                className="max-h-full max-w-full object-contain p-2"
-              />
+              {currentImage ? (
+                <img
+                  src={currentImage}
+                  alt={listing.title}
+                  className="max-h-full max-w-full object-contain p-2"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-100">
+                  <Package className="w-16 h-16 mb-3 opacity-30" />
+                  <span className="text-sm font-semibold uppercase tracking-wider opacity-50">No Image Provided</span>
+                </div>
+              )}
 
               {/* Status Banner overlay if not active */}
               {listing.status === 'SOLD' && (
@@ -588,11 +591,18 @@ export default function ProductDetail() {
                   className="bg-white border border-gray-200 rounded-md overflow-hidden hover:shadow-lg transition-all group flex flex-col"
                 >
                   <div className="h-40 bg-gray-100 flex items-center justify-center p-2">
-                    <img
-                      src={img}
-                      alt={rel.title}
-                      className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
-                    />
+                    {img ? (
+                      <img
+                        src={img}
+                        alt={rel.title}
+                        className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                        <Package className="w-6 h-6 mb-1 opacity-40" />
+                        <span className="text-[9px] font-semibold uppercase tracking-wider opacity-50">No Image</span>
+                      </div>
+                    )}
                   </div>
                   <div className="p-3 flex flex-col flex-grow">
                     <span className="font-extrabold text-base text-gray-900">

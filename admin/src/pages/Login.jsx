@@ -4,6 +4,9 @@ import { Lock, User, Loader2 } from 'lucide-react';
 import logoImg from '../assets/LPUTrade_logo.jpeg';
 import toast from 'react-hot-toast';
 import ThemeBackground from '../components/ThemeBackground';
+import axios from 'axios';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export default function Login({ setAuth }) {
   const [username, setUsername] = useState('');
@@ -17,41 +20,18 @@ export default function Login({ setAuth }) {
 
     try {
       // 1. Get Tokens
-      const loginRes = await fetch('http://localhost:8000/api/auth/login/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+      const loginRes = await axios.post(`${API_BASE}/auth/login/`, {
+        username,
+        password
       });
-
-      if (!loginRes.ok) {
-        throw new Error('Invalid credentials');
-      }
-
-      const loginData = await loginRes.json();
-      const accessToken = loginData.access;
-      const refreshToken = loginData.refresh;
-
-      if (!accessToken) throw new Error('Token not received from server');
 
       // 2. Fetch Profile to check Admin status
-      const profileRes = await fetch('http://localhost:8000/api/auth/profile/', {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Accept': 'application/json'
-        }
-      });
-
-      if (!profileRes.ok) {
-        throw new Error('Failed to fetch user profile');
-      }
-
-      const profileData = await profileRes.json();
+      const profileRes = await axios.get(`${API_BASE}/auth/profile/`);
+      const profileData = profileRes.data;
 
       if (profileData.is_staff || profileData.is_superuser) {
         // Success - store in localStorage and update state
-        localStorage.setItem('admin_access', accessToken);
-        localStorage.setItem('admin_refresh', refreshToken);
-        localStorage.setItem('admin_user', JSON.stringify(profileData));
+                        localStorage.setItem('admin_user', JSON.stringify(profileData));
         setAuth(true);
         navigate('/');
       } else {

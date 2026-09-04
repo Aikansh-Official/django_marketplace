@@ -2,12 +2,18 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
+
 import CreateListing from './pages/CreateListing';
 import EditListing from './pages/EditListing';
 import ProductDetail from './pages/ProductDetail';
 import MyListings from './pages/MyListings';
+import Profile from './pages/Profile';
+import NotFound from './pages/NotFound';
+import About from './pages/About';
+import Guidelines from './pages/Guidelines';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
+import ProtectedRoute from './components/ProtectedRoute';
 import { Toaster } from 'react-hot-toast';
 
 function App() {
@@ -21,13 +27,18 @@ function App() {
           <main className="flex-grow pt-16">
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/sell" element={<CreateListing />} />
-              <Route path="/create-listing" element={<CreateListing />} />
-              <Route path="/edit-listing/:id" element={<EditListing />} />
+
+              <Route path="/sell" element={<ProtectedRoute><CreateListing /></ProtectedRoute>} />
+              <Route path="/create-listing" element={<ProtectedRoute><CreateListing /></ProtectedRoute>} />
+              <Route path="/edit-listing/:id" element={<ProtectedRoute><EditListing /></ProtectedRoute>} />
               <Route path="/listing/:id" element={<ProductDetail />} />
-              <Route path="/my-listings" element={<MyListings />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/guidelines" element={<Guidelines />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/my-listings" element={<ProtectedRoute><MyListings /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
           <Footer />

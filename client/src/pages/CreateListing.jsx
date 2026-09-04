@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 import toast from 'react-hot-toast';
+import { compressImage } from '../utils/compressImage';
 import {
   UploadCloud,
   X,
@@ -23,35 +26,6 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import CategoryIcon from '../components/CategoryIcon';
-
-const SAMPLE_IMAGE_PRESETS = [
-  {
-    name: 'Cycle',
-    images: [
-      'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&w=800&q=80'
-    ]
-  },
-  {
-    name: 'Textbook',
-    images: [
-      'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=80'
-    ]
-  },
-  {
-    name: 'Calculator',
-    images: [
-      'https://images.unsplash.com/photo-1594980596870-8aa52a78d8cd?auto=format&fit=crop&w=800&q=80'
-    ]
-  },
-  {
-    name: 'Keyboard',
-    images: [
-      'https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=80'
-    ]
-  }
-];
 
 const LPU_LOCATIONS = [
   'BH-1', 'BH-2', 'BH-3', 'BH-4', 'BH-5', 'BH-6', 'BH-7', 'BH-8',
@@ -98,12 +72,13 @@ export default function CreateListing() {
   const [images, setImages] = useState([]);
   const [primaryIndex, setPrimaryIndex] = useState(0);
   const [urlInput, setUrlInput] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   // Fetch categories & user profile
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const catRes = await axios.get('http://localhost:8000/api/marketplace/categories/');
+        const catRes = await axios.get(`${API_BASE}/marketplace/categories/`);
         setCategories(catRes.data);
         if (catRes.data.length > 0) {
           setCategoryId(catRes.data[0].id);
@@ -112,12 +87,9 @@ export default function CreateListing() {
         console.error('Failed to load categories', err);
       }
 
-      const token = localStorage.getItem('access');
-      if (token) {
+            if (token) {
         try {
-          const profileRes = await axios.get('http://localhost:8000/api/auth/profile/', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          const profileRes = await axios.get(`${API_BASE}/auth/profile/`);
           setUserProfile(profileRes.data);
           if (profileRes.data.phone_number) {
             setContactPhone(profileRes.data.phone_number);
@@ -131,8 +103,8 @@ export default function CreateListing() {
     fetchData();
   }, []);
 
-  // Image Upload Handlers
-  const handleFileUpload = (e) => {
+  // Image Upload Handlers — uploads file to Cloudinary via backend
+  const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
 
@@ -141,22 +113,58 @@ export default function CreateListing() {
       return;
     }
 
-    files.forEach((file) => {
+        if (!token) {
+      toast.error('Please login to upload images.');
+      return;
+    }
+
+    setUploading(true);
+    let uploadedCount = 0;
+
+    for (const file of files) {
       if (!file.type.startsWith('image/')) {
         toast.error(`${file.name} is not an image file.`);
-        return;
+        continue;
       }
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error(`${file.name} exceeds 5MB limit.`);
-        return;
+      if (file.size > 15 * 1024 * 1024) {
+        toast.error(`${file.name} exceeds 15MB limit.`);
+        continue;
       }
 
-      const reader = new FileReader();
-      reader.onload = (uploadEvent) => {
-        setImages((prev) => [...prev, uploadEvent.target.result]);
-      };
-      reader.readAsDataURL(file);
-    });
+      // Compress large images before uploading
+      const compressed = await compressImage(file, {
+        maxWidth: 1200,
+        maxHeight: 1200,
+        quality: 0.75,
+        maxSizeKB: 500,
+      });
+
+      const formData = new FormData();
+      formData.append('image', compressed);
+
+      try {
+        const res = await axios.post(
+          `${API_BASE}/marketplace/upload-image/`,
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        );
+        setImages((prev) => [...prev, res.data.url]);
+        uploadedCount++;
+      } catch (err) {
+        console.error(`Failed to upload ${file.name}`, err);
+        toast.error(`Failed to upload ${file.name}.`);
+      }
+    }
+
+    if (uploadedCount > 0) {
+      toast.success(`${uploadedCount} image${uploadedCount > 1 ? 's' : ''} uploaded!`);
+    }
+    setUploading(false);
   };
 
   const handleAddImageUrl = () => {
@@ -178,11 +186,7 @@ export default function CreateListing() {
     }
   };
 
-  const handleLoadSamplePreset = (presetImages) => {
-    setImages(presetImages);
-    setPrimaryIndex(0);
-    toast.success('Sample images loaded!');
-  };
+
 
   // Form Submission
   const handleSubmit = async (e) => {
@@ -206,8 +210,7 @@ export default function CreateListing() {
     }
 
     setLoading(true);
-    const token = localStorage.getItem('access');
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
     const payload = {
       title: title.trim(),
@@ -223,13 +226,13 @@ export default function CreateListing() {
       contact_whatsapp: contactWhatsapp.trim(),
       description: description.trim(),
       status: 'ACTIVE',
-      uploaded_images: images.length > 0 ? images : ['https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=800&q=80'],
+      uploaded_images: images,
       primary_image_index: primaryIndex
     };
 
     try {
       const response = await axios.post(
-        'http://localhost:8000/api/marketplace/listings/',
+        `${API_BASE}/marketplace/listings/`,
         payload,
         { headers }
       );
@@ -244,7 +247,7 @@ export default function CreateListing() {
   };
 
   const selectedCategoryObj = categories.find((c) => String(c.id) === String(categoryId));
-  const coverImage = images[primaryIndex] || images[0] || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=800&q=80';
+  const coverImage = images[primaryIndex] || images[0] || '';
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -294,7 +297,7 @@ export default function CreateListing() {
             </div>
 
             {/* Dropzone & Selector */}
-            <div className="border-2 border-dashed border-gray-300 hover:border-brand-500 rounded-md p-6 text-center transition-colors bg-gray-50/50">
+            <div className={`border-2 border-dashed rounded-md p-6 text-center transition-colors bg-gray-50/50 ${uploading ? 'border-brand-400 bg-brand-50/30' : 'border-gray-300 hover:border-brand-500'}`}>
               <input
                 type="file"
                 id="file-upload"
@@ -302,21 +305,26 @@ export default function CreateListing() {
                 accept="image/*"
                 onChange={handleFileUpload}
                 className="hidden"
+                disabled={uploading}
               />
               <label
                 htmlFor="file-upload"
-                className="cursor-pointer flex flex-col items-center justify-center gap-2"
+                className={`flex flex-col items-center justify-center gap-2 ${uploading ? 'pointer-events-none opacity-60' : 'cursor-pointer'}`}
               >
                 <div className="w-12 h-12 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center">
-                  <UploadCloud className="w-6 h-6" />
+                  {uploading ? (
+                    <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <UploadCloud className="w-6 h-6" />
+                  )}
                 </div>
                 <div>
                   <span className="text-sm font-semibold text-brand-600 hover:text-brand-700">
-                    Click to browse photos
+                    {uploading ? 'Uploading to Cloudinary...' : 'Click to browse photos'}
                   </span>
-                  <span className="text-sm text-gray-500"> or drag and drop</span>
+                  {!uploading && <span className="text-sm text-gray-500"> or drag and drop</span>}
                 </div>
-                <p className="text-xs text-gray-400">PNG, JPG, WebP up to 5MB each</p>
+                <p className="text-xs text-gray-400">PNG, JPG, WebP up to 5MB each — uploaded to Cloudinary</p>
               </label>
             </div>
 
@@ -339,22 +347,6 @@ export default function CreateListing() {
                 </button>
               </div>
 
-              {/* Sample Presets for Testing */}
-              <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end overflow-x-auto">
-                <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                  Presets:
-                </span>
-                {SAMPLE_IMAGE_PRESETS.map((preset) => (
-                  <button
-                    key={preset.name}
-                    type="button"
-                    onClick={() => handleLoadSamplePreset(preset.images)}
-                    className="bg-white border border-gray-200 hover:border-brand-500 text-gray-600 hover:text-brand-600 text-xs px-2.5 py-1 rounded-md transition-all shadow-sm"
-                  >
-                    {preset.name}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Thumbnail Grid */}

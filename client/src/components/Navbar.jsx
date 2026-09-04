@@ -2,6 +2,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, User, LogOut, Plus, Package } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 import logoImg from '../assets/LPUTrade_logo.jpeg';
 import AuthModal from './AuthModal';
 
@@ -14,12 +16,9 @@ export default function Navbar() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const token = localStorage.getItem('access');
-      if (token) {
+            if (token) {
         try {
-          const response = await axios.get('http://localhost:8000/api/auth/profile/', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          const response = await axios.get(`${API_BASE}/auth/profile/`);
           setUserProfile(response.data);
         } catch (error) {
           console.error("Failed to fetch profile", error);
@@ -27,6 +26,15 @@ export default function Navbar() {
       }
     };
     fetchProfile();
+  }, []);
+
+  useEffect(() => {
+    const handleOpenAuthModal = (e) => {
+      setAuthModalMode(e.detail?.mode || 'login');
+      setIsAuthModalOpen(true);
+    };
+    window.addEventListener('open-auth-modal', handleOpenAuthModal);
+    return () => window.removeEventListener('open-auth-modal', handleOpenAuthModal);
   }, []);
 
   const handleLogout = () => {
@@ -53,9 +61,11 @@ export default function Navbar() {
                 <Link to="/" className="hover:text-brand-600 transition-colors">
                   Explore
                 </Link>
-                <Link to="/my-listings" className="hover:text-brand-600 transition-colors">
-                  My Listings
-                </Link>
+                {userProfile && (
+                  <Link to="/my-listings" className="hover:text-brand-600 transition-colors">
+                    My Listings
+                  </Link>
+                )}
               </div>
             </div>
 
@@ -64,9 +74,13 @@ export default function Navbar() {
               <div className="hidden sm:flex items-center space-x-3">
                 {userProfile ? (
                   <div className="flex items-center space-x-4">
-                    <span className="text-xs font-bold text-gray-800 bg-gray-100 px-3 py-1.5 rounded-full">
+                    <Link 
+                      to="/profile"
+                      className="text-xs font-bold text-gray-800 bg-gray-100 hover:bg-gray-200 transition-colors px-3 py-1.5 rounded-full truncate max-w-[120px] flex items-center gap-1.5"
+                    >
+                      <User className="w-3.5 h-3.5 text-gray-500" />
                       {userProfile.first_name || userProfile.username}
-                    </span>
+                    </Link>
 
                     <button
                       onClick={handleLogout}
@@ -104,26 +118,21 @@ export default function Navbar() {
                     >
                       Sign up
                     </button>
-                    <Link
-                      to="/sell"
-                      className="bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2 px-4 rounded-md transition-all shadow-sm hover:shadow-md text-xs flex items-center gap-1.5"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Sell Item
-                    </Link>
                   </div>
                 )}
               </div>
 
               {/* Mobile Menu Button */}
               <div className="flex sm:hidden items-center gap-2">
-                <Link
-                  to="/sell"
-                  className="bg-brand-500 text-white p-2 rounded-md shadow-xs"
-                  title="Sell Item"
-                >
-                  <Plus className="w-4 h-4" />
-                </Link>
+                {userProfile && (
+                  <Link
+                    to="/sell"
+                    className="bg-brand-500 text-white p-2 rounded-md shadow-xs"
+                    title="Sell Item"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Link>
+                )}
                 <button
                   onClick={() => setIsOpen(!isOpen)}
                   className="text-gray-600 p-1.5 rounded-md hover:bg-gray-100"
@@ -147,26 +156,37 @@ export default function Navbar() {
               >
                 Explore Marketplace
               </Link>
-              <Link
-                to="/my-listings"
-                onClick={() => setIsOpen(false)}
-                className="py-2 hover:text-brand-600 border-b border-gray-100"
-              >
-                My Listings
-              </Link>
-              <Link
-                to="/sell"
-                onClick={() => setIsOpen(false)}
-                className="py-2 text-brand-600 font-bold"
-              >
-                Post an Item (Sell / Rent / Free)
-              </Link>
+              {userProfile && (
+                <>
+                  <Link
+                    to="/my-listings"
+                    onClick={() => setIsOpen(false)}
+                    className="py-2 hover:text-brand-600 border-b border-gray-100"
+                  >
+                    My Listings
+                  </Link>
+                  <Link
+                    to="/sell"
+                    onClick={() => setIsOpen(false)}
+                    className="py-2 text-brand-600 font-bold"
+                  >
+                    Post an Item (Sell / Rent / Free)
+                  </Link>
+                </>
+              )}
             </div>
 
             <div className="pt-2 flex justify-between items-center text-xs">
               {userProfile ? (
-                <div className="flex justify-between items-center w-full">
-                  <span className="font-bold">{userProfile.first_name || userProfile.username}</span>
+                <div className="flex justify-between items-center w-full flex-wrap gap-2">
+                  <span className="font-bold w-full truncate">{userProfile.first_name || userProfile.username}</span>
+                  <Link 
+                    to="/profile" 
+                    onClick={() => setIsOpen(false)}
+                    className="text-brand-600 font-semibold"
+                  >
+                    View Profile
+                  </Link>
                   <button onClick={handleLogout} className="text-red-600 font-semibold">
                     Log out
                   </button>

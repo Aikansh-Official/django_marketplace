@@ -85,3 +85,4 @@ class UserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'first_name', 'last_name', 'phone_number', 'is_verified_student', 'college_domain', 'trust_score', 'date_joined', 'is_staff', 'is_superuser')
+        read_only_fields = ('id', 'username', 'email', 'is_verified_student', 'college_domain', 'trust_score', 'date_joined', 'is_staff', 'is_superuser')

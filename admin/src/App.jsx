@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import axios from 'axios';
 import AdminLayout from './layouts/AdminLayout';
 import Dashboard from './pages/Dashboard';
 import Students from './pages/Students';
@@ -8,6 +9,8 @@ import Listings from './pages/Listings';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 // A simple protected route component
 function ProtectedRoute({ isAuthenticated, children }) {
@@ -22,12 +25,23 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in
-    const token = localStorage.getItem('admin_access');
-    if (token) {
-      setIsAuthenticated(true);
-    }
-    setLoading(false);
+    // Check if user is logged in securely via HttpOnly cookies
+    const checkAuth = async () => {
+      try {
+        const response = await axios.get(`${API_BASE}/auth/status/`);
+        if (response.data.isAuthenticated && (response.data.is_staff || response.data.is_superuser)) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    checkAuth();
   }, []);
 
   if (loading) {

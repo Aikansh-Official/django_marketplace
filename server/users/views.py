@@ -54,10 +54,10 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             refresh_token = response.data.get('refresh')
             set_jwt_cookies(response, access_token, refresh_token)
             
-            # Optional: Remove tokens from response body if you want them strictly in cookies
-            # del response.data['access']
-            # del response.data['refresh']
-            # response.data['message'] = 'Successfully logged in.'
+            # Remove tokens from response body strictly into cookies
+            del response.data['access']
+            del response.data['refresh']
+            response.data['message'] = 'Successfully logged in.'
             
         return response
 
@@ -75,10 +75,10 @@ class CustomTokenRefreshView(TokenRefreshView):
             access_token = response.data.get('access')
             set_jwt_cookies(response, access_token)
             
-            # del response.data['access']
-            # if 'refresh' in response.data:
-            #     del response.data['refresh']
-            # response.data['message'] = 'Token refreshed successfully.'
+            del response.data['access']
+            if 'refresh' in response.data:
+                del response.data['refresh']
+            response.data['message'] = 'Token refreshed successfully.'
             
         return response
 
@@ -153,8 +153,14 @@ class UserListView(generics.ListAPIView):
     permission_classes = (IsAdminUser,)
     serializer_class = UserListSerializer
 
-class UserProfileView(generics.RetrieveAPIView):
-    # This view fetches the currently logged-in user's profile
+class UserAdminDetailView(generics.RetrieveUpdateDestroyAPIView):
+    # This view is for the admin dashboard to manage/delete a specific user
+    queryset = User.objects.all()
+    permission_classes = (IsAdminUser,)
+    serializer_class = UserListSerializer
+
+class UserProfileView(generics.RetrieveUpdateAPIView):
+    # This view fetches and updates the currently logged-in user's profile
     permission_classes = (IsAuthenticated,)
     serializer_class = UserListSerializer
 
@@ -171,3 +177,16 @@ class CheckUsernameView(APIView):
         
         exists = User.objects.filter(username__iexact=username).exists()
         return Response({"available": not exists})
+
+class AuthStatusView(APIView):
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+        if request.user and request.user.is_authenticated:
+            return Response({
+                "isAuthenticated": True,
+                "is_staff": request.user.is_staff,
+                "is_superuser": request.user.is_superuser,
+                "username": request.user.username
+            })
+        return Response({"isAuthenticated": False})

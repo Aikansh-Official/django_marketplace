@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 import toast from 'react-hot-toast';
 import {
   Plus,
@@ -30,13 +32,12 @@ export default function MyListings() {
   const fetchMyListings = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('access');
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const url = statusFilter === 'ALL'
-        ? 'http://localhost:8000/api/marketplace/my-listings/'
-        : `http://localhost:8000/api/marketplace/my-listings/?status=${statusFilter}`;
+        ? `${API_BASE}/marketplace/my-listings/`
+        : `${API_BASE}/marketplace/my-listings/?status=${statusFilter}`;
       
-      const res = await axios.get(url, { headers });
+      const res = await axios.get(url);
       setListings(res.data);
     } catch (err) {
       console.error('Failed to load my listings', err);
@@ -52,10 +53,9 @@ export default function MyListings() {
 
   const handleStatusChange = async (listingId, newStatus) => {
     try {
-      const token = localStorage.getItem('access');
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
       await axios.patch(
-        `http://localhost:8000/api/marketplace/listings/${listingId}/status/`,
+        `${API_BASE}/marketplace/listings/${listingId}/status/`,
         { status: newStatus },
         { headers }
       );
@@ -71,9 +71,8 @@ export default function MyListings() {
     if (!deleteModalId) return;
     setDeleting(true);
     try {
-      const token = localStorage.getItem('access');
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      await axios.delete(`http://localhost:8000/api/marketplace/listings/${deleteModalId}/`, { headers });
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      await axios.delete(`${API_BASE}/marketplace/listings/${deleteModalId}/`);
       toast.success('Listing deleted.');
       setDeleteModalId(null);
       fetchMyListings();
@@ -230,7 +229,11 @@ export default function MyListings() {
                 {/* Left Section: Image + Title + Meta */}
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="w-20 h-20 rounded-md bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200 flex items-center justify-center">
-                    <img src={cover} alt={item.title} className="w-full h-full object-cover" />
+                    {cover ? (
+                      <img src={cover} alt={item.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <Package className="w-6 h-6 text-gray-300" />
+                    )}
                   </div>
 
                   <div className="min-w-0 space-y-1">
