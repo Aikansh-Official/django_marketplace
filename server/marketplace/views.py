@@ -3,9 +3,14 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db.models import Q, F
-from .models import Listing, ListingImage, Category
+from django.utils import timezone
+from .models import (
+    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification
+)
 from .serializers import (
-    ListingSerializer, ListingCreateUpdateSerializer, CategorySerializer
+    ListingSerializer, ListingCreateUpdateSerializer, CategorySerializer,
+    OfferSerializer, ListingReportSerializer, ListingReportCreateSerializer,
+    PlatformSettingSerializer, NotificationSerializer
 )
 from .cloudinary_upload import upload_image_to_cloudinary
 
@@ -207,7 +212,292 @@ class UploadImageView(APIView):
                 'public_id': result['public_id'],
             }, status=status.HTTP_200_OK)
         except Exception as e:
+            # Fallback to local storage if Cloudinary fails or credentials mismatch
+            try:
+                import uuid
+                import os
+                from django.core.files.storage import default_storage
+                from django.conf import settings
+
+                image_file.seek(0)
+                ext = os.path.splitext(image_file.name)[1].lower() or '.jpg'
+                filename = f"listings/{uuid.uuid4().hex}{ext}"
+                saved_path = default_storage.save(filename, image_file)
+                file_url = request.build_absolute_uri(f"{settings.MEDIA_URL}{saved_path}")
+                return Response({
+                    'url': file_url,
+                    'public_id': saved_path,
+                }, status=status.HTTP_200_OK)
+            except Exception as fallback_err:
+                return Response(
+                    {'error': f'Upload failed: Cloudinary ({str(e)}), Local fallback ({str(fallback_err)})'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+
+class MyOffersView(generics.ListAPIView):
+    serializer_class = OfferSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Offer.objects.filter(buyer=self.request.user).select_related('listing', 'listing__seller').order_by('-created_at')
+
+
+class CreateOfferView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            listing = Listing.objects.get(pk=pk)
+        except Listing.DoesNotExist:
+            return Response({'error': 'Listing not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if listing.seller == request.user:
+            return Response({'error': 'You cannot buy your own listing.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if listing.status != 'ACTIVE':
             return Response(
-                {'error': f'Failed to upload image: {str(e)}'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {'error': f'This item is currently {listing.status.lower()} and not available.'},
+                status=status.HTTP_400_BAD_REQUEST
             )
+
+        # Direct price logic: locked to listed price (or 0 for donate)
+        offer_amount = listing.price if listing.transaction_type != 'DONATE' else 0
+        buyer_message = request.data.get('message', '').strip()
+
+        # Prevent duplicate pending requests from same buyer
+        existing = Offer.objects.filter(buyer=request.user, listing=listing, status='PENDING').first()
+        if existing:
+            return Response(
+                {'error': 'You already have an active pending purchase request for this item.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        offer = Offer.objects.create(
+            buyer=request.user,
+            listing=listing,
+            offer_amount=offer_amount,
+            buyer_message=buyer_message,
+            status='PENDING'
+        )
+
+        # Create real backend Notification for seller
+        buyer_display = getattr(request.user, 'full_name', '') or request.user.username
+        price_display = f"Rs {listing.price}" if listing.transaction_type != 'DONATE' else "Free (Donation)"
+        notif_msg = f"{buyer_display} (@{request.user.username}) requested to buy your item for {price_display}."
+        if buyer_message:
+            notif_msg += f' Note: "{buyer_message}"'
+
+        Notification.objects.create(
+            recipient=listing.seller,
+            sender=request.user,
+            notification_type='BUY_REQUEST',
+            title=f"New Purchase Request for '{listing.title}'",
+            message=notif_msg,
+            listing=listing
+        )
+
+        serializer = OfferSerializer(offer)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ListingOffersView(APIView):
+    """View all incoming purchase requests for a specific listing (seller only)."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            listing = Listing.objects.get(pk=pk)
+        except Listing.DoesNotExist:
+            return Response({'error': 'Listing not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if listing.seller != request.user:
+            return Response({'error': 'Only the seller can view incoming requests.'}, status=status.HTTP_403_FORBIDDEN)
+
+        offers = Offer.objects.filter(listing=listing).select_related('buyer', 'listing').order_by('-created_at')
+        serializer = OfferSerializer(offers, many=True)
+        return Response(serializer.data)
+
+
+class RespondOfferView(APIView):
+    """Seller accepts or declines an incoming purchase request."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def patch(self, request, pk):
+        try:
+            offer = Offer.objects.select_related('listing', 'listing__seller', 'buyer').get(pk=pk)
+        except Offer.DoesNotExist:
+            return Response({'error': 'Purchase request not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        listing = offer.listing
+        if listing.seller != request.user:
+            return Response({'error': 'Only the seller can respond to purchase requests.'}, status=status.HTTP_403_FORBIDDEN)
+
+        action = request.data.get('action')
+        if action not in ['ACCEPT', 'REJECT']:
+            return Response({'error': 'Action must be ACCEPT or REJECT.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        seller_display = getattr(request.user, 'full_name', '') or request.user.username
+
+        if action == 'ACCEPT':
+            offer.status = 'ACCEPTED'
+            offer.save()
+
+            # Reserve the listing
+            listing.status = 'PENDING'
+            listing.save()
+
+            # Notify the accepted buyer
+            Notification.objects.create(
+                recipient=offer.buyer,
+                sender=request.user,
+                notification_type='REQUEST_ACCEPTED',
+                title=f"Request Accepted for '{listing.title}'!",
+                message=f"{seller_display} accepted your request for '{listing.title}'. Contact the seller to finalize campus pickup.",
+                listing=listing
+            )
+
+            # Decline other pending requests for this listing
+            other_offers = Offer.objects.filter(listing=listing, status='PENDING').exclude(pk=offer.pk)
+            for oth in other_offers:
+                oth.status = 'REJECTED'
+                oth.save()
+                Notification.objects.create(
+                    recipient=oth.buyer,
+                    sender=request.user,
+                    notification_type='REQUEST_REJECTED',
+                    title=f"Item Reserved: '{listing.title}'",
+                    message=f"Another student's request was accepted for '{listing.title}'.",
+                    listing=listing
+                )
+
+        elif action == 'REJECT':
+            offer.status = 'REJECTED'
+            offer.save()
+
+            Notification.objects.create(
+                recipient=offer.buyer,
+                sender=request.user,
+                notification_type='REQUEST_REJECTED',
+                title=f"Request Declined for '{listing.title}'",
+                message=f"{seller_display} declined your purchase request for '{listing.title}'.",
+                listing=listing
+            )
+
+        serializer = OfferSerializer(offer)
+        return Response(serializer.data)
+
+
+class NotificationListView(generics.ListAPIView):
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(recipient=self.request.user).select_related('listing').order_by('-created_at')
+
+
+class MarkNotificationReadView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def patch(self, request, pk):
+        try:
+            notif = Notification.objects.get(pk=pk, recipient=request.user)
+            notif.is_read = True
+            notif.save()
+            return Response({'success': True})
+        except Notification.DoesNotExist:
+            return Response({'error': 'Notification not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class MarkAllNotificationsReadView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+        return Response({'success': True})
+
+
+class DeleteNotificationView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, pk):
+        try:
+            notif = Notification.objects.get(pk=pk, recipient=request.user)
+            notif.delete()
+            return Response({'success': True})
+        except Notification.DoesNotExist:
+            return Response({'error': 'Notification not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class ClearAllNotificationsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request):
+        Notification.objects.filter(recipient=request.user).delete()
+        return Response({'success': True})
+
+
+class ListingReportCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = ListingReportCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            report = serializer.save(reporter=request.user)
+            return Response(ListingReportSerializer(report).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminListingReportListView(generics.ListAPIView):
+    queryset = ListingReport.objects.all().select_related('reporter', 'listing', 'listing__seller').order_by('-created_at')
+    serializer_class = ListingReportSerializer
+    permission_classes = [permissions.AllowAny]
+
+
+class AdminListingReportUpdateView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def patch(self, request, pk):
+        try:
+            report = ListingReport.objects.get(pk=pk)
+        except ListingReport.DoesNotExist:
+            return Response({'error': 'Report not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        new_status = request.data.get('status')
+        if new_status in ['RESOLVED', 'DISMISSED', 'PENDING']:
+            report.status = new_status
+            if new_status == 'RESOLVED':
+                report.resolved_at = timezone.now()
+            report.save()
+
+            if request.data.get('delete_listing') and report.listing:
+                report.listing.delete()
+
+            return Response(ListingReportSerializer(report).data)
+        return Response({'error': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminPlatformSettingsView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    DEFAULT_SETTINGS = {
+        'maintenance_mode': 'false',
+        'allow_registrations': 'true',
+        'allowed_domains': 'lpu.in, lpu.co.in',
+    }
+
+    def get(self, request):
+        settings_map = dict(self.DEFAULT_SETTINGS)
+        for s in PlatformSetting.objects.all():
+            settings_map[s.key] = s.value
+        return Response(settings_map)
+
+    def post(self, request):
+        data = request.data
+        for key, value in data.items():
+            PlatformSetting.objects.update_or_create(
+                key=key,
+                defaults={'value': str(value)}
+            )
+        return Response({'message': 'Settings updated successfully', 'settings': request.data})
+

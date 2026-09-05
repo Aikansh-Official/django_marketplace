@@ -79,5 +79,9 @@ def is_base64_image(data_string):
 def is_url(data_string):
     """Check if a string is a regular URL (not base64)."""
     if isinstance(data_string, str):
-        return data_string.startswith("http://") or data_string.startswith("https://")
+        return (
+            data_string.startswith("http://")
+            or data_string.startswith("https://")
+            or data_string.startswith("/")
+        )
     return False
