@@ -14,7 +14,7 @@ const loginSchema = z.object({
 });
 
 const registerSchema = z.object({
-  first_name: z.string().min(6, { message: 'Name must be at least 6 characters' }).max(50, { message: 'Name cannot exceed 50 characters' }),
+  full_name: z.string().min(3, { message: 'Name must be at least 3 characters' }).max(50, { message: 'Name cannot exceed 50 characters' }),
   username: z.string().regex(/^\d{8}$/, { message: 'Registration number must be exactly 8 digits' }),
   phone_number: z.string().regex(/^\d{10}$/, { message: 'Phone number must be exactly 10 digits' }),
   email: z.string().email({ message: 'Must be a valid email' }).regex(/@lpu\.in$/i, { message: 'Only @lpu.in emails are allowed' }),
@@ -220,7 +220,7 @@ function RegisterForm({ onSwitch, onSuccess }) {
   }, [usernameValue, setError, clearErrors]);
 
   const handleVerifyNow = async () => {
-    const isValid = await trigger(['first_name', 'username', 'phone_number', 'email']);
+    const isValid = await trigger(['full_name', 'username', 'phone_number', 'email']);
     if (!isValid || usernameStatus === 'taken' || usernameStatus === 'checking') return;
 
     setIsLoading(true);
@@ -312,12 +312,12 @@ function RegisterForm({ onSwitch, onSuccess }) {
             <div>
               <label className="block text-[11px] font-black text-gray-400 uppercase tracking-wider mb-2">Full Name</label>
               <input
-                {...register('first_name')}
+                {...register('full_name')}
                 maxLength={50}
                 className="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
                 placeholder="Enter your full name"
               />
-              {errors.first_name && <p className="text-red-500 text-xs font-medium mt-1">{errors.first_name.message}</p>}
+              {errors.full_name && <p className="text-red-500 text-xs font-medium mt-1">{errors.full_name.message}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
