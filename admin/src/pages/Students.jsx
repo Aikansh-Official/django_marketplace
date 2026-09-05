@@ -80,10 +80,10 @@ export default function Students() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10 bg-brand-100 rounded-full flex items-center justify-center text-brand-700 font-bold text-lg">
-                        {student.first_name ? student.first_name[0].toUpperCase() : student.username[0].toUpperCase()}
+                        {student.full_name ? student.full_name[0].toUpperCase() : student.username[0].toUpperCase()}
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-bold text-gray-900">{student.first_name} {student.last_name}</div>
+                        <div className="text-sm font-bold text-gray-900">{student.full_name || student.username}</div>
                         <div className="text-sm text-gray-500 flex items-center gap-1">
                           <Mail className="h-3 w-3" /> {student.email}
                         </div>
@@ -139,9 +139,9 @@ export default function Students() {
                 {/* Left Side: Avatar and Basic Info */}
                 <div className="flex flex-col items-center text-center md:w-1/3 md:border-r border-gray-100 md:pr-10">
                   <div className="h-32 w-32 bg-brand-50 rounded-full flex items-center justify-center text-brand-600 font-black text-5xl mb-6 shadow-inner ring-4 ring-white">
-                    {selectedStudent.first_name ? selectedStudent.first_name[0].toUpperCase() : selectedStudent.username[0].toUpperCase()}
+                    {selectedStudent.full_name ? selectedStudent.full_name[0].toUpperCase() : selectedStudent.username[0].toUpperCase()}
                   </div>
-                  <h4 className="text-2xl font-black text-gray-900 mb-1">{selectedStudent.first_name} {selectedStudent.last_name}</h4>
+                  <h4 className="text-2xl font-black text-gray-900 mb-1">{selectedStudent.full_name || selectedStudent.username}</h4>
                   <p className="text-sm text-gray-500 font-semibold mb-6">@{selectedStudent.username}</p>
                   
                   {selectedStudent.is_verified_student ? (

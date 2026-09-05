@@ -78,7 +78,7 @@ export default function AdminLayout({ setAuth }) {
               {adminUser ? adminUser.username.charAt(0) : 'A'}
             </div>
             <div className="overflow-hidden">
-              <p className="text-sm font-bold text-white truncate">{adminUser ? `${adminUser.first_name} ${adminUser.last_name}`.trim() || adminUser.username : 'Admin User'}</p>
+              <p className="text-sm font-bold text-white truncate">{adminUser ? adminUser.full_name || adminUser.username : 'Admin User'}</p>
               <p className="text-xs text-gray-500 truncate">{adminUser ? adminUser.email : 'admin@lputrade.in'}</p>
             </div>
           </div>
