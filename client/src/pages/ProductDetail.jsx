@@ -24,9 +24,14 @@ import {
   Package,
   Check,
   Send,
-  UserCheck
+  UserCheck,
+  Flag,
+  HandCoins,
+  ShoppingBag,
+  X
 } from 'lucide-react';
 import CategoryIcon from '../components/CategoryIcon';
+import { toggleSavedItem, isItemSaved } from '../utils/savedStore';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -41,6 +46,37 @@ export default function ProductDetail() {
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+
+  // Purchase request state
+  const [showBuyModal, setShowBuyModal] = useState(false);
+  const [buyerMessage, setBuyerMessage] = useState('');
+  const [submittingBuyRequest, setSubmittingBuyRequest] = useState(false);
+  const [listingOffers, setListingOffers] = useState([]);
+  const [userOffer, setUserOffer] = useState(null);
+
+  // Report modal state
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState('Duplicate / Spam');
+  const [reportDetails, setReportDetails] = useState('');
+  const [submittingReport, setSubmittingReport] = useState(false);
+
+  useEffect(() => {
+    if (id) {
+      setIsSaved(isItemSaved(id));
+    }
+  }, [id]);
+
+  const handleToggleSave = () => {
+    if (!listing) return;
+    const res = toggleSavedItem(listing);
+    setIsSaved(res.isSaved);
+    if (res.isSaved) {
+      toast.success('Saved to your Wishlist!', { icon: '❤️' });
+    } else {
+      toast.success('Removed from saved items.');
+    }
+  };
 
   // Fetch current user & listing details
   useEffect(() => {
@@ -132,6 +168,90 @@ export default function ProductDetail() {
     }
   };
 
+  const isOwner = Boolean(
+    listing?.is_seller || (currentUserId && listing?.seller?.id === currentUserId)
+  );
+
+  const fetchListingOffers = async () => {
+    if (!id) return;
+    try {
+      const res = await axios.get(`${API_BASE}/marketplace/listings/${id}/offers/`);
+      setListingOffers(res.data);
+    } catch (e) {
+      // Not owner or error
+    }
+  };
+
+  useEffect(() => {
+    if (isOwner) {
+      fetchListingOffers();
+    } else if (currentUserId && id) {
+      axios
+        .get(`${API_BASE}/marketplace/my-offers/`)
+        .then((res) => {
+          const myOf = res.data.find((o) => String(o.listing) === String(id));
+          if (myOf) setUserOffer(myOf);
+        })
+        .catch(() => {});
+    }
+  }, [id, isOwner, currentUserId]);
+
+  const handleRespondOffer = async (offerId, action) => {
+    try {
+      await axios.patch(`${API_BASE}/marketplace/offers/${offerId}/respond/`, { action });
+      toast.success(action === 'ACCEPT' ? 'Deal accepted! Listing is now Reserved.' : 'Request declined.');
+      fetchListingOffers();
+      if (action === 'ACCEPT') {
+        setListing((prev) => ({ ...prev, status: 'PENDING' }));
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to update request.');
+    }
+  };
+
+  const handleSubmitBuyRequest = async (e) => {
+    e.preventDefault();
+    setSubmittingBuyRequest(true);
+    try {
+      const res = await axios.post(`${API_BASE}/marketplace/listings/${id}/offer/`, {
+        message: buyerMessage
+      });
+      toast.success('Purchase request sent to the seller!', { icon: '🎉' });
+      setShowBuyModal(false);
+      setBuyerMessage('');
+      setUserOffer(res.data);
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Failed to submit request. Please log in first.';
+      toast.error(msg);
+    } finally {
+      setSubmittingBuyRequest(false);
+    }
+  };
+
+  const handleSubmitReport = async (e) => {
+    e.preventDefault();
+    if (!reportReason) {
+      toast.error('Please select a reason for reporting');
+      return;
+    }
+    setSubmittingReport(true);
+    try {
+      await axios.post(`${API_BASE}/marketplace/reports/`, {
+        listing: id,
+        reason: reportReason,
+        details: reportDetails
+      });
+      toast.success('Report submitted. Our campus moderators will review this listing.');
+      setShowReportModal(false);
+      setReportDetails('');
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Failed to submit report. Please log in first.';
+      toast.error(msg);
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-32">
@@ -158,7 +278,6 @@ export default function ProductDetail() {
     );
   }
 
-  const isOwner = listing.is_seller || (currentUserId && listing.seller?.id === currentUserId);
   const images = listing.images && listing.images.length > 0
     ? listing.images
     : [];
@@ -212,13 +331,40 @@ export default function ProductDetail() {
           </span>
         </div>
 
-        <button
-          onClick={handleShare}
-          className="flex items-center gap-1.5 bg-white border border-gray-200 hover:border-brand-500 text-gray-600 hover:text-brand-600 px-3 py-1.5 rounded-md text-xs font-semibold transition-all shadow-sm"
-        >
-          <Share2 className="w-3.5 h-3.5" />
-          Share
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleToggleSave}
+            className={`flex items-center gap-1.5 border px-3 py-1.5 rounded-md text-xs font-semibold transition-all shadow-xs ${
+              isSaved
+                ? 'bg-rose-50 border-rose-200 text-rose-600'
+                : 'bg-white border-gray-200 hover:border-brand-500 text-gray-600 hover:text-brand-600'
+            }`}
+          >
+            <Heart className={`w-3.5 h-3.5 ${isSaved ? 'fill-rose-500 text-rose-500' : ''}`} />
+            {isSaved ? 'Saved' : 'Save Item'}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleShare}
+            className="flex items-center gap-1.5 bg-white border border-gray-200 hover:border-brand-500 text-gray-600 hover:text-brand-600 px-3 py-1.5 rounded-md text-xs font-semibold transition-all shadow-xs"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            Share
+          </button>
+
+          {!isOwner && (
+            <button
+              type="button"
+              onClick={() => setShowReportModal(true)}
+              className="flex items-center gap-1 bg-white border border-gray-200 hover:border-red-300 text-gray-500 hover:text-red-600 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all shadow-xs"
+              title="Report this listing"
+            >
+              <Flag className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Owner Management Bar */}
@@ -272,6 +418,121 @@ export default function ProductDetail() {
               <Trash2 className="w-3.5 h-3.5" />
               Delete
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Incoming Purchase Requests for Seller */}
+      {isOwner && listingOffers.length > 0 && (
+        <div className="bg-white border border-brand-200 rounded-md p-5 mb-6 shadow-sm space-y-3">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
+            <h3 className="text-xs font-extrabold text-gray-900 uppercase tracking-wider flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4 text-brand-600" />
+              Incoming Student Purchase Requests ({listingOffers.length})
+            </h3>
+            <span className="text-[11px] text-gray-500 font-medium">
+              Accept a student to reserve this item
+            </span>
+          </div>
+
+          <div className="space-y-2.5">
+            {listingOffers.map((off) => (
+              <div
+                key={off.id}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-gray-50/80 rounded-md border border-gray-200 text-xs"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <strong className="text-gray-900">{off.buyer_name || off.buyer_reg}</strong>
+                    <span className="text-gray-400">(@{off.buyer_reg})</span>
+                    <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      Trust: {off.buyer_trust_score || 50}/100
+                    </span>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        off.status === 'ACCEPTED'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : off.status === 'REJECTED'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-blue-100 text-blue-800'
+                      }`}
+                    >
+                      {off.status === 'ACCEPTED' ? 'Reserved' : off.status}
+                    </span>
+                  </div>
+                  {off.buyer_message && (
+                    <p className="text-gray-600 italic">"{off.buyer_message}"</p>
+                  )}
+                  <span className="text-[10px] text-gray-400">
+                    Requested on {new Date(off.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {off.status === 'PENDING' ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleRespondOffer(off.id, 'ACCEPT')}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-md text-xs transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        Accept & Reserve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRespondOffer(off.id, 'REJECT')}
+                        className="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold px-3 py-1.5 rounded-md text-xs transition-colors cursor-pointer"
+                      >
+                        Decline
+                      </button>
+                    </>
+                  ) : off.status === 'ACCEPTED' ? (
+                    <span className="text-emerald-700 font-bold flex items-center gap-1 text-xs">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      Deal Reserved
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Global Status Banner for Buyers */}
+      {listing.status === 'PENDING' && (
+        userOffer?.status === 'ACCEPTED' ? (
+          <div className="bg-emerald-50 border border-emerald-300 rounded-md p-4 mb-6 flex items-start gap-3 shadow-xs">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-bold text-emerald-950">🎉 Your Purchase Request Was Accepted!</h4>
+              <p className="text-xs text-emerald-800 mt-0.5">
+                The seller has reserved this item for you. Reach out via WhatsApp or Phone below to complete your campus meetup.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-amber-50 border border-amber-300 rounded-md p-4 mb-6 flex items-start gap-3 shadow-xs">
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-bold text-amber-950">🤝 Deal In Progress (Reserved)</h4>
+              <p className="text-xs text-amber-800 mt-0.5">
+                This item is currently reserved for a student peer. If the deal falls through, the seller will reactivate it.
+              </p>
+            </div>
+          </div>
+        )
+      )}
+
+      {listing.status === 'SOLD' && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6 flex items-start gap-3 shadow-xs">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h4 className="text-sm font-bold text-red-950">🔴 Item Sold Out</h4>
+            <p className="text-xs text-red-800 mt-0.5">
+              This item has already been purchased/traded and is no longer available.
+            </p>
           </div>
         </div>
       )}
@@ -420,7 +681,6 @@ export default function ProductDetail() {
             <ul className="list-disc list-inside space-y-1 text-amber-800">
               <li>Meet in bustling campus public areas such as <strong>Uni-Mall</strong>, <strong>Central Library</strong>, or your hostel entrance.</li>
               <li>Inspect the product physically before making UPI payments.</li>
-              <li>Only verified `@lpu.in` students are registered on this platform.</li>
             </ul>
           </div>
         </div>
@@ -469,9 +729,30 @@ export default function ProductDetail() {
               </div>
             </div>
 
-            {/* Direct Contact Buttons */}
+            {/* Direct Contact & Buy Request Buttons */}
             {listing.status === 'ACTIVE' ? (
               <div className="space-y-2.5 pt-2">
+                {/* Direct Purchase Button (for non-owners) */}
+                {!isOwner && (
+                  userOffer?.status === 'PENDING' ? (
+                    <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-md text-xs font-bold text-center flex items-center justify-center gap-2 shadow-2xs">
+                      <Clock className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                      <span>Purchase Request Pending Seller Approval</span>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowBuyModal(true)}
+                      className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <ShoppingBag className="w-4 h-4" />
+                      {listing.transaction_type === 'DONATE'
+                        ? 'Request Free Donation'
+                        : `I Want to Buy This (Rs ${listing.price})`}
+                    </button>
+                  )
+                )}
+
                 {/* WhatsApp Button */}
                 {waUrl && (
                   <a
@@ -501,15 +782,42 @@ export default function ProductDetail() {
                   onClick={() => {
                     toast.success('In-App Chat initiated! Connecting with seller...');
                   }}
-                  className="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2"
+                  className="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Send className="w-4 h-4" />
                   Send In-App Message
                 </button>
               </div>
+            ) : listing.status === 'PENDING' ? (
+              <div className="space-y-2 pt-2">
+                {userOffer?.status === 'ACCEPTED' ? (
+                  <div className="bg-emerald-100 border border-emerald-300 text-emerald-900 p-3.5 rounded-md text-xs font-bold text-center space-y-1">
+                    <div>✅ Deal Reserved for You!</div>
+                    <div className="font-normal text-[11px] text-emerald-800">
+                      Coordinate with the seller via WhatsApp or Phone to meet on campus.
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-amber-100 border border-amber-300 text-amber-900 p-3 rounded-md text-xs font-bold text-center">
+                    ⚠️ Item Currently Reserved for Another Buyer
+                  </div>
+                )}
+                {/* Still allow contact for winning buyer */}
+                {userOffer?.status === 'ACCEPTED' && waUrl && (
+                  <a
+                    href={waUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-4 rounded-md transition-all shadow-sm text-xs flex items-center justify-center gap-2"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    Chat on WhatsApp with Seller
+                  </a>
+                )}
+              </div>
             ) : (
-              <div className="bg-gray-100 border border-gray-200 text-gray-500 text-center py-3 rounded-md text-xs font-bold uppercase">
-                Listing is currently {listing.status}
+              <div className="bg-gray-100 border border-gray-200 text-gray-500 text-center py-3 rounded-md text-xs font-bold uppercase mt-2">
+                Listing is {listing.status}
               </div>
             )}
           </div>
@@ -535,18 +843,18 @@ export default function ProductDetail() {
               </div>
             </div>
 
-            {/* Trust Score */}
+            {/* Trust Score from real user profile */}
             <div className="p-3 bg-gray-50 rounded-md space-y-1.5 border border-gray-100">
               <div className="flex justify-between text-xs">
                 <span className="font-medium text-gray-600">Student Trust Score</span>
                 <span className="font-bold text-brand-600">
-                  {listing.seller?.trust_score || 90}/100
+                  {listing.seller?.trust_score ?? 50}/100
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
                 <div
                   className="bg-brand-500 h-full rounded-full transition-all"
-                  style={{ width: `${listing.seller?.trust_score || 90}%` }}
+                  style={{ width: `${listing.seller?.trust_score ?? 50}%` }}
                 ></div>
               </div>
             </div>
@@ -647,6 +955,143 @@ export default function ProductDetail() {
                 {deleting ? 'Deleting...' : 'Confirm Delete'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Confirm Purchase Request Modal (Direct Listed Price) */}
+      {showBuyModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-gray-200 rounded-md max-w-sm w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b pb-3">
+              <h3 className="font-extrabold text-gray-900 text-base flex items-center gap-2">
+                <ShoppingBag className="w-4 h-4 text-brand-500" />
+                Confirm Purchase Request
+              </h3>
+              <button
+                onClick={() => setShowBuyModal(false)}
+                className="text-gray-400 hover:text-gray-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitBuyRequest} className="space-y-4">
+              <div className="bg-gray-50 p-3 rounded-md border border-gray-100 space-y-2">
+                <div className="text-xs text-gray-500">
+                  Item: <strong className="text-gray-900">{listing.title}</strong>
+                </div>
+                <div className="text-xs text-gray-500 flex items-center justify-between">
+                  <span>Direct Listed Price:</span>
+                  <strong className="text-base font-black text-brand-600">
+                    {listing.transaction_type === 'DONATE' ? 'Free (Donation)' : `Rs ${listing.price}`}
+                  </strong>
+                </div>
+                <div className="text-xs text-gray-500 flex items-center justify-between">
+                  <span>Campus Pickup Spot:</span>
+                  <span className="font-semibold text-gray-800">{listing.location}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                  Message for Seller (Optional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={buyerMessage}
+                  onChange={(e) => setBuyerMessage(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none resize-none"
+                  placeholder="e.g. Can meet at Uni-Mall at 5 PM today."
+                />
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowBuyModal(false)}
+                  className="flex-1 bg-white border border-gray-300 text-gray-700 py-2.5 rounded-md font-bold text-xs hover:bg-gray-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingBuyRequest}
+                  className="flex-1 bg-brand-500 hover:bg-brand-600 text-white py-2.5 rounded-md font-bold text-xs disabled:opacity-50 transition-colors shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  {submittingBuyRequest ? (
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  ) : (
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                  )}
+                  Confirm & Send Request
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Report Listing Modal */}
+      {showReportModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-gray-200 rounded-md max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b pb-3">
+              <h3 className="font-extrabold text-gray-900 text-base flex items-center gap-2 text-red-600">
+                <Flag className="w-4 h-4" /> Report Listing
+              </h3>
+              <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitReport} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  Reason for Reporting
+                </label>
+                <select
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white"
+                >
+                  <option value="Duplicate / Spam">Duplicate / Spam Listing</option>
+                  <option value="Incorrect Price / Info">Incorrect Price or Misleading Information</option>
+                  <option value="Inappropriate Content">Inappropriate / Offensive Content</option>
+                  <option value="Item Already Sold">Item is Already Sold / Inactive</option>
+                  <option value="Scam / Fraud">Potential Scam / Fraud Suspicion</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                  Additional Details (Optional)
+                </label>
+                <textarea
+                  rows="3"
+                  value={reportDetails}
+                  onChange={(e) => setReportDetails(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md p-2.5 text-xs font-normal focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  placeholder="Explain why this listing violates campus guidelines..."
+                ></textarea>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowReportModal(false)}
+                  className="flex-1 bg-white border border-gray-300 text-gray-700 py-2 rounded-md font-bold text-xs hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingReport}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-md font-bold text-xs disabled:opacity-50 transition-colors shadow-sm"
+                >
+                  {submittingReport ? 'Submitting...' : 'Submit Report'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
