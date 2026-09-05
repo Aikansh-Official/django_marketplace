@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, User, LogOut, Plus, Package } from 'lucide-react';
+import { Menu, X, User, LogOut, Plus, Package, Bell } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
@@ -10,6 +10,7 @@ import AuthModal from './AuthModal';
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState('login');
   const navigate = useNavigate();
@@ -44,6 +45,28 @@ export default function Navbar() {
     };
     fetchProfile();
   }, []);
+
+  const fetchUnreadNotifications = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/marketplace/notifications/`);
+      const count = res.data.filter((n) => !n.is_read).length;
+      setUnreadCount(count);
+    } catch (e) {
+      // not logged in or error
+    }
+  };
+
+  useEffect(() => {
+    if (userProfile) {
+      fetchUnreadNotifications();
+      const interval = setInterval(fetchUnreadNotifications, 20000);
+      window.addEventListener('notifications-updated', fetchUnreadNotifications);
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('notifications-updated', fetchUnreadNotifications);
+      };
+    }
+  }, [userProfile]);
 
   useEffect(() => {
     const handleOpenAuthModal = (e) => {
@@ -96,13 +119,26 @@ export default function Navbar() {
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex items-center space-x-3">
                 {userProfile ? (
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-3">
+                    <Link
+                      to="/notifications"
+                      className="relative text-gray-600 hover:text-brand-600 transition-colors p-2 rounded-full hover:bg-gray-100"
+                      title="Notifications"
+                    >
+                      <Bell className="w-4 h-4" />
+                      {unreadCount > 0 && (
+                        <span className="absolute top-0.5 right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-500 px-1 text-[9px] font-black text-white ring-2 ring-white">
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
+                      )}
+                    </Link>
+
                     <Link 
                       to="/profile"
-                      className="text-xs font-bold text-gray-800 bg-gray-100 hover:bg-gray-200 transition-colors px-3 py-1.5 rounded-full truncate max-w-[120px] flex items-center gap-1.5"
+                      className="text-xs font-bold text-gray-800 bg-gray-100 hover:bg-gray-200 transition-colors px-3 py-1.5 rounded-full truncate max-w-[140px] flex items-center gap-1.5"
                     >
                       <User className="w-3.5 h-3.5 text-gray-500" />
-                      {userProfile.first_name || userProfile.username}
+                      {userProfile.full_name || userProfile.first_name || userProfile.username}
                     </Link>
 
                     <button
@@ -148,13 +184,27 @@ export default function Navbar() {
               {/* Mobile Menu Button */}
               <div className="flex sm:hidden items-center gap-2">
                 {userProfile && (
-                  <Link
-                    to="/sell"
-                    className="bg-brand-500 text-white p-2 rounded-md shadow-xs"
-                    title="Sell Item"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Link>
+                  <>
+                    <Link
+                      to="/notifications"
+                      className="relative text-gray-600 hover:text-brand-600 p-2 rounded-md hover:bg-gray-100"
+                      title="Notifications"
+                    >
+                      <Bell className="w-5 h-5" />
+                      {unreadCount > 0 && (
+                        <span className="absolute top-0 right-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-500 px-1 text-[9px] font-black text-white">
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
+                      )}
+                    </Link>
+                    <Link
+                      to="/sell"
+                      className="bg-brand-500 text-white p-2 rounded-md shadow-xs"
+                      title="Sell Item"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Link>
+                  </>
                 )}
                 <button
                   onClick={() => setIsOpen(!isOpen)}
@@ -202,7 +252,7 @@ export default function Navbar() {
             <div className="pt-2 flex justify-between items-center text-xs">
               {userProfile ? (
                 <div className="flex justify-between items-center w-full flex-wrap gap-2">
-                  <span className="font-bold w-full truncate">{userProfile.first_name || userProfile.username}</span>
+                  <span className="font-bold w-full truncate">{userProfile.full_name || userProfile.first_name || userProfile.username}</span>
                   <Link 
                     to="/profile" 
                     onClick={() => setIsOpen(false)}

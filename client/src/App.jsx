@@ -8,6 +8,7 @@ import EditListing from './pages/EditListing';
 import ProductDetail from './pages/ProductDetail';
 import MyListings from './pages/MyListings';
 import Profile from './pages/Profile';
+import Notifications from './pages/Notifications';
 import NotFound from './pages/NotFound';
 import About from './pages/About';
 import Guidelines from './pages/Guidelines';
@@ -37,6 +38,7 @@ function App() {
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/my-listings" element={<ProtectedRoute><MyListings /></ProtectedRoute>} />
+              <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

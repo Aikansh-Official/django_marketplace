@@ -1,0 +1,157 @@
+import React from 'react';
+import {
+  User,
+  Package,
+  ShieldCheck,
+  Heart,
+  Bell,
+  LogOut,
+  ChevronRight,
+  ShieldAlert,
+  Star
+} from 'lucide-react';
+
+export default function ProfileSidebar({
+  activeTab,
+  onTabChange,
+  profile,
+  listingsCount = 0,
+  savedCount = 0,
+  unreadCount = 0,
+  onLogoutClick
+}) {
+  const tabs = [
+    {
+      id: 'personal-info',
+      label: 'Personal Information',
+      icon: User,
+      badge: null,
+      description: 'Profile & contact details'
+    },
+    {
+      id: 'orders-sells',
+      label: 'Manage Orders & Sells',
+      icon: Package,
+      badge: listingsCount > 0 ? listingsCount : null,
+      description: 'Listings, trades & inquiries'
+    },
+    {
+      id: 'id-verification',
+      label: 'ID Card Verification',
+      icon: ShieldCheck,
+      badge: profile?.id_verified ? 'Verified' : null,
+      badgeColor: 'bg-emerald-100 text-emerald-800',
+      description: 'LPU Student ID verification'
+    },
+    {
+      id: 'saved-items',
+      label: 'Saved Items',
+      icon: Heart,
+      badge: savedCount > 0 ? savedCount : null,
+      badgeColor: 'bg-rose-100 text-rose-700',
+      description: 'Wishlist & bookmarked items'
+    }
+  ];
+
+  const displayName = profile?.full_name || profile?.first_name || profile?.username;
+  const firstLetter = (displayName || 'U')[0].toUpperCase();
+
+  return (
+    <div className="w-full lg:w-72 flex-shrink-0 space-y-4">
+      {/* User Mini Profile Card */}
+      <div className="bg-white rounded-md border border-gray-200/90 p-5 shadow-sm">
+        <div className="flex items-center gap-3.5">
+          {/* Avatar with guaranteed valid size */}
+          <div className="w-12 h-12 rounded-md bg-gradient-to-tr from-brand-500 to-brand-400 text-white flex items-center justify-center font-black text-xl shadow-xs flex-shrink-0">
+            {firstLetter}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <h2 className="font-extrabold text-sm text-gray-900 truncate">
+              {displayName}
+            </h2>
+            <p className="text-xs font-medium text-gray-500 truncate">@{profile?.username}</p>
+          </div>
+        </div>
+
+        {/* Trust Score Snapshot */}
+        <div className="mt-4 pt-3.5 border-t border-gray-100">
+          <div className="flex items-center justify-between text-xs mb-1.5">
+            <span className="text-gray-500 font-semibold flex items-center gap-1.5">
+              <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
+              Trust Score
+            </span>
+            <span className="font-extrabold text-brand-600">
+              {profile?.trust_score || 50}/100
+            </span>
+          </div>
+          <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+            <div
+              className="bg-brand-500 h-full rounded-full transition-all duration-500"
+              style={{ width: `${profile?.trust_score || 50}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation Tabs */}
+      <nav className="bg-white rounded-md border border-gray-200/90 p-2 shadow-sm space-y-1">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+
+          return (
+            <button
+              key={tab.id}
+              onClick={() => onTabChange(tab.id)}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-md text-xs font-bold transition-all duration-150 text-left ${isActive
+                  ? 'bg-brand-500 text-white shadow-sm'
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <Icon
+                  className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-500'
+                    }`}
+                />
+                <span className="truncate">{tab.label}</span>
+              </div>
+
+              <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                {tab.badge !== null && tab.badge !== undefined && (
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isActive
+                        ? 'bg-white/20 text-white'
+                        : tab.badgeColor || 'bg-gray-100 text-gray-700'
+                      }`}
+                  >
+                    {tab.badge}
+                  </span>
+                )}
+                <ChevronRight
+                  className={`w-3.5 h-3.5 ${isActive ? 'text-white/80' : 'text-gray-300'
+                    }`}
+                />
+              </div>
+            </button>
+          );
+        })}
+
+        {/* Separator */}
+        <div className="pt-2 border-t border-gray-100 my-1"></div>
+
+        {/* Logout Tab Item */}
+        <button
+          onClick={onLogoutClick}
+          className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-md text-xs font-bold text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors text-left group"
+        >
+          <div className="flex items-center gap-3">
+            <LogOut className="w-4 h-4 text-red-500 group-hover:translate-x-0.5 transition-transform" />
+            <span>Logout</span>
+          </div>
+          <span className="text-[11px] text-red-400 group-hover:text-red-600 font-medium">Sign out</span>
+        </button>
+      </nav>
+    </div>
+  );
+}
