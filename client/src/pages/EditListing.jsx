@@ -120,8 +120,8 @@ export default function EditListing() {
     const files = Array.from(e.target.files);
     if (!files.length) return;
 
-    if (images.length + files.length > 8) {
-      toast.error('Maximum 8 images allowed.');
+    if (images.length + files.length > 4) {
+      toast.error('Maximum 4 images allowed.');
       return;
     }
 
@@ -169,7 +169,8 @@ export default function EditListing() {
         uploadedCount++;
       } catch (err) {
         console.error(`Failed to upload ${file.name}`, err);
-        toast.error(`Failed to upload ${file.name}.`);
+        const errMsg = err.response?.data?.error || `Failed to upload ${file.name}.`;
+        toast.error(errMsg);
       }
     }
 
@@ -181,8 +182,8 @@ export default function EditListing() {
 
   const handleAddImageUrl = () => {
     if (!urlInput.trim()) return;
-    if (images.length >= 8) {
-      toast.error('Maximum 8 images allowed.');
+    if (images.length >= 4) {
+      toast.error('Maximum 4 images allowed.');
       return;
     }
     setImages((prev) => [...prev, urlInput.trim()]);
@@ -294,9 +295,8 @@ export default function EditListing() {
         {/* Photos Box */}
         <div className="bg-white border border-gray-200 rounded-md p-6 shadow-sm">
           <div className="flex justify-between items-center mb-3">
-            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <UploadCloud className="w-4 h-4 text-brand-500" />
-              Product Photos ({images.length}/8)
+            <h2 className="text-sm font-bold uppercase tracking-wider text-gray-900 mb-4">
+              Product Photos ({images.length}/4)
             </h2>
           </div>
 

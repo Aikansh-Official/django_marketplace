@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+import toast from 'react-hot-toast';
+import { toggleSavedItem, isItemSaved } from '../utils/savedStore';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 import {
@@ -120,9 +122,16 @@ export default function Home() {
     }
   };
 
-  const toggleFavorite = (e, id) => {
+  const toggleFavorite = (e, listing) => {
     e.preventDefault();
-    setFavorites((prev) => ({ ...prev, [id]: !prev[id] }));
+    e.stopPropagation();
+    const res = toggleSavedItem(listing);
+    setFavorites((prev) => ({ ...prev, [listing.id]: res.isSaved }));
+    if (res.isSaved) {
+      toast.success(`Saved to your wishlist!`, { icon: '❤️' });
+    } else {
+      toast.success('Removed from saved items.');
+    }
   };
 
   const formatDate = (dateString) => {
@@ -328,7 +337,7 @@ export default function Home() {
                 listing.images?.find((img) => img.is_primary)?.image_url ||
                 listing.images?.[0]?.image_url
 
-              const isFav = favorites[listing.id];
+              const isFav = favorites[listing.id] !== undefined ? favorites[listing.id] : isItemSaved(listing.id);
 
               return (
                 <Link
@@ -353,11 +362,13 @@ export default function Home() {
 
                     {/* Favorite Button */}
                     <button
-                      onClick={(e) => toggleFavorite(e, listing.id)}
+                      type="button"
+                      onClick={(e) => toggleFavorite(e, listing)}
                       className={`absolute top-2.5 right-2.5 p-1.5 rounded-full shadow-sm transition-all z-10 ${isFav
-                          ? 'bg-red-50 text-red-500'
-                          : 'bg-white/80 hover:bg-white text-gray-400 hover:text-red-500'
+                          ? 'bg-rose-50 text-rose-500'
+                          : 'bg-white/80 hover:bg-white text-gray-400 hover:text-rose-500'
                         }`}
+                      title={isFav ? 'Remove from Saved' : 'Save Item'}
                     >
                       <Heart
                         className="h-4 w-4"

@@ -22,17 +22,9 @@ import {
   Plus,
   RefreshCw,
   Eye,
-  SlidersHorizontal,
-  ArrowLeft
+  SlidersHorizontal
 } from 'lucide-react';
 import CategoryIcon from '../components/CategoryIcon';
-
-const LPU_LOCATIONS = [
-  'BH-1', 'BH-2', 'BH-3', 'BH-4', 'BH-5', 'BH-6', 'BH-7', 'BH-8',
-  'GH-1', 'GH-2', 'GH-3', 'GH-4', 'GH-5', 'GH-6',
-  'Block 34', 'Block 36', 'Block 38', 'Central Library',
-  'Uni-Mall', 'Law Gate', 'Main Gate', 'Green Valley'
-];
 
 const CONDITIONS = [
   { value: 'NEW', label: 'Brand New', desc: 'Unopened / with original tags' },
@@ -64,7 +56,7 @@ export default function CreateListing() {
   const [isNegotiable, setIsNegotiable] = useState(true);
   const [rentPeriod, setRentPeriod] = useState('month'); // day, week, month, semester
   const [condition, setCondition] = useState('GOOD');
-  const [location, setLocation] = useState('BH-4, LPU Campus');
+  const [location, setLocation] = useState('');
   const [contactPreference, setContactPreference] = useState('ALL');
   const [contactPhone, setContactPhone] = useState('');
   const [contactWhatsapp, setContactWhatsapp] = useState('');
@@ -108,8 +100,8 @@ export default function CreateListing() {
     const files = Array.from(e.target.files);
     if (!files.length) return;
 
-    if (images.length + files.length > 8) {
-      toast.error('You can upload up to 8 images maximum.');
+    if (images.length + files.length > 4) {
+      toast.error('You can upload up to 4 images maximum.');
       return;
     }
 
@@ -157,7 +149,8 @@ export default function CreateListing() {
         uploadedCount++;
       } catch (err) {
         console.error(`Failed to upload ${file.name}`, err);
-        toast.error(`Failed to upload ${file.name}.`);
+        const errMsg = err.response?.data?.error || `Failed to upload ${file.name}.`;
+        toast.error(errMsg);
       }
     }
 
@@ -169,8 +162,8 @@ export default function CreateListing() {
 
   const handleAddImageUrl = () => {
     if (!urlInput.trim()) return;
-    if (images.length >= 8) {
-      toast.error('Maximum 8 images allowed.');
+    if (images.length >= 4) {
+      toast.error('Maximum 4 images allowed.');
       return;
     }
     setImages((prev) => [...prev, urlInput.trim()]);
@@ -252,13 +245,6 @@ export default function CreateListing() {
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 pb-4 border-b border-gray-200">
         <div>
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800 mb-2 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </button>
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
             Post a Listing
           </h1>
@@ -266,17 +252,12 @@ export default function CreateListing() {
             Sell, rent, or donate items to verified students across LPU Campus.
           </p>
         </div>
-
-        <div className="flex items-center gap-2 bg-brand-50 border border-brand-200 text-brand-700 px-4 py-2 rounded-md text-xs font-semibold">
-          <ShieldCheck className="w-4 h-4 text-brand-600 flex-shrink-0" />
-          <span>Exclusive for Verified LPU Students</span>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left / Main Form Column */}
         <form onSubmit={handleSubmit} className="lg:col-span-8 space-y-8">
-          
+
           {/* Section 1: Photos */}
           <div className="bg-white/90 backdrop-blur-md border border-gray-200 shadow-sm rounded-md p-6">
             <div className="flex items-center justify-between mb-4">
@@ -286,11 +267,11 @@ export default function CreateListing() {
                   Upload Product Photos
                 </h2>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Add up to 8 real photos of your item. First photo will be the main cover.
+                  Add up to 4 real photos of your item. First photo will be the main cover.
                 </p>
               </div>
               <span className="text-xs font-bold text-gray-400">
-                {images.length}/8 Photos
+                {images.length}/4 Photos
               </span>
             </div>
 
@@ -353,9 +334,8 @@ export default function CreateListing() {
                 {images.map((img, idx) => (
                   <div
                     key={idx}
-                    className={`relative rounded-md overflow-hidden border-2 transition-all group aspect-square bg-gray-100 flex items-center justify-center ${
-                      primaryIndex === idx ? 'border-brand-500 ring-2 ring-brand-200' : 'border-gray-200'
-                    }`}
+                    className={`relative rounded-md overflow-hidden border-2 transition-all group aspect-square bg-gray-100 flex items-center justify-center ${primaryIndex === idx ? 'border-brand-500 ring-2 ring-brand-200' : 'border-gray-200'
+                      }`}
                   >
                     <img
                       src={img}
@@ -430,11 +410,10 @@ export default function CreateListing() {
                       key={cat.id}
                       type="button"
                       onClick={() => setCategoryId(cat.id)}
-                      className={`flex items-center gap-2.5 p-3 rounded-md border text-left transition-all ${
-                        isSelected
+                      className={`flex items-center gap-2.5 p-3 rounded-md border text-left transition-all ${isSelected
                           ? 'border-brand-500 bg-brand-50 text-brand-800 font-bold shadow-sm'
                           : 'border-gray-200 bg-gray-50/50 hover:bg-gray-100/80 text-gray-700 font-medium'
-                      }`}
+                        }`}
                     >
                       <CategoryIcon
                         name={cat.icon}
@@ -459,22 +438,20 @@ export default function CreateListing() {
                 <button
                   type="button"
                   onClick={() => setTransactionType('SELL')}
-                  className={`py-3 px-4 rounded-md border text-center text-xs font-bold transition-all ${
-                    transactionType === 'SELL'
+                  className={`py-3 px-4 rounded-md border text-center text-xs font-bold transition-all ${transactionType === 'SELL'
                       ? 'bg-brand-500 text-white border-brand-500 shadow-md'
                       : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                  }`}
+                    }`}
                 >
                   Sell (One-Time)
                 </button>
                 <button
                   type="button"
                   onClick={() => setTransactionType('RENT')}
-                  className={`py-3 px-4 rounded-md border text-center text-xs font-bold transition-all ${
-                    transactionType === 'RENT'
+                  className={`py-3 px-4 rounded-md border text-center text-xs font-bold transition-all ${transactionType === 'RENT'
                       ? 'bg-brand-500 text-white border-brand-500 shadow-md'
                       : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                  }`}
+                    }`}
                 >
                   Rent (Temporary)
                 </button>
@@ -484,11 +461,10 @@ export default function CreateListing() {
                     setTransactionType('DONATE');
                     setPrice('0');
                   }}
-                  className={`py-3 px-4 rounded-md border text-center text-xs font-bold transition-all ${
-                    transactionType === 'DONATE'
+                  className={`py-3 px-4 rounded-md border text-center text-xs font-bold transition-all ${transactionType === 'DONATE'
                       ? 'bg-brand-500 text-white border-brand-500 shadow-md'
                       : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                  }`}
+                    }`}
                 >
                   Donate (Free)
                 </button>
@@ -570,11 +546,10 @@ export default function CreateListing() {
                       key={cond.value}
                       type="button"
                       onClick={() => setCondition(cond.value)}
-                      className={`p-3 rounded-md border text-left transition-all ${
-                        isSelected
+                      className={`p-3 rounded-md border text-left transition-all ${isSelected
                           ? 'border-brand-500 bg-brand-50 text-brand-900 ring-1 ring-brand-500'
                           : 'border-gray-200 bg-gray-50/50 hover:bg-gray-100 text-gray-700'
-                      }`}
+                        }`}
                     >
                       <div className="text-xs font-bold">{cond.label}</div>
                       <div className="text-[11px] text-gray-500 mt-0.5">{cond.desc}</div>
@@ -594,25 +569,7 @@ export default function CreateListing() {
               <p className="text-xs text-gray-500 mb-3">
                 Select your hostel or campus block for convenient student pickup.
               </p>
-
-              {/* Campus Quick Chips */}
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {LPU_LOCATIONS.map((loc) => (
-                  <button
-                    key={loc}
-                    type="button"
-                    onClick={() => setLocation(`${loc}, LPU Campus`)}
-                    className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-all ${
-                      location.startsWith(loc)
-                        ? 'bg-brand-500 text-white border-brand-500 shadow-sm'
-                        : 'bg-white border-gray-200 text-gray-600 hover:border-brand-300'
-                    }`}
-                  >
-                    {loc}
-                  </button>
-                ))}
-              </div>
-
+              {/* Location Input */}
               <div className="relative">
                 <MapPin className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
                 <input
@@ -639,11 +596,10 @@ export default function CreateListing() {
                       key={pref.value}
                       type="button"
                       onClick={() => setContactPreference(pref.value)}
-                      className={`p-3 rounded-md border text-left transition-all ${
-                        isSelected
+                      className={`p-3 rounded-md border text-left transition-all ${isSelected
                           ? 'border-brand-500 bg-brand-50 text-brand-900 ring-1 ring-brand-500'
                           : 'border-gray-200 bg-gray-50/50 hover:bg-gray-100 text-gray-700'
-                      }`}
+                        }`}
                     >
                       <div className="text-xs font-bold">{pref.label}</div>
                       <div className="text-[11px] text-gray-500 mt-0.5">{pref.desc}</div>
