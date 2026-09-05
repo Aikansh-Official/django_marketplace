@@ -27,7 +27,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'password', 'password_confirm', 'first_name', 'last_name', 'phone_number')
+        fields = ('username', 'email', 'password', 'password_confirm', 'full_name', 'phone_number')
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
@@ -68,13 +68,14 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # Basic college domain extraction
         email = validated_data.get('email', '')
         domain = email.split('@')[-1] if '@' in email else None
+        full_name = validated_data.get('full_name', '')
         
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password'],
-            first_name=validated_data.get('first_name', ''),
-            last_name=validated_data.get('last_name', ''),
+            full_name=full_name,
+            first_name=full_name,
             phone_number=validated_data.get('phone_number', ''),
             college_domain=domain,
             is_verified_student=True # Auto-verify for now, normally would require email link
@@ -84,5 +85,5 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 class UserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'phone_number', 'is_verified_student', 'college_domain', 'trust_score', 'date_joined', 'is_staff', 'is_superuser')
+        fields = ('id', 'username', 'email', 'full_name', 'phone_number', 'is_verified_student', 'college_domain', 'trust_score', 'date_joined', 'is_staff', 'is_superuser')
         read_only_fields = ('id', 'username', 'email', 'is_verified_student', 'college_domain', 'trust_score', 'date_joined', 'is_staff', 'is_superuser')
