@@ -11,9 +11,15 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-email = 'admin@lputrade.com'
-username = 'admin'
-password = 'adminpassword123'
+# Read credentials from environment variables (never hardcode!)
+email = os.environ.get('ADMIN_EMAIL', '')
+username = os.environ.get('ADMIN_USERNAME', '')
+password = os.environ.get('ADMIN_PASSWORD', '')
+
+if not email or not username or not password:
+    print("ERROR: Set ADMIN_EMAIL, ADMIN_USERNAME, and ADMIN_PASSWORD environment variables.")
+    print("Example: ADMIN_EMAIL=admin@lputrade.com ADMIN_USERNAME=admin ADMIN_PASSWORD=<strong-password> python create_admin.py")
+    sys.exit(1)
 
 if not User.objects.filter(username=username).exists():
     user = User.objects.create_superuser(
@@ -21,13 +27,11 @@ if not User.objects.filter(username=username).exists():
         email=email,
         password=password
     )
-    # Also set is_staff=True if not already set by create_superuser
     user.is_staff = True
     user.is_superuser = True
     user.save()
     print("Superuser created successfully.")
 else:
-    # Update password just in case
     user = User.objects.get(username=username)
     user.set_password(password)
     user.is_staff = True

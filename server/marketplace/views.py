@@ -1,9 +1,13 @@
+import logging
 from rest_framework import generics, status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.throttling import ScopedRateThrottle
 from django.db.models import Q, F
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 from .models import (
     Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification
 )
@@ -116,9 +120,17 @@ class ListingDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        # Increment views count safely using F expression
-        Listing.objects.filter(pk=instance.pk).update(views_count=F('views_count') + 1)
-        instance.refresh_from_db()
+        # Prevent seller from inflating their own views
+        is_seller = request.user.is_authenticated and request.user.id == instance.seller_id
+        if not is_seller:
+            # Deduplicate views: track viewer by user ID or IP with a 2-hour cooldown
+            viewer_id = request.user.id if request.user.is_authenticated else request.META.get('REMOTE_ADDR', 'anon')
+            cache_key = f'viewed_listing_{instance.pk}_{viewer_id}'
+            from django.core.cache import cache
+            if not cache.get(cache_key):
+                Listing.objects.filter(pk=instance.pk).update(views_count=F('views_count') + 1)
+                cache.set(cache_key, True, 7200)  # 2 hours
+                instance.refresh_from_db()
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
@@ -169,7 +181,7 @@ class ToggleListingStatusView(APIView):
 class AdminListingList(generics.ListAPIView):
     queryset = Listing.objects.all().select_related('seller', 'category').prefetch_related('images').order_by('-created_at')
     serializer_class = ListingSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAdminUser]
 
 
 class UploadImageView(APIView):
@@ -180,6 +192,8 @@ class UploadImageView(APIView):
     """
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'image_upload'
 
     def post(self, request):
         image_file = request.FILES.get('image')
@@ -229,8 +243,9 @@ class UploadImageView(APIView):
                     'public_id': saved_path,
                 }, status=status.HTTP_200_OK)
             except Exception as fallback_err:
+                logger.error(f'Image upload failed. Cloudinary: {e}, Local fallback: {fallback_err}')
                 return Response(
-                    {'error': f'Upload failed: Cloudinary ({str(e)}), Local fallback ({str(fallback_err)})'},
+                    {'error': 'Image upload failed. Please try again later.'},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
 
@@ -393,7 +408,7 @@ class NotificationListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Notification.objects.filter(recipient=self.request.user).select_related('listing').order_by('-created_at')
+        return Notification.objects.filter(recipient=self.request.user).select_related('listing').prefetch_related('listing__images').order_by('-created_at')
 
 
 class MarkNotificationReadView(APIView):
@@ -451,11 +466,11 @@ class ListingReportCreateView(APIView):
 class AdminListingReportListView(generics.ListAPIView):
     queryset = ListingReport.objects.all().select_related('reporter', 'listing', 'listing__seller').order_by('-created_at')
     serializer_class = ListingReportSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAdminUser]
 
 
 class AdminListingReportUpdateView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAdminUser]
 
     def patch(self, request, pk):
         try:
@@ -478,7 +493,7 @@ class AdminListingReportUpdateView(APIView):
 
 
 class AdminPlatformSettingsView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAdminUser]
 
     DEFAULT_SETTINGS = {
         'maintenance_mode': 'false',

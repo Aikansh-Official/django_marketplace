@@ -17,7 +17,7 @@ const registerSchema = z.object({
   full_name: z.string().min(3, { message: 'Name must be at least 3 characters' }).max(50, { message: 'Name cannot exceed 50 characters' }),
   username: z.string().regex(/^\d{8}$/, { message: 'Registration number must be exactly 8 digits' }),
   phone_number: z.string().regex(/^\d{10}$/, { message: 'Phone number must be exactly 10 digits' }),
-  email: z.string().email({ message: 'Must be a valid email' }).regex(/@lpu\.in$/i, { message: 'Only @lpu.in emails are allowed' }),
+  email: z.string().email({ message: 'Must be a valid email' }).regex(/@gmail\.com$/i, { message: 'Only @gmail.com emails are allowed' }),
   otp: z.string().optional(),
   password: z.string()
     .min(8, { message: 'Must be at least 8 characters' })
@@ -358,12 +358,12 @@ function RegisterForm({ onSwitch, onSuccess }) {
             </div>
 
             <div>
-              <label className="block text-[11px] font-black text-gray-400 uppercase tracking-wider mb-2">College Email</label>
+              <label className="block text-[11px] font-black text-gray-400 uppercase tracking-wider mb-2">Google Email (@gmail.com)</label>
               <input
                 type="email"
                 {...register('email')}
                 className="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
-                placeholder="student@lpu.in"
+                placeholder="yourname@gmail.com"
               />
               {errors.email && <p className="text-red-500 text-xs font-medium mt-1">{errors.email.message}</p>}
             </div>

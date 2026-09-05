@@ -140,7 +140,7 @@ class ListingReport(models.Model):
     reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_submitted')
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='reports')
     reason = models.CharField(max_length=255)
-    details = models.TextField(blank=True, default='')
+    details = models.TextField(blank=True, default='', max_length=2000)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     created_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)

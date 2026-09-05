@@ -25,6 +25,7 @@ class ListingImageSerializer(serializers.ModelSerializer):
         fields = ['id', 'image_url', 'is_primary', 'created_at']
 
 class SellerSerializer(serializers.ModelSerializer):
+    """Full seller info — only used in authenticated contexts (e.g. accepted offers)."""
     full_name = serializers.SerializerMethodField()
 
     class Meta:
@@ -38,13 +39,27 @@ class SellerSerializer(serializers.ModelSerializer):
     def get_full_name(self, obj):
         return getattr(obj, 'full_name', '') or f"{obj.first_name} {obj.last_name}".strip() or obj.username
 
+class PublicSellerSerializer(serializers.ModelSerializer):
+    """Safe seller info — used in public listing responses. Hides email, phone, and registration number."""
+    full_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'id', 'full_name', 'is_verified_student',
+            'college_domain', 'trust_score', 'profile_picture_url'
+        ]
+
+    def get_full_name(self, obj):
+        return getattr(obj, 'full_name', '') or f"{obj.first_name} {obj.last_name}".strip() or obj.username
+
 class ListingSerializer(serializers.ModelSerializer):
     images = ListingImageSerializer(many=True, read_only=True)
     category = CategorySerializer(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(
         queryset=Category.objects.all(), source='category', write_only=True, required=False, allow_null=True
     )
-    seller = SellerSerializer(read_only=True)
+    seller = serializers.SerializerMethodField()
     is_seller = serializers.SerializerMethodField()
     offers_count = serializers.SerializerMethodField()
 
@@ -59,6 +74,12 @@ class ListingSerializer(serializers.ModelSerializer):
             'offers_count'
         ]
         read_only_fields = ['views_count', 'created_at', 'updated_at', 'seller', 'offers_count']
+
+    def get_seller(self, obj):
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated:
+            return SellerSerializer(obj.seller).data
+        return PublicSellerSerializer(obj.seller).data
 
     def get_is_seller(self, obj):
         request = self.context.get('request')
@@ -219,14 +240,21 @@ class OfferSerializer(serializers.ModelSerializer):
 
 class NotificationSerializer(serializers.ModelSerializer):
     listing_title = serializers.CharField(source='listing.title', read_only=True)
+    listing_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Notification
         fields = [
             'id', 'notification_type', 'title', 'message',
-            'listing', 'listing_title', 'is_read', 'created_at'
+            'listing', 'listing_title', 'listing_image', 'is_read', 'created_at'
         ]
         read_only_fields = ['created_at']
+
+    def get_listing_image(self, obj):
+        if obj.listing:
+            img = obj.listing.images.filter(is_primary=True).first() or obj.listing.images.first()
+            return img.image_url if img else None
+        return None
 
 
 class ListingReportSerializer(serializers.ModelSerializer):

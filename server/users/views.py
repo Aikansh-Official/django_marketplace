@@ -1,3 +1,4 @@
+import logging
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -8,6 +9,8 @@ from django.utils import timezone
 import random
 from .models import OTPVerification
 from .serializers import UserRegistrationSerializer, UserListSerializer, SendOTPSerializer, VerifyOTPSerializer
+
+logger = logging.getLogger(__name__)
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.conf import settings
@@ -90,6 +93,16 @@ class LogoutView(APIView):
         access_cookie_name = getattr(settings, 'SIMPLE_JWT', {}).get('AUTH_COOKIE', 'access_token')
         refresh_cookie_name = getattr(settings, 'SIMPLE_JWT', {}).get('AUTH_COOKIE_REFRESH', 'refresh_token')
         
+        # Blacklist the refresh token server-side so it can't be reused
+        refresh_token = request.COOKIES.get(refresh_cookie_name) or request.data.get('refresh')
+        if refresh_token:
+            try:
+                from rest_framework_simplejwt.tokens import RefreshToken
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except Exception:
+                pass  # Token may already be invalid/expired — safe to ignore
+        
         response.delete_cookie(access_cookie_name)
         response.delete_cookie(refresh_cookie_name)
         return response
@@ -114,10 +127,30 @@ class SendOTPView(APIView):
             
             OTPVerification.objects.update_or_create(
                 email=email,
-                defaults={'otp': otp, 'is_verified': False, 'created_at': timezone.now()}
+                defaults={'otp': otp, 'is_verified': False, 'created_at': timezone.now(), 'attempts': 0}
             )
             
-            print(f"\n=========================================\nOTP FOR {email}: {otp}\n=========================================\n")
+            # Send verification email via configured backend (SMTP in prod, console in dev)
+            from django.core.mail import send_mail
+            try:
+                send_mail(
+                    subject="Your LPUTrade Verification Code",
+                    message=f"Hello,\n\nYour OTP verification code for LPUTrade is: {otp}\n\nThis code is valid for 10 minutes.\nNever share this OTP with anyone.\n\nBest regards,\nLPUTrade Team",
+                    from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@lputrade.com'),
+                    recipient_list=[email],
+                    fail_silently=False,
+                )
+            except Exception as mail_err:
+                logger.error(f"Failed to send OTP email to {email}: {mail_err}")
+                if not settings.DEBUG:
+                    return Response(
+                        {"error": "Failed to send verification email. Please try again later."},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    )
+
+            logger.info(f'OTP generated and sent for {email}')
+            if settings.DEBUG:
+                logger.debug(f'[DEV ONLY] OTP for {email}: {otp}')
             
             return Response({"message": "OTP sent successfully."})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -135,10 +168,31 @@ class VerifyOTPView(APIView):
             
             try:
                 record = OTPVerification.objects.get(email=email)
+
+                # Check if locked due to too many failed attempts
+                if record.is_locked():
+                    return Response(
+                        {"error": "Too many failed attempts. Please request a new OTP."},
+                        status=status.HTTP_429_TOO_MANY_REQUESTS
+                    )
+
                 if not record.is_valid():
                     return Response({"error": "OTP has expired. Please request a new one."}, status=status.HTTP_400_BAD_REQUEST)
+
                 if record.otp != otp:
-                    return Response({"error": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
+                    # Increment failed attempts counter
+                    record.attempts += 1
+                    record.save(update_fields=['attempts'])
+                    remaining = record.MAX_ATTEMPTS - record.attempts
+                    if remaining <= 0:
+                        return Response(
+                            {"error": "Too many failed attempts. OTP has been invalidated. Please request a new one."},
+                            status=status.HTTP_429_TOO_MANY_REQUESTS
+                        )
+                    return Response(
+                        {"error": f"Invalid OTP. {remaining} attempt(s) remaining."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
                 
                 record.is_verified = True
                 record.save()
@@ -187,6 +241,7 @@ class AuthStatusView(APIView):
                 "isAuthenticated": True,
                 "is_staff": request.user.is_staff,
                 "is_superuser": request.user.is_superuser,
-                "username": request.user.username
+                "username": request.user.username,
+                "user": UserListSerializer(request.user).data
             })
-        return Response({"isAuthenticated": False})
+        return Response({"isAuthenticated": False, "user": None})

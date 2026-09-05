@@ -28,9 +28,15 @@ class OTPVerification(models.Model):
     otp = models.CharField(max_length=6)
     created_at = models.DateTimeField(auto_now_add=True)
     is_verified = models.BooleanField(default=False)
+    attempts = models.PositiveIntegerField(default=0)
+
+    MAX_ATTEMPTS = 5
 
     def is_valid(self):
         return timezone.now() < self.created_at + timedelta(minutes=10)
-        
+
+    def is_locked(self):
+        return self.attempts >= self.MAX_ATTEMPTS
+
     def __str__(self):
         return f"{self.email} - {self.otp}"

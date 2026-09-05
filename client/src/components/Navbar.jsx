@@ -17,30 +17,22 @@ export default function Navbar() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const token = localStorage.getItem('access');
-      if (token) {
-        try {
-          const response = await axios.get(`${API_BASE}/auth/profile/`);
-          setUserProfile(response.data);
-          localStorage.setItem('user', JSON.stringify(response.data));
-        } catch (error) {
-          console.error("Failed to fetch profile", error);
-          if (error.response?.status === 401) {
+      try {
+        const res = await axios.get(`${API_BASE}/auth/status/`);
+        if (res.data?.isAuthenticated && res.data?.user) {
+          setUserProfile(res.data.user);
+          localStorage.setItem('user', JSON.stringify(res.data.user));
+        } else {
+          // If not authenticated, clean up any stale local auth tokens
+          if (!res.data?.isAuthenticated) {
             localStorage.removeItem('access');
             localStorage.removeItem('refresh');
             localStorage.removeItem('user');
-            setUserProfile(null);
           }
-        }
-      } else {
-        // Also check if valid cookie exists
-        try {
-          const response = await axios.get(`${API_BASE}/auth/profile/`);
-          setUserProfile(response.data);
-          localStorage.setItem('user', JSON.stringify(response.data));
-        } catch (error) {
           setUserProfile(null);
         }
+      } catch (error) {
+        setUserProfile(null);
       }
     };
     fetchProfile();

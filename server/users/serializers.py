@@ -11,8 +11,8 @@ class SendOTPSerializer(serializers.Serializer):
     email = serializers.EmailField()
     
     def validate_email(self, value):
-        if not re.match(r'^[\w\.-]+@lpu\.in$', value.lower()):
-            raise serializers.ValidationError("Only @lpu.in email addresses are allowed.")
+        if not re.match(r'^[\w\.-]+@gmail\.com$', value.lower()):
+            raise serializers.ValidationError("Only @gmail.com email addresses are allowed.")
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("An account with this email already exists.")
         return value
@@ -48,8 +48,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             
         email = attrs.get('email', '')
         
-        if not re.match(r'^[\w\.-]+@lpu\.in$', email.lower()):
-            raise serializers.ValidationError({"email": "Only @lpu.in email addresses are allowed."})
+        if not re.match(r'^[\w\.-]+@gmail\.com$', email.lower()):
+            raise serializers.ValidationError({"email": "Only @gmail.com email addresses are allowed."})
             
         try:
             otp_record = OTPVerification.objects.get(email=email)
@@ -57,8 +57,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({"email": "Email must be verified with OTP before registering."})
         except OTPVerification.DoesNotExist:
             raise serializers.ValidationError({"email": "Email must be verified with OTP before registering."})
-        if not re.match(r'^[\w\.-]+@lpu\.in$', email.lower()):
-            raise serializers.ValidationError({"email": "Only @lpu.in email addresses are allowed."})
             
         return attrs
 
@@ -80,6 +78,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             college_domain=domain,
             is_verified_student=True # Auto-verify for now, normally would require email link
         )
+
+        # Invalidate OTP record upon successful registration to prevent reuse
+        OTPVerification.objects.filter(email=validated_data['email']).delete()
+
         return user
 
 class UserListSerializer(serializers.ModelSerializer):

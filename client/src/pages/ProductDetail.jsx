@@ -81,14 +81,20 @@ export default function ProductDetail() {
   // Fetch current user & listing details
   useEffect(() => {
     const fetchCurrentProfile = async () => {
-      const token = localStorage.getItem('access');
-      if (token) {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
         try {
-          const res = await axios.get(`${API_BASE}/auth/profile/`);
-          setCurrentUserId(res.data.id);
-        } catch (e) {
-          console.error('Could not fetch user profile', e);
+          const parsed = JSON.parse(storedUser);
+          if (parsed?.id) setCurrentUserId(parsed.id);
+        } catch (e) {}
+      }
+      try {
+        const res = await axios.get(`${API_BASE}/auth/status/`);
+        if (res.data?.isAuthenticated && res.data?.user?.id) {
+          setCurrentUserId(res.data.user.id);
         }
+      } catch (e) {
+        // Guest user browsing item
       }
     };
     fetchCurrentProfile();

@@ -1,4 +1,5 @@
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import InvalidToken, AuthenticationFailed
 from django.conf import settings
 
 class CookieJWTAuthentication(JWTAuthentication):
@@ -15,5 +16,11 @@ class CookieJWTAuthentication(JWTAuthentication):
         if raw_token is None:
             return None
             
-        validated_token = self.get_validated_token(raw_token)
-        return self.get_user(validated_token), validated_token
+        try:
+            validated_token = self.get_validated_token(raw_token)
+            return self.get_user(validated_token), validated_token
+        except (InvalidToken, AuthenticationFailed):
+            # Invalid or expired token: return None so the request is treated as unauthenticated.
+            # Protected views (IsAuthenticated, IsAdminUser) will still reject with 401/403,
+            # while public views (AllowAny) like categories & listings will serve guests seamlessly.
+            return None

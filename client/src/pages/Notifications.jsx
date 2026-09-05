@@ -5,16 +5,17 @@ import toast from 'react-hot-toast';
 import {
   Bell,
   CheckCheck,
+  CheckCircle2,
   Trash2,
   Package,
   ShoppingBag,
   CheckCircle,
   XCircle,
-  Info,
   Clock,
-  ArrowRight,
-  ArrowLeft,
-  Filter
+  ExternalLink,
+  ChevronRight,
+  Tag,
+  AlertCircle
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -23,8 +24,13 @@ export default function Notifications() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
+  const [deleteModalId, setDeleteModalId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
+  const [clearingAll, setClearingAll] = useState(false);
 
   const fetchNotifications = async () => {
+    setLoading(true);
     try {
       const res = await axios.get(`${API_BASE}/marketplace/notifications/`);
       setNotifications(res.data);
@@ -65,90 +71,129 @@ export default function Notifications() {
     }
   };
 
-  const handleDelete = async (e, id) => {
-    e.stopPropagation();
+  const handleDelete = async () => {
+    if (!deleteModalId) return;
+    setDeleting(true);
     try {
-      await axios.delete(`${API_BASE}/marketplace/notifications/${id}/delete/`);
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      await axios.delete(`${API_BASE}/marketplace/notifications/${deleteModalId}/delete/`);
+      setNotifications((prev) => prev.filter((n) => n.id !== deleteModalId));
       window.dispatchEvent(new Event('notifications-updated'));
       toast.success('Notification removed.');
+      setDeleteModalId(null);
     } catch (err) {
       console.error('Failed to delete notification', err);
       toast.error('Could not delete notification.');
+    } finally {
+      setDeleting(false);
     }
   };
 
   const handleClearAll = async () => {
+    setClearingAll(true);
     try {
       await axios.delete(`${API_BASE}/marketplace/notifications/clear-all/`);
       setNotifications([]);
       window.dispatchEvent(new Event('notifications-updated'));
       toast.success('All notifications cleared.');
+      setClearAllModalOpen(false);
     } catch (err) {
       console.error('Failed to clear notifications', err);
       toast.error('Could not clear notifications.');
+    } finally {
+      setClearingAll(false);
     }
   };
 
-  const filteredNotifs = notifications.filter((n) => {
+  // Metrics calculation
+  const totalNotifications = notifications.length;
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const dealCount = notifications.filter((n) =>
+    ['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'ITEM_SOLD'].includes(
+      n.notification_type
+    )
+  ).length;
+  const generalCount = notifications.filter(
+    (n) =>
+      n.notification_type === 'GENERAL' ||
+      !['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'ITEM_SOLD'].includes(
+        n.notification_type
+      )
+  ).length;
+
+  // Filter list
+  const filteredNotifications = notifications.filter((n) => {
     if (filter === 'UNREAD') return !n.is_read;
     if (filter === 'TRADE')
       return ['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'ITEM_SOLD'].includes(
         n.notification_type
       );
-    if (filter === 'GENERAL') return n.notification_type === 'GENERAL';
+    if (filter === 'GENERAL')
+      return (
+        n.notification_type === 'GENERAL' ||
+        !['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'ITEM_SOLD'].includes(
+          n.notification_type
+        )
+      );
     return true;
   });
 
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
-
-  const getIcon = (type) => {
+  const getTypeBadge = (type) => {
     switch (type) {
       case 'BUY_REQUEST':
-        return <ShoppingBag className="w-5 h-5 text-brand-600" />;
+        return (
+          <span className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            Purchase Request
+          </span>
+        );
       case 'REQUEST_ACCEPTED':
-        return <CheckCircle className="w-5 h-5 text-emerald-600" />;
+        return (
+          <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Deal Accepted
+          </span>
+        );
       case 'REQUEST_REJECTED':
-        return <XCircle className="w-5 h-5 text-rose-500" />;
+        return (
+          <span className="inline-flex items-center gap-1 bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+            Declined
+          </span>
+        );
       case 'ITEM_SOLD':
-        return <Package className="w-5 h-5 text-purple-600" />;
+        return (
+          <span className="inline-flex items-center gap-1 bg-purple-50 border border-purple-200 text-purple-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+            Item Sold
+          </span>
+        );
       default:
-        return <Info className="w-5 h-5 text-blue-600" />;
+        return (
+          <span className="inline-flex items-center gap-1 bg-blue-50 border border-blue-200 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+            Campus Alert
+          </span>
+        );
     }
   };
 
-  const getBadgeStyle = (type) => {
+  const getNotificationIcon = (type) => {
     switch (type) {
       case 'BUY_REQUEST':
-        return 'bg-brand-50 text-brand-700 border-brand-200';
+        return <ShoppingBag className="w-6 h-6 text-amber-600" />;
       case 'REQUEST_ACCEPTED':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        return <CheckCircle className="w-6 h-6 text-emerald-600" />;
       case 'REQUEST_REJECTED':
-        return 'bg-rose-50 text-rose-700 border-rose-200';
+        return <XCircle className="w-6 h-6 text-rose-600" />;
       case 'ITEM_SOLD':
-        return 'bg-purple-50 text-purple-700 border-purple-200';
+        return <Package className="w-6 h-6 text-purple-600" />;
       default:
-        return 'bg-blue-50 text-blue-700 border-blue-200';
-    }
-  };
-
-  const getBadgeLabel = (type) => {
-    switch (type) {
-      case 'BUY_REQUEST':
-        return 'Purchase Request';
-      case 'REQUEST_ACCEPTED':
-        return 'Deal Accepted';
-      case 'REQUEST_REJECTED':
-        return 'Declined';
-      case 'ITEM_SOLD':
-        return 'Sold Out';
-      default:
-        return 'Alert';
+        return <Bell className="w-6 h-6 text-blue-600" />;
     }
   };
 
   const formatTime = (iso) => {
-    if (!iso) return 'Recent';
+    if (!iso) return 'Just now';
     try {
       const date = new Date(iso);
       return (
@@ -162,186 +207,303 @@ export default function Notifications() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Breadcrumb */}
-      <div className="mb-6">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-brand-600 transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back to Marketplace
-        </Link>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Top Banner - matching MyListings */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-4 border-b border-gray-200">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
+            Notifications
+          </h1>
+          <p className="text-gray-500 text-xs mt-1">
+            Track student purchase requests, deal updates, and real-time campus activity.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
+          {unreadCount > 0 && (
+            <button
+              type="button"
+              onClick={handleMarkAllRead}
+              className="bg-white border border-gray-200 hover:border-gray-300 text-gray-700 font-semibold py-2 px-3.5 rounded-md transition-all shadow-xs hover:shadow-sm text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <CheckCheck className="w-4 h-4 text-brand-500" />
+              Mark all as read
+            </button>
+          )}
+
+          {notifications.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setClearAllModalOpen(true)}
+              className="bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 font-semibold py-2 px-3.5 rounded-md transition-all shadow-xs text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+              title="Clear all alerts"
+            >
+              <Trash2 className="w-4 h-4" />
+              Clear all
+            </button>
+          )}
+
+          <Link
+            to="/my-listings"
+            className="bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2.5 px-5 rounded-md transition-all shadow-md hover:shadow-lg text-xs flex items-center justify-center gap-2 self-start sm:self-auto"
+          >
+            <Package className="w-4 h-4" />
+            My Listings
+          </Link>
+        </div>
       </div>
 
-      {/* Main Header Container */}
-      <div className="bg-white border border-gray-200/90 rounded-xl p-6 sm:p-8 shadow-xs mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-gray-100">
-          <div className="flex items-start gap-3.5">
-            <div className="w-12 h-12 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600 flex-shrink-0">
-              <Bell className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
-                  Notifications Center
-                </h1>
-                {unreadCount > 0 && (
-                  <span className="bg-brand-500 text-white text-xs font-black px-2.5 py-0.5 rounded-full shadow-xs">
-                    {unreadCount} New
-                  </span>
-                )}
-              </div>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                Real-time updates regarding student purchase requests, trade deals, and campus alerts.
-              </p>
-            </div>
+      {/* Metrics Row - identical to MyListings metrics cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div className="bg-white border border-gray-200 rounded-md p-4 shadow-sm">
+          <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+            Total Alerts
           </div>
-
-          <div className="flex items-center gap-2 self-start sm:self-auto flex-shrink-0">
-            {unreadCount > 0 && (
-              <button
-                onClick={handleMarkAllRead}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-xs font-bold text-gray-700 transition-all shadow-2xs cursor-pointer"
-              >
-                <CheckCheck className="w-4 h-4 text-brand-600" />
-                Mark all read
-              </button>
-            )}
-
-            {notifications.length > 0 && (
-              <button
-                onClick={handleClearAll}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 bg-white hover:bg-rose-50 text-xs font-bold text-gray-600 hover:text-rose-600 transition-all shadow-2xs cursor-pointer"
-                title="Clear all notifications"
-              >
-                <Trash2 className="w-4 h-4" />
-                Clear all
-              </button>
-            )}
-          </div>
+          <div className="text-2xl font-extrabold text-gray-900 mt-1">{totalNotifications}</div>
         </div>
 
-        {/* Filter Chips */}
-        <div className="flex items-center gap-2 overflow-x-auto pt-5 pb-1">
-          <div className="flex items-center gap-1 text-xs font-bold text-gray-400 mr-2 flex-shrink-0">
-            <Filter className="w-3.5 h-3.5" />
-            Filter:
+        <div className="bg-white border border-gray-200 rounded-md p-4 shadow-sm">
+          <div className="text-[11px] font-semibold text-brand-600 uppercase tracking-wider">
+            Unread Alerts
           </div>
-          {[
-            { key: 'ALL', label: `All Alerts (${notifications.length})` },
-            { key: 'UNREAD', label: `Unread (${unreadCount})` },
-            { key: 'TRADE', label: 'Purchase Requests & Deals' },
-            { key: 'GENERAL', label: 'General Alerts' }
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key)}
-              className={`px-3.5 py-1.5 text-xs font-bold rounded-lg whitespace-nowrap transition-all cursor-pointer ${
-                filter === tab.key
-                  ? 'bg-brand-500 text-white shadow-xs'
-                  : 'bg-gray-50 border border-gray-200/80 text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          <div className="text-2xl font-extrabold text-brand-700 mt-1">{unreadCount}</div>
         </div>
+
+        <div className="bg-white border border-gray-200 rounded-md p-4 shadow-sm">
+          <div className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">
+            Purchase Deals
+          </div>
+          <div className="text-2xl font-extrabold text-emerald-700 mt-1">{dealCount}</div>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-md p-4 shadow-sm">
+          <div className="text-[11px] font-semibold text-purple-600 uppercase tracking-wider">
+            Campus Alerts
+          </div>
+          <div className="text-2xl font-extrabold text-purple-700 mt-1">{generalCount}</div>
+        </div>
+      </div>
+
+      {/* Filter Tabs - matching MyListings tabs */}
+      <div className="flex items-center gap-2 border-b border-gray-200 pb-3 mb-6 overflow-x-auto">
+        {[
+          { key: 'ALL', label: `All Alerts (${totalNotifications})` },
+          { key: 'UNREAD', label: `Unread (${unreadCount})` },
+          { key: 'TRADE', label: `Purchase Requests (${dealCount})` },
+          { key: 'GENERAL', label: `General (${generalCount})` },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setFilter(tab.key)}
+            className={`px-3.5 py-1.5 text-xs font-bold rounded-md whitespace-nowrap transition-all cursor-pointer ${
+              filter === tab.key
+                ? 'bg-brand-500 text-white shadow-sm'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* Notifications List */}
       {loading ? (
-        <div className="flex justify-center items-center py-24 bg-white rounded-xl border border-gray-200 shadow-xs">
-          <div className="w-8 h-8 border-3 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="flex justify-center items-center py-24">
+          <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
-      ) : filteredNotifs.length === 0 ? (
-        <div className="bg-white border border-gray-200/90 rounded-xl p-16 text-center shadow-xs">
-          <div className="w-16 h-16 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center mx-auto mb-4 text-gray-300">
-            <Bell className="w-8 h-8" />
-          </div>
-          <h3 className="text-base font-extrabold text-gray-900">No notifications in this view</h3>
-          <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
+      ) : filteredNotifications.length === 0 ? (
+        <div className="bg-white border border-gray-200 rounded-md p-12 text-center shadow-sm">
+          <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <h3 className="text-base font-bold text-gray-800">No notifications found</h3>
+          <p className="text-xs text-gray-500 mt-1 mb-6">
             {filter === 'UNREAD'
-              ? "You're all caught up! There are no unread notifications right now."
-              : 'You will receive real-time notifications when a student requests to purchase your item or accepts your request.'}
+              ? "You're all caught up! You don't have any unread notifications."
+              : "You don't have any notifications in this filter view."}
           </p>
-          <div className="mt-6">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-xs transition-colors"
-            >
-              Explore Campus Marketplace
-            </Link>
-          </div>
+          <Link
+            to="/"
+            className="bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2 px-5 rounded-md text-xs inline-flex items-center gap-1.5"
+          >
+            Explore Campus Marketplace
+          </Link>
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredNotifs.map((notif) => (
-            <div
-              key={notif.id}
-              onClick={() => handleMarkRead(notif.id)}
-              className={`p-4 sm:p-5 rounded-xl border transition-all cursor-pointer flex items-start justify-between gap-4 ${
-                !notif.is_read
-                  ? 'bg-brand-50/25 border-brand-200 shadow-xs hover:border-brand-300'
-                  : 'bg-white border-gray-200/90 hover:border-gray-300 shadow-2xs'
-              }`}
-            >
-              <div className="flex items-start gap-4 min-w-0">
-                <div className="w-11 h-11 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-2xs">
-                  {getIcon(notif.notification_type)}
-                </div>
+          {filteredNotifications.map((notif) => {
+            const listingId = notif.listing || notif.related_listing;
+            return (
+              <div
+                key={notif.id}
+                onClick={() => !notif.is_read && handleMarkRead(notif.id)}
+                className={`bg-white border rounded-md p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:border-gray-300 transition-all ${
+                  !notif.is_read
+                    ? 'border-l-4 border-l-brand-500 border-gray-200 bg-brand-50/15'
+                    : 'border-gray-200'
+                }`}
+              >
+                {/* Left Section: Image/Icon + Title + Message + Meta */}
+                <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-md bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200 flex items-center justify-center">
+                    {notif.listing_image ? (
+                      <img
+                        src={notif.listing_image}
+                        alt={notif.listing_title || notif.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                        {getNotificationIcon(notif.notification_type)}
+                      </div>
+                    )}
+                  </div>
 
-                <div className="space-y-1.5 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${getBadgeStyle(
-                        notif.notification_type
-                      )}`}
-                    >
-                      {getBadgeLabel(notif.notification_type)}
-                    </span>
+                  <div className="min-w-0 space-y-1 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {getTypeBadge(notif.notification_type)}
+                      {!notif.is_read && (
+                        <span className="inline-flex items-center gap-1 bg-brand-50 border border-brand-200 text-brand-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          <span className="w-1.5 h-1.5 rounded-full bg-brand-500"></span>
+                          New
+                        </span>
+                      )}
+                      <span className="text-xs text-gray-400 font-medium flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-gray-400" />
+                        {formatTime(notif.created_at)}
+                      </span>
+                    </div>
 
-                    <h4 className="font-extrabold text-sm text-gray-900">
+                    <h4 className="font-bold text-sm text-gray-900 leading-snug">
                       {notif.title}
                     </h4>
 
-                    {!notif.is_read && (
-                      <span className="w-2 h-2 rounded-full bg-brand-500 flex-shrink-0" />
-                    )}
-                  </div>
+                    <p className="text-xs text-gray-600 leading-relaxed">
+                      {notif.message}
+                    </p>
 
-                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-                    {notif.message}
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-4 pt-1 text-[11px] text-gray-400">
-                    <span className="flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-gray-400" />
-                      {formatTime(notif.created_at)}
-                    </span>
-
-                    {notif.related_listing && (
-                      <Link
-                        to={`/listing/${notif.related_listing}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-brand-600 hover:text-brand-700 font-bold inline-flex items-center gap-1 transition-colors"
-                      >
-                        View Listing & Manage Deals <ArrowRight className="w-3 h-3" />
-                      </Link>
+                    {listingId && (
+                      <div className="flex flex-wrap items-center gap-1.5 text-xs text-gray-500 pt-0.5">
+                        <span className="flex items-center gap-1 text-gray-400">
+                          <Tag className="w-3 h-3 text-brand-500" />
+                          Listing:
+                        </span>
+                        <Link
+                          to={`/listing/${listingId}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="font-bold text-gray-900 hover:text-brand-600 truncate max-w-xs transition-colors inline-flex items-center gap-1"
+                        >
+                          {notif.listing_title || 'View Listing Details'}
+                          <ChevronRight className="w-3 h-3 text-gray-400" />
+                        </Link>
+                      </div>
                     )}
                   </div>
                 </div>
-              </div>
 
+                {/* Right Actions - matching MyListings action buttons */}
+                <div className="flex flex-wrap items-center gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-gray-100 self-end md:self-center flex-shrink-0">
+                  {!notif.is_read && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMarkRead(notif.id);
+                      }}
+                      className="bg-white hover:bg-gray-50 border border-gray-200 hover:border-brand-500 text-gray-700 hover:text-brand-600 px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title="Mark as Read"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 text-brand-500" />
+                      Mark Read
+                    </button>
+                  )}
+
+                  {listingId && (
+                    <Link
+                      to={`/listing/${listingId}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="bg-white border border-gray-200 hover:border-brand-500 text-gray-700 hover:text-brand-600 p-2 rounded-md transition-colors inline-flex items-center justify-center"
+                      title="View Listing"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </Link>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteModalId(notif.id);
+                    }}
+                    className="bg-white border border-red-200 hover:bg-red-50 text-red-600 p-2 rounded-md transition-colors cursor-pointer inline-flex items-center justify-center"
+                    title="Delete Notification"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Delete Single Notification Modal - matching MyListings modal */}
+      {deleteModalId && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-gray-200 rounded-md max-w-sm w-full p-6 shadow-2xl space-y-4">
+            <div className="text-center">
+              <h3 className="text-base font-bold text-gray-900">Delete notification?</h3>
+              <p className="text-xs text-gray-500 mt-1">
+                This notification will be permanently removed from your alerts.
+              </p>
+            </div>
+            <div className="flex gap-3 pt-2">
               <button
-                onClick={(e) => handleDelete(e, notif.id)}
-                className="text-gray-400 hover:text-rose-600 p-2 rounded-lg hover:bg-rose-50 transition-colors flex-shrink-0 cursor-pointer"
-                title="Delete alert"
+                type="button"
+                onClick={() => setDeleteModalId(null)}
+                className="flex-1 bg-white border border-gray-300 text-gray-700 py-2 rounded-md font-medium text-xs hover:bg-gray-50 cursor-pointer"
               >
-                <Trash2 className="w-4 h-4" />
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={handleDelete}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-md font-semibold text-xs disabled:opacity-50 cursor-pointer"
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>
-          ))}
+          </div>
+        </div>
+      )}
+
+      {/* Clear All Notifications Modal */}
+      {clearAllModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-gray-200 rounded-md max-w-sm w-full p-6 shadow-2xl space-y-4">
+            <div className="text-center">
+              <h3 className="text-base font-bold text-gray-900">Clear all notifications?</h3>
+              <p className="text-xs text-gray-500 mt-1">
+                All notifications will be deleted. This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setClearAllModalOpen(false)}
+                className="flex-1 bg-white border border-gray-300 text-gray-700 py-2 rounded-md font-medium text-xs hover:bg-gray-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={clearingAll}
+                onClick={handleClearAll}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-md font-semibold text-xs disabled:opacity-50 cursor-pointer"
+              >
+                {clearingAll ? 'Clearing...' : 'Clear All'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
