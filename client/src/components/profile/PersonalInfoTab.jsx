@@ -15,7 +15,8 @@ import {
   Lock,
   Sparkles,
   Building2,
-  BadgeCheck
+  BadgeCheck,
+  Check
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -65,6 +66,13 @@ export default function PersonalInfoTab({ profile, onProfileUpdated }) {
   const fullName = profile?.full_name || profile?.first_name || profile?.username;
   const firstLetter = (fullName || 'U')[0].toUpperCase();
 
+  const hasEmail = Boolean(profile?.email && profile?.email.trim());
+  const hasIdVerified = Boolean(profile?.is_id_verified);
+  const tradesCount = Number(profile?.completed_trades_count || 0);
+  const trustScore = profile?.trust_score !== undefined
+    ? profile.trust_score
+    : (hasEmail ? 5 : 0) + (hasIdVerified ? 5 : 0) + (tradesCount * 5);
+
   const formatDate = (dateStr) => {
     if (!dateStr) return 'Active Student';
     try {
@@ -104,10 +112,12 @@ export default function PersonalInfoTab({ profile, onProfileUpdated }) {
                   <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
                     {fullName}
                   </h1>
-                  <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold px-2.5 py-0.5 rounded-full shadow-2xs">
-                    <BadgeCheck className="w-4 h-4 text-emerald-600" />
-                    Verified
-                  </span>
+                  {profile?.is_id_verified && (
+                    <span className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full shadow-xs">
+                      <BadgeCheck className="w-4 h-4 text-emerald-600" />
+                      ID Verified
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-gray-500 flex-wrap">
@@ -232,14 +242,14 @@ export default function PersonalInfoTab({ profile, onProfileUpdated }) {
               )}
             </div>
 
-            {/* College Email Address */}
+            {/* Email Address */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-[11px] font-bold text-gray-600 uppercase">
-                  College Email Address
+                  Email Address
                 </label>
                 <span className="text-[10px] text-gray-400 font-semibold flex items-center gap-1">
-                  <Lock className="w-3 h-3 text-gray-400" /> Locked to University
+                  <Lock className="w-3 h-3 text-gray-400" /> Verified Account Email
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs font-semibold text-gray-900 bg-gray-50 border border-gray-200/80 rounded-md px-3.5 py-2.5">
@@ -250,7 +260,7 @@ export default function PersonalInfoTab({ profile, onProfileUpdated }) {
                 {(profile?.is_verified_student ?? Boolean(profile?.email)) && (
                   <CheckCircle2
                     className="w-4 h-4 text-emerald-600 flex-shrink-0 ml-2"
-                    title="Verified College Email"
+                    title="Verified Email"
                   />
                 )}
               </div>
@@ -282,44 +292,70 @@ export default function PersonalInfoTab({ profile, onProfileUpdated }) {
                 </h4>
               </div>
               <span className="text-base font-black text-brand-600">
-                {profile?.trust_score || 50}/100
+                {trustScore}/100
               </span>
             </div>
 
             <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
               <div
                 className="bg-gradient-to-r from-amber-400 via-orange-500 to-brand-500 h-full rounded-full transition-all duration-500"
-                style={{ width: `${profile?.trust_score || 50}%` }}
+                style={{ width: `${Math.min(100, Math.max(0, trustScore))}%` }}
               />
             </div>
 
             <div className="space-y-2 pt-1 text-[11px]">
+              {/* Item 1: Email Authenticated */}
               <div className="flex justify-between items-center py-1 border-b border-gray-50">
-                <span className="text-gray-600 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  LPU Email Authenticated
+                <span className="text-gray-600 flex items-center gap-1.5 font-medium">
+                  <span className={`w-1.5 h-1.5 rounded-full ${hasEmail ? 'bg-emerald-500' : 'bg-gray-300'}`}></span>
+                  Email Authenticated
                 </span>
-                <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                  +50 Points
-                </span>
+                {hasEmail ? (
+                  <span className="font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                    <Check className="w-3 h-3 text-emerald-600" />
+                    +5 Points
+                  </span>
+                ) : (
+                  <span className="font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md">
+                    0/5 Points
+                  </span>
+                )}
               </div>
+
+              {/* Item 2: Student ID Card Upload */}
               <div className="flex justify-between items-center py-1 border-b border-gray-50">
-                <span className="text-gray-600 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-brand-500"></span>
-                  Student ID Card Front Upload
+                <span className="text-gray-600 flex items-center gap-1.5 font-medium">
+                  <span className={`w-1.5 h-1.5 rounded-full ${hasIdVerified ? 'bg-emerald-500' : 'bg-gray-300'}`}></span>
+                  Student ID Card Upload
                 </span>
-                <span className="font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-md">
-                  +30 Points
-                </span>
+                {hasIdVerified ? (
+                  <span className="font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                    <Check className="w-3 h-3 text-emerald-600" />
+                    +5 Points
+                  </span>
+                ) : (
+                  <span className="font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md">
+                    0/5 Points
+                  </span>
+                )}
               </div>
+
+              {/* Item 3: Successful Peer Trades */}
               <div className="flex justify-between items-center py-1">
-                <span className="text-gray-600 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                  Successful Peer Trades
+                <span className="text-gray-600 flex items-center gap-1.5 font-medium">
+                  <span className={`w-1.5 h-1.5 rounded-full ${tradesCount > 0 ? 'bg-emerald-500' : 'bg-gray-300'}`}></span>
+                  Successful Peer Trades {tradesCount > 0 && <span className="text-gray-400 font-normal">({tradesCount})</span>}
                 </span>
-                <span className="font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
-                  +20 Points
-                </span>
+                {tradesCount > 0 ? (
+                  <span className="font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                    <Check className="w-3 h-3 text-emerald-600" />
+                    +{tradesCount * 5} Points
+                  </span>
+                ) : (
+                  <span className="font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md">
+                    0/5 Points
+                  </span>
+                )}
               </div>
             </div>
           </div>

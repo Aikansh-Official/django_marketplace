@@ -12,6 +12,8 @@ import { getSavedCount } from '../utils/savedStore';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
+import UniversalLoader from '../components/common/UniversalLoader';
+
 export default function Profile() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -93,8 +95,8 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-32">
-        <div className="w-10 h-10 border-3 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-[50vh] flex items-center justify-center">
+        <UniversalLoader text="Loading profile..." />
       </div>
     );
   }
@@ -102,7 +104,7 @@ export default function Profile() {
   if (!profile) return null;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 animate-fade-in-up">
       {/* Mobile Top Tabs Slider */}
       <div className="lg:hidden flex items-center gap-2 overflow-x-auto pb-3 mb-4 scrollbar-none">
         {[
@@ -148,7 +150,7 @@ export default function Profile() {
           )}
 
           {activeTab === 'id-verification' && (
-            <IdVerificationTab profile={profile} />
+            <IdVerificationTab profile={profile} onProfileUpdated={fetchProfile} />
           )}
 
           {activeTab === 'saved-items' && (

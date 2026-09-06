@@ -8,7 +8,8 @@ import {
   LogOut,
   ChevronRight,
   ShieldAlert,
-  Star
+  Star,
+  BadgeCheck
 } from 'lucide-react';
 
 export default function ProfileSidebar({
@@ -39,7 +40,7 @@ export default function ProfileSidebar({
       id: 'id-verification',
       label: 'ID Card Verification',
       icon: ShieldCheck,
-      badge: profile?.id_verified ? 'Verified' : null,
+      badge: profile?.is_id_verified ? 'Verified' : null,
       badgeColor: 'bg-emerald-100 text-emerald-800',
       description: 'LPU Student ID verification'
     },
@@ -56,6 +57,13 @@ export default function ProfileSidebar({
   const displayName = profile?.full_name || profile?.first_name || profile?.username;
   const firstLetter = (displayName || 'U')[0].toUpperCase();
 
+  const hasEmail = Boolean(profile?.email && profile?.email.trim());
+  const hasIdVerified = Boolean(profile?.is_id_verified);
+  const tradesCount = Number(profile?.completed_trades_count || 0);
+  const trustScore = profile?.trust_score !== undefined
+    ? profile.trust_score
+    : (hasEmail ? 5 : 0) + (hasIdVerified ? 5 : 0) + (tradesCount * 5);
+
   return (
     <div className="w-full lg:w-72 flex-shrink-0 space-y-4">
       {/* User Mini Profile Card */}
@@ -67,9 +75,16 @@ export default function ProfileSidebar({
           </div>
 
           <div className="min-w-0 flex-1">
-            <h2 className="font-extrabold text-sm text-gray-900 truncate">
-              {displayName}
-            </h2>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <h2 className="font-extrabold text-sm text-gray-900 truncate">
+                {displayName}
+              </h2>
+              {profile?.is_id_verified && (
+                <span title="Official Student ID Verified" className="inline-flex shrink-0">
+                  <BadgeCheck className="w-4 h-4 text-emerald-600" />
+                </span>
+              )}
+            </div>
             <p className="text-xs font-medium text-gray-500 truncate">@{profile?.username}</p>
           </div>
         </div>
@@ -82,13 +97,13 @@ export default function ProfileSidebar({
               Trust Score
             </span>
             <span className="font-extrabold text-brand-600">
-              {profile?.trust_score || 50}/100
+              {trustScore}/100
             </span>
           </div>
           <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
             <div
               className="bg-brand-500 h-full rounded-full transition-all duration-500"
-              style={{ width: `${profile?.trust_score || 50}%` }}
+              style={{ width: `${Math.min(100, Math.max(0, trustScore))}%` }}
             />
           </div>
         </div>
