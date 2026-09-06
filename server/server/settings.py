@@ -186,11 +186,11 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle'
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '10/minute',
-        'user': '100/minute',
-        'signup': '5/minute',
-        'login': '10/minute',
-        'image_upload': '20/hour',
+        'anon': '1000/minute' if DEBUG else '100/minute',
+        'user': '2000/minute' if DEBUG else '300/minute',
+        'signup': '100/minute' if DEBUG else '5/minute',
+        'login': '100/minute' if DEBUG else '10/minute',
+        'image_upload': '200/hour' if DEBUG else '20/hour',
     }
 }
 

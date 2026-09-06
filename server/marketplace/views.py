@@ -121,6 +121,15 @@ class ListingDetailView(generics.RetrieveUpdateDestroyAPIView):
             return ListingCreateUpdateSerializer
         return ListingSerializer
 
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.status == 'SOLD' and not request.user.is_staff:
+            return Response(
+                {'error': 'This item has already been marked as Sold and cannot be edited.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return super().update(request, *args, **kwargs)
+
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         # Prevent seller from inflating their own views
@@ -165,6 +174,13 @@ class ToggleListingStatusView(APIView):
         # Only the owner can toggle status
         if listing.seller != request.user:
             return Response({'error': 'You are not the owner of this listing.'}, status=status.HTTP_403_FORBIDDEN)
+
+        # Do not allow modifying a deal that has already been verified and SOLD
+        if listing.status == 'SOLD' and not request.user.is_staff:
+            return Response(
+                {'error': 'This item has already been marked as Sold and its status cannot be changed.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         new_status = request.data.get('status')
         valid_statuses = dict(Listing.STATUS_CHOICES).keys()
@@ -665,6 +681,16 @@ class ConfirmHandoverView(APIView):
             # 3. Update Listing
             listing.status = 'SOLD'
             listing.save()
+
+            # Award +5 Peer Trade Trust Score points to both buyer and seller
+            try:
+                request.user.trust_score = request.user.calculate_trust_score()
+                request.user.save(update_fields=['trust_score'])
+
+                listing.seller.trust_score = listing.seller.calculate_trust_score()
+                listing.seller.save(update_fields=['trust_score'])
+            except Exception as e:
+                pass
 
             # 4. Invalidate any other handover sessions for this offer
             HandoverSession.objects.filter(offer=offer, status='ACTIVE').exclude(pk=session.pk).update(status='EXPIRED')

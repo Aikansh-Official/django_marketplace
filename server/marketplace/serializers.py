@@ -33,7 +33,7 @@ class SellerSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'username', 'full_name',
-            'email', 'is_verified_student', 'college_domain',
+            'email', 'is_verified_student', 'is_id_verified', 'college_domain',
             'trust_score', 'profile_picture_url', 'phone_number'
         ]
 
@@ -47,7 +47,7 @@ class PublicSellerSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id', 'full_name', 'is_verified_student',
+            'id', 'full_name', 'is_verified_student', 'is_id_verified',
             'college_domain', 'trust_score', 'profile_picture_url'
         ]
 
