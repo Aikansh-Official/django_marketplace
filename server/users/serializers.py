@@ -76,7 +76,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             first_name=full_name,
             phone_number=validated_data.get('phone_number', ''),
             college_domain=domain,
-            is_verified_student=True # Auto-verify for now, normally would require email link
+            is_verified_student=True, # Email verified via OTP
+            is_id_verified=False,     # ID Card verification pending by default
+            trust_score=5             # Email Authenticated awards initial +5 points
         )
 
         # Invalidate OTP record upon successful registration to prevent reuse
@@ -85,7 +87,39 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return user
 
 class UserListSerializer(serializers.ModelSerializer):
+    trust_score = serializers.SerializerMethodField()
+    completed_trades_count = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'full_name', 'phone_number', 'is_verified_student', 'college_domain', 'trust_score', 'date_joined', 'is_staff', 'is_superuser')
-        read_only_fields = ('id', 'username', 'email', 'is_verified_student', 'college_domain', 'trust_score', 'date_joined', 'is_staff', 'is_superuser')
+        fields = (
+            'id', 'username', 'email', 'full_name', 'phone_number',
+            'is_verified_student', 'is_id_verified', 'id_card_image',
+            'college_domain', 'trust_score', 'completed_trades_count',
+            'date_joined', 'is_staff', 'is_superuser'
+        )
+        read_only_fields = (
+            'id', 'username', 'email', 'is_verified_student',
+            'is_id_verified', 'id_card_image', 'college_domain',
+            'trust_score', 'completed_trades_count', 'date_joined',
+            'is_staff', 'is_superuser'
+        )
+
+    def get_trust_score(self, obj):
+        score = obj.calculate_trust_score()
+        if obj.trust_score != score:
+            obj.trust_score = score
+            obj.save(update_fields=['trust_score'])
+        return score
+
+    def get_completed_trades_count(self, obj):
+        try:
+            from marketplace.models import Offer
+            from django.db.models import Q
+            return Offer.objects.filter(
+                Q(buyer=obj) | Q(listing__seller=obj),
+                status='COMPLETED'
+            ).distinct().count()
+        except Exception:
+            return 0
+
