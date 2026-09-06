@@ -7,11 +7,36 @@ class CustomUser(AbstractUser):
     # Additional fields for LocalTrade
     full_name = models.CharField(max_length=255, blank=True, default='', help_text="Full Name of the student")
     is_verified_student = models.BooleanField(default=False, help_text="True if the user has verified their college email.")
+    is_id_verified = models.BooleanField(default=False, help_text="True if the student has verified their physical student ID card.")
+    id_card_image = models.TextField(blank=True, null=True, help_text="Verified student ID card image data or URL")
     email = models.EmailField(unique=True, help_text="Unique college email address")
     college_domain = models.CharField(max_length=255, blank=True, null=True, help_text="e.g. lpu.in, thapar.edu")
-    trust_score = models.IntegerField(default=50, help_text="Trust score out of 100")
+    trust_score = models.IntegerField(default=0, help_text="Trust score out of 100")
     profile_picture_url = models.URLField(max_length=500, blank=True, null=True)
     phone_number = models.CharField(max_length=15, blank=True, null=True, unique=True)
+
+    def calculate_trust_score(self):
+        score = 0
+        # 1. Email Authenticated (+5 Points)
+        if self.email and str(self.email).strip():
+            score += 5
+
+        # 2. Student ID Card Upload (+5 Points)
+        if getattr(self, 'is_id_verified', False):
+            score += 5
+
+        # 3. Successful Peer Trades (+5 Points per completed trade)
+        try:
+            from marketplace.models import Offer
+            trades_count = Offer.objects.filter(
+                models.Q(buyer=self) | models.Q(listing__seller=self),
+                status='COMPLETED'
+            ).distinct().count()
+            score += trades_count * 5
+        except Exception:
+            pass
+
+        return min(100, score)
 
     def save(self, *args, **kwargs):
         if self.full_name and not self.first_name:
