@@ -22,6 +22,17 @@ This repository is organized into three main components:
 - **`admin/`**: A separate React + Vite frontend dedicated for platform administrators to manage users and listings.
 - **`server/`**: The backend API powering the platform. Built with Python, Django, Django REST Framework, and uses SimpleJWT for authentication.
 
+### 📱 Android Native App Documentation Suite
+- [ANDROID_SERVER_CONNECTION_GUIDE.md](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/ANDROID_SERVER_CONNECTION_GUIDE.md): 🔌 **Fix Server Connection Timeout** (`10.0.2.2:8000`), ADB Reverse Tunneling, Windows Firewall fixes, and Emulator networking.
+- [ANDROID_LOGIN_REGISTRATION.md](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/ANDROID_LOGIN_REGISTRATION.md): Student registration, OTP verification, login, JWT token lifecycle, Material 3 theme & Jetpack Compose UI.
+- [ANDROID_PROFILE_SPECIFICATION.md](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/ANDROID_PROFILE_SPECIFICATION.md): Profile view & edit, student ID card verification, trust score calculation, saved wishlist items, and logout.
+- [ANDROID_MARKETPLACE_SPECIFICATION.md](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/ANDROID_MARKETPLACE_SPECIFICATION.md): Marketplace feed, category chips, debounced search, transaction & condition filters, 2-column product grid.
+- [ANDROID_PRODUCT_DETAIL_SPECIFICATION.md](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/ANDROID_PRODUCT_DETAIL_SPECIFICATION.md): Image carousel with zoom, seller trust badge, campus location tags, direct call/WhatsApp/chat intents, make offer bottom sheet, report listing.
+- [ANDROID_LISTING_MANAGEMENT_SPECIFICATION.md](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/ANDROID_LISTING_MANAGEMENT_SPECIFICATION.md): Create/edit listing wizard, on-device image compression, Cloudinary upload, My Listings management (Active, Sold, Hidden tabs).
+- [ANDROID_OFFERS_HANDOVER_SPECIFICATION.md](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/ANDROID_OFFERS_HANDOVER_SPECIFICATION.md): Purchase offers, 5-minute handover QR generation, 6-digit backup PIN, CameraX + ML Kit scanner, atomic completion & +3 trust score boost.
+- [ANDROID_NOTIFICATIONS_SPECIFICATION.md](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/ANDROID_NOTIFICATIONS_SPECIFICATION.md): Firebase Cloud Messaging (FCM) push alerts, notification channels, in-app notification center, deep linking.
+- [ANDROID_CHAT_MESSAGING_SPECIFICATION.md](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/ANDROID_CHAT_MESSAGING_SPECIFICATION.md): Real-time WebSockets (OkHttp / Scarlet + Django Channels), product-context header, typing indicators, Room DB offline cache.
+
 ## 🚀 Getting Started
 
 Follow these instructions to get a local copy up and running.
