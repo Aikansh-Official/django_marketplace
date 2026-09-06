@@ -18,8 +18,12 @@ import {
   Layers,
   ArrowRight,
   TrendingUp,
-  Tag
+  Tag,
+  QrCode,
+  Camera
 } from 'lucide-react';
+import HandoverQRModal from '../handover/HandoverQRModal';
+import HandoverScannerModal from '../handover/HandoverScannerModal';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -32,6 +36,48 @@ export default function OrdersSellsTab({ onListingsCountChange }) {
   const [deleting, setDeleting] = useState(false);
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+
+  // Handover state
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [activeOfferForQR, setActiveOfferForQR] = useState(null);
+  const [showScannerModal, setShowScannerModal] = useState(false);
+  const [selectedOrderForScanner, setSelectedOrderForScanner] = useState(null);
+
+  const handleOpenQRForListing = async (listingId) => {
+    try {
+      const res = await axios.get(`${API_BASE}/marketplace/listings/${listingId}/offers/`);
+      const acceptedOffer = res.data.find((o) => o.status === 'ACCEPTED');
+      if (acceptedOffer) {
+        setActiveOfferForQR(acceptedOffer);
+        setShowQRModal(true);
+      } else {
+        toast.error('No accepted deal found for this reserved listing.');
+      }
+    } catch (err) {
+      toast.error('Failed to load offer details.');
+    }
+  };
+
+  const handleCancelDeal = async (offerId) => {
+    if (!window.confirm('Are you sure you want to cancel this campus deal? The item will be made available again.')) {
+      return;
+    }
+    try {
+      await axios.post(`${API_BASE}/marketplace/offers/${offerId}/cancel/`);
+      toast.success('Deal cancelled. Listing restored to Active.');
+      fetchMyOffers();
+      fetchMyListings();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to cancel deal.');
+    }
+  };
+
+  const handleHandoverSuccess = () => {
+    setShowQRModal(false);
+    setShowScannerModal(false);
+    fetchMyOffers();
+    fetchMyListings();
+  };
 
   const fetchMyOffers = async () => {
     setLoadingOrders(true);
@@ -330,7 +376,18 @@ export default function OrdersSellsTab({ onListingsCountChange }) {
 
                     {/* Right Action Controls */}
                     <div className="flex flex-wrap items-center gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-gray-100">
-                      {item.offers_count > 0 && (
+                      {item.status === 'PENDING' && (
+                        <button
+                          onClick={() => handleOpenQRForListing(item.id)}
+                          className="bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-3 py-2 rounded-md shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                          title="Generate Handover QR & PIN"
+                        >
+                          <QrCode className="w-3.5 h-3.5" />
+                          Handover QR
+                        </button>
+                      )}
+
+                      {item.offers_count > 0 && item.status !== 'PENDING' && (
                         <Link
                           to={`/listing/${item.id}`}
                           className="bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-3 py-2 rounded-md shadow-xs flex items-center gap-1.5 transition-all"
@@ -443,17 +500,25 @@ export default function OrdersSellsTab({ onListingsCountChange }) {
                         <div className="flex items-center gap-2">
                           <span
                             className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
-                              ord.status === 'ACCEPTED'
+                              ord.status === 'COMPLETED'
                                 ? 'bg-emerald-100 text-emerald-800'
+                                : ord.status === 'ACCEPTED'
+                                ? 'bg-blue-100 text-blue-800'
                                 : ord.status === 'REJECTED'
                                 ? 'bg-rose-100 text-rose-800'
+                                : ord.status === 'CANCELLED'
+                                ? 'bg-gray-200 text-gray-700'
                                 : 'bg-amber-100 text-amber-800'
                             }`}
                           >
-                            {ord.status === 'ACCEPTED'
-                              ? 'Request Accepted (Reserved)'
+                            {ord.status === 'COMPLETED'
+                              ? '🎉 Purchased & Verified'
+                              : ord.status === 'ACCEPTED'
+                              ? 'Deal Accepted (Meetup Pending)'
                               : ord.status === 'REJECTED'
                               ? 'Request Declined'
+                              : ord.status === 'CANCELLED'
+                              ? 'Deal Cancelled'
                               : 'Pending Seller Response'}
                           </span>
                           <span className="text-[11px] text-gray-400">
@@ -495,6 +560,28 @@ export default function OrdersSellsTab({ onListingsCountChange }) {
                     </div>
 
                     <div className="flex items-center gap-2 flex-shrink-0">
+                      {ord.status === 'ACCEPTED' && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setSelectedOrderForScanner(ord);
+                              setShowScannerModal(true);
+                            }}
+                            className="bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-3 py-2 rounded-md shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                          >
+                            <Camera className="w-3.5 h-3.5" />
+                            Complete Handover
+                          </button>
+                          <button
+                            onClick={() => handleCancelDeal(ord.id)}
+                            className="px-2.5 py-2 rounded-md border border-gray-300 text-xs font-bold text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                            title="Cancel Deal"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+
                       <Link
                         to={`/listing/${ord.listing}`}
                         className="px-3.5 py-2 rounded-md border border-gray-300 text-xs font-bold text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-2xs"
@@ -539,6 +626,28 @@ export default function OrdersSellsTab({ onListingsCountChange }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Handover QR Modal (for Seller) */}
+      {showQRModal && activeOfferForQR && (
+        <HandoverQRModal
+          offerId={activeOfferForQR.id}
+          listingTitle={activeOfferForQR.listing_title}
+          buyerName={activeOfferForQR.buyer_name || activeOfferForQR.buyer_reg}
+          price={activeOfferForQR.offer_amount}
+          onClose={() => setShowQRModal(false)}
+          onComplete={handleHandoverSuccess}
+        />
+      )}
+
+      {/* Handover Scanner Modal (for Buyer) */}
+      {showScannerModal && (
+        <HandoverScannerModal
+          listingId={selectedOrderForScanner?.listing}
+          defaultOfferId={selectedOrderForScanner?.id}
+          onClose={() => setShowScannerModal(false)}
+          onSuccess={handleHandoverSuccess}
+        />
       )}
     </div>
   );

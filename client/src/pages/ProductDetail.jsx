@@ -28,10 +28,14 @@ import {
   Flag,
   HandCoins,
   ShoppingBag,
-  X
+  X,
+  QrCode,
+  Camera
 } from 'lucide-react';
 import CategoryIcon from '../components/CategoryIcon';
 import { toggleSavedItem, isItemSaved } from '../utils/savedStore';
+import HandoverQRModal from '../components/handover/HandoverQRModal';
+import HandoverScannerModal from '../components/handover/HandoverScannerModal';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -54,6 +58,12 @@ export default function ProductDetail() {
   const [submittingBuyRequest, setSubmittingBuyRequest] = useState(false);
   const [listingOffers, setListingOffers] = useState([]);
   const [userOffer, setUserOffer] = useState(null);
+
+  // Handover QR & Scanner state
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [activeOfferForQR, setActiveOfferForQR] = useState(null);
+  const [showScannerModal, setShowScannerModal] = useState(false);
+  const [cancellingDeal, setCancellingDeal] = useState(false);
 
   // Report modal state
   const [showReportModal, setShowReportModal] = useState(false);
@@ -212,6 +222,38 @@ export default function ProductDetail() {
       }
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to update request.');
+    }
+  };
+
+  const handleCancelDeal = async (offerId) => {
+    if (!window.confirm('Are you sure you want to cancel this campus deal? The listing will become Active again for other students.')) {
+      return;
+    }
+    setCancellingDeal(true);
+    try {
+      await axios.post(`${API_BASE}/marketplace/offers/${offerId}/cancel/`);
+      toast.success('Deal cancelled. Listing restored to Active.');
+      setListing((prev) => ({ ...prev, status: 'ACTIVE' }));
+      if (isOwner) {
+        fetchListingOffers();
+      } else {
+        setUserOffer((prev) => (prev ? { ...prev, status: 'CANCELLED' } : null));
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to cancel deal.');
+    } finally {
+      setCancellingDeal(false);
+    }
+  };
+
+  const handleDealCompleted = () => {
+    setShowQRModal(false);
+    setShowScannerModal(false);
+    setListing((prev) => ({ ...prev, status: 'SOLD' }));
+    if (isOwner) {
+      fetchListingOffers();
+    } else {
+      setUserOffer((prev) => (prev ? { ...prev, status: 'COMPLETED' } : null));
     }
   };
 
@@ -494,9 +536,32 @@ export default function ProductDetail() {
                       </button>
                     </>
                   ) : off.status === 'ACCEPTED' ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveOfferForQR(off);
+                          setShowQRModal(true);
+                        }}
+                        className="bg-brand-500 hover:bg-brand-600 text-white font-bold px-3 py-1.5 rounded-md text-xs transition-colors shadow-2xs cursor-pointer flex items-center gap-1.5"
+                      >
+                        <QrCode className="w-3.5 h-3.5" />
+                        Generate Handover QR
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleCancelDeal(off.id)}
+                        disabled={cancellingDeal}
+                        className="bg-white border border-gray-300 hover:bg-gray-100 text-red-600 font-bold px-2.5 py-1.5 rounded-md text-xs transition-colors cursor-pointer"
+                        title="Cancel this deal"
+                      >
+                        Cancel Deal
+                      </button>
+                    </div>
+                  ) : off.status === 'COMPLETED' ? (
                     <span className="text-emerald-700 font-bold flex items-center gap-1 text-xs">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      Deal Reserved
+                      Sold & Handed Over
                     </span>
                   ) : null}
                 </div>
@@ -509,13 +574,31 @@ export default function ProductDetail() {
       {/* Global Status Banner for Buyers */}
       {listing.status === 'PENDING' && (
         userOffer?.status === 'ACCEPTED' ? (
-          <div className="bg-emerald-50 border border-emerald-300 rounded-md p-4 mb-6 flex items-start gap-3 shadow-xs">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <h4 className="text-sm font-bold text-emerald-950">🎉 Your Purchase Request Was Accepted!</h4>
-              <p className="text-xs text-emerald-800 mt-0.5">
-                The seller has reserved this item for you. Reach out via WhatsApp or Phone below to complete your campus meetup.
-              </p>
+          <div className="bg-emerald-50 border border-emerald-300 rounded-md p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-bold text-emerald-950">🎉 Your Purchase Request Was Accepted!</h4>
+                <p className="text-xs text-emerald-800 mt-0.5">
+                  Meet the seller on campus to inspect the item, make payment (UPI/Cash), and scan their Handover QR code or enter their 6-digit PIN.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
+              <button
+                onClick={() => setShowScannerModal(true)}
+                className="flex-1 sm:flex-none bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-4 py-2.5 rounded-md shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Camera className="w-4 h-4" />
+                Complete Handover / Scan QR
+              </button>
+              <button
+                onClick={() => handleCancelDeal(userOffer.id)}
+                disabled={cancellingDeal}
+                className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold text-xs px-3 py-2.5 rounded-md transition-colors cursor-pointer"
+              >
+                Cancel Deal
+              </button>
             </div>
           </div>
         ) : (
@@ -795,13 +878,50 @@ export default function ProductDetail() {
                 </button>
               </div>
             ) : listing.status === 'PENDING' ? (
-              <div className="space-y-2 pt-2">
-                {userOffer?.status === 'ACCEPTED' ? (
-                  <div className="bg-emerald-100 border border-emerald-300 text-emerald-900 p-3.5 rounded-md text-xs font-bold text-center space-y-1">
+              <div className="space-y-3 pt-2">
+                {isOwner ? (
+                  <div className="bg-amber-50 border border-amber-300 text-amber-900 p-3.5 rounded-md text-xs font-bold text-center space-y-2">
+                    <div>🤝 Campus Deal In Progress</div>
+                    <p className="font-normal text-[11px] text-amber-800">
+                      When meeting the buyer for physical handover, click below to show your QR code and 6-digit PIN.
+                    </p>
+                    {listingOffers.find((o) => o.status === 'ACCEPTED') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const acceptedOffer = listingOffers.find((o) => o.status === 'ACCEPTED');
+                          setActiveOfferForQR(acceptedOffer);
+                          setShowQRModal(true);
+                        }}
+                        className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-md transition-all shadow-sm text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <QrCode className="w-4 h-4" />
+                        Generate Handover QR & PIN
+                      </button>
+                    )}
+                  </div>
+                ) : userOffer?.status === 'ACCEPTED' ? (
+                  <div className="bg-emerald-50 border border-emerald-300 text-emerald-900 p-3.5 rounded-md text-xs font-bold text-center space-y-2.5">
                     <div>✅ Deal Reserved for You!</div>
                     <div className="font-normal text-[11px] text-emerald-800">
-                      Coordinate with the seller via WhatsApp or Phone to meet on campus.
+                      Meet the seller on campus, inspect the item, and scan their QR or enter their 6-digit PIN.
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowScannerModal(true)}
+                      className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-md transition-all shadow-sm text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Camera className="w-4 h-4" />
+                      Complete Handover / Scan QR
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleCancelDeal(userOffer.id)}
+                      disabled={cancellingDeal}
+                      className="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold py-1.5 px-3 rounded-md text-[11px] transition-colors cursor-pointer"
+                    >
+                      Cancel Deal
+                    </button>
                   </div>
                 ) : (
                   <div className="bg-amber-100 border border-amber-300 text-amber-900 p-3 rounded-md text-xs font-bold text-center">
@@ -820,6 +940,11 @@ export default function ProductDetail() {
                     Chat on WhatsApp with Seller
                   </a>
                 )}
+              </div>
+            ) : listing.status === 'SOLD' ? (
+              <div className="bg-red-50 border border-red-200 text-red-700 text-center py-3.5 rounded-md text-xs font-extrabold uppercase mt-2 space-y-1">
+                <div>🔴 Item Sold</div>
+                <p className="text-[10px] font-normal text-red-600 lowercase first-letter:uppercase">Handover completed & verified on campus.</p>
               </div>
             ) : (
               <div className="bg-gray-100 border border-gray-200 text-gray-500 text-center py-3 rounded-md text-xs font-bold uppercase mt-2">
@@ -1100,6 +1225,28 @@ export default function ProductDetail() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Handover QR Modal (for Seller) */}
+      {showQRModal && activeOfferForQR && (
+        <HandoverQRModal
+          offerId={activeOfferForQR.id}
+          listingTitle={listing.title}
+          buyerName={activeOfferForQR.buyer_name || activeOfferForQR.buyer_reg}
+          price={activeOfferForQR.offer_amount || listing.price}
+          onClose={() => setShowQRModal(false)}
+          onComplete={handleDealCompleted}
+        />
+      )}
+
+      {/* Handover Scanner & PIN Modal (for Buyer) */}
+      {showScannerModal && (
+        <HandoverScannerModal
+          listingId={listing.id}
+          defaultOfferId={userOffer?.id}
+          onClose={() => setShowScannerModal(false)}
+          onSuccess={handleDealCompleted}
+        />
       )}
     </div>
   );
