@@ -85,3 +85,101 @@ class MarketplaceSecurityTests(TestCase):
         res = self.client.post(f'/api/marketplace/listings/{self.listing.id}/offer/', {'message': 'Buying my own item'})
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('cannot buy your own listing', res.data.get('error', '').lower())
+
+
+class MarketplaceHandoverTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.seller = User.objects.create_user(
+            username='12345678',
+            email='rahul@lpu.in',
+            password='Password123!',
+            full_name='Rahul Sharma',
+            phone_number='9876543210'
+        )
+        self.buyer = User.objects.create_user(
+            username='87654321',
+            email='aman@lpu.in',
+            password='Password123!',
+            full_name='Aman Verma',
+            phone_number='9876543219'
+        )
+        self.category = Category.objects.create(name='Phones', slug='phones')
+        self.listing = Listing.objects.create(
+            title='iPhone 12',
+            description='Good condition, 128GB',
+            price=25000,
+            condition='GOOD',
+            location='Uni-Mall',
+            seller=self.seller,
+            category=self.category,
+            status='ACTIVE'
+        )
+
+    def test_complete_handover_flow(self):
+        # 1. Buyer creates buy request
+        self.client.force_authenticate(user=self.buyer)
+        offer_res = self.client.post(f'/api/marketplace/listings/{self.listing.id}/offer/', {'message': 'Ready to meet at Uni-Mall'})
+        self.assertEqual(offer_res.status_code, status.HTTP_201_CREATED)
+        offer_id = offer_res.data['id']
+
+        # 2. Seller accepts request
+        self.client.force_authenticate(user=self.seller)
+        accept_res = self.client.patch(f'/api/marketplace/offers/{offer_id}/respond/', {'action': 'ACCEPT'})
+        self.assertEqual(accept_res.status_code, status.HTTP_200_OK)
+        self.listing.refresh_from_db()
+        self.assertEqual(self.listing.status, 'PENDING')
+
+        # 3. Seller generates QR code and PIN
+        qr_res = self.client.post(f'/api/marketplace/offers/{offer_id}/generate-qr/')
+        self.assertEqual(qr_res.status_code, status.HTTP_201_CREATED)
+        token = qr_res.data['token']
+        pin_code = qr_res.data['pin_code']
+        self.assertEqual(len(pin_code), 6)
+
+        # 4. Buyer verifies using 6-digit PIN
+        self.client.force_authenticate(user=self.buyer)
+        verify_pin_res = self.client.post('/api/marketplace/handover/verify/', {'pin_code': pin_code})
+        self.assertEqual(verify_pin_res.status_code, status.HTTP_200_OK)
+        self.assertTrue(verify_pin_res.data['verified'])
+        self.assertEqual(verify_pin_res.data['listing_title'], 'iPhone 12')
+
+        # 5. Buyer confirms handover
+        confirm_res = self.client.post('/api/marketplace/handover/confirm/', {'token': token})
+        self.assertEqual(confirm_res.status_code, status.HTTP_200_OK)
+
+        # 6. Verify atomic state updates
+        self.listing.refresh_from_db()
+        self.assertEqual(self.listing.status, 'SOLD')
+
+        offer = Offer.objects.get(pk=offer_id)
+        self.assertEqual(offer.status, 'COMPLETED')
+
+        # Token is now used and cannot be reused
+        reverify_res = self.client.post('/api/marketplace/handover/verify/', {'token': token})
+        self.assertEqual(reverify_res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cancel_deal_restores_listing_active(self):
+        # Setup accepted offer
+        self.client.force_authenticate(user=self.buyer)
+        offer_res = self.client.post(f'/api/marketplace/listings/{self.listing.id}/offer/', {'message': 'Test'})
+        offer_id = offer_res.data['id']
+
+        self.client.force_authenticate(user=self.seller)
+        self.client.patch(f'/api/marketplace/offers/{offer_id}/respond/', {'action': 'ACCEPT'})
+        self.listing.refresh_from_db()
+        self.assertEqual(self.listing.status, 'PENDING')
+
+        # Seller generates QR
+        self.client.post(f'/api/marketplace/offers/{offer_id}/generate-qr/')
+
+        # Buyer decides to cancel
+        self.client.force_authenticate(user=self.buyer)
+        cancel_res = self.client.post(f'/api/marketplace/offers/{offer_id}/cancel/')
+        self.assertEqual(cancel_res.status_code, status.HTTP_200_OK)
+
+        self.listing.refresh_from_db()
+        self.assertEqual(self.listing.status, 'ACTIVE')
+        offer = Offer.objects.get(pk=offer_id)
+        self.assertEqual(offer.status, 'CANCELLED')
+

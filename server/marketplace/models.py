@@ -74,19 +74,24 @@ class ListingImage(models.Model):
     def __str__(self):
         return f"Image for {self.listing.title}"
 
+import uuid
+from django.utils import timezone
+
 class Offer(models.Model):
     STATUS_CHOICES = (
         ('PENDING', 'Pending'),
         ('ACCEPTED', 'Accepted'),
         ('REJECTED', 'Rejected'),
         ('COUNTERED', 'Countered'),
+        ('COMPLETED', 'Completed'),
+        ('CANCELLED', 'Cancelled'),
     )
 
     buyer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='offers_made')
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='offers')
     offer_amount = models.DecimalField(max_digits=10, decimal_places=2)
     buyer_message = models.TextField(blank=True, default='')
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='PENDING')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -94,12 +99,47 @@ class Offer(models.Model):
         return f"{self.buyer} requested {self.listing.title} for {self.offer_amount}"
 
 
+class HandoverSession(models.Model):
+    STATUS_CHOICES = (
+        ('ACTIVE', 'Active'),
+        ('USED', 'Used'),
+        ('EXPIRED', 'Expired'),
+        ('CANCELLED', 'Cancelled'),
+    )
+
+    offer = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name='handover_sessions')
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    pin_code = models.CharField(max_length=6, db_index=True)
+    expires_at = models.DateTimeField()
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='ACTIVE')
+    failed_attempts = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def is_valid(self):
+        if self.status != 'ACTIVE':
+            return False
+        if timezone.now() > self.expires_at:
+            self.status = 'EXPIRED'
+            self.save(update_fields=['status'])
+            return False
+        return True
+
+    def __str__(self):
+        return f"HandoverSession for Offer #{self.offer_id} ({self.status}) - PIN {self.pin_code}"
+
+
 class Notification(models.Model):
     TYPES = (
         ('BUY_REQUEST', 'New Purchase Request'),
         ('REQUEST_ACCEPTED', 'Purchase Request Accepted'),
         ('REQUEST_REJECTED', 'Purchase Request Declined'),
-        ('ITEM_SOLD', 'Item Sold'),
+        ('HANDOVER_READY', 'Handover QR Ready'),
+        ('ITEM_SOLD', 'Item Sold / Handover Completed'),
+        ('DEAL_CANCELLED', 'Deal Cancelled'),
         ('GENERAL', 'General Alert'),
     )
 

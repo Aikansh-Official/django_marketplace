@@ -6,7 +6,8 @@ from .views import (
     ListingReportCreateView, AdminListingReportListView, AdminListingReportUpdateView,
     AdminPlatformSettingsView, ListingOffersView, RespondOfferView,
     NotificationListView, MarkNotificationReadView, MarkAllNotificationsReadView,
-    DeleteNotificationView, ClearAllNotificationsView
+    DeleteNotificationView, ClearAllNotificationsView,
+    GenerateHandoverQRView, VerifyHandoverView, ConfirmHandoverView, CancelDealView
 )
 
 urlpatterns = [
@@ -16,6 +17,10 @@ urlpatterns = [
     path('listings/<int:pk>/offer/', CreateOfferView.as_view(), name='create-offer'),
     path('listings/<int:pk>/offers/', ListingOffersView.as_view(), name='listing-offers'),
     path('offers/<int:pk>/respond/', RespondOfferView.as_view(), name='respond-offer'),
+    path('offers/<int:pk>/generate-qr/', GenerateHandoverQRView.as_view(), name='generate-handover-qr'),
+    path('offers/<int:pk>/cancel/', CancelDealView.as_view(), name='cancel-deal'),
+    path('handover/verify/', VerifyHandoverView.as_view(), name='verify-handover'),
+    path('handover/confirm/', ConfirmHandoverView.as_view(), name='confirm-handover'),
     path('notifications/', NotificationListView.as_view(), name='notifications-list'),
     path('notifications/<int:pk>/read/', MarkNotificationReadView.as_view(), name='mark-notification-read'),
     path('notifications/<int:pk>/delete/', DeleteNotificationView.as_view(), name='delete-notification'),

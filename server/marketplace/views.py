@@ -1,4 +1,7 @@
 import logging
+import random
+import datetime
+from django.db import transaction
 from rest_framework import generics, status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -9,12 +12,12 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 from .models import (
-    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification
+    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession
 )
 from .serializers import (
     ListingSerializer, ListingCreateUpdateSerializer, CategorySerializer,
     OfferSerializer, ListingReportSerializer, ListingReportCreateSerializer,
-    PlatformSettingSerializer, NotificationSerializer
+    PlatformSettingSerializer, NotificationSerializer, HandoverSessionSerializer
 )
 from .cloudinary_upload import upload_image_to_cloudinary
 
@@ -515,4 +518,233 @@ class AdminPlatformSettingsView(APIView):
                 defaults={'value': str(value)}
             )
         return Response({'message': 'Settings updated successfully', 'settings': request.data})
+
+
+class GenerateHandoverQRView(APIView):
+    """Seller generates dynamic QR code & 6-digit PIN for physical handover."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            offer = Offer.objects.select_related('listing', 'listing__seller', 'buyer').get(pk=pk)
+        except Offer.DoesNotExist:
+            return Response({'error': 'Deal / Offer not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if offer.listing.seller != request.user:
+            return Response({'error': 'Only the seller can generate the handover code.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if offer.status != 'ACCEPTED' or offer.listing.status != 'PENDING':
+            return Response(
+                {'error': f'Cannot generate handover code. Deal status is {offer.status} and item is {offer.listing.status}.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Invalidate any prior active sessions for this offer
+        HandoverSession.objects.filter(offer=offer, status='ACTIVE').update(status='EXPIRED')
+
+        # Generate a unique 6-digit pin and 5-min TTL
+        pin_code = f"{random.randint(100000, 999999)}"
+        expires_at = timezone.now() + datetime.timedelta(minutes=5)
+
+        session = HandoverSession.objects.create(
+            offer=offer,
+            pin_code=pin_code,
+            expires_at=expires_at,
+            status='ACTIVE'
+        )
+
+        # Notify buyer
+        seller_name = getattr(request.user, 'full_name', '') or request.user.username
+        Notification.objects.create(
+            recipient=offer.buyer,
+            sender=request.user,
+            notification_type='HANDOVER_READY',
+            title=f"Handover QR Ready for '{offer.listing.title}'",
+            message=f"{seller_name} has generated the Handover QR & PIN. Scan or enter PIN to complete your purchase!",
+            listing=offer.listing
+        )
+
+        serializer = HandoverSessionSerializer(session)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class VerifyHandoverView(APIView):
+    """Buyer scans QR or submits 6-digit PIN to verify handover details before final confirmation."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        token = request.data.get('token', '').strip()
+        pin_code = request.data.get('pin_code', '').strip()
+
+        if not token and not pin_code:
+            return Response({'error': 'Provide either a QR token or a 6-digit PIN code.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        session = None
+        if token:
+            session = HandoverSession.objects.select_related('offer', 'offer__listing', 'offer__listing__seller', 'offer__buyer').filter(token=token).first()
+        elif pin_code:
+            session = HandoverSession.objects.select_related('offer', 'offer__listing', 'offer__listing__seller', 'offer__buyer').filter(
+                pin_code=pin_code,
+                status='ACTIVE',
+                expires_at__gt=timezone.now()
+            ).first()
+
+        if not session:
+            return Response({'error': 'Invalid or expired QR code / PIN.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not session.is_valid():
+            return Response({'error': 'This handover session has expired or was already used.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if session.failed_attempts >= 3:
+            session.status = 'EXPIRED'
+            session.save(update_fields=['status'])
+            return Response({'error': 'Too many failed verification attempts. Please ask the seller to generate a new QR.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Verify buyer identity
+        if session.offer.buyer != request.user:
+            session.failed_attempts += 1
+            session.save(update_fields=['failed_attempts'])
+            return Response({'error': 'This handover code is reserved for a different buyer.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if session.offer.status != 'ACCEPTED' or session.offer.listing.status != 'PENDING':
+            return Response({'error': 'This deal is no longer active or has already been completed.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        listing = session.offer.listing
+        primary_img = listing.images.filter(is_primary=True).first() or listing.images.first()
+
+        return Response({
+            'session_id': session.id,
+            'token': str(session.token),
+            'listing_id': listing.id,
+            'listing_title': listing.title,
+            'listing_price': str(session.offer.offer_amount),
+            'listing_image': primary_img.image_url if primary_img else None,
+            'seller_id': listing.seller.id,
+            'seller_name': listing.seller.full_name or listing.seller.username,
+            'seller_reg': listing.seller.username,
+            'meetup_location': listing.location,
+            'verified': True
+        })
+
+
+class ConfirmHandoverView(APIView):
+    """Buyer gives final confirmation after physical handover; atomically marks listing SOLD."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        token = request.data.get('token', '').strip()
+        if not token:
+            return Response({'error': 'Handover token is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            try:
+                session = HandoverSession.objects.select_for_update().select_related(
+                    'offer', 'offer__listing', 'offer__listing__seller', 'offer__buyer'
+                ).get(token=token)
+            except HandoverSession.DoesNotExist:
+                return Response({'error': 'Handover session not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+            if not session.is_valid():
+                return Response({'error': 'This handover session has expired or is no longer valid.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            if session.offer.buyer != request.user:
+                return Response({'error': 'Unauthorized. You are not the designated buyer.'}, status=status.HTTP_403_FORBIDDEN)
+
+            offer = session.offer
+            listing = offer.listing
+
+            # 1. Update HandoverSession
+            session.status = 'USED'
+            session.completed_at = timezone.now()
+            session.save()
+
+            # 2. Update Offer
+            offer.status = 'COMPLETED'
+            offer.save()
+
+            # 3. Update Listing
+            listing.status = 'SOLD'
+            listing.save()
+
+            # 4. Invalidate any other handover sessions for this offer
+            HandoverSession.objects.filter(offer=offer, status='ACTIVE').exclude(pk=session.pk).update(status='EXPIRED')
+
+            buyer_name = getattr(request.user, 'full_name', '') or request.user.username
+            seller_name = getattr(listing.seller, 'full_name', '') or listing.seller.username
+
+            # 5. Notify Seller
+            Notification.objects.create(
+                recipient=listing.seller,
+                sender=request.user,
+                notification_type='ITEM_SOLD',
+                title=f"Deal Complete! '{listing.title}' Marked as Sold 🎉",
+                message=f"{buyer_name} verified product receipt and confirmed payment. Your item is marked as Sold.",
+                listing=listing
+            )
+
+            # 6. Notify Buyer
+            Notification.objects.create(
+                recipient=request.user,
+                sender=listing.seller,
+                notification_type='ITEM_SOLD',
+                title=f"Purchase Verified for '{listing.title}' 🎉",
+                message=f"You completed purchase of '{listing.title}' from {seller_name}. The item is logged in your Purchases.",
+                listing=listing
+            )
+
+            return Response({
+                'success': True,
+                'message': 'Handover successfully verified and confirmed! Listing marked as SOLD.',
+                'listing_id': listing.id,
+                'listing_title': listing.title
+            })
+
+
+class CancelDealView(APIView):
+    """Allows either buyer or seller to cancel an accepted deal before handover, restoring listing to ACTIVE."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            offer = Offer.objects.select_related('listing', 'listing__seller', 'buyer').get(pk=pk)
+        except Offer.DoesNotExist:
+            return Response({'error': 'Deal not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        is_seller = (offer.listing.seller == request.user)
+        is_buyer = (offer.buyer == request.user)
+
+        if not (is_seller or is_buyer):
+            return Response({'error': 'You are not authorized to cancel this deal.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if offer.status != 'ACCEPTED':
+            return Response({'error': f'Cannot cancel deal in {offer.status} status.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            # Invalidate all handover sessions
+            HandoverSession.objects.filter(offer=offer, status='ACTIVE').update(status='CANCELLED')
+
+            offer.status = 'CANCELLED'
+            offer.save()
+
+            # Unlock listing back to ACTIVE
+            listing = offer.listing
+            listing.status = 'ACTIVE'
+            listing.save()
+
+            canceller_name = getattr(request.user, 'full_name', '') or request.user.username
+            recipient = offer.buyer if is_seller else listing.seller
+
+            Notification.objects.create(
+                recipient=recipient,
+                sender=request.user,
+                notification_type='DEAL_CANCELLED',
+                title=f"Campus Deal Cancelled for '{listing.title}'",
+                message=f"{canceller_name} cancelled the campus deal. The listing is now available again.",
+                listing=listing
+            )
+
+        return Response({
+            'success': True,
+            'message': 'Deal cancelled and listing restored to Active.'
+        })
 

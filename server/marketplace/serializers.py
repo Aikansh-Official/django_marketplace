@@ -1,6 +1,7 @@
 from rest_framework import serializers
+from django.utils import timezone
 from .models import (
-    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification
+    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession
 )
 from .cloudinary_upload import (
     upload_base64_to_cloudinary, is_base64_image, is_url
@@ -212,16 +213,47 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
         return instance
 
 
+class HandoverSessionSerializer(serializers.ModelSerializer):
+    seller_name = serializers.CharField(source='offer.listing.seller.full_name', read_only=True)
+    seller_reg = serializers.CharField(source='offer.listing.seller.username', read_only=True)
+    buyer_name = serializers.CharField(source='offer.buyer.full_name', read_only=True)
+    buyer_reg = serializers.CharField(source='offer.buyer.username', read_only=True)
+    listing_id = serializers.IntegerField(source='offer.listing.id', read_only=True)
+    listing_title = serializers.CharField(source='offer.listing.title', read_only=True)
+    listing_price = serializers.DecimalField(source='offer.offer_amount', max_digits=10, decimal_places=2, read_only=True)
+    remaining_seconds = serializers.SerializerMethodField()
+
+    class Meta:
+        model = HandoverSession
+        fields = [
+            'id', 'offer', 'token', 'pin_code', 'status',
+            'expires_at', 'remaining_seconds', 'created_at', 'completed_at',
+            'seller_name', 'seller_reg', 'buyer_name', 'buyer_reg',
+            'listing_id', 'listing_title', 'listing_price'
+        ]
+        read_only_fields = fields
+
+    def get_remaining_seconds(self, obj):
+        if obj.status != 'ACTIVE':
+            return 0
+        diff = (obj.expires_at - timezone.now()).total_seconds()
+        return max(0, int(diff))
+
+
 class OfferSerializer(serializers.ModelSerializer):
     listing_title = serializers.CharField(source='listing.title', read_only=True)
     listing_price = serializers.DecimalField(source='listing.price', max_digits=10, decimal_places=2, read_only=True)
+    seller_id = serializers.IntegerField(source='listing.seller.id', read_only=True)
     seller_name = serializers.CharField(source='listing.seller.full_name', read_only=True)
     seller_reg = serializers.CharField(source='listing.seller.username', read_only=True)
+    seller_phone = serializers.CharField(source='listing.contact_phone', read_only=True)
+    seller_whatsapp = serializers.CharField(source='listing.contact_whatsapp', read_only=True)
     buyer_name = serializers.CharField(source='buyer.full_name', read_only=True)
     buyer_reg = serializers.CharField(source='buyer.username', read_only=True)
     buyer_trust_score = serializers.IntegerField(source='buyer.trust_score', read_only=True)
     meetup_location = serializers.CharField(source='listing.location', read_only=True)
     listing_image = serializers.SerializerMethodField()
+    active_handover = serializers.SerializerMethodField()
 
     class Meta:
         model = Offer
@@ -229,13 +261,21 @@ class OfferSerializer(serializers.ModelSerializer):
             'id', 'listing', 'listing_title', 'listing_price', 'listing_image',
             'offer_amount', 'buyer_message', 'status', 'created_at',
             'buyer', 'buyer_name', 'buyer_reg', 'buyer_trust_score',
-            'seller_name', 'seller_reg', 'meetup_location'
+            'seller_id', 'seller_name', 'seller_reg', 'seller_phone', 'seller_whatsapp',
+            'meetup_location', 'active_handover'
         ]
         read_only_fields = ['status', 'created_at']
 
     def get_listing_image(self, obj):
         img = obj.listing.images.filter(is_primary=True).first() or obj.listing.images.first()
         return img.image_url if img else None
+
+    def get_active_handover(self, obj):
+        if obj.status == 'ACCEPTED':
+            session = obj.handover_sessions.filter(status='ACTIVE', expires_at__gt=timezone.now()).first()
+            if session:
+                return HandoverSessionSerializer(session).data
+        return None
 
 
 class NotificationSerializer(serializers.ModelSerializer):
