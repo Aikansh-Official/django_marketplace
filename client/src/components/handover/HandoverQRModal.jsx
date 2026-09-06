@@ -4,39 +4,55 @@ import toast from 'react-hot-toast';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   X,
-  QrCode,
   Clock,
   Copy,
   Check,
   RefreshCw,
-  ShieldCheck,
-  Sparkles,
   AlertCircle,
-  UserCheck
+  Package,
+  Zap,
+  Sparkles
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-export default function HandoverQRModal({ offerId, listingTitle, buyerName, price, onClose, onComplete }) {
+export default function HandoverQRModal({
+  offerId,
+  listingId,
+  listingTitle,
+  buyerName,
+  price,
+  location,
+  image,
+  existingSession,
+  onClose,
+  onComplete
+}) {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [regenerating, setRegenerating] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(300);
   const [copied, setCopied] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const isCompletedRef = useRef(false);
   const pollIntervalRef = useRef(null);
 
   // Generate or fetch handover session
   const generateQR = async () => {
+    setError(null);
     try {
       const res = await axios.post(`${API_BASE}/marketplace/offers/${offerId}/generate-qr/`);
       setSession(res.data);
       setSecondsLeft(res.data.remaining_seconds || 300);
       setIsCompleted(false);
+      isCompletedRef.current = false;
     } catch (err) {
       console.error('Failed to generate handover QR', err);
-      toast.error(err.response?.data?.error || 'Failed to generate Handover QR code.');
+      const msg = err.response?.data?.error || 'Failed to generate Handover code.';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
       setRegenerating(false);
@@ -44,7 +60,13 @@ export default function HandoverQRModal({ offerId, listingTitle, buyerName, pric
   };
 
   useEffect(() => {
-    generateQR();
+    if (existingSession && existingSession.status === 'ACTIVE' && existingSession.remaining_seconds > 10) {
+      setSession(existingSession);
+      setSecondsLeft(existingSession.remaining_seconds);
+      setLoading(false);
+    } else {
+      generateQR();
+    }
   }, [offerId]);
 
   // Countdown timer
@@ -64,44 +86,92 @@ export default function HandoverQRModal({ offerId, listingTitle, buyerName, pric
     return () => clearInterval(timer);
   }, [session, isCompleted, secondsLeft]);
 
-  // Status polling to detect when Buyer confirms
-  useEffect(() => {
-    if (!session || isCompleted || secondsLeft <= 0) return;
+  // Trigger completion celebration for Seller
+  const triggerCompletion = () => {
+    if (isCompletedRef.current) return;
+    isCompletedRef.current = true;
+    setIsCompleted(true);
 
-    pollIntervalRef.current = setInterval(async () => {
+    confetti({
+      particleCount: 140,
+      spread: 90,
+      origin: { y: 0.6 }
+    });
+    toast.success('Handover Verified! Item marked as SOLD! 🎉', { duration: 5000 });
+
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+    }
+    window.dispatchEvent(new CustomEvent('notifications-updated'));
+
+    if (onComplete) {
+      // Auto-transition after 3.5 seconds so seller can see verified screen
+      setTimeout(() => {
+        onComplete();
+      }, 3500);
+    }
+  };
+
+  // Status polling and cross-window events to detect when Buyer confirms handover
+  useEffect(() => {
+    if (isCompleted) return;
+
+    const targetListingId = listingId || session?.listing_id || existingSession?.listing_id;
+    if (!targetListingId) return;
+
+    const checkOfferStatus = async () => {
+      if (isCompletedRef.current) return;
       try {
-        const res = await axios.get(`${API_BASE}/marketplace/listings/${session.listing_id}/offers/`);
+        const res = await axios.get(`${API_BASE}/marketplace/listings/${targetListingId}/offers/`);
         const currentOffer = res.data.find((o) => o.id === offerId);
+
         if (currentOffer && currentOffer.status === 'COMPLETED') {
-          setIsCompleted(true);
-          confetti({
-            particleCount: 80,
-            spread: 70,
-            origin: { y: 0.6 }
-          });
-          toast.success('Handover Verified! Your item is marked as SOLD! 🎉', { duration: 5000 });
-          clearInterval(pollIntervalRef.current);
-          if (onComplete) {
-            setTimeout(() => {
-              onComplete();
-            }, 2500);
-          }
+          triggerCompletion();
         }
       } catch (e) {
-        // Ignore polling errors
+        // Ignore background polling errors
       }
-    }, 3000);
+    };
+
+    // Poll every 1.5 seconds without being cancelled by countdown timer
+    pollIntervalRef.current = setInterval(checkOfferStatus, 1500);
+
+    // Instant sync for same-browser tabs/windows
+    const handleDealCompletedEvent = (e) => {
+      const eventListingId = e?.detail?.listingId || e?.detail;
+      if (!eventListingId || String(eventListingId) === String(targetListingId)) {
+        triggerCompletion();
+      }
+    };
+
+    const handleStorage = (e) => {
+      if (e.key === 'deal_completed_event') {
+        try {
+          const data = JSON.parse(e.newValue);
+          if (!data?.listingId || String(data.listingId) === String(targetListingId)) {
+            triggerCompletion();
+          }
+        } catch (err) {
+          triggerCompletion();
+        }
+      }
+    };
+
+    window.addEventListener('deal-completed', handleDealCompletedEvent);
+    window.addEventListener('storage', handleStorage);
 
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+      window.removeEventListener('deal-completed', handleDealCompletedEvent);
+      window.removeEventListener('storage', handleStorage);
     };
-  }, [session, isCompleted, secondsLeft, offerId, onComplete]);
+  }, [listingId, session?.listing_id, existingSession?.listing_id, offerId, isCompleted]);
 
   const handleCopyPin = () => {
     if (!session?.pin_code) return;
     navigator.clipboard.writeText(session.pin_code);
     setCopied(true);
-    toast.success('Handover PIN copied to clipboard!');
+    toast.success(`PIN ${session.pin_code} copied!`);
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -118,147 +188,260 @@ export default function HandoverQRModal({ offerId, listingTitle, buyerName, pric
 
   const isExpired = secondsLeft <= 0;
 
+  // Clean 6 individual digit boxes
+  const renderPinBoxes = () => {
+    const pin = session?.pin_code ? String(session.pin_code) : '';
+    const digits = pin.padEnd(6, '-').slice(0, 6).split('');
+
+    return (
+      <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+        {digits.map((digit, idx) => (
+          <div
+            key={idx}
+            className="w-10 h-12 sm:w-11 sm:h-12 flex items-center justify-center bg-gray-50 rounded-xl border border-gray-200 font-mono text-xl sm:text-2xl font-bold text-gray-900 select-all"
+          >
+            {digit}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 relative animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-gray-100 relative animate-in fade-in zoom-in-95 duration-200">
+        
         {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+          title="Close"
         >
           <X className="w-5 h-5" />
         </button>
 
         {isCompleted ? (
-          /* Success Screen */
-          <div className="py-8 text-center space-y-4">
-            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto animate-bounce">
-              <Check className="w-8 h-8 stroke-[3]" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-xl font-black text-gray-900">Handover Complete!</h3>
-              <p className="text-xs text-gray-500 max-w-xs mx-auto">
-                Buyer confirmed receipt of <strong className="text-gray-800">{listingTitle}</strong>.
-              </p>
-            </div>
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-800 font-semibold inline-block">
-              Listing status automatically updated to: <span className="font-extrabold text-emerald-700 uppercase">SOLD</span>
-            </div>
-          </div>
-        ) : loading ? (
-          /* Loading Screen */
-          <div className="py-16 text-center space-y-3">
-            <div className="w-10 h-10 border-3 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-            <p className="text-xs text-gray-500 font-medium">Generating secure Handover QR & PIN...</p>
-          </div>
-        ) : (
-          /* QR & PIN Handover Screen */
-          <div className="space-y-5">
-            {/* Header */}
-            <div className="text-center space-y-1">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-200/80 text-orange-700 text-xs font-bold mb-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-orange-500" />
-                Physical Handover Handshake
+          /* ====================================================
+             1. SUCCESS CELEBRATION SCREEN
+             ==================================================== */
+          <div className="py-6 text-center space-y-4">
+            <div className="relative w-16 h-16 mx-auto">
+              <div className="absolute inset-0 rounded-full bg-emerald-400/20 animate-ping"></div>
+              <div className="relative w-16 h-16 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                <Check className="w-8 h-8 stroke-[3]" />
               </div>
-              <h3 className="text-lg font-black text-gray-900">Scan to Verify Handover</h3>
+            </div>
+
+            <div className="space-y-1">
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                <Sparkles className="w-3 h-3 text-emerald-500" /> Handover Complete
+              </span>
+              <h3 className="text-xl font-black text-gray-900">Deal Verified!</h3>
               <p className="text-xs text-gray-500">
-                Show this QR to <strong className="text-gray-800">{buyerName || 'the buyer'}</strong> when handing over the item.
+                <strong className="text-gray-800">{buyerName || 'Buyer'}</strong> confirmed delivery & payment.
               </p>
             </div>
 
-            {/* QR Card */}
-            <div className="relative bg-gradient-to-b from-gray-50 to-gray-100/70 border border-gray-200 rounded-2xl p-5 flex flex-col items-center justify-center shadow-inner">
+            <div className="bg-emerald-50 border border-emerald-200/90 rounded-xl p-3 text-center space-y-1">
+              <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-800">
+                <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                <span>+3 Trust Score Added!</span>
+              </div>
+              <p className="text-[11px] text-gray-600">
+                Listing status updated to <span className="font-bold text-emerald-700">SOLD</span>.
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                if (onComplete) onComplete();
+                onClose();
+              }}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 px-4 rounded-xl shadow-sm transition-colors"
+            >
+              Done
+            </button>
+          </div>
+        ) : loading ? (
+          /* ====================================================
+             2. LOADING SCREEN
+             ==================================================== */
+          <div className="py-16 text-center space-y-3">
+            <div className="w-10 h-10 border-3 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p className="text-xs text-gray-500 font-medium">Generating Handover QR & PIN...</p>
+          </div>
+        ) : error && !session ? (
+          /* ====================================================
+             3. ERROR / RETRY SCREEN
+             ==================================================== */
+          <div className="py-10 text-center space-y-3">
+            <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto border border-red-100">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <div className="space-y-0.5">
+              <h3 className="text-sm font-bold text-gray-900">Failed to load code</h3>
+              <p className="text-xs text-red-600 max-w-xs mx-auto">{error}</p>
+            </div>
+            <button
+              onClick={handleRegenerate}
+              disabled={regenerating}
+              className="inline-flex items-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${regenerating ? 'animate-spin' : ''}`} />
+              Try Again
+            </button>
+          </div>
+        ) : (
+          /* ====================================================
+             4. CLEAN & SIMPLE ACTIVE HANDOVER SCREEN
+             ==================================================== */
+          <div className="space-y-4">
+            
+            {/* Header */}
+            <div className="text-center space-y-0.5 pt-1">
+              <h3 className="text-lg font-bold text-gray-900">
+                Handover Verification
+              </h3>
+              <p className="text-xs text-gray-500">
+                Show this to <strong className="text-gray-800">{buyerName || 'the buyer'}</strong> at pickup
+              </p>
+            </div>
+
+            {/* QR Code Section */}
+            <div className="flex flex-col items-center justify-center py-1">
               {isExpired ? (
-                <div className="py-8 text-center space-y-3">
-                  <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
+                /* Expired Overlay */
+                <div className="py-6 text-center space-y-2.5">
+                  <div className="w-11 h-11 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto">
+                    <Clock className="w-5 h-5" />
+                  </div>
                   <div className="space-y-0.5">
-                    <p className="text-sm font-bold text-gray-800">QR Code Expired</p>
-                    <p className="text-xs text-gray-500">Handover codes expire after 5 minutes for security.</p>
+                    <p className="text-sm font-bold text-gray-900">QR Code Expired</p>
+                    <p className="text-xs text-gray-400">Codes expire after 5 minutes.</p>
                   </div>
                   <button
                     onClick={handleRegenerate}
                     disabled={regenerating}
-                    className="inline-flex items-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-sm"
+                    className="inline-flex items-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors shadow-xs"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${regenerating ? 'animate-spin' : ''}`} />
-                    Regenerate Code
+                    Generate New Code
                   </button>
                 </div>
               ) : (
                 <>
-                  <div className="bg-white p-3.5 rounded-xl shadow-md border border-gray-200/90">
-                    <QRCodeSVG
-                      value={session?.token || ''}
-                      size={180}
-                      level="H"
-                      includeMargin={true}
-                    />
+                  {/* Clean QR Code */}
+                  <div className="p-3 bg-white border border-gray-200 rounded-2xl shadow-xs">
+                    {session?.token && (
+                      <QRCodeSVG
+                        value={session.token}
+                        size={170}
+                        level="H"
+                        includeMargin={false}
+                      />
+                    )}
                   </div>
 
-                  {/* Timer Badge */}
-                  <div className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-gray-600 bg-white/90 px-3 py-1 rounded-full shadow-2xs border border-gray-200">
-                    <Clock className="w-3.5 h-3.5 text-orange-500 animate-pulse" />
-                    Expires in: <span className="font-mono text-orange-600 font-extrabold">{formatTime(secondsLeft)}</span>
+                  {/* Clean Timer Badge */}
+                  <div
+                    className={`mt-2.5 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-0.5 rounded-full transition-colors ${
+                      secondsLeft > 120
+                        ? 'bg-gray-100 text-gray-700'
+                        : secondsLeft > 60
+                        ? 'bg-amber-50 text-amber-700'
+                        : 'bg-rose-50 text-rose-700 animate-pulse'
+                    }`}
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>Expires in <strong className="font-mono">{formatTime(secondsLeft)}</strong></span>
                   </div>
                 </>
               )}
             </div>
 
-            {/* 6-Digit PIN Fallback Section */}
+            {/* Subtle Divider */}
             {!isExpired && (
-              <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3.5 text-center space-y-2">
-                <div className="flex items-center justify-center gap-1 text-[11px] font-bold text-amber-900 uppercase tracking-wider">
-                  <span>Or enter 6-digit Handover PIN</span>
-                </div>
-                <div className="flex items-center justify-center gap-3">
-                  <span className="font-mono text-2xl font-black tracking-widest text-gray-900 bg-white px-4 py-1.5 rounded-lg border border-amber-300 shadow-2xs">
-                    {session?.pin_code}
+              <>
+                <div className="relative flex items-center justify-center">
+                  <div className="border-t border-gray-200 w-full"></div>
+                  <span className="bg-white px-2.5 text-[11px] font-medium text-gray-400 uppercase tracking-wider">
+                    or enter 6-digit PIN
                   </span>
-                  <button
-                    onClick={handleCopyPin}
-                    className="p-2 bg-white hover:bg-amber-100 text-amber-700 rounded-lg border border-amber-300 transition-colors"
-                    title="Copy PIN"
-                  >
-                    {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                  </button>
                 </div>
-                <p className="text-[11px] text-gray-500">
-                  Useful if the buyer is using a laptop webcam or has poor lighting.
-                </p>
-              </div>
+
+                {/* 6 Digit Display & Copy */}
+                <div className="space-y-2">
+                  {renderPinBoxes()}
+
+                  <div className="text-center">
+                    <button
+                      onClick={handleCopyPin}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 px-3 py-1 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <span className="text-emerald-600">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5 text-gray-500" />
+                          <span>Copy PIN</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
 
-            {/* Transaction Brief */}
-            <div className="flex items-center justify-between text-xs bg-gray-50 p-3 rounded-xl border border-gray-200">
-              <div className="truncate pr-2">
-                <p className="font-bold text-gray-800 truncate">{listingTitle}</p>
-                <p className="text-[11px] text-gray-500">Buyer: {buyerName}</p>
+            {/* Clean Minimal Product Row */}
+            <div className="flex items-center justify-between pt-3 border-t border-gray-100 text-xs">
+              <div className="flex items-center gap-2.5 truncate pr-2">
+                {image ? (
+                  <img
+                    src={image}
+                    alt=""
+                    className="w-9 h-9 rounded-lg object-cover border border-gray-200 shrink-0"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-lg bg-orange-50 text-brand-500 flex items-center justify-center shrink-0">
+                    <Package className="w-4 h-4" />
+                  </div>
+                )}
+                <div className="truncate">
+                  <p className="font-semibold text-gray-900 truncate">{listingTitle}</p>
+                  <p className="text-[11px] text-gray-500 truncate">Buyer: {buyerName}</p>
+                </div>
               </div>
-              <div className="text-right flex-shrink-0">
-                <p className="text-xs font-black text-gray-900">₹{price}</p>
-                <p className="text-[10px] text-emerald-600 font-bold">UPI / Cash at Handover</p>
+
+              <div className="text-right shrink-0">
+                <p className="text-sm font-black text-gray-900">₹{price}</p>
+                <p className="text-[10px] font-semibold text-emerald-600">UPI / Cash</p>
               </div>
             </div>
 
-            {/* Footer Notice */}
+            {/* Bottom Actions Row */}
             <div className="flex items-center justify-between pt-1">
               <button
                 onClick={handleRegenerate}
-                disabled={regenerating}
-                className="text-xs font-bold text-gray-600 hover:text-gray-900 inline-flex items-center gap-1.5"
+                disabled={regenerating || loading}
+                className="text-xs font-semibold text-gray-500 hover:text-gray-900 inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${regenerating ? 'animate-spin' : ''}`} />
-                Refresh QR
+                Refresh
               </button>
               <button
                 onClick={onClose}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold px-4 py-2 rounded-xl transition-colors"
+                className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold px-4 py-2 rounded-xl transition-colors cursor-pointer"
               >
                 Close Window
               </button>
             </div>
+
           </div>
         )}
+
       </div>
     </div>
   );

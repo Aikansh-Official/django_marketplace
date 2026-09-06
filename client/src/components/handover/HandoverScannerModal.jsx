@@ -205,6 +205,17 @@ export default function HandoverScannerModal({ listingId, defaultOfferId, onClos
       });
       toast.success('Congratulations! Deal verified & completed successfully! 🎉', { duration: 5000 });
 
+      // Notify seller tabs/windows immediately
+      const targetListingId = listingId || verifiedData?.listing_id;
+      try {
+        localStorage.setItem(
+          'deal_completed_event',
+          JSON.stringify({ listingId: targetListingId, timestamp: Date.now() })
+        );
+      } catch (e) {}
+      window.dispatchEvent(new CustomEvent('deal-completed', { detail: { listingId: targetListingId } }));
+      window.dispatchEvent(new CustomEvent('notifications-updated'));
+
       if (onSuccess) {
         setTimeout(() => {
           onSuccess(verifiedData);
