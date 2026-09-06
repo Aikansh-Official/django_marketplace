@@ -245,3 +245,54 @@ class AuthStatusView(APIView):
                 "user": UserListSerializer(request.user).data
             })
         return Response({"isAuthenticated": False, "user": None})
+
+class CompleteIdVerificationView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        user = request.user
+        reg_no = str(request.data.get('reg_no', '')).strip()
+        id_card_image = request.data.get('id_card_image', None)
+
+        if not reg_no:
+            return Response(
+                {"error": "Registration number is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not id_card_image or not isinstance(id_card_image, str) or len(id_card_image) < 100:
+            return Response(
+                {"error": "A valid student ID card image must be uploaded."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if str(user.username).strip() != reg_no:
+            return Response(
+                {"error": f"Registration number mismatch. Your account is registered with '{user.username}', but '{reg_no}' was submitted."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user.is_id_verified = True
+        if id_card_image:
+            user.id_card_image = id_card_image
+        user.trust_score = user.calculate_trust_score()
+        user.save()
+
+        logger.info(f"User {user.username} successfully completed student ID verification.")
+        return Response({
+            "message": "Student ID verified successfully! +5 Trust Score Points awarded.",
+            "user": UserListSerializer(user).data
+        }, status=status.HTTP_200_OK)
+
+    def delete(self, request):
+        user = request.user
+        user.is_id_verified = False
+        user.id_card_image = None
+        user.trust_score = user.calculate_trust_score()
+        user.save(update_fields=['is_id_verified', 'id_card_image', 'trust_score'])
+        return Response({
+            "message": "ID verification reset successfully.",
+            "user": UserListSerializer(user).data
+        }, status=status.HTTP_200_OK)
+
+
