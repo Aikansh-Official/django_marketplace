@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
+import UniversalLoader from '../components/common/UniversalLoader';
 
 export default function Notifications() {
   const [notifications, setNotifications] = useState([]);
@@ -308,11 +309,11 @@ export default function Notifications() {
 
       {/* Notifications List */}
       {loading ? (
-        <div className="flex justify-center items-center py-24">
-          <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="py-12">
+          <UniversalLoader text="Loading notifications..." />
         </div>
       ) : filteredNotifications.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-md p-12 text-center shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-md p-12 text-center shadow-sm animate-fade-in-up">
           <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <h3 className="text-base font-bold text-gray-800">No notifications found</h3>
           <p className="text-xs text-gray-500 mt-1 mb-6">
@@ -328,7 +329,7 @@ export default function Notifications() {
           </Link>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 animate-fade-in-up">
           {filteredNotifications.map((notif) => {
             const listingId = notif.listing || notif.related_listing;
             return (

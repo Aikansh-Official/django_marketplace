@@ -23,6 +23,7 @@ import {
   Package
 } from 'lucide-react';
 import CategoryIcon from '../components/CategoryIcon';
+import UniversalLoader from '../components/common/UniversalLoader';
 
 
 const TRANSACTION_FILTERS = [
@@ -289,8 +290,8 @@ export default function Home() {
 
         {/* Listings Grid */}
         {loading ? (
-          <div className="flex justify-center items-center py-24">
-            <div className="w-10 h-10 border-3 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="py-12">
+            <UniversalLoader text="Loading items..." />
           </div>
         ) : error ? (
           <div className="text-center py-12 bg-white rounded-md border border-red-200 p-6 shadow-sm">
@@ -331,7 +332,7 @@ export default function Home() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 animate-fade-in-up">
             {listings.map((listing) => {
               const primaryImage =
                 listing.images?.find((img) => img.is_primary)?.image_url ||

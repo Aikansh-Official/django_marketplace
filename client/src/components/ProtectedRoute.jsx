@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import axios from 'axios';
 
+import UniversalLoader from './common/UniversalLoader';
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export default function ProtectedRoute({ children }) {
@@ -26,7 +28,7 @@ export default function ProtectedRoute({ children }) {
   }, []);
 
   if (isAuthenticated === null) {
-    return null; // Wait for the auth check to complete
+    return <UniversalLoader fullScreen text="Loading..." />;
   }
 
   if (!isAuthenticated) {

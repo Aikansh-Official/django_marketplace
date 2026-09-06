@@ -16,12 +16,14 @@ import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Toaster } from 'react-hot-toast';
+import { LoadingProvider } from './context/LoadingContext';
 
 function App() {
   return (
     <BrowserRouter>
-      <Toaster position="bottom-right" toastOptions={{ className: 'font-sans font-medium rounded-md shadow-lg', duration: 4000 }} />
-      <div className="flex flex-col min-h-screen relative font-sans text-gray-900 bg-gray-50">
+      <LoadingProvider>
+        <Toaster position="bottom-right" toastOptions={{ className: 'font-sans font-medium rounded-md shadow-lg', duration: 4000 }} />
+        <div className="flex flex-col min-h-screen relative font-sans text-gray-900 bg-gray-50">
         
         <div className="flex-1 flex flex-col relative z-10">
           <Navbar />
@@ -46,6 +48,7 @@ function App() {
           <Footer />
         </div>
       </div>
+      </LoadingProvider>
     </BrowserRouter>
   );
 }

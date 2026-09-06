@@ -36,3 +36,108 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8; 
 }
+
+/* =========================================================================
+   Universal Buffering & Loading Animations
+   ========================================================================= */
+
+@keyframes spinReverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes bufferSweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(40%);
+  }
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    transform: scale(0.97);
+    filter: drop-shadow(0 0 10px rgba(251, 86, 7, 0.3));
+  }
+  50% {
+    transform: scale(1.03);
+    filter: drop-shadow(0 0 22px rgba(251, 86, 7, 0.65));
+  }
+}
+
+@keyframes radarRipple {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@keyframes dotPulse {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.35;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUpSmooth {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-spin-reverse {
+  animation: spinReverse 2.6s linear infinite;
+}
+
+.animate-buffer-sweep {
+  animation: bufferSweep 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.4s ease-in-out infinite;
+}
+
+.animate-radar-ripple {
+  animation: radarRipple 2.2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+.animate-dot-1 {
+  animation: dotPulse 1.4s infinite ease-in-out;
+  animation-delay: 0ms;
+}
+
+.animate-dot-2 {
+  animation: dotPulse 1.4s infinite ease-in-out;
+  animation-delay: 200ms;
+}
+
+.animate-dot-3 {
+  animation: dotPulse 1.4s infinite ease-in-out;
+  animation-delay: 400ms;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUpSmooth 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
