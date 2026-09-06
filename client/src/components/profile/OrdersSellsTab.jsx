@@ -48,7 +48,12 @@ export default function OrdersSellsTab({ onListingsCountChange }) {
       const res = await axios.get(`${API_BASE}/marketplace/listings/${listingId}/offers/`);
       const acceptedOffer = res.data.find((o) => o.status === 'ACCEPTED');
       if (acceptedOffer) {
-        setActiveOfferForQR(acceptedOffer);
+        const listing = listings.find((l) => l.id === listingId);
+        setActiveOfferForQR({
+          ...acceptedOffer,
+          location: listing?.location,
+          image: listing?.images?.[0]?.image_url || acceptedOffer.listing_image
+        });
         setShowQRModal(true);
       } else {
         toast.error('No accepted deal found for this reserved listing.');
@@ -120,7 +125,32 @@ export default function OrdersSellsTab({ onListingsCountChange }) {
     }
   }, [statusFilter, subTab]);
 
+  useEffect(() => {
+    const handleDealDone = () => {
+      fetchMyListings();
+      fetchMyOffers();
+    };
+
+    const handleStorage = (e) => {
+      if (e.key === 'deal_completed_event') {
+        handleDealDone();
+      }
+    };
+
+    window.addEventListener('deal-completed', handleDealDone);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('deal-completed', handleDealDone);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
+
   const handleStatusChange = async (listingId, newStatus) => {
+    const currentItem = listings.find((l) => l.id === listingId);
+    if (currentItem?.status === 'SOLD') {
+      toast.error('This item has already been marked as Sold and cannot be changed.');
+      return;
+    }
     try {
       await axios.patch(
         `${API_BASE}/marketplace/listings/${listingId}/status/`,
@@ -130,7 +160,7 @@ export default function OrdersSellsTab({ onListingsCountChange }) {
       fetchMyListings();
     } catch (err) {
       console.error('Failed to change status', err);
-      toast.error('Failed to update status.');
+      toast.error(err.response?.data?.error || 'Failed to update status.');
     }
   };
 
@@ -397,16 +427,23 @@ export default function OrdersSellsTab({ onListingsCountChange }) {
                         </Link>
                       )}
 
-                      <select
-                        value={item.status}
-                        onChange={(e) => handleStatusChange(item.id, e.target.value)}
-                        className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-xs font-bold text-gray-700 outline-none focus:ring-2 focus:ring-brand-500 transition-all cursor-pointer"
-                      >
-                        <option value="ACTIVE">Mark Active</option>
-                        <option value="PENDING">Mark Reserved</option>
-                        <option value="SOLD">Mark Sold</option>
-                        <option value="HIDDEN">Mark Hidden</option>
-                      </select>
+                      {item.status === 'SOLD' ? (
+                        <span className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-md px-3 py-2 text-xs font-bold flex items-center gap-1 select-none">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          Sold
+                        </span>
+                      ) : (
+                        <select
+                          value={item.status}
+                          onChange={(e) => handleStatusChange(item.id, e.target.value)}
+                          className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-xs font-bold text-gray-700 outline-none focus:ring-2 focus:ring-brand-500 transition-all cursor-pointer"
+                        >
+                          <option value="ACTIVE">Mark Active</option>
+                          <option value="PENDING">Mark Reserved</option>
+                          <option value="SOLD">Mark Sold</option>
+                          <option value="HIDDEN">Mark Hidden</option>
+                        </select>
+                      )}
 
                       <Link
                         to={`/listing/${item.id}`}
@@ -416,13 +453,15 @@ export default function OrdersSellsTab({ onListingsCountChange }) {
                         <ExternalLink className="w-4 h-4" />
                       </Link>
 
-                      <Link
-                        to={`/edit-listing/${item.id}`}
-                        className="bg-gray-50 hover:bg-gray-100 text-gray-700 p-2.5 rounded-md transition-colors border border-gray-200"
-                        title="Edit Listing"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </Link>
+                      {item.status !== 'SOLD' && (
+                        <Link
+                          to={`/edit-listing/${item.id}`}
+                          className="bg-gray-50 hover:bg-gray-100 text-gray-700 p-2.5 rounded-md transition-colors border border-gray-200"
+                          title="Edit Listing"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </Link>
+                      )}
 
                       <button
                         onClick={() => setDeleteModalId(item.id)}
@@ -632,9 +671,13 @@ export default function OrdersSellsTab({ onListingsCountChange }) {
       {showQRModal && activeOfferForQR && (
         <HandoverQRModal
           offerId={activeOfferForQR.id}
+          listingId={activeOfferForQR.listing || activeOfferForQR.listing_id}
           listingTitle={activeOfferForQR.listing_title}
           buyerName={activeOfferForQR.buyer_name || activeOfferForQR.buyer_reg}
           price={activeOfferForQR.offer_amount}
+          location={activeOfferForQR.location}
+          image={activeOfferForQR.image}
+          existingSession={activeOfferForQR.active_handover}
           onClose={() => setShowQRModal(false)}
           onComplete={handleHandoverSuccess}
         />

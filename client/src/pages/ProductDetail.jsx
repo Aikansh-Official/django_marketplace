@@ -30,12 +30,16 @@ import {
   ShoppingBag,
   X,
   QrCode,
-  Camera
+  Camera,
+  Lock,
+  BadgeCheck,
+  Mail
 } from 'lucide-react';
 import CategoryIcon from '../components/CategoryIcon';
 import { toggleSavedItem, isItemSaved } from '../utils/savedStore';
 import HandoverQRModal from '../components/handover/HandoverQRModal';
 import HandoverScannerModal from '../components/handover/HandoverScannerModal';
+import UniversalLoader from '../components/common/UniversalLoader';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -145,6 +149,12 @@ export default function ProductDetail() {
 
   // Status Toggle Handler
   const handleStatusChange = async (newStatus) => {
+    if (listing?.status === 'SOLD') {
+      toast.error('This item has already been marked as Sold and its status cannot be changed.');
+      return;
+    }
+    if (newStatus === listing?.status) return;
+
     setStatusUpdating(true);
     try {
       const res = await axios.patch(
@@ -155,7 +165,7 @@ export default function ProductDetail() {
       toast.success(`Status updated to ${newStatus}`);
     } catch (err) {
       console.error('Failed to update status', err);
-      toast.error('Failed to update listing status.');
+      toast.error(err.response?.data?.error || 'Failed to update listing status.');
     } finally {
       setStatusUpdating(false);
     }
@@ -255,7 +265,62 @@ export default function ProductDetail() {
     } else {
       setUserOffer((prev) => (prev ? { ...prev, status: 'COMPLETED' } : null));
     }
+    if (id) {
+      axios
+        .get(`${API_BASE}/marketplace/listings/${id}/`)
+        .then((res) => setListing(res.data))
+        .catch(() => {});
+    }
+    window.dispatchEvent(new CustomEvent('notifications-updated'));
   };
+
+  // Real-time synchronization for Seller & Buyer when deal is PENDING (Reserved)
+  useEffect(() => {
+    if (!id || listing?.status !== 'PENDING') return;
+
+    const syncPendingListing = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/marketplace/listings/${id}/`);
+        if (res.data.status === 'SOLD') {
+          setListing(res.data);
+          if (isOwner) {
+            fetchListingOffers();
+          } else {
+            setUserOffer((prev) => (prev ? { ...prev, status: 'COMPLETED' } : null));
+          }
+          setShowQRModal(false);
+          setShowScannerModal(false);
+          window.dispatchEvent(new CustomEvent('notifications-updated'));
+        }
+      } catch (e) {
+        // Ignore background polling error
+      }
+    };
+
+    const interval = setInterval(syncPendingListing, 2000);
+
+    const handleDealCompletedEvent = (e) => {
+      const eventListingId = e?.detail?.listingId || e?.detail;
+      if (!eventListingId || String(eventListingId) === String(id)) {
+        syncPendingListing();
+      }
+    };
+
+    const handleStorage = (e) => {
+      if (e.key === 'deal_completed_event') {
+        syncPendingListing();
+      }
+    };
+
+    window.addEventListener('deal-completed', handleDealCompletedEvent);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('deal-completed', handleDealCompletedEvent);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [id, listing?.status, isOwner]);
 
   const handleSubmitBuyRequest = async (e) => {
     e.preventDefault();
@@ -302,8 +367,8 @@ export default function ProductDetail() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-32">
-        <div className="w-10 h-10 border-3 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-[50vh] flex items-center justify-center">
+        <UniversalLoader text="Loading..." />
       </div>
     );
   }
@@ -357,7 +422,7 @@ export default function ProductDetail() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 animate-fade-in-up">
       {/* Navigation Breadcrumb */}
       <div className="flex items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
@@ -415,159 +480,266 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* Owner Management Bar */}
+      {/* Seller Management & Purchase Requests (Side-by-side Row) */}
       {isOwner && (
-        <div className="bg-brand-50/80 border border-brand-200 rounded-md p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold text-sm shadow-sm">
-              <Tag className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xs font-bold text-brand-900 uppercase tracking-wider">
-                Seller Control Panel
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 items-stretch">
+          
+          {/* Left Column: Seller Control Panel */}
+          <div className="bg-white border border-brand-200/90 rounded-md p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3">
+            {/* Header with Title & Action Buttons */}
+            <div className="flex items-center justify-between gap-2 border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-md bg-brand-500 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
+                  <Tag className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-xs font-black text-brand-950 uppercase tracking-wider truncate">
+                    Seller Control Panel
+                  </h4>
+                  <p className="text-[11px] text-gray-500 truncate">
+                    Manage visibility & item lifecycle
+                  </p>
+                </div>
               </div>
-              <div className="text-xs text-brand-700">
-                You own this listing. Manage its visibility and status.
-              </div>
-            </div>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            {/* Status Switcher */}
-            <div className="flex items-center bg-white border border-brand-200 rounded-md p-1 shadow-sm">
-              {['ACTIVE', 'PENDING', 'SOLD', 'HIDDEN'].map((st) => (
+              <div className="flex items-center gap-1.5 shrink-0">
+                {listing.status !== 'SOLD' && (
+                  <Link
+                    to={`/edit-listing/${listing.id}`}
+                    className="inline-flex items-center gap-1 bg-gray-50 hover:bg-gray-100 text-gray-700 hover:text-brand-600 text-xs font-semibold py-1.5 px-2.5 rounded-md border border-gray-200 transition-colors shadow-2xs"
+                    title="Edit listing details"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Edit</span>
+                  </Link>
+                )}
+
                 <button
-                  key={st}
-                  disabled={statusUpdating}
-                  onClick={() => handleStatusChange(st)}
-                  className={`px-3 py-1 text-xs font-bold rounded transition-all ${
-                    listing.status === st
-                      ? 'bg-brand-500 text-white shadow-sm'
-                      : 'text-gray-600 hover:text-brand-600'
+                  onClick={() => setShowDeleteModal(true)}
+                  className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold py-1.5 px-2.5 rounded-md border border-red-200 transition-colors shadow-2xs cursor-pointer"
+                  title="Delete listing"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Listing Info Strip to balance vertical spacing */}
+            <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-gray-50/80 border border-gray-100 rounded-md text-xs">
+              <div className="flex items-center gap-1.5 text-gray-600 min-w-0">
+                <MapPin className="w-3.5 h-3.5 text-brand-500 shrink-0" />
+                <span className="truncate font-medium text-gray-700">{listing.location || 'Campus'}</span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="font-extrabold text-gray-900">
+                  {listing.transaction_type === 'DONATE' ? 'Free' : `Rs ${listing.price}`}
+                </span>
+                <span className="text-[10px] text-gray-300">•</span>
+                <span className="text-gray-500 text-[11px] flex items-center gap-1">
+                  <Eye className="w-3 h-3 text-gray-400" />
+                  {listing.views_count} views
+                </span>
+              </div>
+            </div>
+
+            {/* Status Switcher Grid */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-gray-500 font-medium flex items-center gap-1">
+                  {listing.status === 'SOLD' && <Lock className="w-3 h-3 text-gray-400" />}
+                  Listing Status:
+                </span>
+                <span
+                  className={`font-extrabold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded-md border ${
+                    listing.status === 'SOLD'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : 'bg-brand-50 text-brand-600 border-brand-200/80'
                   }`}
                 >
-                  {st === 'PENDING' ? 'Reserved' : st.charAt(0) + st.slice(1).toLowerCase()}
-                </button>
-              ))}
-            </div>
+                  {listing.status === 'PENDING' ? 'Reserved' : listing.status}
+                </span>
+              </div>
 
-            <Link
-              to={`/edit-listing/${listing.id}`}
-              className="flex items-center gap-1.5 bg-white border border-gray-200 hover:border-brand-500 text-gray-700 hover:text-brand-600 text-xs font-semibold py-1.5 px-3 rounded-md transition-colors shadow-sm"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              Edit
-            </Link>
-
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              className="flex items-center gap-1.5 bg-white border border-red-200 hover:bg-red-50 text-red-600 text-xs font-semibold py-1.5 px-3 rounded-md transition-colors shadow-sm"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              Delete
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Incoming Purchase Requests for Seller */}
-      {isOwner && listingOffers.length > 0 && (
-        <div className="bg-white border border-brand-200 rounded-md p-5 mb-6 shadow-sm space-y-3">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
-            <h3 className="text-xs font-extrabold text-gray-900 uppercase tracking-wider flex items-center gap-2">
-              <ShoppingBag className="w-4 h-4 text-brand-600" />
-              Incoming Student Purchase Requests ({listingOffers.length})
-            </h3>
-            <span className="text-[11px] text-gray-500 font-medium">
-              Accept a student to reserve this item
-            </span>
-          </div>
-
-          <div className="space-y-2.5">
-            {listingOffers.map((off) => (
-              <div
-                key={off.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-gray-50/80 rounded-md border border-gray-200 text-xs"
-              >
+              {listing.status === 'SOLD' ? (
+                /* Static / Display-only when Sold (Not clickable/dynamic) */
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <strong className="text-gray-900">{off.buyer_name || off.buyer_reg}</strong>
-                    <span className="text-gray-400">(@{off.buyer_reg})</span>
-                    <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      Trust: {off.buyer_trust_score || 50}/100
-                    </span>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        off.status === 'ACCEPTED'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : off.status === 'REJECTED'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-blue-100 text-blue-800'
+                  <div className="grid grid-cols-4 gap-1.5 bg-gray-50/90 p-1.5 rounded-md border border-gray-200/80 select-none cursor-default">
+                    {['ACTIVE', 'PENDING', 'SOLD', 'HIDDEN'].map((st) => (
+                      <div
+                        key={st}
+                        className={`py-1.5 text-xs font-bold rounded-md text-center select-none ${
+                          st === 'SOLD'
+                            ? 'bg-brand-500 text-white shadow-xs'
+                            : 'text-gray-300 opacity-40 cursor-not-allowed'
+                        }`}
+                      >
+                        {st === 'PENDING' ? 'Reserved' : st.charAt(0) + st.slice(1).toLowerCase()}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-gray-400 text-center font-medium">
+                    Item handed over & marked as Sold. Status is locked.
+                  </p>
+                </div>
+              ) : (
+                /* Interactive status buttons for Active, Reserved, Hidden */
+                <div className="grid grid-cols-4 gap-1.5 bg-gray-50/90 p-1.5 rounded-md border border-gray-200/80">
+                  {['ACTIVE', 'PENDING', 'SOLD', 'HIDDEN'].map((st) => (
+                    <button
+                      key={st}
+                      disabled={statusUpdating}
+                      onClick={() => handleStatusChange(st)}
+                      className={`py-1.5 text-xs font-bold rounded-md transition-all text-center cursor-pointer ${
+                        listing.status === st
+                          ? 'bg-brand-500 text-white shadow-xs'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-white/80'
                       }`}
                     >
-                      {off.status === 'ACCEPTED' ? 'Reserved' : off.status}
-                    </span>
-                  </div>
-                  {off.buyer_message && (
-                    <p className="text-gray-600 italic">"{off.buyer_message}"</p>
-                  )}
-                  <span className="text-[10px] text-gray-400">
-                    Requested on {new Date(off.created_at).toLocaleDateString()}
-                  </span>
+                      {st === 'PENDING' ? 'Reserved' : st.charAt(0) + st.slice(1).toLowerCase()}
+                    </button>
+                  ))}
                 </div>
+              )}
+            </div>
+          </div>
 
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {off.status === 'PENDING' ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => handleRespondOffer(off.id, 'ACCEPT')}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-md text-xs transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        Accept & Reserve
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRespondOffer(off.id, 'REJECT')}
-                        className="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold px-3 py-1.5 rounded-md text-xs transition-colors cursor-pointer"
-                      >
-                        Decline
-                      </button>
-                    </>
-                  ) : off.status === 'ACCEPTED' ? (
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveOfferForQR(off);
-                          setShowQRModal(true);
-                        }}
-                        className="bg-brand-500 hover:bg-brand-600 text-white font-bold px-3 py-1.5 rounded-md text-xs transition-colors shadow-2xs cursor-pointer flex items-center gap-1.5"
-                      >
-                        <QrCode className="w-3.5 h-3.5" />
-                        Generate Handover QR
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleCancelDeal(off.id)}
-                        disabled={cancellingDeal}
-                        className="bg-white border border-gray-300 hover:bg-gray-100 text-red-600 font-bold px-2.5 py-1.5 rounded-md text-xs transition-colors cursor-pointer"
-                        title="Cancel this deal"
-                      >
-                        Cancel Deal
-                      </button>
-                    </div>
-                  ) : off.status === 'COMPLETED' ? (
-                    <span className="text-emerald-700 font-bold flex items-center gap-1 text-xs">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      Sold & Handed Over
+          {/* Right Column: Incoming Student Purchase Requests */}
+          <div className="bg-white border border-brand-200/90 rounded-md p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-md bg-orange-50 text-brand-600 flex items-center justify-center font-bold text-xs shrink-0">
+                  <ShoppingBag className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider flex items-center gap-1.5 truncate">
+                    Purchase Requests
+                    <span className="bg-brand-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full">
+                      {listingOffers.length}
                     </span>
-                  ) : null}
+                  </h4>
+                  <p className="text-[11px] text-gray-500 truncate">
+                    {listingOffers.length > 0
+                      ? 'Accept a student to reserve this item'
+                      : 'Incoming buyer offers appear here'}
+                  </p>
                 </div>
               </div>
-            ))}
+
+              {listingOffers.some((o) => o.status === 'PENDING') && (
+                <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md shrink-0 animate-pulse">
+                  Action Needed
+                </span>
+              )}
+            </div>
+
+            {/* List of Offers or Empty Placeholder */}
+            {listingOffers.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center py-6 text-center bg-gray-50/70 rounded-md border border-dashed border-gray-200">
+                <p className="text-xs font-semibold text-gray-600">No purchase requests yet</p>
+                <p className="text-[11px] text-gray-400 mt-0.5 max-w-xs">
+                  When students send buy offers or reserve requests, they will show up here.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2.5 max-h-[175px] overflow-y-auto pr-1">
+                {listingOffers.map((off) => (
+                  <div
+                    key={off.id}
+                    className="p-2.5 bg-gray-50/90 rounded-md border border-gray-200/90 text-xs space-y-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                        <strong className="text-gray-900 truncate">
+                          {off.buyer_name || off.buyer_reg}
+                        </strong>
+                        <span className="text-gray-400 text-[11px]">(@{off.buyer_reg})</span>
+                        <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.2 rounded-md">
+                          Trust {off.buyer_trust_score ?? 0}
+                        </span>
+                      </div>
+
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                          off.status === 'ACCEPTED'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : off.status === 'REJECTED' || off.status === 'CANCELLED'
+                            ? 'bg-gray-200 text-gray-700'
+                            : 'bg-blue-100 text-blue-800'
+                        }`}
+                      >
+                        {off.status === 'ACCEPTED' ? 'Reserved' : off.status}
+                      </span>
+                    </div>
+
+                    {off.buyer_message && (
+                      <p className="text-gray-600 italic text-[11px] truncate">
+                        "{off.buyer_message}"
+                      </p>
+                    )}
+
+                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-gray-200/60 text-[11px]">
+                      <span className="text-gray-400">
+                        {new Date(off.created_at).toLocaleDateString()}
+                      </span>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {off.status === 'PENDING' ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleRespondOffer(off.id, 'ACCEPT')}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 rounded-md text-xs transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
+                            >
+                              <Check className="w-3 h-3" />
+                              Accept
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRespondOffer(off.id, 'REJECT')}
+                              className="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold px-2 py-1 rounded-md text-xs transition-colors cursor-pointer"
+                            >
+                              Decline
+                            </button>
+                          </>
+                        ) : off.status === 'ACCEPTED' ? (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveOfferForQR(off);
+                                setShowQRModal(true);
+                              }}
+                              className="bg-brand-500 hover:bg-brand-600 text-white font-bold px-2.5 py-1 rounded-md text-xs transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
+                            >
+                              <QrCode className="w-3 h-3" />
+                              Show QR
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleCancelDeal(off.id)}
+                              disabled={cancellingDeal}
+                              className="bg-white border border-red-200 hover:bg-red-50 text-red-600 font-semibold px-2 py-1 rounded-md text-xs transition-colors cursor-pointer"
+                              title="Cancel this deal"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : off.status === 'COMPLETED' ? (
+                          <span className="text-emerald-700 font-bold flex items-center gap-1 text-[11px]">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            Sold & Handed Over
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+
         </div>
       )}
 
@@ -964,12 +1136,30 @@ export default function ProductDetail() {
                 {(listing.seller?.full_name || listing.seller?.username || 'U')[0].toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-bold text-sm text-gray-900 truncate">
-                  {listing.seller?.full_name || listing.seller?.username || 'LPU Student'}
+                <div className="font-bold text-sm text-gray-900 truncate flex items-center gap-1.5">
+                  <span className="truncate">{listing.seller?.full_name || listing.seller?.username || 'LPU Student'}</span>
+                  {listing.seller?.is_id_verified && (
+                    <span
+                      title="Official Student ID Verified"
+                      className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full shrink-0 shadow-2xs"
+                    >
+                      <BadgeCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      ID Verified
+                    </span>
+                  )}
                 </div>
-                <div className="flex items-center gap-1 text-[11px] text-emerald-700 font-semibold mt-0.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Verified Student (@lpu.in)</span>
+                <div className="flex items-center gap-1 text-[11px] font-semibold mt-0.5">
+                  {listing.seller?.is_id_verified ? (
+                    <span className="text-emerald-700 flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      Official Student ID Verified
+                    </span>
+                  ) : (
+                    <span className="text-gray-500 flex items-center gap-1">
+                      <Mail className="w-3.5 h-3.5 text-gray-400" />
+                      Email Verified Student
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -979,13 +1169,13 @@ export default function ProductDetail() {
               <div className="flex justify-between text-xs">
                 <span className="font-medium text-gray-600">Student Trust Score</span>
                 <span className="font-bold text-brand-600">
-                  {listing.seller?.trust_score ?? 50}/100
+                  {listing.seller?.trust_score ?? 0}/100
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
                 <div
                   className="bg-brand-500 h-full rounded-full transition-all"
-                  style={{ width: `${listing.seller?.trust_score ?? 50}%` }}
+                  style={{ width: `${listing.seller?.trust_score ?? 0}%` }}
                 ></div>
               </div>
             </div>
@@ -1231,9 +1421,13 @@ export default function ProductDetail() {
       {showQRModal && activeOfferForQR && (
         <HandoverQRModal
           offerId={activeOfferForQR.id}
+          listingId={listing.id}
           listingTitle={listing.title}
           buyerName={activeOfferForQR.buyer_name || activeOfferForQR.buyer_reg}
           price={activeOfferForQR.offer_amount || listing.price}
+          location={listing.location}
+          image={listing.images?.[0]?.image_url}
+          existingSession={activeOfferForQR.active_handover}
           onClose={() => setShowQRModal(false)}
           onComplete={handleDealCompleted}
         />

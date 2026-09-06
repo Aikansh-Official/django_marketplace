@@ -83,6 +83,12 @@ export default function EditListing() {
         );
 
         const data = listingRes.data;
+        if (data.status === 'SOLD') {
+          toast.error('This item is marked as Sold and cannot be edited.');
+          navigate(`/listing/${id}`, { replace: true });
+          return;
+        }
+
         setTitle(data.title || '');
         setCategoryId(data.category?.id || '');
         setTransactionType(data.transaction_type || 'SELL');
