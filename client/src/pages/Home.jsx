@@ -50,12 +50,22 @@ export default function Home() {
   const [error, setError] = useState(null);
 
   // Filters State
-  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [transactionType, setTransactionType] = useState('ALL');
+  const [selectedCategory, setSelectedCategory] = useState(() => searchParams.get('category') || 'ALL');
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('search') || '');
+  const [transactionType, setTransactionType] = useState(() => searchParams.get('transaction_type') || 'ALL');
   const [conditionFilter, setConditionFilter] = useState('ALL');
   const [sortBy, setSortBy] = useState('newest');
   const [favorites, setFavorites] = useState({});
+
+  // Sync state when URL params change (e.g. from footer links or header navigation)
+  useEffect(() => {
+    const cat = searchParams.get('category') || 'ALL';
+    const tType = searchParams.get('transaction_type') || 'ALL';
+    const q = searchParams.get('search') || '';
+    setSelectedCategory(cat);
+    setTransactionType(tType);
+    setSearchQuery(q);
+  }, [searchParams]);
 
   // Fetch Categories
   useEffect(() => {
@@ -110,17 +120,36 @@ export default function Home() {
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
+    const newParams = new URLSearchParams(searchParams);
+    if (searchQuery.trim()) {
+      newParams.set('search', searchQuery.trim());
+    } else {
+      newParams.delete('search');
+    }
+    setSearchParams(newParams);
     fetchListings();
   };
 
   const handleCategoryClick = (slug) => {
     setSelectedCategory(slug);
+    const newParams = new URLSearchParams(searchParams);
     if (slug === 'ALL') {
-      searchParams.delete('category');
-      setSearchParams(searchParams);
+      newParams.delete('category');
     } else {
-      setSearchParams({ category: slug });
+      newParams.set('category', slug);
     }
+    setSearchParams(newParams);
+  };
+
+  const handleTransactionTypeChange = (newType) => {
+    setTransactionType(newType);
+    const newParams = new URLSearchParams(searchParams);
+    if (newType === 'ALL') {
+      newParams.delete('transaction_type');
+    } else {
+      newParams.set('transaction_type', newType);
+    }
+    setSearchParams(newParams);
   };
 
   const toggleFavorite = (e, listing) => {
@@ -246,7 +275,7 @@ export default function Home() {
             {/* Transaction Mode Filter */}
             <select
               value={transactionType}
-              onChange={(e) => setTransactionType(e.target.value)}
+              onChange={(e) => handleTransactionTypeChange(e.target.value)}
               className="bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-md px-3 py-2 outline-none focus:ring-1 focus:ring-brand-500 shadow-sm"
             >
               {TRANSACTION_FILTERS.map((t) => (

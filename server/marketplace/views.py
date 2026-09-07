@@ -517,7 +517,7 @@ class AdminPlatformSettingsView(APIView):
     DEFAULT_SETTINGS = {
         'maintenance_mode': 'false',
         'allow_registrations': 'true',
-        'allowed_domains': 'lpu.in, lpu.co.in',
+        'allowed_domains': '',
     }
 
     def get(self, request):

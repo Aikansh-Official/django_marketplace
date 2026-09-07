@@ -11,7 +11,7 @@ export default function Settings() {
   const [settings, setSettings] = useState({
     maintenance_mode: false,
     allow_registrations: true,
-    allowed_domains: 'lpu.in, lpu.co.in'
+    allowed_domains: ''
   });
 
   useEffect(() => {
@@ -21,7 +21,7 @@ export default function Settings() {
         setSettings({
           maintenance_mode: res.data.maintenance_mode === 'true' || res.data.maintenance_mode === true,
           allow_registrations: res.data.allow_registrations !== 'false' && res.data.allow_registrations !== false,
-          allowed_domains: res.data.allowed_domains || 'lpu.in, lpu.co.in'
+          allowed_domains: res.data.allowed_domains || ''
         });
       } catch (err) {
         console.error('Failed to load settings', err);
@@ -116,7 +116,7 @@ export default function Settings() {
                 value={settings.allowed_domains}
                 onChange={(e) => setSettings({ ...settings, allowed_domains: e.target.value })}
                 className="w-full border border-gray-300 rounded-md px-3.5 py-2 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500 bg-white"
-                placeholder="lpu.in, lpu.co.in"
+                placeholder="Leave empty to allow all email providers"
               />
             </div>
           </div>

@@ -41,7 +41,7 @@ def seed():
     )
     PlatformSetting.objects.update_or_create(
         key='allowed_domains',
-        defaults={'value': 'lpu.in, lpu.co.in'}
+        defaults={'value': ''}
     )
     print("Verified platform settings.")
     print("Database is ready. No dummy listings, users, or offers were created.")
