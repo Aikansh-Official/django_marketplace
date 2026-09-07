@@ -9,6 +9,7 @@ class CustomUser(AbstractUser):
     is_verified_student = models.BooleanField(default=False, help_text="True if the user has verified their college email.")
     is_id_verified = models.BooleanField(default=False, help_text="True if the student has verified their physical student ID card.")
     id_card_image = models.TextField(blank=True, null=True, help_text="Verified student ID card image data or URL")
+    id_card_data = models.JSONField(default=dict, blank=True, null=True, help_text="Structured data extracted from student ID card")
     email = models.EmailField(unique=True, help_text="Unique college email address")
     college_domain = models.CharField(max_length=255, blank=True, null=True, help_text="e.g. lpu.in, thapar.edu")
     trust_score = models.IntegerField(default=0, help_text="Trust score out of 100")

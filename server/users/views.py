@@ -275,6 +275,9 @@ class CompleteIdVerificationView(APIView):
         user.is_id_verified = True
         if id_card_image:
             user.id_card_image = id_card_image
+        id_card_data = request.data.get('id_card_data', None)
+        if id_card_data and isinstance(id_card_data, dict):
+            user.id_card_data = id_card_data
         user.trust_score = user.calculate_trust_score()
         user.save()
 
@@ -288,8 +291,9 @@ class CompleteIdVerificationView(APIView):
         user = request.user
         user.is_id_verified = False
         user.id_card_image = None
+        user.id_card_data = {}
         user.trust_score = user.calculate_trust_score()
-        user.save(update_fields=['is_id_verified', 'id_card_image', 'trust_score'])
+        user.save(update_fields=['is_id_verified', 'id_card_image', 'id_card_data', 'trust_score'])
         return Response({
             "message": "ID verification reset successfully.",
             "user": UserListSerializer(user).data

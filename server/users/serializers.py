@@ -24,10 +24,12 @@ class VerifyOTPSerializer(serializers.Serializer):
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
     password_confirm = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+    id_card_image = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    id_card_data = serializers.JSONField(required=False, default=dict)
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'password', 'password_confirm', 'full_name', 'phone_number')
+        fields = ('username', 'email', 'password', 'password_confirm', 'full_name', 'phone_number', 'id_card_image', 'id_card_data')
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
@@ -62,6 +64,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop('password_confirm')
+        id_card_image = validated_data.pop('id_card_image', None)
+        id_card_data = validated_data.pop('id_card_data', {})
+        is_id_verified = bool(id_card_image and len(str(id_card_image).strip()) > 100)
         
         # Basic college domain extraction
         email = validated_data.get('email', '')
@@ -77,8 +82,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             phone_number=validated_data.get('phone_number', ''),
             college_domain=domain,
             is_verified_student=True, # Email verified via OTP
-            is_id_verified=False,     # ID Card verification pending by default
-            trust_score=5             # Email Authenticated awards initial +5 points
+            is_id_verified=is_id_verified,
+            id_card_image=id_card_image if is_id_verified else None,
+            id_card_data=id_card_data if is_id_verified else {},
+            trust_score=10 if is_id_verified else 5 # Email (+5) + ID Card (+5)
         )
 
         # Invalidate OTP record upon successful registration to prevent reuse
@@ -94,13 +101,13 @@ class UserListSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             'id', 'username', 'email', 'full_name', 'phone_number',
-            'is_verified_student', 'is_id_verified', 'id_card_image',
+            'is_verified_student', 'is_id_verified', 'id_card_image', 'id_card_data',
             'college_domain', 'trust_score', 'completed_trades_count',
             'date_joined', 'is_staff', 'is_superuser'
         )
         read_only_fields = (
             'id', 'username', 'email', 'is_verified_student',
-            'is_id_verified', 'id_card_image', 'college_domain',
+            'is_id_verified', 'id_card_image', 'id_card_data', 'college_domain',
             'trust_score', 'completed_trades_count', 'date_joined',
             'is_staff', 'is_superuser'
         )

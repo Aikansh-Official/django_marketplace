@@ -15,8 +15,13 @@ import {
   RefreshCw,
   ScanLine,
   FileText,
-  UserCheck
+  UserCheck,
+  GraduationCap,
+  Calendar,
+  Activity,
+  Sparkles
 } from 'lucide-react';
+import { extractLpuCardDetails } from '../../utils/idCardVerification';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -413,14 +418,15 @@ export default function IdVerificationTab({ profile, onProfileUpdated }) {
       setScanProgress(100);
       setScanStatus('Validating LPU branding, registration number & student name...');
 
-      const validationResult = validateLpuIdCard(text, registeredRegNo, studentName);
+      const validationResult = extractLpuCardDetails(text, registeredRegNo, studentName);
 
       if (validationResult.isValid) {
         // MATCH SUCCESSFUL! Update backend DB model CustomUser.is_id_verified = True
         try {
           await axios.post(`${API_BASE}/auth/verify-id/`, {
             reg_no: registeredRegNo,
-            id_card_image: idFrontImage
+            id_card_image: idFrontImage,
+            id_card_data: validationResult.extraData
           });
         } catch (apiErr) {
           console.warn('Backend verify-id call:', apiErr?.response?.data || apiErr.message);
@@ -533,6 +539,42 @@ export default function IdVerificationTab({ profile, onProfileUpdated }) {
                   {registeredRegNo}
                 </span>
               </div>
+
+              {profile?.id_card_data?.program && (
+                <div className="pt-2 border-t border-gray-200/60">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                    Program / Degree
+                  </span>
+                  <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5 mt-0.5">
+                    <GraduationCap className="w-3.5 h-3.5 text-brand-600 flex-shrink-0" />
+                    {profile.id_card_data.program}
+                  </span>
+                </div>
+              )}
+
+              {profile?.id_card_data?.validity && (
+                <div className="pt-2 border-t border-gray-200/60">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                    Valid Upto
+                  </span>
+                  <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5 mt-0.5">
+                    <Calendar className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    {profile.id_card_data.validity}
+                  </span>
+                </div>
+              )}
+
+              {profile?.id_card_data?.bloodGroup && (
+                <div className="pt-2 border-t border-gray-200/60">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                    Blood Group
+                  </span>
+                  <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5 mt-0.5">
+                    <Activity className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                    {profile.id_card_data.bloodGroup}
+                  </span>
+                </div>
+              )}
 
               <div className="pt-2 border-t border-gray-200/60">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
