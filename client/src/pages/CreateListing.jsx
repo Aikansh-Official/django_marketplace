@@ -51,10 +51,9 @@ export default function CreateListing() {
   // Form State
   const [title, setTitle] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [transactionType, setTransactionType] = useState('SELL'); // SELL, RENT, DONATE
+  const [transactionType, setTransactionType] = useState('SELL'); // SELL, DONATE
   const [price, setPrice] = useState('');
   const [isNegotiable, setIsNegotiable] = useState(true);
-  const [rentPeriod, setRentPeriod] = useState('month'); // day, week, month, semester
   const [condition, setCondition] = useState('GOOD');
   const [location, setLocation] = useState('');
   const [contactPreference, setContactPreference] = useState('ALL');
@@ -210,7 +209,6 @@ export default function CreateListing() {
       transaction_type: transactionType,
       price: transactionType === 'DONATE' ? '0.00' : parseFloat(price).toFixed(2),
       is_negotiable: transactionType === 'DONATE' ? false : isNegotiable,
-      rent_period: transactionType === 'RENT' ? rentPeriod : null,
       condition,
       location: location.trim(),
       contact_preference: contactPreference,
@@ -249,7 +247,7 @@ export default function CreateListing() {
             Post a Listing
           </h1>
           <p className="text-gray-500 text-sm mt-1">
-            Sell, rent, or donate items to verified students across LPU Campus.
+            Sell or donate items to verified students across LPU Campus.
           </p>
         </div>
       </div>
@@ -434,7 +432,7 @@ export default function CreateListing() {
               <label className="block text-sm font-bold text-gray-900 mb-2">
                 Transaction Mode
               </label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setTransactionType('SELL')}
@@ -443,17 +441,7 @@ export default function CreateListing() {
                       : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
                     }`}
                 >
-                  Sell (One-Time)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTransactionType('RENT')}
-                  className={`py-3 px-4 rounded-md border text-center text-xs font-bold transition-all ${transactionType === 'RENT'
-                      ? 'bg-brand-500 text-white border-brand-500 shadow-md'
-                      : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                    }`}
-                >
-                  Rent (Temporary)
+                  Sell (Buy & Sell)
                 </button>
                 <button
                   type="button"
@@ -476,7 +464,7 @@ export default function CreateListing() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-1">
-                    {transactionType === 'RENT' ? 'Rental Rate (INR)' : 'Selling Price (INR)'} <span className="text-red-500">*</span>
+                    Selling Price (INR) <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 font-bold">
@@ -495,36 +483,18 @@ export default function CreateListing() {
                   </div>
                 </div>
 
-                {transactionType === 'RENT' ? (
-                  <div>
-                    <label className="block text-sm font-bold text-gray-900 mb-1">
-                      Rental Period
-                    </label>
-                    <select
-                      value={rentPeriod}
-                      onChange={(e) => setRentPeriod(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-md px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-                    >
-                      <option value="day">Per Day</option>
-                      <option value="week">Per Week</option>
-                      <option value="month">Per Month</option>
-                      <option value="semester">Per Semester (6 Months)</option>
-                    </select>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 p-3 bg-gray-50 border border-gray-200 rounded-md">
-                    <input
-                      type="checkbox"
-                      id="negotiable"
-                      checked={isNegotiable}
-                      onChange={(e) => setIsNegotiable(e.target.checked)}
-                      className="w-4 h-4 text-brand-500 rounded border-gray-300 focus:ring-brand-500"
-                    />
-                    <label htmlFor="negotiable" className="text-xs font-semibold text-gray-700 cursor-pointer">
-                      Price is negotiable for genuine buyers
-                    </label>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 p-3.5 bg-gray-50 border border-gray-200 rounded-md">
+                  <input
+                    type="checkbox"
+                    id="negotiable"
+                    checked={isNegotiable}
+                    onChange={(e) => setIsNegotiable(e.target.checked)}
+                    className="w-4 h-4 text-brand-500 rounded border-gray-300 focus:ring-brand-500"
+                  />
+                  <label htmlFor="negotiable" className="text-xs font-medium text-gray-700 select-none cursor-pointer">
+                    Price is negotiable
+                  </label>
+                </div>
               </div>
             ) : (
               <div className="p-3 bg-green-50 border border-green-200 rounded-md flex items-center gap-2 text-xs text-green-800 font-medium">
@@ -713,11 +683,6 @@ export default function CreateListing() {
                 />
 
                 {/* Transaction Badge */}
-                {transactionType === 'RENT' && (
-                  <div className="absolute top-3 left-3 bg-brand-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md">
-                    RENT ({rentPeriod.toUpperCase()})
-                  </div>
-                )}
                 {transactionType === 'DONATE' && (
                   <div className="absolute top-3 left-3 bg-green-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md">
                     FREE DONATION
@@ -735,11 +700,6 @@ export default function CreateListing() {
                   <span className="text-2xl font-extrabold text-gray-900">
                     {transactionType === 'DONATE' ? 'Free' : `Rs ${price || '0'}`}
                   </span>
-                  {transactionType === 'RENT' && (
-                    <span className="text-xs text-gray-500 font-medium">
-                      /{rentPeriod}
-                    </span>
-                  )}
                   {transactionType === 'SELL' && isNegotiable && (
                     <span className="text-[10px] font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full border border-brand-200">
                       Negotiable

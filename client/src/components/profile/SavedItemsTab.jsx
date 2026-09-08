@@ -108,11 +108,6 @@ export default function SavedItemsTab({ onSavedCountChange }) {
                   </button>
 
                   {/* Mode Badge */}
-                  {item.transaction_type === 'RENT' && (
-                    <span className="absolute bottom-2.5 left-2.5 bg-brand-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs">
-                      FOR RENT
-                    </span>
-                  )}
                   {item.transaction_type === 'DONATE' && (
                     <span className="absolute bottom-2.5 left-2.5 bg-green-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs">
                       FREE

@@ -1,9 +1,10 @@
 // Utility for managing saved / bookmarked marketplace listings
-const STORAGE_KEY = 'lputrade_saved_items';
+const STORAGE_KEY = 'lpxchange_saved_items';
+const LEGACY_STORAGE_KEY = 'lputrade_saved_items';
 
 export const getSavedItems = () => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch (e) {
     console.error('Error loading saved items:', e);
@@ -40,7 +41,6 @@ export const toggleSavedItem = (listing) => {
       title: listing.title,
       price: listing.price,
       transaction_type: listing.transaction_type || 'SELL',
-      rent_period: listing.rent_period || null,
       condition: listing.condition || 'GOOD',
       location: listing.location || 'Campus',
       category: listing.category || { name: 'General' },

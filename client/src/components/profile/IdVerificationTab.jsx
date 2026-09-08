@@ -316,6 +316,7 @@ export function validateLpuIdCard(rawText, targetReg, studentName) {
 export default function IdVerificationTab({ profile, onProfileUpdated }) {
   // Purge any old global localStorage artifact so verification status is strictly read from the user DB model
   useEffect(() => {
+    localStorage.removeItem('lpxchange_id_verification');
     localStorage.removeItem('lputrade_id_verification');
   }, []);
 

@@ -129,9 +129,7 @@ export default function SavedItemsDrawer({ isOpen, onClose }) {
 
                         {/* Transaction badge */}
                         <span className={`absolute bottom-1 left-1 text-[9px] font-black px-1.5 py-0.5 rounded tracking-wider uppercase text-white shadow-xs ${
-                          item.transaction_type === 'RENT' 
-                            ? 'bg-amber-600' 
-                            : item.transaction_type === 'DONATE' 
+                          item.transaction_type === 'DONATE' 
                             ? 'bg-emerald-600' 
                             : 'bg-brand-500'
                         }`}>
@@ -161,12 +159,7 @@ export default function SavedItemsDrawer({ isOpen, onClose }) {
                             {item.transaction_type === 'DONATE' ? (
                               <span className="text-emerald-600 font-bold">FREE</span>
                             ) : (
-                              <>
-                                ₹{item.price ? Number(item.price).toLocaleString('en-IN') : '0'}
-                                {item.transaction_type === 'RENT' && (
-                                  <span className="text-[10px] font-normal text-gray-500">/{item.rent_period || 'mo'}</span>
-                                )}
-                              </>
+                              <>₹{item.price ? Number(item.price).toLocaleString('en-IN') : '0'}</>
                             )}
                           </span>
 

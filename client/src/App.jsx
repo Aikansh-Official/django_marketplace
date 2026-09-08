@@ -16,6 +16,7 @@ import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import ProtectedRoute from './components/ProtectedRoute';
 import ScrollToTop from './components/common/ScrollToTop';
+import ThemeBackground from './components/ThemeBackground';
 import { Toaster } from 'react-hot-toast';
 import { LoadingProvider } from './context/LoadingContext';
 
@@ -25,10 +26,12 @@ function App() {
       <ScrollToTop />
       <LoadingProvider>
         <Toaster position="bottom-right" toastOptions={{ className: 'font-sans font-medium rounded-md shadow-lg', duration: 4000 }} />
-        <div className="flex flex-col min-h-screen relative font-sans text-gray-900 bg-gray-50">
-        
-        <div className="flex-1 flex flex-col relative z-10">
-          <Navbar />
+        <div className="flex flex-col min-h-screen relative font-sans text-gray-900 bg-transparent">
+          {/* 100% Auto-Animated Geometric Background */}
+          <ThemeBackground />
+          
+          <div className="flex-1 flex flex-col relative z-10">
+            <Navbar />
           <main className="flex-grow pt-16">
             <Routes>
               <Route path="/" element={<Home />} />

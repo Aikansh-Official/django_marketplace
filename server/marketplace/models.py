@@ -17,7 +17,6 @@ class Category(models.Model):
 class Listing(models.Model):
     TRANSACTION_TYPES = (
         ('SELL', 'Sell'),
-        ('RENT', 'Rent'),
         ('DONATE', 'Donate'),
     )
     

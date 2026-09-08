@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import logoImg from '../assets/LPUTrade_logo.jpeg';
+import logoImg from '../assets/LPXchange_Logo.jpeg';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -16,16 +16,16 @@ export default function Footer() {
             <Link to="/" className="flex items-center gap-2">
               <img
                 src={logoImg}
-                alt="LPUTrade"
+                alt="LPXchange"
                 className="h-8 w-8 object-cover rounded-lg"
               />
               <div className="flex items-baseline">
-                <span className="text-lg font-bold tracking-tight text-gray-950 font-display">LPU</span>
-                <span className="text-lg font-bold tracking-tight text-brand-500 font-display">Trade</span>
+                <span className="text-lg font-bold tracking-tight text-gray-950 font-display">LP</span>
+                <span className="text-lg font-bold tracking-tight text-brand-500 font-display">Xchange</span>
               </div>
             </Link>
             <p className="text-xs text-gray-500 leading-relaxed">
-              The exclusive campus exchange for Lovely Professional University. Buy, sell, and rent books, cycles, and electronics directly with fellow students.
+              The exclusive campus exchange for Lovely Professional University. Buy, sell, and donate books, cycles, and electronics directly with fellow students.
             </p>
           </div>
 
@@ -43,11 +43,6 @@ export default function Footer() {
               <li>
                 <Link to="/sell" className="text-gray-500 hover:text-gray-900 transition-colors">
                   Post an Item for Sale
-                </Link>
-              </li>
-              <li>
-                <Link to="/?transaction_type=RENT" className="text-gray-500 hover:text-gray-900 transition-colors">
-                  Student Rentals
                 </Link>
               </li>
               <li>
@@ -90,7 +85,7 @@ export default function Footer() {
             <ul className="space-y-2 text-xs">
               <li>
                 <Link to="/about" className="text-gray-500 hover:text-gray-900 transition-colors">
-                  About LPUTrade
+                  About LPXchange
                 </Link>
               </li>
               <li>
@@ -116,7 +111,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-400">
           <p>
-            &copy; {currentYear} LPUTrade. An marketplace for LPU students.
+            &copy; {currentYear} LPXchange. A campus marketplace for LPU students.
           </p>
           <p className="flex items-center gap-1 font-medium text-gray-500">
             Made by LPU Student

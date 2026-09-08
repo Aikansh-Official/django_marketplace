@@ -73,7 +73,7 @@ class ListingListCreateView(generics.ListCreateAPIView):
         if condition and condition != 'ALL':
             queryset = queryset.filter(condition=condition)
 
-        # Transaction type filter (SELL, RENT, DONATE)
+        # Transaction type filter (SELL, DONATE)
         transaction_type = self.request.query_params.get('transaction_type')
         if transaction_type and transaction_type != 'ALL':
             queryset = queryset.filter(transaction_type=transaction_type)

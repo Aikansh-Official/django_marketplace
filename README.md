@@ -1,10 +1,10 @@
-# 🎓 LPUTrade Platform
+# 🎓 LPXchange Platform
 
 ![React](https://img.shields.io/badge/React-19.2-blue?logo=react)
 ![Django](https://img.shields.io/badge/Django-6.1-green?logo=django)
 ![Tailwind](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css)
 
-LPUTrade is an exclusive campus marketplace designed for university students to buy, sell, and rent items securely. The platform ensures that only verified students can access and trade, providing a safe and reliable environment right on campus.
+LPXchange is an exclusive campus marketplace designed for university students to buy, sell, and rent items securely. The platform ensures that only verified students can access and trade, providing a safe and reliable environment right on campus.
 
 ## 🌟 Key Features
 

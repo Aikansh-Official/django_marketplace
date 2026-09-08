@@ -6,7 +6,6 @@ import { toggleSavedItem, isItemSaved } from '../utils/savedStore';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 import {
-  Search,
   MapPin,
   Heart,
   SlidersHorizontal,
@@ -29,7 +28,6 @@ import UniversalLoader from '../components/common/UniversalLoader';
 const TRANSACTION_FILTERS = [
   { value: 'ALL', label: 'All Modes' },
   { value: 'SELL', label: 'Buy & Sell' },
-  { value: 'RENT', label: 'For Rent' },
   { value: 'DONATE', label: 'Free Donations' },
 ];
 
@@ -116,18 +114,13 @@ export default function Home() {
 
   useEffect(() => {
     fetchListings();
-  }, [selectedCategory, transactionType, conditionFilter, sortBy]);
+  }, [selectedCategory, transactionType, conditionFilter, sortBy, searchQuery]);
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
+  const handleClearSearch = () => {
+    setSearchQuery('');
     const newParams = new URLSearchParams(searchParams);
-    if (searchQuery.trim()) {
-      newParams.set('search', searchQuery.trim());
-    } else {
-      newParams.delete('search');
-    }
+    newParams.delete('search');
     setSearchParams(newParams);
-    fetchListings();
   };
 
   const handleCategoryClick = (slug) => {
@@ -177,47 +170,6 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-140px)] w-full">
-      {/* Search Header Bar */}
-      <div className="bg-white/80 backdrop-blur-md py-4 border-b border-gray-200 shadow-sm relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3">
-            {/* Search Input */}
-            <div className="flex-1 flex bg-white border-2 border-gray-200 hover:border-brand-300 rounded-md p-2 items-center focus-within:border-brand-500 transition-colors shadow-sm">
-              <Search className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search textbooks, calculators, cycles, coolers, keyboards..."
-                className="w-full outline-none text-gray-800 bg-transparent text-sm font-medium placeholder-gray-400"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchQuery('');
-                    fetchListings();
-                  }}
-                  className="text-gray-400 hover:text-gray-600 p-1"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-
-            {/* Search CTA */}
-            <button
-              type="submit"
-              className="bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2.5 px-6 rounded-md transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2"
-            >
-              <Search className="w-4 h-4" />
-              Search
-            </button>
-          </form>
-        </div>
-      </div>
-
       {/* Category Pills Bar */}
       <div className="bg-white/70 backdrop-blur-md border-b border-gray-100 shadow-sm relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
@@ -260,9 +212,21 @@ export default function Home() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
         {/* Controls Row: Title, Filters & Sorting */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">
-              {selectedCategory === 'ALL'
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+              {searchQuery ? (
+                <>
+                  <span>Results for &ldquo;{searchQuery}&rdquo;</span>
+                  <button
+                    onClick={handleClearSearch}
+                    className="text-xs font-semibold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-2.5 py-1 rounded-full transition-colors flex items-center gap-1 cursor-pointer"
+                    title="Clear search filter"
+                  >
+                    <X className="w-3 h-3" />
+                    <span>Clear</span>
+                  </button>
+                </>
+              ) : selectedCategory === 'ALL'
                 ? 'Campus Marketplace Recommendations'
                 : categories.find((c) => c.slug === selectedCategory)?.name || 'Listings'}
             </h1>
@@ -335,10 +299,25 @@ export default function Home() {
         ) : listings.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-md shadow-sm border border-gray-200 p-8 space-y-3">
             <Tag className="w-12 h-12 text-gray-300 mx-auto" />
-            <h3 className="text-lg font-bold text-gray-800">No matching items found</h3>
+            <h3 className="text-lg font-bold text-gray-800">
+              {searchQuery ? `No results found for "${searchQuery}"` : 'No matching items found'}
+            </h3>
             <p className="text-xs text-gray-500 max-w-sm mx-auto">
-              Try adjusting your search terms, or be the first student to post this item!
+              {searchQuery 
+                ? 'Try checking for spelling errors, broader keywords, or clear the search filter.' 
+                : 'Try adjusting your filters, or be the first student to post this item!'}
             </p>
+            {searchQuery && (
+              <div className="pt-1">
+                <button
+                  onClick={handleClearSearch}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-md text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Clear Search Filter
+                </button>
+              </div>
+            )}
             {localStorage.getItem('access') ? (
               <div className="pt-2">
                 <Link
@@ -407,11 +386,6 @@ export default function Home() {
                     </button>
 
                     {/* Mode Badges */}
-                    {listing.transaction_type === 'RENT' && (
-                      <div className="absolute top-2.5 left-2.5 bg-brand-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                        FOR RENT
-                      </div>
-                    )}
                     {listing.transaction_type === 'DONATE' && (
                       <div className="absolute top-2.5 left-2.5 bg-green-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
                         FREE DONATION
@@ -430,11 +404,6 @@ export default function Home() {
                       <h3 className="font-extrabold text-xl text-gray-900 tracking-tight">
                         {listing.transaction_type === 'DONATE' ? 'Free' : `Rs ${listing.price}`}
                       </h3>
-                      {listing.transaction_type === 'RENT' && listing.rent_period && (
-                        <span className="text-[11px] text-gray-500 font-medium">
-                          /{listing.rent_period}
-                        </span>
-                      )}
                     </div>
 
                     <p

@@ -20,7 +20,7 @@ export default function Privacy() {
         <div className="flex items-center gap-2 text-xs font-semibold text-brand-600 uppercase tracking-wider mb-2">
           <span>Transparency & Student Privacy</span>
           <span>•</span>
-          <span>LPUTrade</span>
+          <span>LPXchange</span>
         </div>
 
         {/* Page Title */}
@@ -28,7 +28,7 @@ export default function Privacy() {
           Privacy Policy
         </h1>
         <p className="text-sm text-gray-500 leading-relaxed mb-8 max-w-2xl">
-          At LPUTrade, your privacy and campus safety are our top priorities. Here is a clear, transparent breakdown of exactly what data we collect, why we collect it, and how your information is protected.
+          At LPXchange, your privacy and campus safety are our top priorities. Here is a clear, transparent breakdown of exactly what data we collect, why we collect it, and how your information is protected.
         </p>
 
         {/* Commitment Banner */}
@@ -39,7 +39,7 @@ export default function Privacy() {
           <div>
             <h3 className="text-sm font-bold text-gray-900 mb-1">Our Student Privacy Guarantee</h3>
             <p className="text-gray-600">
-              LPUTrade is built by students, for students. We collect only what is strictly necessary to verify active university enrollment and enable safe campus exchanges. <strong>We do not sell, rent, or monetize student personal data to any advertisers, telemarketers, or loan agencies.</strong>
+              LPXchange is built by students, for students. We collect only what is strictly necessary to verify active university enrollment and enable safe campus exchanges. <strong>We do not sell, share, or monetize student personal data to any advertisers, telemarketers, or loan agencies.</strong>
             </p>
           </div>
         </div>
@@ -55,7 +55,7 @@ export default function Privacy() {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-gray-900">1. Exact Data We Collect & Why</h2>
-                <p className="text-xs text-gray-500">Categorized overview of all data stored on LPUTrade.</p>
+                <p className="text-xs text-gray-500">Categorized overview of all data stored on LPXchange.</p>
               </div>
             </div>
 
@@ -128,7 +128,7 @@ export default function Privacy() {
                   D. Browser Local Storage Data
                 </h3>
                 <p className="text-xs text-gray-600 leading-relaxed">
-                  For your convenience, your browser stores temporary session tokens (<code className="bg-white px-1 py-0.5 rounded-md border border-gray-200">access</code> and <code className="bg-white px-1 py-0.5 rounded-md border border-gray-200">refresh</code>) so you don't need to re-login every time you open the site. Your bookmarked wishlist items (<code className="bg-white px-1 py-0.5 rounded-md border border-gray-200">lputrade_saved_items</code>) are also stored locally on your device.
+                  For your convenience, your browser stores temporary session tokens (<code className="bg-white px-1 py-0.5 rounded-md border border-gray-200">access</code> and <code className="bg-white px-1 py-0.5 rounded-md border border-gray-200">refresh</code>) so you don't need to re-login every time you open the site. Your bookmarked wishlist items (<code className="bg-white px-1 py-0.5 rounded-md border border-gray-200">lpxchange_saved_items</code>) are also stored locally on your device.
                 </p>
               </div>
 
@@ -208,7 +208,7 @@ export default function Privacy() {
                 <strong>Edit or Remove Listings:</strong> You can edit the price, photos, or description, or mark any listing as sold/deleted at any time from your <strong>My Listings</strong> dashboard.
               </p>
               <p>
-                <strong>Complete Account Deletion:</strong> If you are graduating or wish to remove your account and all associated data permanently from our database, you can submit a deletion request anytime by writing to us at <a href="mailto:support@lputrade.in" className="text-brand-600 font-bold hover:underline">support@lputrade.in</a>. All personal profile records, ID verification data, and active posts will be purged within 48 hours.
+                <strong>Complete Account Deletion:</strong> If you are graduating or wish to remove your account and all associated data permanently from our database, you can submit a deletion request anytime by writing to us at <a href="mailto:support@lpxchange.in" className="text-brand-600 font-bold hover:underline">support@lpxchange.in</a>. All personal profile records, ID verification data, and active posts will be purged within 48 hours.
               </p>
             </div>
           </div>
@@ -220,10 +220,10 @@ export default function Privacy() {
               <p className="text-gray-500">Our campus team is here to help with any data questions.</p>
             </div>
             <a
-              href="mailto:support@lputrade.in?subject=Privacy%20Inquiry"
+              href="mailto:support@lpxchange.in?subject=Privacy%20Inquiry"
               className="font-bold text-brand-600 hover:text-brand-700 bg-orange-50 hover:bg-orange-100 px-4 py-2 rounded-md transition-colors border border-orange-200 flex-shrink-0"
             >
-              Contact support@lputrade.in
+              Contact support@lpxchange.in
             </a>
           </div>
 

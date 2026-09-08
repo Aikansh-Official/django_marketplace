@@ -15,7 +15,7 @@ export default function About() {
 
         {/* Page Title */}
         <h1 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight font-display mb-3">
-          About LPUTrade
+          About LPXchange
         </h1>
         <p className="text-base text-gray-600 leading-relaxed max-w-2xl mb-8">
           The trusted, peer-to-peer campus exchange built exclusively for the students and campus community of Lovely Professional University.
@@ -62,7 +62,7 @@ export default function About() {
               At the start of every semester, thousands of LPU students buy cycles, calculators, coolers, mattresses, and course books. At the end of the semester or when graduating, these same essentials often go to waste or are sold for pennies to outside scrap dealers.
             </p>
             <p className="text-gray-600 leading-relaxed mt-2">
-              <strong>LPUTrade</strong> bridges this gap by creating an authentic, localized student-to-student circular marketplace. Seniors can pass down their gear to juniors, saving money for both sides while reducing campus waste.
+              <strong>LPXchange</strong> bridges this gap by creating an authentic, localized student-to-student circular marketplace. Seniors can pass down their gear to juniors, saving money for both sides while reducing campus waste.
             </p>
           </div>
 

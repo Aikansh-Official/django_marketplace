@@ -58,7 +58,6 @@ export default function EditListing() {
   const [transactionType, setTransactionType] = useState('SELL');
   const [price, setPrice] = useState('');
   const [isNegotiable, setIsNegotiable] = useState(true);
-  const [rentPeriod, setRentPeriod] = useState('month');
   const [condition, setCondition] = useState('GOOD');
   const [location, setLocation] = useState('');
   const [contactPreference, setContactPreference] = useState('ALL');
@@ -94,7 +93,6 @@ export default function EditListing() {
         setTransactionType(data.transaction_type || 'SELL');
         setPrice(data.price ? String(Math.round(data.price)) : '');
         setIsNegotiable(data.is_negotiable ?? true);
-        setRentPeriod(data.rent_period || 'month');
         setCondition(data.condition || 'GOOD');
         setLocation(data.location || '');
         setContactPreference(data.contact_preference || 'ALL');
@@ -226,7 +224,6 @@ export default function EditListing() {
       transaction_type: transactionType,
       price: transactionType === 'DONATE' ? '0.00' : parseFloat(price).toFixed(2),
       is_negotiable: transactionType === 'DONATE' ? false : isNegotiable,
-      rent_period: transactionType === 'RENT' ? rentPeriod : null,
       condition,
       location: location.trim(),
       contact_preference: contactPreference,
@@ -426,8 +423,8 @@ export default function EditListing() {
 
         {/* Transaction Mode & Price */}
         <div className="bg-white border border-gray-200 rounded-md p-6 shadow-sm space-y-4">
-          <div className="grid grid-cols-3 gap-3">
-            {['SELL', 'RENT', 'DONATE'].map((type) => (
+          <div className="grid grid-cols-2 gap-3">
+            {['SELL', 'DONATE'].map((type) => (
               <button
                 key={type}
                 type="button"
@@ -441,7 +438,7 @@ export default function EditListing() {
                     : 'bg-gray-50 border-gray-200 text-gray-700'
                 }`}
               >
-                {type === 'SELL' ? 'Sell' : type === 'RENT' ? 'Rent' : 'Donate'}
+                {type === 'SELL' ? 'Sell' : 'Donate'}
               </button>
             ))}
           </div>
@@ -461,36 +458,18 @@ export default function EditListing() {
                 />
               </div>
 
-              {transactionType === 'SELL' ? (
-                <div className="flex items-center gap-2 p-2.5 bg-gray-50 border border-gray-200 rounded-md">
-                  <input
-                    type="checkbox"
-                    id="edit-negotiable"
-                    checked={isNegotiable}
-                    onChange={(e) => setIsNegotiable(e.target.checked)}
-                    className="w-4 h-4 text-brand-500 rounded border-gray-300"
-                  />
-                  <label htmlFor="edit-negotiable" className="text-xs font-semibold text-gray-700">
-                    Negotiable
-                  </label>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-xs font-bold text-gray-900 mb-1">
-                    Rental Duration
-                  </label>
-                  <select
-                    value={rentPeriod}
-                    onChange={(e) => setRentPeriod(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-md px-3 py-2.5 text-xs font-medium focus:ring-2 focus:ring-brand-500 outline-none"
-                  >
-                    <option value="day">Per Day</option>
-                    <option value="week">Per Week</option>
-                    <option value="month">Per Month</option>
-                    <option value="semester">Per Semester</option>
-                  </select>
-                </div>
-              )}
+              <div className="flex items-center gap-2 p-2.5 bg-gray-50 border border-gray-200 rounded-md">
+                <input
+                  type="checkbox"
+                  id="edit-negotiable"
+                  checked={isNegotiable}
+                  onChange={(e) => setIsNegotiable(e.target.checked)}
+                  className="w-4 h-4 text-brand-500 rounded border-gray-300"
+                />
+                <label htmlFor="edit-negotiable" className="text-xs font-semibold text-gray-700">
+                  Negotiable
+                </label>
+              </div>
             </div>
           )}
 

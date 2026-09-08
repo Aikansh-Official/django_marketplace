@@ -18,11 +18,16 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
 from django.views.static import serve
+from server.health import health_check
 
 urlpatterns = [
+    path('health/', health_check, name='health-check'),
+    path('api/health/', health_check, name='api-health-check'),
+    path('lpxchange-admin/', admin.site.urls),
     path('lputrade-admin/', admin.site.urls),
     path('api/auth/', include('users.urls')),
     path('api/marketplace/', include('marketplace.urls')),
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ]
+
 

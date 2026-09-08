@@ -134,9 +134,9 @@ class SendOTPView(APIView):
             from django.core.mail import send_mail
             try:
                 send_mail(
-                    subject="Your LPUTrade Verification Code",
-                    message=f"Hello,\n\nYour OTP verification code for LPUTrade is: {otp}\n\nThis code is valid for 10 minutes.\nNever share this OTP with anyone.\n\nBest regards,\nLPUTrade Team",
-                    from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@lputrade.com'),
+                    subject="Your LPXchange Verification Code",
+                    message=f"Hello,\n\nYour OTP verification code for LPXchange is: {otp}\n\nThis code is valid for 10 minutes.\nNever share this OTP with anyone.\n\nBest regards,\nLPXchange Team",
+                    from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@lpxchange.com'),
                     recipient_list=[email],
                     fail_silently=False,
                 )

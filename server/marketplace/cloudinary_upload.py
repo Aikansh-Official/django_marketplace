@@ -17,7 +17,7 @@ def configure_cloudinary():
     )
 
 
-def upload_image_to_cloudinary(image_file, folder="lputrade/listings"):
+def upload_image_to_cloudinary(image_file, folder="lpxchange/listings"):
     """
     Upload an image file to Cloudinary.
 
@@ -45,7 +45,7 @@ def upload_image_to_cloudinary(image_file, folder="lputrade/listings"):
     }
 
 
-def upload_base64_to_cloudinary(base64_data, folder="lputrade/listings"):
+def upload_base64_to_cloudinary(base64_data, folder="lpxchange/listings"):
     """
     Upload a base64-encoded image string to Cloudinary.
 
@@ -77,7 +77,7 @@ def extract_cloudinary_public_id(image_url):
     """
     Extract public_id from a Cloudinary URL, including folder path and excluding version/transformations/extension.
     Example:
-    https://res.cloudinary.com/cloud/image/upload/v12345/lputrade/listings/abc123.jpg -> 'lputrade/listings/abc123'
+    https://res.cloudinary.com/cloud/image/upload/v12345/lpxchange/listings/abc123.jpg -> 'lpxchange/listings/abc123'
     """
     if not image_url or not isinstance(image_url, str):
         return None
@@ -101,10 +101,10 @@ def extract_cloudinary_public_id(image_url):
         if version_idx != -1:
             public_id_segments = segments[version_idx + 1:]
         else:
-            # Check for folder 'lputrade'
+            # Check for folder 'lpxchange' or 'lputrade'
             folder_idx = -1
             for idx, seg in enumerate(segments):
-                if seg == 'lputrade':
+                if seg in ('lpxchange', 'lputrade'):
                     folder_idx = idx
                     break
             if folder_idx != -1:

@@ -198,4 +198,175 @@
   animation: sheenSweep 0.75s ease-out;
 }
 
+/* =========================================================================
+   Geometric Theme Background Auto-Animations & Patterns
+   ========================================================================= */
+
+@keyframes geoFloatSlow {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(-12px, -22px, 0) scale(1.04) rotate(2deg);
+  }
+}
+
+@keyframes geoFloatDrift {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(18px, -16px, 0) scale(1.03) rotate(-2.5deg);
+  }
+}
+
+@keyframes geoFloatReverse {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(-16px, 18px, 0) scale(0.97) rotate(2deg);
+  }
+}
+
+@keyframes geoRingBreathe {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.06) rotate(10deg);
+  }
+}
+
+@keyframes geoRingSpinSlow {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes geoStripeDrift {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate3d(8px, -8px, 0) scale(1.02);
+    opacity: 1;
+  }
+}
+
+@keyframes geoDotPulse {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(0.88);
+    opacity: 0.7;
+    filter: drop-shadow(0 2px 4px rgba(251, 86, 7, 0.2));
+  }
+  50% {
+    transform: translate3d(0, -6px, 0) scale(1.25);
+    opacity: 1;
+    filter: drop-shadow(0 0 10px rgba(251, 86, 7, 0.65));
+  }
+}
+
+.animate-geo-float-slow {
+  animation: geoFloatSlow 11s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-geo-float-drift {
+  animation: geoFloatDrift 14s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-geo-float-reverse {
+  animation: geoFloatReverse 13s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-geo-ring-breathe {
+  animation: geoRingBreathe 15s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-geo-ring-spin-slow {
+  animation: geoRingSpinSlow 55s linear infinite;
+  will-change: transform;
+}
+
+.animate-geo-stripe-drift {
+  animation: geoStripeDrift 10s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.animate-geo-dot-pulse {
+  animation: geoDotPulse 3.5s ease-in-out infinite;
+  will-change: transform, opacity, filter;
+}
+
+@keyframes tagSwing {
+  0%, 100% {
+    transform: rotate(-7deg);
+  }
+  50% {
+    transform: rotate(7deg);
+  }
+}
+
+@keyframes floatBob {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -15px, 0) scale(1.03);
+  }
+}
+
+.animate-tag-swing {
+  animation: tagSwing 7s ease-in-out infinite;
+  transform-origin: top center;
+  will-change: transform;
+}
+
+.animate-float-bob {
+  animation: floatBob 9s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Hatched Stripe Patterns */
+.pattern-hatched-white {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.95) 0px,
+    rgba(255, 255, 255, 0.95) 2.5px,
+    transparent 2.5px,
+    transparent 11px
+  );
+}
+
+.pattern-hatched-orange {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(251, 86, 7, 0.28) 0px,
+    rgba(251, 86, 7, 0.28) 2px,
+    transparent 2px,
+    transparent 10px
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-geo-float-slow,
+  .animate-geo-float-drift,
+  .animate-geo-float-reverse,
+  .animate-geo-ring-breathe,
+  .animate-geo-ring-spin-slow,
+  .animate-geo-stripe-drift,
+  .animate-geo-dot-pulse,
+  .animate-tag-swing,
+  .animate-float-bob {
+    animation: none !important;
+  }
+}
 

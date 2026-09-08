@@ -29,6 +29,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { checkImageAuthenticity, extractLpuCardDetails } from '../utils/idCardVerification';
+import logoImg from '../assets/LPXchange_Logo.jpeg';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -137,10 +138,10 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
                 </div>
 
                 <div className="relative z-10 flex flex-col items-center">
-                  <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 shadow-lg border border-white/30 overflow-hidden">
-                    <img src="src\assets\LPUTrade_logo.jpeg" alt="LPUTrade Logo" className="w-full h-full object-cover" />
+                  <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-md flex items-center justify-center mb-6 shadow-lg border border-white/25 overflow-hidden">
+                    <img src={logoImg} alt="LPXchange Logo" className="w-full h-full object-cover" />
                   </div>
-                  <h2 className="text-3xl font-black mb-3 tracking-tight">LPUTrade</h2>
+                  <h2 className="text-3xl font-black mb-3 tracking-tight">LPXchange</h2>
                   <div className="w-12 h-1 bg-brand-400 rounded-full mb-5"></div>
                   <p className="text-brand-100 text-sm leading-relaxed font-medium max-w-xs">
                     The exclusive campus marketplace. Buy, sell, and trade textbooks, electronics, and essentials securely with verified students.
@@ -153,35 +154,77 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
                 </div>
               </div>
             ) : registerStep === 1 ? (
-              /* REGISTER STEP 1: Clean Minimalist Trust & ID Card Showcase */
-              <div className="h-full w-full bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 p-8 lg:p-12 flex flex-col justify-center items-center text-center text-white relative">
-                <div className="relative z-10 flex flex-col items-center w-full max-w-xs">
-                  <h2 className="text-2xl font-black mb-2 tracking-tight">Student Identity First</h2>
-                  <p className="text-brand-100/90 text-xs leading-relaxed mb-6 font-medium">
-                    Verified campus trading for official LPU students.
+              /* REGISTER STEP 1: Registration Process & Brand Showcase */
+              <div className="h-full w-full bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 p-6 sm:p-8 lg:p-10 flex flex-col justify-between items-center text-center text-white relative overflow-y-auto">
+                <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10 pointer-events-none">
+                  <div className="absolute -top-20 -left-20 w-60 h-60 rounded-full bg-white blur-3xl"></div>
+                  <div className="absolute -bottom-20 -right-20 w-60 h-60 rounded-full bg-white blur-3xl"></div>
+                </div>
+
+                <div className="relative z-10 flex flex-col items-center w-full max-w-sm my-auto">
+                  {/* Logo on Top */}
+                  <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-md flex items-center justify-center mb-2.5 shadow-lg border border-white/25 overflow-hidden">
+                    <img
+                      src={logoImg}
+                      alt="LPXchange Logo"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  {/* Name below Logo */}
+                  <div className="flex items-baseline mb-0.5">
+                    <span className="text-2xl sm:text-3xl font-black tracking-tight text-white font-display">LP</span>
+                    <span className="text-2xl sm:text-3xl font-black tracking-tight text-brand-200 font-display">Xchange</span>
+                  </div>
+                  <p className="text-[11px] font-semibold text-brand-100 uppercase tracking-wider mb-4">
+                    Campus Marketplace
                   </p>
 
-                  {/* ID Card Mockup Graphic */}
-                  <div className="w-full bg-white/15 backdrop-blur-md rounded-md p-4 border border-white/25 text-left shadow-xl space-y-3">
-                    <div className="flex items-center justify-between border-b border-white/20 pb-2">
-                      <span className="text-[10px] font-black tracking-widest text-white uppercase">LOVELY PROFESSIONAL UNIVERSITY</span>
-                      <BadgeCheck className="w-3.5 h-3.5 text-emerald-300" />
-                    </div>
-                    <div className="flex items-center gap-3 py-1">
-                      <div className="w-11 h-13 bg-white/25 rounded border border-white/30 flex items-center justify-center flex-shrink-0">
-                        <UserCheck className="w-5 h-5 text-white/90" />
+                  {/* Title & Tagline */}
+                  <h2 className="text-lg sm:text-xl font-bold mb-1 tracking-tight text-white">How Registration Works</h2>
+                  <p className="text-brand-100/90 text-xs leading-relaxed mb-3.5 font-medium max-w-xs">
+                    Join LPU's verified student exchange in 3 quick steps:
+                  </p>
+
+                  {/* 3 Step Visual Sequence */}
+                  <div className="w-full space-y-2.5 text-left mb-4">
+                    {/* Step 1 */}
+                    <div className="flex items-start gap-3 p-3 rounded-md bg-white/10 backdrop-blur-md border border-white/25 hover:bg-white/15 transition-colors">
+                      <div className="w-7 h-7 rounded-md bg-brand-500 text-white font-black text-xs flex items-center justify-center flex-shrink-0 shadow-xs border border-white/30 mt-0.5">
+                        1
                       </div>
-                      <div className="space-y-1.5 flex-1 min-w-0">
-                        <div className="h-2.5 w-24 bg-white/40 rounded-sm"></div>
-                        <div className="h-2 w-16 bg-white/25 rounded-sm"></div>
-                        <span className="text-[10px] font-mono text-emerald-300 font-extrabold tracking-wider block">
-                          Reg: 1220••••
-                        </span>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-xs font-bold text-white leading-tight">Student Details & OTP</h4>
+                        <p className="text-[11px] text-brand-100/90 leading-snug mt-0.5 font-normal">
+                          Enter 8-digit LPU Reg No, Name & verify via Gmail OTP.
+                        </p>
                       </div>
                     </div>
-                    <div className="pt-2 border-t border-white/15 flex items-center justify-between text-[10px] text-brand-100 font-medium">
-                      <span>Campus Verified</span>
-                      <span className="text-emerald-300 font-bold">+10 Trust Score</span>
+
+                    {/* Step 2 */}
+                    <div className="flex items-start gap-3 p-3 rounded-md bg-white/10 backdrop-blur-md border border-white/25 hover:bg-white/15 transition-colors">
+                      <div className="w-7 h-7 rounded-md bg-brand-500 text-white font-black text-xs flex items-center justify-center flex-shrink-0 shadow-xs border border-white/30 mt-0.5">
+                        2
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-xs font-bold text-white leading-tight">Student ID Verification</h4>
+                        <p className="text-[11px] text-brand-100/90 leading-snug mt-0.5 font-normal">
+                          Upload front photo of your student ID card for automated verification.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Step 3 */}
+                    <div className="flex items-start gap-3 p-3 rounded-md bg-white/10 backdrop-blur-md border border-white/25 hover:bg-white/15 transition-colors">
+                      <div className="w-7 h-7 rounded-md bg-brand-500 text-white font-black text-xs flex items-center justify-center flex-shrink-0 shadow-xs border border-white/30 mt-0.5">
+                        3
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-xs font-bold text-white leading-tight">Set Password & Start</h4>
+                        <p className="text-[11px] text-brand-100/90 leading-snug mt-0.5 font-normal">
+                          Set secure password & start buying, selling and trading on campus!
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>

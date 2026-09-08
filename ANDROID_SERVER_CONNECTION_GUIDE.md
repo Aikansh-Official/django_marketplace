@@ -1,4 +1,4 @@
-# 🔌 LPUTrade — Android to Django Server Connection & Troubleshooting Guide
+# 🔌 LPXchange — Android to Django Server Connection & Troubleshooting Guide
 
 > **Issue:** `failed to connect to /10.0.2.2 (port 8000) from /10.0.2.16 after 15000ms`  
 > **Target:** Android Emulator & Physical Device connecting to local Django backend  
@@ -40,7 +40,7 @@ When running an Android app in an **Android Emulator**, the emulator operates in
 In your terminal, navigate to the `server/` directory and run:
 
 ```powershell
-cd c:\Users\anshu\OneDrive\Desktop\Projects\LPUTrade\server
+cd c:\Users\anshu\OneDrive\Desktop\Projects\LPXchange\server
 python manage.py runserver 0.0.0.0:8000
 ```
 > ⚠️ **Important:** Do NOT just write `python manage.py runserver`. Always include `0.0.0.0:8000`.
@@ -90,7 +90,7 @@ To enable this automatically whenever you start development:
 ```powershell
 # PowerShell script to start server & reverse port
 & "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" reverse tcp:8000 tcp:8000
-cd c:\Users\anshu\OneDrive\Desktop\Projects\LPUTrade\server
+cd c:\Users\anshu\OneDrive\Desktop\Projects\LPXchange\server
 python manage.py runserver 0.0.0.0:8000
 ```
 
@@ -130,7 +130,7 @@ Android 9.0+ (API level 28+) blocks non-HTTPS (`http://`) cleartext network traf
 
 ```xml
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.lputrade.app">
+    package="com.LPXchange.app">
 
     <!-- 1. Internet Permission -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -140,7 +140,7 @@ Android 9.0+ (API level 28+) blocks non-HTTPS (`http://`) cleartext network traf
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/Theme.LPUTrade"
+        android:theme="@style/Theme.LPXchange"
         <!-- 2. REQUIRED: Enable HTTP Cleartext Traffic for local dev -->
         android:usesCleartextTraffic="true">
 

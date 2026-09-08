@@ -402,7 +402,7 @@ export default function ProductDetail() {
   const cleanPhone = rawPhone.replace(/[^\d+]/g, '');
   const waPhone = (listing.contact_whatsapp || rawPhone).replace(/[^\d]/g, '');
   const waMessage = encodeURIComponent(
-    `Hi ${listing.seller?.full_name || 'there'}, I saw your listing "${listing.title}" on LPUTrade for Rs ${listing.price}. Is it still available?`
+    `Hi ${listing.seller?.full_name || 'there'}, I saw your listing "${listing.title}" on LPXchange for Rs ${listing.price}. Is it still available?`
   );
   const waUrl = waPhone ? `https://wa.me/${waPhone}?text=${waMessage}` : null;
   const callUrl = cleanPhone ? `tel:${cleanPhone}` : null;
@@ -833,11 +833,6 @@ export default function ProductDetail() {
               )}
 
               {/* Transaction Badge */}
-              {listing.transaction_type === 'RENT' && (
-                <div className="absolute top-4 left-4 bg-brand-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
-                  FOR RENT ({listing.rent_period ? `/${listing.rent_period}` : ''})
-                </div>
-              )}
               {listing.transaction_type === 'DONATE' && (
                 <div className="absolute top-4 left-4 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
                   FREE DONATION
@@ -953,7 +948,7 @@ export default function ProductDetail() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                  {listing.transaction_type === 'RENT' ? 'Rental Fee' : 'Price'}
+                  Price
                 </span>
                 <div className="flex items-center gap-1.5 text-xs text-gray-500">
                   <Eye className="w-3.5 h-3.5" />
@@ -965,11 +960,6 @@ export default function ProductDetail() {
                 <span className="text-3xl font-extrabold text-gray-900 tracking-tight">
                   {listing.transaction_type === 'DONATE' ? 'Free (Donation)' : `Rs ${listing.price}`}
                 </span>
-                {listing.transaction_type === 'RENT' && listing.rent_period && (
-                  <span className="text-sm text-gray-500 font-semibold">
-                    /{listing.rent_period}
-                  </span>
-                )}
               </div>
 
               {listing.is_negotiable && listing.transaction_type === 'SELL' && (
