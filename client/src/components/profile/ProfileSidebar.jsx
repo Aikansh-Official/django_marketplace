@@ -86,7 +86,16 @@ export default function ProfileSidebar({
                   </span>
                 )}
               </div>
-              <p className="text-xs font-medium text-gray-500 truncate">@{profile?.username}</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <p className="text-xs font-medium text-gray-500 truncate">@{profile?.username}</p>
+                <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded ${
+                  profile?.is_id_verified || profile?.role === 'SELLER'
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : 'bg-blue-50 text-blue-700 border border-blue-200'
+                }`}>
+                  {profile?.is_id_verified || profile?.role === 'SELLER' ? 'Seller' : 'Buyer'}
+                </span>
+              </div>
             </div>
           </div>
 

@@ -1,11 +1,18 @@
 import axios from 'axios';
 axios.defaults.withCredentials = true;
 
-// Automatically attach admin JWT token to all outgoing requests
+// Automatically attach admin JWT token and App Security Key to all outgoing requests
 axios.interceptors.request.use((config) => {
+  config.headers = config.headers || {};
+
+  // Attach Data Security Layer Key
+  const appSecurityKey = import.meta.env.VITE_APP_SECURITY_KEY;
+  if (appSecurityKey) {
+    config.headers['X-App-Security-Key'] = appSecurityKey;
+  }
+
   const token = localStorage.getItem('admin_access');
   if (token) {
-    config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;

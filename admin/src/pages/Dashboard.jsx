@@ -6,45 +6,77 @@ import { Users, ShoppingBag, CheckCircle, AlertTriangle, Tag, MapPin, ArrowRight
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export default function Dashboard() {
-  const [users, setUsers] = useState([]);
-  const [listings, setListings] = useState([]);
-  const [reports, setReports] = useState([]);
+  const [stats, setStats] = useState({
+    total_students: 0,
+    verified_students: 0,
+    active_listings: 0,
+    total_listings: 0,
+    completed_deals: 0,
+    pending_reports: 0
+  });
+  const [recentListings, setRecentListings] = useState([]);
+  const [recentStudents, setRecentStudents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        const [usersRes, listingsRes, reportsRes] = await Promise.allSettled([
-          axios.get(`${API_BASE}/auth/users/`),
-          axios.get(`${API_BASE}/marketplace/admin/listings/`),
-          axios.get(`${API_BASE}/marketplace/admin/reports/`)
-        ]);
-
-        if (usersRes.status === 'fulfilled') {
-          setUsers(usersRes.value.data);
-        }
-        if (listingsRes.status === 'fulfilled') {
-          setListings(listingsRes.value.data);
-        }
-        if (reportsRes.status === 'fulfilled') {
-          setReports(reportsRes.value.data);
+        // Fast consolidated single-roundtrip endpoint
+        const res = await axios.get(`${API_BASE}/marketplace/admin/dashboard-stats/`);
+        if (isMounted && res.data) {
+          if (res.data.stats) {
+            setStats(res.data.stats);
+          }
+          if (res.data.recent_listings) {
+            setRecentListings(res.data.recent_listings);
+          }
+          if (res.data.recent_students) {
+            setRecentStudents(res.data.recent_students);
+          }
         }
       } catch (error) {
-        console.error("Failed to fetch dashboard data", error);
+        console.warn("Fast dashboard stats failed, falling back to multi-endpoint fetch", error);
+        try {
+          const [usersRes, listingsRes, reportsRes] = await Promise.allSettled([
+            axios.get(`${API_BASE}/auth/users/`),
+            axios.get(`${API_BASE}/marketplace/admin/listings/`),
+            axios.get(`${API_BASE}/marketplace/admin/reports/`)
+          ]);
+
+          if (isMounted) {
+            const rawUsers = usersRes.status === 'fulfilled' ? usersRes.value.data : [];
+            const rawListings = listingsRes.status === 'fulfilled' ? listingsRes.value.data : [];
+            const rawReports = reportsRes.status === 'fulfilled' ? reportsRes.value.data : [];
+
+            const studentsOnly = rawUsers.filter((u) => !u.is_staff && !u.is_superuser);
+            setStats({
+              total_students: studentsOnly.length,
+              verified_students: studentsOnly.filter((u) => u.is_verified_student).length,
+              active_listings: rawListings.filter((l) => l.status === 'ACTIVE').length,
+              total_listings: rawListings.length,
+              completed_deals: rawListings.filter((l) => l.status === 'SOLD').length,
+              pending_reports: rawReports.filter((r) => r.status === 'PENDING').length
+            });
+            setRecentListings(rawListings.slice(0, 5));
+            setRecentStudents(studentsOnly.slice(0, 5));
+          }
+        } catch (fallbackError) {
+          console.error("Fallback fetch also failed", fallbackError);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
-    fetchDashboardData();
-  }, []);
 
-  // Compute real dynamic statistics
-  const students = users.filter((u) => !u.is_staff && !u.is_superuser);
-  const verifiedStudents = students.filter((u) => u.is_verified_student).length;
-  const activeListings = listings.filter((l) => l.status === 'ACTIVE').length;
-  const completedDeals = listings.filter((l) => l.status === 'SOLD').length;
-  const pendingReports = reports.filter((r) => r.status === 'PENDING').length;
+    fetchDashboardData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="space-y-8">
@@ -54,11 +86,15 @@ export default function Dashboard() {
         <div className="bg-white/80 backdrop-blur-md p-6 rounded-md border border-white/50 shadow-md flex items-center justify-between">
           <div>
             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Students</h3>
-            <p className="mt-2 text-3xl font-black text-gray-900">
-              {loading ? '...' : students.length}
-            </p>
+            <div className="mt-2 min-h-[36px] flex items-center">
+              {loading ? (
+                <div className="h-8 w-14 bg-gray-200 animate-pulse rounded-md"></div>
+              ) : (
+                <p className="text-3xl font-black text-gray-900">{stats.total_students}</p>
+              )}
+            </div>
             <p className="mt-1 text-xs text-emerald-600 font-semibold flex items-center gap-1">
-              <CheckCircle className="w-3.5 h-3.5" /> {verifiedStudents} campus verified
+              <CheckCircle className="w-3.5 h-3.5" /> {stats.verified_students} campus verified
             </p>
           </div>
           <div className="w-12 h-12 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center">
@@ -70,11 +106,15 @@ export default function Dashboard() {
         <div className="bg-white/80 backdrop-blur-md p-6 rounded-md border border-white/50 shadow-md flex items-center justify-between">
           <div>
             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Active Listings</h3>
-            <p className="mt-2 text-3xl font-black text-gray-900">
-              {loading ? '...' : activeListings}
-            </p>
+            <div className="mt-2 min-h-[36px] flex items-center">
+              {loading ? (
+                <div className="h-8 w-14 bg-gray-200 animate-pulse rounded-md"></div>
+              ) : (
+                <p className="text-3xl font-black text-gray-900">{stats.active_listings}</p>
+              )}
+            </div>
             <p className="mt-1 text-xs text-gray-500 font-medium">
-              {listings.length} total items listed
+              {stats.total_listings} total items listed
             </p>
           </div>
           <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -86,9 +126,13 @@ export default function Dashboard() {
         <div className="bg-white/80 backdrop-blur-md p-6 rounded-md border border-white/50 shadow-md flex items-center justify-between">
           <div>
             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Completed Deals</h3>
-            <p className="mt-2 text-3xl font-black text-gray-900">
-              {loading ? '...' : completedDeals}
-            </p>
+            <div className="mt-2 min-h-[36px] flex items-center">
+              {loading ? (
+                <div className="h-8 w-14 bg-gray-200 animate-pulse rounded-md"></div>
+              ) : (
+                <p className="text-3xl font-black text-gray-900">{stats.completed_deals}</p>
+              )}
+            </div>
             <p className="mt-1 text-xs text-emerald-600 font-semibold">
               Items marked as sold
             </p>
@@ -102,14 +146,20 @@ export default function Dashboard() {
         <div className="bg-white/80 backdrop-blur-md p-6 rounded-md border border-white/50 shadow-md flex items-center justify-between">
           <div>
             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Pending Reports</h3>
-            <p className={`mt-2 text-3xl font-black ${pendingReports > 0 ? 'text-amber-600' : 'text-gray-900'}`}>
-              {loading ? '...' : pendingReports}
-            </p>
+            <div className="mt-2 min-h-[36px] flex items-center">
+              {loading ? (
+                <div className="h-8 w-14 bg-gray-200 animate-pulse rounded-md"></div>
+              ) : (
+                <p className={`text-3xl font-black ${stats.pending_reports > 0 ? 'text-amber-600' : 'text-gray-900'}`}>
+                  {stats.pending_reports}
+                </p>
+              )}
+            </div>
             <p className="mt-1 text-xs text-gray-500 font-medium">
-              {pendingReports === 0 ? 'No open flags' : 'Requires moderation review'}
+              {stats.pending_reports === 0 ? 'No open flags' : 'Requires moderation review'}
             </p>
           </div>
-          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${pendingReports > 0 ? 'bg-amber-50 text-amber-600' : 'bg-gray-50 text-gray-400'}`}>
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${stats.pending_reports > 0 ? 'bg-amber-50 text-amber-600' : 'bg-gray-50 text-gray-400'}`}>
             <AlertTriangle className="w-6 h-6" />
           </div>
         </div>
@@ -117,7 +167,7 @@ export default function Dashboard() {
 
       {/* Two Column Layout: Recent Listings & Recent Students */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Listings from Database */}
+        {/* Recent Listings */}
         <div className="bg-white/80 backdrop-blur-md rounded-md border border-white/50 shadow-md p-6">
           <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
             <div>
@@ -125,17 +175,29 @@ export default function Dashboard() {
               <p className="text-xs text-gray-500">Live items posted by registered students</p>
             </div>
             <Link to="/listings" className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1">
-              View All ({listings.length}) <ArrowRight className="w-3.5 h-3.5" />
+              View All ({stats.total_listings}) <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
           <div className="space-y-3">
             {loading ? (
-              <p className="text-xs text-gray-500 py-6 text-center">Loading marketplace items...</p>
-            ) : listings.length === 0 ? (
+              // Skeleton loading rows
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between p-2.5 rounded-md border border-gray-100 animate-pulse">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-11 h-11 rounded-md bg-gray-200 flex-shrink-0" />
+                    <div className="space-y-1.5">
+                      <div className="h-3 w-32 bg-gray-200 rounded" />
+                      <div className="h-2.5 w-20 bg-gray-200 rounded" />
+                    </div>
+                  </div>
+                  <div className="h-4 w-12 bg-gray-200 rounded" />
+                </div>
+              ))
+            ) : recentListings.length === 0 ? (
               <p className="text-xs text-gray-500 py-6 text-center">No listings recorded yet.</p>
             ) : (
-              listings.slice(0, 5).map((listing) => {
+              recentListings.map((listing) => {
                 const cover = listing.images?.find((img) => img.is_primary)?.image_url || listing.images?.[0]?.image_url;
                 return (
                   <div key={listing.id} className="flex items-center justify-between p-2.5 rounded-md hover:bg-gray-50 transition-colors border border-gray-100">
@@ -175,7 +237,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Recent Students from Database */}
+        {/* Recent Students */}
         <div className="bg-white/80 backdrop-blur-md rounded-md border border-white/50 shadow-md p-6">
           <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
             <div>
@@ -183,17 +245,29 @@ export default function Dashboard() {
               <p className="text-xs text-gray-500">Verified peer accounts on LPXchange</p>
             </div>
             <Link to="/students" className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1">
-              View All ({students.length}) <ArrowRight className="w-3.5 h-3.5" />
+              View All ({stats.total_students}) <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
           <div className="space-y-3">
             {loading ? (
-              <p className="text-xs text-gray-500 py-6 text-center">Loading student records...</p>
-            ) : students.length === 0 ? (
+              // Skeleton loading rows
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between p-2.5 rounded-md border border-gray-100 animate-pulse">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0" />
+                    <div className="space-y-1.5">
+                      <div className="h-3 w-28 bg-gray-200 rounded" />
+                      <div className="h-2.5 w-36 bg-gray-200 rounded" />
+                    </div>
+                  </div>
+                  <div className="h-4 w-14 bg-gray-200 rounded" />
+                </div>
+              ))
+            ) : recentStudents.length === 0 ? (
               <p className="text-xs text-gray-500 py-6 text-center">No students registered yet.</p>
             ) : (
-              students.slice(0, 5).map((user) => (
+              recentStudents.map((user) => (
                 <div key={user.id} className="flex items-center justify-between p-2.5 rounded-md hover:bg-gray-50 transition-colors border border-gray-100">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-full bg-brand-100 text-brand-700 font-bold flex items-center justify-center flex-shrink-0 text-sm">
@@ -227,4 +301,3 @@ export default function Dashboard() {
     </div>
   );
 }
-

@@ -235,6 +235,63 @@ export default function CreateListing() {
     }
   };
 
+  const isSeller = userProfile?.is_id_verified || userProfile?.role === 'SELLER' || userProfile?.is_staff || userProfile?.is_superuser;
+
+  // Gate check: If user is a Buyer without verified ID, prompt them to verify
+  if (userProfile && !isSeller) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-12 sm:py-16 animate-fade-in-up">
+        <div className="bg-white/95 backdrop-blur-md border border-gray-200 shadow-xl rounded-xl p-8 sm:p-12 text-center relative overflow-hidden">
+          <div className="w-20 h-20 bg-brand-50 border-2 border-brand-200 text-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+            <ShieldCheck className="w-10 h-10 text-brand-600" />
+          </div>
+
+          <span className="inline-block px-3 py-1 bg-amber-100 text-amber-800 text-xs font-black uppercase tracking-wider rounded-full mb-3">
+            Seller Verification Required
+          </span>
+
+          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
+            Become a Verified Seller
+          </h2>
+          <p className="text-gray-600 text-sm sm:text-base max-w-lg mx-auto mt-3 leading-relaxed">
+            Your account is currently registered as a <strong>Buyer</strong>. To protect the campus community from scams and ensure 100% genuine peer deals, sellers must verify their physical Student ID card.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 my-8 text-left max-w-xl mx-auto">
+            <div className="bg-gray-50 border border-gray-100 rounded-lg p-4">
+              <div className="text-brand-600 font-black text-lg mb-1">✓ Unlimited</div>
+              <p className="text-xs text-gray-600">List as many campus items or books as you want for free.</p>
+            </div>
+            <div className="bg-gray-50 border border-gray-100 rounded-lg p-4">
+              <div className="text-emerald-600 font-black text-lg mb-1">✓ Trust Badge</div>
+              <p className="text-xs text-gray-600">Earn the Verified Student badge & boost buyer inquiries.</p>
+            </div>
+            <div className="bg-gray-50 border border-gray-100 rounded-lg p-4">
+              <div className="text-blue-600 font-black text-lg mb-1">✓ Instant OCR</div>
+              <p className="text-xs text-gray-600">Takes less than 15 seconds to scan and unlock selling.</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={() => navigate('/profile?tab=id-verification')}
+              className="w-full sm:w-auto bg-brand-500 hover:bg-brand-600 text-white font-bold py-3.5 px-8 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+            >
+              <ShieldCheck className="w-5 h-5" />
+              <span>Verify Student ID Now</span>
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="w-full sm:w-auto bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3.5 px-6 rounded-lg transition-all text-sm cursor-pointer"
+            >
+              Back to Marketplace
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const selectedCategoryObj = categories.find((c) => String(c.id) === String(categoryId));
   const coverImage = images[primaryIndex] || images[0] || '';
   return (

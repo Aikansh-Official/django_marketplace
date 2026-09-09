@@ -303,7 +303,18 @@ export default function Navbar() {
                       {isProfileMenuOpen && (
                         <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-100 py-1.5 z-50 text-xs animate-fade-in-up">
                           <div className="px-3 py-2 border-b border-gray-100">
-                            <p className="font-semibold text-gray-900 truncate">{displayName}</p>
+                            <div className="flex items-center justify-between gap-1">
+                              <p className="font-semibold text-gray-900 truncate">{displayName}</p>
+                              {userProfile.role === 'SELLER' || userProfile.is_id_verified ? (
+                                <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full shrink-0">
+                                  Verified Seller
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-extrabold bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full shrink-0">
+                                  Buyer
+                                </span>
+                              )}
+                            </div>
                             <p className="text-[11px] text-gray-500 truncate">{userProfile.email || 'LPU Student'}</p>
                           </div>
 

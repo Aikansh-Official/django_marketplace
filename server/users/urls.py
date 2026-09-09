@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import (
     RegisterView, UserListView, UserProfileView, CheckUsernameView,
+    CheckPhoneView, CheckEmailView,
     CustomTokenObtainPairView, CustomTokenRefreshView, LogoutView,
     SendOTPView, VerifyOTPView, UserAdminDetailView, AuthStatusView,
     CompleteIdVerificationView
@@ -19,5 +20,7 @@ urlpatterns = [
     path('verify-id/', CompleteIdVerificationView.as_view(), name='verify_id'),
     path('status/', AuthStatusView.as_view(), name='auth_status'),
     path('check-username/', CheckUsernameView.as_view(), name='check_username'),
+    path('check-phone/', CheckPhoneView.as_view(), name='check_phone'),
+    path('check-email/', CheckEmailView.as_view(), name='check_email'),
 ]
 

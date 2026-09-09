@@ -10,6 +10,7 @@ import { registerSchema } from './authSchemas';
 import RegisterStepper from './RegisterStepper';
 import RegisterStepDetails from './steps/RegisterStepDetails';
 import RegisterStepIdCard from './steps/RegisterStepIdCard';
+import RegisterStepSelfie from './steps/RegisterStepSelfie';
 import RegisterStepOtp from './steps/RegisterStepOtp';
 import RegisterStepPassword from './steps/RegisterStepPassword';
 
@@ -42,11 +43,16 @@ export default function RegisterForm({
     mode: 'onBlur',
   });
 
+  const [selectedRole, setSelectedRole] = useState('BUYER'); // 'BUYER' or 'SELLER'
   const [isLoading, setIsLoading] = useState(false);
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState('idle');
+  const [phoneStatus, setPhoneStatus] = useState('idle');
+  const [emailStatus, setEmailStatus] = useState('idle');
+  const [selfieImage, setSelfieImage] = useState(null);
   const usernameValue = watch("username");
   const fullNameValue = watch("full_name");
+  const phoneValue = watch("phone_number");
   const emailValue = watch("email");
 
   // Keep studentInfo synced with form values so parent AuthModal has access
@@ -86,20 +92,90 @@ export default function RegisterForm({
     return () => clearTimeout(debounceTimer);
   }, [usernameValue, setError, clearErrors]);
 
-  // Step 1 -> Step 2: Validate fields & proceed to ID verification
-  const handleProceedToIdVerification = async () => {
+  // Live phone number availability check
+  useEffect(() => {
+    if (!phoneValue || phoneValue.length < 10) {
+      setPhoneStatus('idle');
+      return;
+    }
+
+    const checkPhoneAvailability = async () => {
+      setPhoneStatus('checking');
+      try {
+        const response = await axios.get(`${API_BASE}/auth/check-phone/?phone=${phoneValue}`);
+        if (response.data.available) {
+          setPhoneStatus('available');
+          clearErrors("phone_number");
+        } else {
+          setPhoneStatus('taken');
+          setError("phone_number", { type: "manual", message: "This phone number is already registered" });
+        }
+      } catch (error) {
+        setPhoneStatus('idle');
+      }
+    };
+
+    const debounceTimer = setTimeout(() => { checkPhoneAvailability(); }, 400);
+    return () => clearTimeout(debounceTimer);
+  }, [phoneValue, setError, clearErrors]);
+
+  // Live email availability check
+  useEffect(() => {
+    if (!emailValue || !emailValue.includes('@') || !emailValue.includes('.')) {
+      setEmailStatus('idle');
+      return;
+    }
+
+    const checkEmailAvailability = async () => {
+      setEmailStatus('checking');
+      try {
+        const response = await axios.get(`${API_BASE}/auth/check-email/?email=${encodeURIComponent(emailValue.trim())}`);
+        if (response.data.available) {
+          setEmailStatus('available');
+          clearErrors("email");
+        } else {
+          setEmailStatus('taken');
+          setError("email", { type: "manual", message: "This email address is already registered" });
+        }
+      } catch (error) {
+        setEmailStatus('idle');
+      }
+    };
+
+    const debounceTimer = setTimeout(() => { checkEmailAvailability(); }, 400);
+    return () => clearTimeout(debounceTimer);
+  }, [emailValue, setError, clearErrors]);
+
+  // Handle Step 1 proceed
+  const handleProceedFromDetails = async () => {
     const isValid = await trigger(['full_name', 'username', 'phone_number', 'email']);
-    if (!isValid || usernameStatus === 'taken' || usernameStatus === 'checking') return;
+    if (
+      !isValid ||
+      usernameStatus === 'taken' ||
+      usernameStatus === 'checking' ||
+      phoneStatus === 'taken' ||
+      phoneStatus === 'checking' ||
+      emailStatus === 'taken' ||
+      emailStatus === 'checking'
+    ) return;
+
     if (setStudentInfo) {
       setStudentInfo({
         fullName: fullNameValue || '',
         username: usernameValue || ''
       });
     }
-    setStep(2);
+
+    if (selectedRole === 'BUYER') {
+      // For Buyer: Skip ID Card verification and proceed directly to Email OTP (step 2 for Buyer)
+      await handleProceedToOtp(2);
+    } else {
+      // For Seller: Proceed to ID Card verification (step 2 for Seller)
+      setStep(2);
+    }
   };
 
-  // Step 2: Intelligent OCR verification of ID Card
+  // Step 2 (Seller): Intelligent OCR verification of ID Card
   const handleScanAndVerifyId = async () => {
     if (!idFrontImage) {
       toast.error('Please upload your physical student ID card photo first.');
@@ -181,13 +257,14 @@ export default function RegisterForm({
     }
   };
 
-  // Step 2 -> Step 3: Trigger Email OTP and advance
-  const handleProceedToOtp = async () => {
+  // Trigger Email OTP and advance to target step
+  // Seller: proceed from selfie (step 3) to OTP (step 4)
+  const handleProceedToOtp = async (targetStep = 4) => {
     setIsLoading(true);
     try {
       await axios.post(`${API_BASE}/auth/send-otp/`, { email: emailValue });
       toast.success(`Verification code sent to ${emailValue}!`);
-      setStep(3);
+      setStep(targetStep);
     } catch (e) {
       const errMsg = e.response?.data?.error || e.response?.data?.email?.[0] || e.response?.data?.detail || "Failed to send OTP.";
       toast.error(errMsg);
@@ -195,15 +272,16 @@ export default function RegisterForm({
     setIsLoading(false);
   };
 
-  // Skip ID card for now (verify later in profile)
+  // Skip ID card for now (switches to Buyer mode)
   const handleSkipIdVerification = async () => {
     setIsIdVerified(false);
     setIdFrontImage(null);
     setExtractedCardData(null);
-    await handleProceedToOtp();
+    setSelectedRole('BUYER');
+    await handleProceedToOtp(2);
   };
 
-  // Step 3: Verify Email OTP
+  // Verify Email OTP
   const handleVerifyOTP = async () => {
     const isValid = await trigger(['otp']);
     if (!isValid) return;
@@ -215,25 +293,29 @@ export default function RegisterForm({
         otp: watch('otp')
       });
       toast.success("Email verified successfully!");
-      setStep(4);
+      // For Buyer: next is step 3 (Password). For Seller: next is step 5 (Password).
+      setStep(selectedRole === 'BUYER' ? 3 : 5);
     } catch (e) {
       toast.error(e.response?.data?.error || "Invalid OTP");
     }
     setIsLoading(false);
   };
 
-  // Step 4: Final Account Creation Submit
+  // Final Account Creation Submit
   const onSubmit = async (data) => {
-    if (step !== 4) return;
+    const finalStep = selectedRole === 'BUYER' ? 3 : 5;
+    if (step !== finalStep) return;
     if (usernameStatus === 'taken') return;
 
     setIsLoading(true);
     try {
-      // Include verified ID card image and structured extra card data if available
+      // Include verified ID card image, card data, and selfie profile photo if seller
       const payload = {
         ...data,
-        id_card_image: isIdVerified && idFrontImage ? idFrontImage : null,
-        id_card_data: isIdVerified && extractedCardData ? extractedCardData : {}
+        role: selectedRole,
+        id_card_image: selectedRole === 'SELLER' && isIdVerified && idFrontImage ? idFrontImage : null,
+        id_card_data: selectedRole === 'SELLER' && isIdVerified && extractedCardData ? extractedCardData : {},
+        profile_photo: selectedRole === 'SELLER' && selfieImage ? selfieImage : null
       };
 
       await axios.post(`${API_BASE}/auth/register/`, payload);
@@ -252,7 +334,11 @@ export default function RegisterForm({
         localStorage.setItem('user', JSON.stringify(loginResponse.data.user));
       }
 
-      toast.success('Registration successful! Automatically logged in with verified credentials.');
+      toast.success(
+        selectedRole === 'BUYER'
+          ? 'Welcome to LPXchange! Buyer account created successfully.'
+          : 'Welcome to LPXchange! Verified Seller account created successfully.'
+      );
       onSuccess();
       window.location.reload();
     } catch (error) {
@@ -276,7 +362,7 @@ export default function RegisterForm({
   return (
     <div className="w-full max-w-sm sm:max-w-md mx-auto">
       {/* Top Multi-Step Progress Indicator */}
-      <RegisterStepper step={step} />
+      <RegisterStepper step={step} role={selectedRole} />
 
       <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
         {/* STEP 1: BASIC STUDENT DETAILS */}
@@ -285,12 +371,19 @@ export default function RegisterForm({
             register={register}
             errors={errors}
             usernameStatus={usernameStatus}
-            onProceed={handleProceedToIdVerification}
+            phoneStatus={phoneStatus}
+            emailStatus={emailStatus}
+            onProceed={handleProceedFromDetails}
+            role={selectedRole}
+            onRoleChange={(newRole) => {
+              setSelectedRole(newRole);
+              setStep(1);
+            }}
           />
         )}
 
-        {/* STEP 2: STUDENT ID CARD UPLOAD & OCR VERIFICATION */}
-        {step === 2 && (
+        {/* STEP 2 FOR SELLER ONLY: STUDENT ID CARD UPLOAD & OCR VERIFICATION */}
+        {selectedRole === 'SELLER' && step === 2 && (
           <RegisterStepIdCard
             usernameValue={usernameValue}
             fullNameValue={fullNameValue}
@@ -303,27 +396,37 @@ export default function RegisterForm({
             extractedCardData={extractedCardData}
             rejectionInfo={rejectionInfo}
             onScanAndVerify={handleScanAndVerifyId}
-            onProceedToOtp={handleProceedToOtp}
+            onProceedToOtp={() => setStep(3)}
             onBack={() => setStep(1)}
             onSkip={handleSkipIdVerification}
           />
         )}
 
-        {/* STEP 3: EMAIL OTP VERIFICATION */}
-        {step === 3 && (
+        {/* STEP 3 FOR SELLER ONLY: SELFIE CAPTURE */}
+        {selectedRole === 'SELLER' && step === 3 && (
+          <RegisterStepSelfie
+            selfieImage={selfieImage}
+            setSelfieImage={setSelfieImage}
+            onProceed={() => handleProceedToOtp(4)}
+            onBack={() => setStep(2)}
+          />
+        )}
+
+        {/* EMAIL OTP VERIFICATION: Step 2 for Buyer, Step 4 for Seller */}
+        {((selectedRole === 'BUYER' && step === 2) || (selectedRole === 'SELLER' && step === 4)) && (
           <RegisterStepOtp
             register={register}
             errors={errors}
             emailValue={emailValue}
             isLoading={isLoading}
             onVerifyOtp={handleVerifyOTP}
-            onResendOtp={handleProceedToOtp}
-            onBack={() => setStep(2)}
+            onResendOtp={() => handleProceedToOtp(selectedRole === 'BUYER' ? 2 : 4)}
+            onBack={() => setStep(selectedRole === 'BUYER' ? 1 : 3)}
           />
         )}
 
-        {/* STEP 4: PASSWORD SETUP & FINISH */}
-        {step === 4 && (
+        {/* PASSWORD SETUP & FINISH: Step 3 for Buyer, Step 5 for Seller */}
+        {((selectedRole === 'BUYER' && step === 3) || (selectedRole === 'SELLER' && step === 5)) && (
           <RegisterStepPassword
             register={register}
             errors={errors}

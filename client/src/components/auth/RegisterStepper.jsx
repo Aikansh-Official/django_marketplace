@@ -8,11 +8,25 @@ const STEPS = [
   { num: 4, label: 'Password' }
 ];
 
-export default function RegisterStepper({ step }) {
+export default function RegisterStepper({ step, role = 'BUYER' }) {
+  const steps = role === 'BUYER' 
+    ? [
+        { num: 1, label: 'Details' },
+        { num: 2, label: 'Verify OTP' },
+        { num: 3, label: 'Password' }
+      ]
+    : [
+        { num: 1, label: 'Details' },
+        { num: 2, label: 'ID Card' },
+        { num: 3, label: 'Selfie' },
+        { num: 4, label: 'Verify OTP' },
+        { num: 5, label: 'Password' }
+      ];
+
   return (
     <div className="mb-6 pb-4 border-b border-gray-100">
       <div className="flex items-center justify-between max-w-sm mx-auto">
-        {STEPS.map((item, idx) => {
+        {steps.map((item, idx) => {
           const isCompleted = step > item.num;
           const isCurrent = step === item.num;
           return (
@@ -35,7 +49,7 @@ export default function RegisterStepper({ step }) {
                   {item.label}
                 </span>
               </div>
-              {idx < 3 && (
+              {idx < steps.length - 1 && (
                 <div
                   className={`flex-1 h-0.5 mx-1 sm:mx-2 -mt-5 transition-all ${step > idx + 1 ? 'bg-emerald-500' : 'bg-gray-200'
                     }`}

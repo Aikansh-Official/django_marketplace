@@ -214,6 +214,14 @@ REST_FRAMEWORK = {
     }
 }
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'lputrade-locmem-cache',
+        'TIMEOUT': 300,
+    }
+}
+
 from datetime import timedelta
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),

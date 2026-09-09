@@ -10,6 +10,11 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+class CategorySimpleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'slug', 'icon']
+
 class CategorySerializer(serializers.ModelSerializer):
     listings_count = serializers.SerializerMethodField()
 
@@ -18,6 +23,8 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'slug', 'icon', 'listings_count']
 
     def get_listings_count(self, obj):
+        if hasattr(obj, 'annotated_listings_count'):
+            return obj.annotated_listings_count
         return obj.listings.filter(status='ACTIVE').count()
 
 class ListingImageSerializer(serializers.ModelSerializer):
@@ -56,7 +63,7 @@ class PublicSellerSerializer(serializers.ModelSerializer):
 
 class ListingSerializer(serializers.ModelSerializer):
     images = ListingImageSerializer(many=True, read_only=True)
-    category = CategorySerializer(read_only=True)
+    category = CategorySimpleSerializer(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(
         queryset=Category.objects.all(), source='category', write_only=True, required=False, allow_null=True
     )
@@ -89,7 +96,12 @@ class ListingSerializer(serializers.ModelSerializer):
         return False
 
     def get_offers_count(self, obj):
-        return obj.offers.filter(status='PENDING').count()
+        if hasattr(obj, 'annotated_offers_count'):
+            return obj.annotated_offers_count
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated and obj.seller_id == request.user.id:
+            return obj.offers.filter(status='PENDING').count()
+        return 0
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

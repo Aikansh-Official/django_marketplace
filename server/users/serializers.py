@@ -26,10 +26,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     password_confirm = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
     id_card_image = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     id_card_data = serializers.JSONField(required=False, default=dict)
+    role = serializers.ChoiceField(choices=[('BUYER', 'Buyer'), ('SELLER', 'Seller')], default='BUYER', required=False)
+    profile_photo = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'password', 'password_confirm', 'full_name', 'phone_number', 'id_card_image', 'id_card_data')
+        fields = ('username', 'email', 'password', 'password_confirm', 'full_name', 'phone_number', 'id_card_image', 'id_card_data', 'role', 'profile_photo')
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
@@ -43,15 +45,21 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         username = attrs.get('username', '')
         if not username.isdigit() or len(username) != 8:
             raise serializers.ValidationError({"username": "Registration number must be exactly 8 digits."})
+        if User.objects.filter(username__iexact=username).exists():
+            raise serializers.ValidationError({"username": "This registration number is already registered."})
             
         phone_number = attrs.get('phone_number', '')
         if not phone_number.isdigit() or len(phone_number) != 10:
             raise serializers.ValidationError({"phone_number": "Phone number must be exactly 10 digits."})
+        if User.objects.filter(phone_number=phone_number).exists():
+            raise serializers.ValidationError({"phone_number": "This phone number is already registered."})
             
         email = attrs.get('email', '')
         
         if not re.match(r'^[\w\.-]+@gmail\.com$', email.lower()):
             raise serializers.ValidationError({"email": "Only @gmail.com email addresses are allowed."})
+        if User.objects.filter(email__iexact=email).exists():
+            raise serializers.ValidationError({"email": "This email address is already registered."})
             
         try:
             otp_record = OTPVerification.objects.get(email=email)
@@ -66,7 +74,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         validated_data.pop('password_confirm')
         id_card_image = validated_data.pop('id_card_image', None)
         id_card_data = validated_data.pop('id_card_data', {})
-        is_id_verified = bool(id_card_image and len(str(id_card_image).strip()) > 100)
+        role = validated_data.pop('role', 'BUYER')
+        profile_photo = validated_data.pop('profile_photo', None)
+
+        is_id_verified = False
+        if role == 'SELLER' and id_card_image and len(str(id_card_image).strip()) > 100:
+            is_id_verified = True
+        elif role != 'SELLER':
+            role = 'BUYER'
+            is_id_verified = False
         
         # Basic college domain extraction
         email = validated_data.get('email', '')
@@ -81,12 +97,19 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             first_name=full_name,
             phone_number=validated_data.get('phone_number', ''),
             college_domain=domain,
+            role=role,
             is_verified_student=True, # Email verified via OTP
             is_id_verified=is_id_verified,
             id_card_image=id_card_image if is_id_verified else None,
             id_card_data=id_card_data if is_id_verified else {},
-            trust_score=10 if is_id_verified else 5 # Email (+5) + ID Card (+5)
+            trust_score=10 if is_id_verified else 5, # Email (+5) + ID Card (+5)
+            profile_photo=profile_photo if (role == 'SELLER' and profile_photo and len(str(profile_photo).strip()) > 100) else None
         )
+
+        # Recalculate trust score with selfie bonus
+        if user.profile_photo:
+            user.trust_score = user.calculate_trust_score()
+            user.save(update_fields=['trust_score'])
 
         # Invalidate OTP record upon successful registration to prevent reuse
         OTPVerification.objects.filter(email=validated_data['email']).delete()
@@ -100,33 +123,23 @@ class UserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            'id', 'username', 'email', 'full_name', 'phone_number',
+            'id', 'username', 'email', 'full_name', 'phone_number', 'role',
             'is_verified_student', 'is_id_verified', 'id_card_image', 'id_card_data',
-            'college_domain', 'trust_score', 'completed_trades_count',
+            'college_domain', 'trust_score', 'completed_trades_count', 'profile_photo',
             'date_joined', 'is_staff', 'is_superuser'
         )
         read_only_fields = (
-            'id', 'username', 'email', 'is_verified_student',
+            'id', 'username', 'email', 'role', 'is_verified_student',
             'is_id_verified', 'id_card_image', 'id_card_data', 'college_domain',
             'trust_score', 'completed_trades_count', 'date_joined',
             'is_staff', 'is_superuser'
         )
 
     def get_trust_score(self, obj):
-        score = obj.calculate_trust_score()
-        if obj.trust_score != score:
-            obj.trust_score = score
-            obj.save(update_fields=['trust_score'])
-        return score
+        return getattr(obj, 'trust_score', 0) or 0
 
     def get_completed_trades_count(self, obj):
-        try:
-            from marketplace.models import Offer
-            from django.db.models import Q
-            return Offer.objects.filter(
-                Q(buyer=obj) | Q(listing__seller=obj),
-                status='COMPLETED'
-            ).distinct().count()
-        except Exception:
-            return 0
+        if hasattr(obj, 'annotated_completed_trades'):
+            return obj.annotated_completed_trades
+        return getattr(obj, '_completed_trades_count', 0)
 

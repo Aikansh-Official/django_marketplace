@@ -31,10 +31,19 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
         return obj.seller == request.user
 
 
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+
+@method_decorator(cache_page(60 * 5), name='dispatch')
 class CategoryListView(generics.ListAPIView):
-    queryset = Category.objects.all().order_by('name')
     serializer_class = CategorySerializer
     permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        from django.db.models import Count, Q
+        return Category.objects.annotate(
+            annotated_listings_count=Count('listings', filter=Q(listings__status='ACTIVE'))
+        ).order_by('name')
 
 
 class ListingListCreateView(generics.ListCreateAPIView):
@@ -103,6 +112,19 @@ class ListingListCreateView(generics.ListCreateAPIView):
             queryset = queryset.order_by('-created_at')
 
         return queryset
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        is_seller = getattr(user, 'role', 'BUYER') == 'SELLER' or getattr(user, 'is_id_verified', False) or user.is_staff or user.is_superuser
+        if not is_seller:
+            return Response(
+                {
+                    'error': 'Only verified Sellers can post items for sale. Please complete your Student ID verification to become a Seller.',
+                    'requires_id_verification': True
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super().post(request, *args, **kwargs)
 
     def perform_create(self, serializer):
         serializer.save(seller=self.request.user)
@@ -201,6 +223,63 @@ class AdminListingList(generics.ListAPIView):
     queryset = Listing.objects.all().select_related('seller', 'category').prefetch_related('images').order_by('-created_at')
     serializer_class = ListingSerializer
     permission_classes = [permissions.IsAdminUser]
+
+
+class AdminDashboardStatsView(APIView):
+    """
+    Consolidated single-roundtrip dashboard stats endpoint.
+    Runs counts in 1 SQL query and returns only top 5 recent items instead of transferring entire tables.
+    """
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        from django.core.cache import cache
+        cache_key = 'admin_dashboard_stats_data'
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return Response(cached_data)
+
+        from django.db import connection
+        from django.contrib.auth import get_user_model
+        from users.serializers import UserListSerializer
+        User = get_user_model()
+
+        # Run single SQL query to get all counts in ONE network round-trip to Supabase
+        with connection.cursor() as cur:
+            cur.execute("""
+                SELECT 
+                    (SELECT count(*) FROM users_customuser WHERE is_staff=false AND is_superuser=false),
+                    (SELECT count(*) FROM users_customuser WHERE is_staff=false AND is_superuser=false AND is_verified_student=true),
+                    (SELECT count(*) FROM marketplace_listing WHERE status='ACTIVE'),
+                    (SELECT count(*) FROM marketplace_listing),
+                    (SELECT count(*) FROM marketplace_listing WHERE status='SOLD'),
+                    (SELECT count(*) FROM marketplace_listingreport WHERE status='PENDING')
+            """)
+            row = cur.fetchone()
+
+        total_students, verified_students, active_listings, total_listings, completed_deals, pending_reports = row
+
+        # Fetch only the top 5 recent listings and students (avoiding downloading whole database)
+        recent_listings_qs = Listing.objects.select_related('seller', 'category').prefetch_related('images').order_by('-created_at')[:5]
+        recent_students_qs = User.objects.filter(is_staff=False, is_superuser=False).defer('id_card_image').order_by('-date_joined')[:5]
+
+        recent_listings = ListingSerializer(recent_listings_qs, many=True, context={'request': request}).data
+        recent_students = UserListSerializer(recent_students_qs, many=True).data
+
+        payload = {
+            'stats': {
+                'total_students': total_students or 0,
+                'verified_students': verified_students or 0,
+                'active_listings': active_listings or 0,
+                'total_listings': total_listings or 0,
+                'completed_deals': completed_deals or 0,
+                'pending_reports': pending_reports or 0,
+            },
+            'recent_listings': recent_listings,
+            'recent_students': recent_students
+        }
+        cache.set(cache_key, payload, 30)
+        return Response(payload)
 
 
 class UploadImageView(APIView):

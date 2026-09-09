@@ -18,7 +18,9 @@ export default function Profile() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const currentTabParam = searchParams.get('tab') || 'personal-info';
+  const rawTab = searchParams.get('tab');
+  const normalizedTab = rawTab === 'verification' ? 'id-verification' : rawTab;
+  const currentTabParam = normalizedTab || 'personal-info';
   const [activeTab, setActiveTab] = useState(
     currentTabParam === 'notifications' ? 'personal-info' : currentTabParam
   );
@@ -33,7 +35,8 @@ export default function Profile() {
 
   // Sync tab with URL query parameter
   useEffect(() => {
-    const tabFromUrl = searchParams.get('tab');
+    const raw = searchParams.get('tab');
+    const tabFromUrl = raw === 'verification' ? 'id-verification' : raw;
     if (tabFromUrl === 'notifications') {
       navigate('/notifications', { replace: true });
       return;

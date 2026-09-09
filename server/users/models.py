@@ -14,7 +14,13 @@ class CustomUser(AbstractUser):
     college_domain = models.CharField(max_length=255, blank=True, null=True, help_text="e.g. lpu.in, thapar.edu")
     trust_score = models.IntegerField(default=0, help_text="Trust score out of 100")
     profile_picture_url = models.URLField(max_length=500, blank=True, null=True)
+    profile_photo = models.TextField(blank=True, null=True, help_text="Base64 selfie image used as profile photo")
     phone_number = models.CharField(max_length=15, blank=True, null=True, unique=True)
+    ROLE_CHOICES = (
+        ('BUYER', 'Buyer'),
+        ('SELLER', 'Seller'),
+    )
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='BUYER', help_text="User role: BUYER or SELLER")
 
     def calculate_trust_score(self):
         score = 0
@@ -25,6 +31,10 @@ class CustomUser(AbstractUser):
         # 2. Student ID Card Upload (+5 Points)
         if getattr(self, 'is_id_verified', False):
             score += 5
+
+        # 3. Selfie Profile Photo (+3 Points)
+        if self.profile_photo:
+            score += 3
 
         # 3. Successful Peer Trades (+5 Points per completed trade)
         try:

@@ -45,7 +45,12 @@ function App() {
   }, []);
 
   if (loading) {
-    return <div className="h-screen w-screen flex items-center justify-center bg-ink-900 text-white">Loading...</div>;
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-gray-50 text-gray-800">
+        <div className="w-12 h-12 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin mb-4"></div>
+        <p className="text-sm font-bold text-gray-700 tracking-wider uppercase">Loading LPXchange Admin...</p>
+      </div>
+    );
   }
 
   return (

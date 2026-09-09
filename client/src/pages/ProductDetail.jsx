@@ -135,7 +135,7 @@ export default function ProductDetail() {
         try {
           const parsed = JSON.parse(storedUser);
           if (parsed?.id) setCurrentUserId(parsed.id);
-        } catch (e) {}
+        } catch (e) { }
       }
       try {
         const res = await axios.get(`${API_BASE}/auth/status/`);
@@ -260,7 +260,7 @@ export default function ProductDetail() {
           const myOf = res.data.find((o) => String(o.listing) === String(id));
           if (myOf) setUserOffer(myOf);
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [id, isOwner, currentUserId]);
 
@@ -311,7 +311,7 @@ export default function ProductDetail() {
       axios
         .get(`${API_BASE}/marketplace/listings/${id}/`)
         .then((res) => setListing(res.data))
-        .catch(() => {});
+        .catch(() => { });
     }
     window.dispatchEvent(new CustomEvent('notifications-updated'));
   };
@@ -490,11 +490,10 @@ export default function ProductDetail() {
           <button
             type="button"
             onClick={handleToggleSave}
-            className={`flex items-center gap-1.5 border px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-semibold transition-all shadow-xs ${
-              isSaved
+            className={`flex items-center gap-1.5 border px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-semibold transition-all shadow-xs ${isSaved
                 ? 'bg-rose-50 border-rose-200 text-rose-600'
                 : 'bg-white border-gray-200 hover:border-brand-500 text-gray-600 hover:text-brand-600'
-            }`}
+              }`}
           >
             <Heart className={`w-3.5 h-3.5 ${isSaved ? 'fill-rose-500 text-rose-500' : ''}`} />
             {isSaved ? 'Saved' : 'Save Item'}
@@ -525,7 +524,7 @@ export default function ProductDetail() {
       {/* Seller Management & Purchase Requests (Side-by-side Row) */}
       {isOwner && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 items-stretch">
-          
+
           {/* Left Column: Seller Control Panel */}
           <div className="bg-white border border-brand-200/90 rounded-md p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3">
             {/* Header with Title & Action Buttons */}
@@ -593,11 +592,10 @@ export default function ProductDetail() {
                   Listing Status:
                 </span>
                 <span
-                  className={`font-extrabold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded-md border ${
-                    listing.status === 'SOLD'
+                  className={`font-extrabold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded-md border ${listing.status === 'SOLD'
                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                       : 'bg-brand-50 text-brand-600 border-brand-200/80'
-                  }`}
+                    }`}
                 >
                   {listing.status === 'PENDING' ? 'Reserved' : listing.status}
                 </span>
@@ -610,11 +608,10 @@ export default function ProductDetail() {
                     {['ACTIVE', 'PENDING', 'SOLD', 'HIDDEN'].map((st) => (
                       <div
                         key={st}
-                        className={`py-1.5 text-xs font-bold rounded-md text-center select-none ${
-                          st === 'SOLD'
+                        className={`py-1.5 text-xs font-bold rounded-md text-center select-none ${st === 'SOLD'
                             ? 'bg-brand-500 text-white shadow-xs'
                             : 'text-gray-300 opacity-40 cursor-not-allowed'
-                        }`}
+                          }`}
                       >
                         {st === 'PENDING' ? 'Reserved' : st.charAt(0) + st.slice(1).toLowerCase()}
                       </div>
@@ -632,11 +629,10 @@ export default function ProductDetail() {
                       key={st}
                       disabled={statusUpdating}
                       onClick={() => handleStatusChange(st)}
-                      className={`py-1.5 text-xs font-bold rounded-md transition-all text-center cursor-pointer ${
-                        listing.status === st
+                      className={`py-1.5 text-xs font-bold rounded-md transition-all text-center cursor-pointer ${listing.status === st
                           ? 'bg-brand-500 text-white shadow-xs'
                           : 'text-gray-600 hover:text-gray-900 hover:bg-white/80'
-                      }`}
+                        }`}
                     >
                       {st === 'PENDING' ? 'Reserved' : st.charAt(0) + st.slice(1).toLowerCase()}
                     </button>
@@ -703,13 +699,12 @@ export default function ProductDetail() {
                       </div>
 
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
-                          off.status === 'ACCEPTED'
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${off.status === 'ACCEPTED'
                             ? 'bg-emerald-100 text-emerald-800'
                             : off.status === 'REJECTED' || off.status === 'CANCELLED'
-                            ? 'bg-gray-200 text-gray-700'
-                            : 'bg-blue-100 text-blue-800'
-                        }`}
+                              ? 'bg-gray-200 text-gray-700'
+                              : 'bg-blue-100 text-blue-800'
+                          }`}
                       >
                         {off.status === 'ACCEPTED' ? 'Reserved' : off.status}
                       </span>
@@ -911,11 +906,10 @@ export default function ProductDetail() {
                   <button
                     key={idx}
                     onClick={() => setActiveImageIndex(idx)}
-                    className={`relative w-16 h-16 rounded-md overflow-hidden border-2 flex-shrink-0 transition-all aspect-square bg-white ${
-                      activeImageIndex === idx
+                    className={`relative w-16 h-16 rounded-md overflow-hidden border-2 flex-shrink-0 transition-all aspect-square bg-white ${activeImageIndex === idx
                         ? 'border-brand-500 ring-2 ring-brand-200'
                         : 'border-gray-200 opacity-70 hover:opacity-100'
-                    }`}
+                      }`}
                   >
                     <img
                       src={img.image_url}
@@ -1046,9 +1040,6 @@ export default function ProductDetail() {
                       <UserCheck className="w-4 h-4" />
                       <span>Log In / Sign Up to Continue</span>
                     </button>
-                    <div className="text-[11px] text-gray-400 font-medium">
-                      🔒 Campus Verified LPU Students Only
-                    </div>
                   </div>
                 ) : (
                   <>

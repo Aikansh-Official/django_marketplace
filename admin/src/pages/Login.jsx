@@ -30,11 +30,14 @@ export default function Login({ setAuth }) {
         localStorage.setItem('admin_refresh', loginRes.data.refresh);
       }
 
-      // 2. Fetch Profile to check Admin status
-      const profileRes = await axios.get(`${API_BASE}/auth/profile/`);
-      const profileData = profileRes.data;
+      // 2. Fetch Profile or use returned user data to check Admin status
+      let profileData = loginRes.data.user;
+      if (!profileData) {
+        const profileRes = await axios.get(`${API_BASE}/auth/profile/`);
+        profileData = profileRes.data;
+      }
 
-      if (profileData.is_staff || profileData.is_superuser) {
+      if (profileData && (profileData.is_staff || profileData.is_superuser)) {
         // Success - store in localStorage and update state
         localStorage.setItem('admin_user', JSON.stringify(profileData));
         setAuth(true);
@@ -47,7 +50,8 @@ export default function Login({ setAuth }) {
       }
 
     } catch (err) {
-      toast.error(err.message || 'Login failed. Please try again.');
+      const errMsg = err.response?.data?.detail || err.response?.data?.error || err.message || 'Login failed. Please try again.';
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }

@@ -248,19 +248,45 @@ class CheckUsernameView(APIView):
         exists = User.objects.filter(username__iexact=username).exists()
         return Response({"available": not exists})
 
+class CheckPhoneView(APIView):
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+        phone = request.query_params.get('phone', None)
+        if not phone:
+            return Response({"error": "Phone parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        phone = str(phone).strip()
+        exists = User.objects.filter(phone_number=phone).exists()
+        return Response({"available": not exists})
+
+class CheckEmailView(APIView):
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+        email = request.query_params.get('email', None)
+        if not email:
+            return Response({"error": "Email parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        email = str(email).strip().lower()
+        exists = User.objects.filter(email__iexact=email).exists()
+        return Response({"available": not exists})
+
 class AuthStatusView(APIView):
     permission_classes = (AllowAny,)
 
     def get(self, request):
         if request.user and request.user.is_authenticated:
+            user_data = UserListSerializer(request.user).data
             return Response({
                 "isAuthenticated": True,
                 "is_staff": request.user.is_staff,
                 "is_superuser": request.user.is_superuser,
+                "role": getattr(request.user, 'role', 'BUYER'),
                 "username": request.user.username,
-                "user": UserListSerializer(request.user).data
+                "user": user_data
             })
-        return Response({"isAuthenticated": False, "user": None})
+        return Response({"isAuthenticated": False, "user": None, "role": None})
 
 class CompleteIdVerificationView(APIView):
     permission_classes = (IsAuthenticated,)
@@ -289,6 +315,7 @@ class CompleteIdVerificationView(APIView):
             )
 
         user.is_id_verified = True
+        user.role = 'SELLER'
         if id_card_image:
             user.id_card_image = id_card_image
         id_card_data = request.data.get('id_card_data', None)
@@ -297,21 +324,22 @@ class CompleteIdVerificationView(APIView):
         user.trust_score = user.calculate_trust_score()
         user.save()
 
-        logger.info(f"User {user.username} successfully completed student ID verification.")
+        logger.info(f"User {user.username} successfully completed student ID verification and upgraded to SELLER.")
         return Response({
-            "message": "Student ID verified successfully! +5 Trust Score Points awarded.",
+            "message": "Student ID verified successfully! You are now a Verified Seller.",
             "user": UserListSerializer(user).data
         }, status=status.HTTP_200_OK)
 
     def delete(self, request):
         user = request.user
         user.is_id_verified = False
+        user.role = 'BUYER'
         user.id_card_image = None
         user.id_card_data = {}
         user.trust_score = user.calculate_trust_score()
-        user.save(update_fields=['is_id_verified', 'id_card_image', 'id_card_data', 'trust_score'])
+        user.save(update_fields=['is_id_verified', 'role', 'id_card_image', 'id_card_data', 'trust_score'])
         return Response({
-            "message": "ID verification reset successfully.",
+            "message": "ID verification reset successfully. Role returned to Buyer.",
             "user": UserListSerializer(user).data
         }, status=status.HTTP_200_OK)
 

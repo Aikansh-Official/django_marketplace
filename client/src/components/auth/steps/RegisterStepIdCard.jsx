@@ -221,7 +221,7 @@ export default function RegisterStepIdCard({
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <>
-                <span>Proceed to Step 3: Verify Email OTP</span>
+                <span>Proceed to Step 3: Take Selfie</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}

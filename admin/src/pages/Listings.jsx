@@ -51,9 +51,28 @@ export default function Listings() {
           </thead>
           <tbody className="bg-white/50 divide-y divide-gray-200">
             {loading ? (
-              <tr>
-                <td colSpan="4" className="px-6 py-10 text-center text-sm text-gray-500">Loading listings...</td>
-              </tr>
+              Array.from({ length: 4 }).map((_, idx) => (
+                <tr key={idx} className="animate-pulse">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 bg-gray-200 rounded-md"></div>
+                      <div className="space-y-1.5">
+                        <div className="h-4 w-36 bg-gray-200 rounded"></div>
+                        <div className="h-3 w-24 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="h-4 w-16 bg-gray-200 rounded"></div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="h-5 w-20 bg-gray-200 rounded-full"></div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="h-4 w-14 bg-gray-200 rounded"></div>
+                  </td>
+                </tr>
+              ))
             ) : listings.length === 0 ? (
               <tr>
                 <td colSpan="4" className="px-6 py-10 text-center text-sm text-gray-500">No listings found.</td>
