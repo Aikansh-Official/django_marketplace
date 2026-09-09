@@ -26,7 +26,10 @@ import {
   Activity,
   ArrowRight,
   ArrowLeft,
-  Sparkles
+  Sparkles,
+  Eye,
+  EyeOff,
+  MapPin
 } from 'lucide-react';
 import { checkImageAuthenticity, extractLpuCardDetails } from '../utils/idCardVerification';
 import logoImg from '../assets/LPXchange_Logo.jpeg';
@@ -125,106 +128,59 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
       `}</style>
 
       <div className="flex min-h-full p-3 sm:p-6">
-        <div className="m-auto w-full max-w-5xl bg-white rounded-md shadow-2xl flex flex-col md:flex-row overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="m-auto w-full max-w-4xl bg-white rounded-md shadow-2xl flex flex-col md:flex-row overflow-hidden border border-gray-200 animate-in fade-in zoom-in duration-200">
 
-          {/* LEFT SIDE: Dynamic Contextual Showcase / ID Card Scanner */}
-          <div className="hidden md:flex md:w-5/12 lg:w-1/2 relative flex-col justify-between overflow-hidden transition-all duration-300">
+          {/* LEFT SIDE: Clean Brand Showcase */}
+          <div className="hidden md:flex md:w-5/12 relative flex-col justify-center overflow-hidden">
             {mode === 'login' ? (
-              /* LOGIN MODE BRANDING */
-              <div className="h-full w-full bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 p-10 flex flex-col justify-center items-center text-center text-white relative">
-                <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10 pointer-events-none">
-                  <div className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-white blur-3xl"></div>
-                  <div className="absolute -bottom-24 -right-24 w-64 h-64 rounded-full bg-white blur-3xl"></div>
-                </div>
-
-                <div className="relative z-10 flex flex-col items-center">
-                  <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-md flex items-center justify-center mb-6 shadow-lg border border-white/25 overflow-hidden">
-                    <img src={logoImg} alt="LPXchange Logo" className="w-full h-full object-cover" />
+              /* LOGIN MODE BRANDING - CLEAN, SIMPLE & PROMINENT */
+              <div className="h-full w-full bg-gradient-to-br from-brand-500 to-brand-600 p-8 sm:p-10 flex flex-col justify-center items-center text-center text-white">
+                <div className="flex flex-col items-center">
+                  <div className="w-20 h-20 rounded-md bg-white p-1.5 shadow-md mb-4 flex items-center justify-center">
+                    <img src={logoImg} alt="LPXchange Logo" className="w-full h-full object-cover rounded" />
                   </div>
-                  <h2 className="text-3xl font-black mb-3 tracking-tight">LPXchange</h2>
-                  <div className="w-12 h-1 bg-brand-400 rounded-full mb-5"></div>
-                  <p className="text-brand-100 text-sm leading-relaxed font-medium max-w-xs">
-                    The exclusive campus marketplace. Buy, sell, and trade textbooks, electronics, and essentials securely with verified students.
+                  
+                  <div className="flex items-baseline">
+                    <span className="text-3xl sm:text-4xl font-black tracking-tight text-white font-display">LP</span>
+                    <span className="text-3xl sm:text-4xl font-black tracking-tight text-brand-100 font-display">Xchange</span>
+                  </div>
+                  
+                  <p className="text-white/90 text-sm mt-3 max-w-[260px] leading-relaxed">
+                    Campus marketplace exclusively for students of Lovely Professional University.
                   </p>
 
-                  <div className="mt-8 flex items-center gap-2 bg-white/10 backdrop-blur-xs px-3.5 py-1.5 rounded-full border border-white/20 text-xs font-semibold">
-                    <ShieldCheck className="w-4 h-4 text-emerald-300" />
+                  <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-white/15 text-white text-xs font-semibold border border-white/25 shadow-xs">
+                    <ShieldCheck className="w-4 h-4 text-white" />
                     <span>100% Student Verified Platform</span>
                   </div>
                 </div>
               </div>
             ) : registerStep === 1 ? (
-              /* REGISTER STEP 1: Registration Process & Brand Showcase */
-              <div className="h-full w-full bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 p-6 sm:p-8 lg:p-10 flex flex-col justify-between items-center text-center text-white relative overflow-y-auto">
-                <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10 pointer-events-none">
-                  <div className="absolute -top-20 -left-20 w-60 h-60 rounded-full bg-white blur-3xl"></div>
-                  <div className="absolute -bottom-20 -right-20 w-60 h-60 rounded-full bg-white blur-3xl"></div>
-                </div>
-
-                <div className="relative z-10 flex flex-col items-center w-full max-w-sm my-auto">
-                  {/* Logo on Top */}
-                  <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-md flex items-center justify-center mb-2.5 shadow-lg border border-white/25 overflow-hidden">
-                    <img
-                      src={logoImg}
-                      alt="LPXchange Logo"
-                      className="w-full h-full object-cover"
-                    />
+              /* REGISTER STEP 1 - CLEAN, SIMPLE & PROMINENT */
+              <div className="h-full w-full bg-gradient-to-br from-brand-500 to-brand-600 p-8 flex flex-col justify-center items-center text-center text-white">
+                <div className="flex flex-col items-center w-full max-w-[280px]">
+                  <div className="w-16 h-16 rounded-md bg-white p-1 shadow-md mb-3 flex items-center justify-center">
+                    <img src={logoImg} alt="LPXchange Logo" className="w-full h-full object-cover rounded" />
                   </div>
-
-                  {/* Name below Logo */}
-                  <div className="flex items-baseline mb-0.5">
+                  
+                  <div className="flex items-baseline mb-1">
                     <span className="text-2xl sm:text-3xl font-black tracking-tight text-white font-display">LP</span>
-                    <span className="text-2xl sm:text-3xl font-black tracking-tight text-brand-200 font-display">Xchange</span>
+                    <span className="text-2xl sm:text-3xl font-black tracking-tight text-brand-100 font-display">Xchange</span>
                   </div>
-                  <p className="text-[11px] font-semibold text-brand-100 uppercase tracking-wider mb-4">
-                    Campus Marketplace
-                  </p>
+                  <h3 className="text-xs font-bold text-white/90 uppercase tracking-wider mb-4">Quick Registration</h3>
 
-                  {/* Title & Tagline */}
-                  <h2 className="text-lg sm:text-xl font-bold mb-1 tracking-tight text-white">How Registration Works</h2>
-                  <p className="text-brand-100/90 text-xs leading-relaxed mb-3.5 font-medium max-w-xs">
-                    Join LPU's verified student exchange in 3 quick steps:
-                  </p>
-
-                  {/* 3 Step Visual Sequence */}
-                  <div className="w-full space-y-2.5 text-left mb-4">
-                    {/* Step 1 */}
-                    <div className="flex items-start gap-3 p-3 rounded-md bg-white/10 backdrop-blur-md border border-white/25 hover:bg-white/15 transition-colors">
-                      <div className="w-7 h-7 rounded-md bg-brand-500 text-white font-black text-xs flex items-center justify-center flex-shrink-0 shadow-xs border border-white/30 mt-0.5">
-                        1
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-xs font-bold text-white leading-tight">Student Details & OTP</h4>
-                        <p className="text-[11px] text-brand-100/90 leading-snug mt-0.5 font-normal">
-                          Enter 8-digit LPU Reg No, Name & verify via Gmail OTP.
-                        </p>
-                      </div>
+                  <div className="w-full space-y-2.5 text-left text-xs">
+                    <div className="flex items-center gap-3 p-2.5 rounded-md bg-white/10 border border-white/20">
+                      <span className="w-5 h-5 rounded bg-white text-brand-600 font-bold text-[11px] flex items-center justify-center flex-shrink-0">1</span>
+                      <span className="text-white font-medium text-xs">LPU Reg No & OTP</span>
                     </div>
-
-                    {/* Step 2 */}
-                    <div className="flex items-start gap-3 p-3 rounded-md bg-white/10 backdrop-blur-md border border-white/25 hover:bg-white/15 transition-colors">
-                      <div className="w-7 h-7 rounded-md bg-brand-500 text-white font-black text-xs flex items-center justify-center flex-shrink-0 shadow-xs border border-white/30 mt-0.5">
-                        2
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-xs font-bold text-white leading-tight">Student ID Verification</h4>
-                        <p className="text-[11px] text-brand-100/90 leading-snug mt-0.5 font-normal">
-                          Upload front photo of your student ID card for automated verification.
-                        </p>
-                      </div>
+                    <div className="flex items-center gap-3 p-2.5 rounded-md bg-white/10 border border-white/20">
+                      <span className="w-5 h-5 rounded bg-white text-brand-600 font-bold text-[11px] flex items-center justify-center flex-shrink-0">2</span>
+                      <span className="text-white font-medium text-xs">Student ID Photo Verification</span>
                     </div>
-
-                    {/* Step 3 */}
-                    <div className="flex items-start gap-3 p-3 rounded-md bg-white/10 backdrop-blur-md border border-white/25 hover:bg-white/15 transition-colors">
-                      <div className="w-7 h-7 rounded-md bg-brand-500 text-white font-black text-xs flex items-center justify-center flex-shrink-0 shadow-xs border border-white/30 mt-0.5">
-                        3
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-xs font-bold text-white leading-tight">Set Password & Start</h4>
-                        <p className="text-[11px] text-brand-100/90 leading-snug mt-0.5 font-normal">
-                          Set secure password & start buying, selling and trading on campus!
-                        </p>
-                      </div>
+                    <div className="flex items-center gap-3 p-2.5 rounded-md bg-white/10 border border-white/20">
+                      <span className="w-5 h-5 rounded bg-white text-brand-600 font-bold text-[11px] flex items-center justify-center flex-shrink-0">3</span>
+                      <span className="text-white font-medium text-xs">Set Password & Start Trading</span>
                     </div>
                   </div>
                 </div>
@@ -418,20 +374,20 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
           </div>
 
           {/* RIGHT SIDE: Form Content & Multi-Step Flow */}
-          <div className="w-full md:w-7/12 lg:w-1/2 relative flex flex-col bg-white">
+          <div className="w-full md:w-7/12 relative flex flex-col bg-white">
 
             {/* Header with Close Button */}
             <div className="absolute top-4 right-4 z-20">
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-200 rounded-full p-2 transition-colors shadow-2xs cursor-pointer"
+                className="text-gray-400 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md p-2 transition-all cursor-pointer shadow-2xs"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Scrollable Content */}
-            <div className="overflow-y-auto px-6 sm:px-8 pb-8 pt-7 flex-grow">
+            <div className="overflow-y-auto px-8 sm:px-12 py-10 sm:py-12 flex-grow flex flex-col justify-center">
               {mode === 'login' ? (
                 <LoginForm
                   onSwitch={() => setMode('register')}
@@ -468,6 +424,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
 }
 
 function LoginForm({ onSwitch, onSuccess }) {
+  const [showPassword, setShowPassword] = useState(false);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(loginSchema),
   });
@@ -492,52 +449,89 @@ function LoginForm({ onSwitch, onSuccess }) {
   };
 
   return (
-    <div>
+    <div className="w-full max-w-sm mx-auto">
       <div className="mb-6 text-center">
-        <div className="mx-auto h-11 w-11 bg-brand-50 rounded-md flex items-center justify-center text-brand-600 mb-3 shadow-2xs border border-brand-100">
-          <ShieldCheck className="w-6 h-6" />
-        </div>
-        <h2 className="text-xl font-black text-gray-900">Welcome back</h2>
-        <p className="text-xs text-gray-500 mt-1">Sign in with your student registration number</p>
+        <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight font-display">Welcome back</h2>
+        <p className="text-sm text-gray-500 mt-1">Sign in with your student registration number</p>
       </div>
 
       <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
         <div>
-          <label className="block text-[11px] font-black text-gray-500 uppercase tracking-wider mb-1.5">Registration Number</label>
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={8}
-            {...register('username')}
-            className="w-full bg-gray-50 border border-gray-200 text-gray-900 font-bold rounded-md px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
-            placeholder="e.g. 12200000"
-          />
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+              Registration Number
+            </label>
+            <span className="text-xs font-medium text-gray-400">8 digits</span>
+          </div>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+              <UserCheck className="w-4 h-4" />
+            </div>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={8}
+              {...register('username')}
+              className="w-full bg-gray-50/80 hover:bg-white focus:bg-white border border-gray-200 text-gray-900 font-semibold rounded-md pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all placeholder:text-gray-400 placeholder:font-normal"
+              placeholder="e.g. 12200000"
+            />
+          </div>
           {errors.username && <p className="text-red-500 text-xs font-medium mt-1">{errors.username.message}</p>}
         </div>
 
         <div>
-          <label className="block text-[11px] font-black text-gray-500 uppercase tracking-wider mb-1.5">Password</label>
-          <input
-            type="password"
-            {...register('password')}
-            className="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-md px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
-            placeholder="••••••••"
-          />
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+              Password
+            </label>
+          </div>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+              <Lock className="w-4 h-4" />
+            </div>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              {...register('password')}
+              className="w-full bg-gray-50/80 hover:bg-white focus:bg-white border border-gray-200 text-gray-900 font-medium rounded-md pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all placeholder:text-gray-400"
+              placeholder="••••••••"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
           {errors.password && <p className="text-red-500 text-xs font-medium mt-1">{errors.password.message}</p>}
         </div>
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-md transition-all shadow-md hover:shadow-lg mt-5 disabled:opacity-70 text-xs cursor-pointer"
+          className="w-full bg-brand-500 hover:bg-brand-600 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg mt-5 disabled:opacity-70 text-sm flex items-center justify-center gap-2 cursor-pointer"
         >
-          {isSubmitting ? 'Signing in...' : 'Sign in'}
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Signing in...</span>
+            </>
+          ) : (
+            <>
+              <span>Sign in</span>
+              <ArrowRight className="w-4 h-4" />
+            </>
+          )}
         </button>
       </form>
 
       <div className="mt-5 text-center text-xs font-medium text-gray-500">
         Don't have an account?{' '}
-        <button onClick={onSwitch} type="button" className="text-brand-600 hover:text-brand-700 font-bold cursor-pointer">
+        <button
+          onClick={onSwitch}
+          type="button"
+          className="text-brand-600 hover:text-brand-700 font-bold hover:underline cursor-pointer"
+        >
           Create Account
         </button>
       </div>

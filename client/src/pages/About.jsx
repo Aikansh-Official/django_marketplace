@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ShieldCheck, Sparkles, MapPin, ArrowRight } from 'lucide-react';
+import { ShieldCheck, Sparkles, MapPin, ArrowRight, GraduationCap } from 'lucide-react';
 
 export default function About() {
   return (
@@ -8,7 +8,9 @@ export default function About() {
         
         {/* Breadcrumb / Category Tag */}
         <div className="flex items-center gap-2 text-xs font-semibold text-brand-600 uppercase tracking-wider mb-2">
-          <span>Campus Platform</span>
+          <span>Student Project</span>
+          <span>•</span>
+          <span>Lovely Professional University</span>
           <span>•</span>
           <span>Phagwara, Punjab</span>
         </div>
@@ -18,7 +20,7 @@ export default function About() {
           About LPXchange
         </h1>
         <p className="text-base text-gray-600 leading-relaxed max-w-2xl mb-8">
-          The trusted, peer-to-peer campus exchange built exclusively for the students and campus community of Lovely Professional University.
+          A peer-to-peer campus exchange developed by students of Lovely Professional University as a project, built exclusively for the LPU student community.
         </p>
 
         {/* Highlight Stats / Pillars */}
@@ -57,12 +59,19 @@ export default function About() {
         {/* Story & Mission Card */}
         <div className="bg-white rounded-md border border-gray-200 p-6 sm:p-8 shadow-xs space-y-6 text-gray-700 leading-relaxed text-sm">
           <div>
-            <h2 className="text-lg font-bold text-gray-900 mb-2">Our Mission</h2>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-50 text-brand-600 text-xs font-semibold mb-3 border border-orange-200">
+              <GraduationCap className="w-4 h-4" />
+              <span>Student Project • Built by LPU Students</span>
+            </div>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Our Story & Mission</h2>
             <p className="text-gray-600 leading-relaxed">
-              At the start of every semester, thousands of LPU students buy cycles, calculators, coolers, mattresses, and course books. At the end of the semester or when graduating, these same essentials often go to waste or are sold for pennies to outside scrap dealers.
+              We are students currently studying at <strong>Lovely Professional University (LPU)</strong>, and we are developing <strong>LPXchange</strong> as our project. Living on campus, we experienced firsthand how difficult it can be for students to conveniently buy, sell, or pass on essential items semester after semester.
             </p>
             <p className="text-gray-600 leading-relaxed mt-2">
-              <strong>LPXchange</strong> bridges this gap by creating an authentic, localized student-to-student circular marketplace. Seniors can pass down their gear to juniors, saving money for both sides while reducing campus waste.
+              At the start of every semester, thousands of LPU students buy books, notes, stationery, and daily campus essentials. At the end of the semester or when graduating, these same essentials often go to waste or are sold for pennies to outside scrap dealers.
+            </p>
+            <p className="text-gray-600 leading-relaxed mt-2">
+              We built <strong>LPXchange</strong> as our campus project to bridge this gap by creating an authentic, localized student-to-student circular marketplace. Seniors can pass down their essentials and study materials to juniors, saving money for both sides while reducing campus waste.
             </p>
           </div>
 
@@ -74,7 +83,7 @@ export default function About() {
               <div className="p-3 bg-gray-50 rounded-md border border-gray-100 space-y-1">
                 <span className="text-xs font-black text-brand-500">STEP 1</span>
                 <h4 className="text-xs font-bold text-gray-900">Post Item in 60s</h4>
-                <p className="text-xs text-gray-500">Snap photos of your cycle, book, or cooler, set your price or donation mode, and publish.</p>
+                <p className="text-xs text-gray-500">Snap photos of your books, notes, or daily essentials, set your price or donation mode, and publish.</p>
               </div>
               <div className="p-3 bg-gray-50 rounded-md border border-gray-100 space-y-1">
                 <span className="text-xs font-black text-brand-500">STEP 2</span>

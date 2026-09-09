@@ -30,6 +30,9 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 if not SECRET_KEY:
     raise RuntimeError('SECRET_KEY environment variable is not set. Add it to your .env file.')
 
+# Data Security Layer Key
+DATA_SECURITY_KEY = os.environ.get('DATA_SECURITY_KEY', '')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
@@ -63,6 +66,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'server.middleware.DataSecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -248,6 +252,11 @@ if _extra_csrf:
     CSRF_TRUSTED_ORIGINS = _DEFAULT_FRONTEND_ORIGINS + [o.strip() for o in _extra_csrf.split(',') if o.strip()]
 else:
     CSRF_TRUSTED_ORIGINS = _DEFAULT_FRONTEND_ORIGINS
+
+from corsheaders.defaults import default_headers
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'x-app-security-key',
+]
 
 # Cloudinary Configuration
 CLOUDINARY_CLOUD_NAME = os.environ.get('CLOUDINARY_CLOUD_NAME', '')

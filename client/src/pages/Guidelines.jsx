@@ -74,7 +74,7 @@ export default function Guidelines() {
             </div>
 
             <div className="p-3 bg-amber-50/70 border border-amber-200/60 rounded-md text-xs text-amber-900">
-              <strong>Golden Rule:</strong> Never send advance UPI payments before physically inspecting the product in person. Inspect cycles, coolers, and electronics first, then pay.
+              <strong>Golden Rule:</strong> Never send advance UPI payments before physically inspecting the product in person. Always inspect the item first, then pay.
             </div>
           </div>
 

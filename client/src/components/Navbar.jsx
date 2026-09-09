@@ -436,7 +436,7 @@ export default function Navbar() {
                 autoFocus
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search textbooks, cycles, coolers..."
+                placeholder="Search books, notes, campus essentials..."
                 className="w-full pl-9 pr-20 py-2 text-xs bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 font-medium"
               />
               {searchTerm && (

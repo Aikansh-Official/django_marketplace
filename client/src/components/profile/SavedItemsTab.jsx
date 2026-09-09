@@ -61,7 +61,7 @@ export default function SavedItemsTab({ onSavedCountChange }) {
           </div>
           <h3 className="text-sm font-bold text-gray-800">Your wishlist is empty</h3>
           <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto mb-5 leading-relaxed">
-            Whenever you find a textbook, calculator, cycle, or cooler you like, tap the heart icon to save it here.
+            Whenever you find a book, study notes, or campus essentials you like, tap the heart icon to save it here.
           </p>
           <Link
             to="/"

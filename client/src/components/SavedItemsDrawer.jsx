@@ -90,7 +90,7 @@ export default function SavedItemsDrawer({ isOpen, onClose }) {
                 </div>
                 <h3 className="text-base font-bold text-gray-800 mb-1">Your wishlist is empty</h3>
                 <p className="text-xs text-gray-500 max-w-xs mb-6">
-                  Tap the heart icon on any cycle, cooler, notes, or gadgets to save them here for quick access later!
+                  Tap the heart icon on any books, notes, or campus essentials to save them here for quick access later!
                 </p>
                 <button
                   onClick={onClose}

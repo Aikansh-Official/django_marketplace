@@ -125,9 +125,13 @@ class SendOTPView(APIView):
             email = serializer.validated_data['email']
             otp = str(random.randint(100000, 999999))
             
+            # Data Security Layer: Encrypt OTP before persisting to database
+            from server.crypto import encrypt_data
+            encrypted_otp = encrypt_data(otp)
+
             OTPVerification.objects.update_or_create(
                 email=email,
-                defaults={'otp': otp, 'is_verified': False, 'created_at': timezone.now(), 'attempts': 0}
+                defaults={'otp': encrypted_otp, 'is_verified': False, 'created_at': timezone.now(), 'attempts': 0}
             )
             
             # Send verification email via configured backend (SMTP in prod, console in dev)
@@ -179,7 +183,10 @@ class VerifyOTPView(APIView):
                 if not record.is_valid():
                     return Response({"error": "OTP has expired. Please request a new one."}, status=status.HTTP_400_BAD_REQUEST)
 
-                if record.otp != otp:
+                from server.crypto import decrypt_data
+                stored_otp = decrypt_data(record.otp)
+
+                if stored_otp != otp:
                     # Increment failed attempts counter
                     record.attempts += 1
                     record.save(update_fields=['attempts'])

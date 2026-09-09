@@ -1,11 +1,18 @@
 import axios from 'axios';
 axios.defaults.withCredentials = true;
 
-// Automatically attach Bearer token to all outgoing requests if present
+// Automatically attach Bearer token and App Security Key to all outgoing requests
 axios.interceptors.request.use((config) => {
+  config.headers = config.headers || {};
+
+  // Attach Data Security Layer Key
+  const appSecurityKey = import.meta.env.VITE_APP_SECURITY_KEY;
+  if (appSecurityKey) {
+    config.headers['X-App-Security-Key'] = appSecurityKey;
+  }
+
   const token = localStorage.getItem('access');
   if (token) {
-    config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;

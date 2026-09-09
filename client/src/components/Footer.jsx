@@ -25,7 +25,7 @@ export default function Footer() {
               </div>
             </Link>
             <p className="text-xs text-gray-500 leading-relaxed">
-              The exclusive campus exchange for Lovely Professional University. Buy, sell, and donate books, cycles, and electronics directly with fellow students.
+              A student project developed by LPU students for the Lovely Professional University campus community. Buy, sell, and donate books, notes, stationery, and daily campus essentials directly with fellow students.
             </p>
           </div>
 

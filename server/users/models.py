@@ -51,7 +51,7 @@ class CustomUser(AbstractUser):
 
 class OTPVerification(models.Model):
     email = models.EmailField(unique=True)
-    otp = models.CharField(max_length=6)
+    otp = models.CharField(max_length=255, help_text="Encrypted OTP verification code")
     created_at = models.DateTimeField(auto_now_add=True)
     is_verified = models.BooleanField(default=False)
     attempts = models.PositiveIntegerField(default=0)
@@ -64,5 +64,9 @@ class OTPVerification(models.Model):
     def is_locked(self):
         return self.attempts >= self.MAX_ATTEMPTS
 
+    def get_plain_otp(self):
+        from server.crypto import decrypt_data
+        return decrypt_data(self.otp)
+
     def __str__(self):
-        return f"{self.email} - {self.otp}"
+        return f"{self.email} - [Encrypted OTP]"
