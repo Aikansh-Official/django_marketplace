@@ -91,6 +91,15 @@ class ListingSerializer(serializers.ModelSerializer):
     def get_offers_count(self, obj):
         return obj.offers.filter(status='PENDING').count()
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+        is_auth = bool(request and request.user and request.user.is_authenticated)
+        if not is_auth:
+            data['contact_phone'] = None
+            data['contact_whatsapp'] = None
+        return data
+
 class ListingCreateUpdateSerializer(serializers.ModelSerializer):
     uploaded_images = serializers.ListField(
         child=serializers.CharField(),

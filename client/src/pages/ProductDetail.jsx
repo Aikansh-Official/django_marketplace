@@ -51,6 +51,7 @@ export default function ProductDetail() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [relatedListings, setRelatedListings] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(localStorage.getItem('access')));
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -75,6 +76,28 @@ export default function ProductDetail() {
   const [reportDetails, setReportDetails] = useState('');
   const [submittingReport, setSubmittingReport] = useState(false);
 
+  const triggerLogin = () => {
+    window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { mode: 'login' } }));
+  };
+
+  const handleOpenBuyModal = () => {
+    if (!isAuthenticated) {
+      toast('Please log in to make a purchase request.', { icon: '🔒' });
+      triggerLogin();
+      return;
+    }
+    setShowBuyModal(true);
+  };
+
+  const handleOpenReportModal = () => {
+    if (!isAuthenticated) {
+      toast('Please log in to report a listing.', { icon: '🔒' });
+      triggerLogin();
+      return;
+    }
+    setShowReportModal(true);
+  };
+
   useEffect(() => {
     if (id) {
       setIsSaved(isItemSaved(id));
@@ -83,6 +106,11 @@ export default function ProductDetail() {
 
   const handleToggleSave = () => {
     if (!listing) return;
+    if (!isAuthenticated) {
+      toast('Please log in to save items to your wishlist.', { icon: '🔒' });
+      triggerLogin();
+      return;
+    }
     const res = toggleSavedItem(listing);
     setIsSaved(res.isSaved);
     if (res.isSaved) {
@@ -92,9 +120,16 @@ export default function ProductDetail() {
     }
   };
 
-  // Fetch current user & listing details
+  // Fetch current user & check auth status
   useEffect(() => {
-    const fetchCurrentProfile = async () => {
+    const checkAuthStatus = async () => {
+      const token = localStorage.getItem('access');
+      if (!token) {
+        setIsAuthenticated(false);
+        setCurrentUserId(null);
+        return;
+      }
+      setIsAuthenticated(true);
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         try {
@@ -105,13 +140,20 @@ export default function ProductDetail() {
       try {
         const res = await axios.get(`${API_BASE}/auth/status/`);
         if (res.data?.isAuthenticated && res.data?.user?.id) {
+          setIsAuthenticated(true);
           setCurrentUserId(res.data.user.id);
+        } else {
+          setIsAuthenticated(false);
+          setCurrentUserId(null);
         }
       } catch (e) {
-        // Guest user browsing item
+        // guest or expired token
       }
     };
-    fetchCurrentProfile();
+
+    checkAuthStatus();
+    window.addEventListener('auth-changed', checkAuthStatus);
+    return () => window.removeEventListener('auth-changed', checkAuthStatus);
   }, []);
 
   useEffect(() => {
@@ -470,7 +512,7 @@ export default function ProductDetail() {
           {!isOwner && (
             <button
               type="button"
-              onClick={() => setShowReportModal(true)}
+              onClick={handleOpenReportModal}
               className="flex items-center gap-1 bg-white border border-gray-200 hover:border-red-300 text-gray-500 hover:text-red-600 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all shadow-xs"
               title="Report this listing"
             >
@@ -982,66 +1024,109 @@ export default function ProductDetail() {
 
             {/* Direct Contact & Buy Request Buttons */}
             {listing.status === 'ACTIVE' ? (
-              <div className="space-y-2.5 pt-2">
-                {/* Direct Purchase Button (for non-owners) */}
-                {!isOwner && (
-                  userOffer?.status === 'PENDING' ? (
-                    <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-md text-xs font-bold text-center flex items-center justify-center gap-2 shadow-2xs">
-                      <Clock className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                      <span>Purchase Request Pending Seller Approval</span>
+              <div className="space-y-3 pt-2">
+                {!isAuthenticated ? (
+                  <div className="bg-gradient-to-br from-brand-50/50 via-white to-orange-50/40 border border-brand-200/80 rounded-xl p-5 text-center shadow-xs space-y-3.5">
+                    <div className="w-12 h-12 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center mx-auto shadow-2xs">
+                      <Lock className="w-5 h-5 text-brand-600" />
                     </div>
-                  ) : (
+                    <div>
+                      <h3 className="font-bold text-sm text-gray-900">
+                        Log in to Buy or Contact Seller
+                      </h3>
+                      <p className="text-xs text-gray-500 leading-relaxed mt-1">
+                        To protect campus safety and student privacy, login is required to make purchase requests, chat on WhatsApp, or call the seller.
+                      </p>
+                    </div>
                     <button
                       type="button"
-                      onClick={() => setShowBuyModal(true)}
-                      className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2 cursor-pointer"
+                      onClick={triggerLogin}
+                      className="w-full bg-brand-500 hover:bg-brand-600 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      <ShoppingBag className="w-4 h-4" />
-                      {listing.transaction_type === 'DONATE'
-                        ? 'Request Free Donation'
-                        : `I Want to Buy This (Rs ${listing.price})`}
+                      <UserCheck className="w-4 h-4" />
+                      <span>Log In / Sign Up to Continue</span>
                     </button>
-                  )
-                )}
+                    <div className="text-[11px] text-gray-400 font-medium">
+                      🔒 Campus Verified LPU Students Only
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Direct Purchase Button (for non-owners) */}
+                    {!isOwner && (
+                      userOffer?.status === 'PENDING' ? (
+                        <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-md text-xs font-bold text-center flex items-center justify-center gap-2 shadow-2xs">
+                          <Clock className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                          <span>Purchase Request Pending Seller Approval</span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleOpenBuyModal}
+                          className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <ShoppingBag className="w-4 h-4" />
+                          {listing.transaction_type === 'DONATE'
+                            ? 'Request Free Donation'
+                            : `I Want to Buy This (Rs ${listing.price})`}
+                        </button>
+                      )
+                    )}
 
-                {/* WhatsApp Button */}
-                {waUrl && (
-                  <a
-                    href={waUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-4 rounded-md transition-all shadow-sm hover:shadow-md text-sm flex items-center justify-center gap-2"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    Chat on WhatsApp
-                  </a>
-                )}
+                    {/* WhatsApp Button */}
+                    {waUrl && (
+                      <a
+                        href={waUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-4 rounded-md transition-all shadow-sm hover:shadow-md text-sm flex items-center justify-center gap-2"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        Chat on WhatsApp
+                      </a>
+                    )}
 
-                {/* Call Button */}
-                {callUrl && (
-                  <a
-                    href={callUrl}
-                    className="w-full bg-white border border-gray-300 hover:border-gray-400 text-gray-800 font-semibold py-2.5 px-4 rounded-md transition-all text-sm flex items-center justify-center gap-2"
-                  >
-                    <Phone className="w-4 h-4 text-gray-600" />
-                    Call Seller ({rawPhone})
-                  </a>
-                )}
+                    {/* Call Button */}
+                    {callUrl && (
+                      <a
+                        href={callUrl}
+                        className="w-full bg-white border border-gray-300 hover:border-gray-400 text-gray-800 font-semibold py-2.5 px-4 rounded-md transition-all text-sm flex items-center justify-center gap-2"
+                      >
+                        <Phone className="w-4 h-4 text-gray-600" />
+                        Call Seller ({rawPhone})
+                      </a>
+                    )}
 
-                {/* In-App Direct Message */}
-                <button
-                  onClick={() => {
-                    toast.success('In-App Chat initiated! Connecting with seller...');
-                  }}
-                  className="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Send className="w-4 h-4" />
-                  Send In-App Message
-                </button>
+                    {/* In-App Direct Message */}
+                    <button
+                      onClick={() => {
+                        toast.success('In-App Chat initiated! Connecting with seller...');
+                      }}
+                      className="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Send className="w-4 h-4" />
+                      Send In-App Message
+                    </button>
+                  </>
+                )}
               </div>
             ) : listing.status === 'PENDING' ? (
               <div className="space-y-3 pt-2">
-                {isOwner ? (
+                {!isAuthenticated ? (
+                  <div className="bg-amber-50 border border-amber-300 text-amber-900 p-4 rounded-md text-xs font-bold text-center space-y-2">
+                    <div>⚠️ Campus Deal In Progress</div>
+                    <p className="font-normal text-[11px] text-amber-800">
+                      This item is currently reserved. Log in to view transaction details.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={triggerLogin}
+                      className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2 px-3 rounded-md text-xs cursor-pointer"
+                    >
+                      Log In to View
+                    </button>
+                  </div>
+                ) : isOwner ? (
                   <div className="bg-amber-50 border border-amber-300 text-amber-900 p-3.5 rounded-md text-xs font-bold text-center space-y-2">
                     <div>🤝 Campus Deal In Progress</div>
                     <p className="font-normal text-[11px] text-amber-800">
@@ -1171,12 +1256,23 @@ export default function ProductDetail() {
             </div>
 
             <div className="text-[11px] text-gray-500 flex items-center justify-between pt-1">
-              <span>Contact Preference:</span>
-              <span className="font-bold text-gray-700">
-                {listing.contact_preference === 'ALL'
-                  ? 'All Channels'
-                  : listing.contact_preference.replace('_', ' ')}
-              </span>
+              <span>Contact Options:</span>
+              {isAuthenticated ? (
+                <span className="font-bold text-gray-700">
+                  {listing.contact_preference === 'ALL'
+                    ? 'All Channels'
+                    : listing.contact_preference?.replace('_', ' ')}
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={triggerLogin}
+                  className="font-semibold text-brand-600 hover:text-brand-700 bg-brand-50 border border-brand-200 px-2 py-0.5 rounded text-[10px] flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <Lock className="w-3 h-3 text-brand-600" />
+                  Log in to view
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -1270,7 +1366,7 @@ export default function ProductDetail() {
         </div>
       )}
       {/* Confirm Purchase Request Modal (Direct Listed Price) */}
-      {showBuyModal && (
+      {showBuyModal && isAuthenticated && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white border border-gray-200 rounded-md max-w-sm w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b pb-3">
@@ -1443,34 +1539,45 @@ export default function ProductDetail() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {waUrl && (
-              <a
-                href={waUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 rounded-md shadow-xs flex items-center justify-center"
-                title="Chat on WhatsApp"
-              >
-                <MessageSquare className="w-4 h-4" />
-              </a>
-            )}
+          {!isAuthenticated ? (
+            <button
+              type="button"
+              onClick={triggerLogin}
+              className="bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-md text-xs shadow-md flex items-center gap-1.5 cursor-pointer shrink-0"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span>Log in to Buy / Contact</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 shrink-0">
+              {waUrl && (
+                <a
+                  href={waUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 rounded-md shadow-xs flex items-center justify-center"
+                  title="Chat on WhatsApp"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                </a>
+              )}
 
-            {userOffer?.status === 'PENDING' ? (
-              <div className="bg-blue-50 border border-blue-200 text-blue-800 px-3 py-2 rounded-md text-xs font-bold text-center">
-                Request Pending
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowBuyModal(true)}
-                className="bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-md text-xs shadow-md flex items-center gap-1.5 cursor-pointer"
-              >
-                <ShoppingBag className="w-4 h-4" />
-                <span>{listing.transaction_type === 'DONATE' ? 'Request Free' : 'Buy Now'}</span>
-              </button>
-            )}
-          </div>
+              {userOffer?.status === 'PENDING' ? (
+                <div className="bg-blue-50 border border-blue-200 text-blue-800 px-3 py-2 rounded-md text-xs font-bold text-center">
+                  Request Pending
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleOpenBuyModal}
+                  className="bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-md text-xs shadow-md flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  <span>{listing.transaction_type === 'DONATE' ? 'Request Free' : 'Buy Now'}</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
