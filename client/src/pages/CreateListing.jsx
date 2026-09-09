@@ -296,11 +296,11 @@ export default function CreateListing() {
                 </div>
                 <div>
                   <span className="text-sm font-semibold text-brand-600 hover:text-brand-700">
-                    {uploading ? 'Uploading to Cloudinary...' : 'Click to browse photos'}
+                    {uploading ? 'Uploading photos...' : 'Click to browse photos'}
                   </span>
                   {!uploading && <span className="text-sm text-gray-500"> or drag and drop</span>}
                 </div>
-                <p className="text-xs text-gray-400">PNG, JPG, WebP up to 5MB each — uploaded to Cloudinary</p>
+                <p className="text-xs text-gray-400">PNG, JPG, WebP up to 5MB each</p>
               </label>
             </div>
 
