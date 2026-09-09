@@ -389,7 +389,10 @@ export default function Navbar() {
               <div className="flex sm:hidden items-center gap-1">
                 {/* Mobile Search Toggle Button */}
                 <button
-                  onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+                  onClick={() => {
+                    setIsMobileSearchOpen(!isMobileSearchOpen);
+                    if (!isMobileSearchOpen) setIsOpen(false);
+                  }}
                   className={`p-2 rounded-md transition-colors ${isMobileSearchOpen ? 'text-brand-600 bg-brand-50' : 'text-gray-600 hover:text-gray-900'
                     }`}
                   aria-label="Search"
@@ -414,7 +417,10 @@ export default function Navbar() {
                 </Link>
 
                 <button
-                  onClick={() => setIsOpen(!isOpen)}
+                  onClick={() => {
+                    setIsOpen(!isOpen);
+                    if (!isOpen) setIsMobileSearchOpen(false);
+                  }}
                   className="p-2 text-gray-600 hover:text-gray-900"
                   aria-label="Menu"
                 >
@@ -428,7 +434,7 @@ export default function Navbar() {
 
         {/* Mobile Expandable Search Row */}
         {isMobileSearchOpen && (
-          <div className="sm:hidden bg-white/95 backdrop-blur-md border-b border-gray-200 px-4 py-2.5 shadow-sm">
+          <div className="sm:hidden absolute top-16 left-0 right-0 z-50 bg-white border-b border-gray-200 px-4 py-2.5 shadow-md animate-in fade-in slide-in-from-top-2 duration-150">
             <form onSubmit={handleSearchSubmit} className="relative flex items-center">
               <Search className="w-4 h-4 text-gray-400 absolute left-3 pointer-events-none" />
               <input
@@ -458,85 +464,95 @@ export default function Navbar() {
           </div>
         )}
 
-        {/* Mobile Dropdown */}
+        {/* Mobile Dropdown & Backdrop */}
         {isOpen && (
-          <div className="sm:hidden bg-white/98 backdrop-blur-md border-b border-gray-200 px-4 py-3 space-y-3 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
-            <div className="flex flex-col space-y-1 text-sm font-medium text-gray-700">
-              <Link
-                to="/"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center min-h-[44px] px-3 rounded-md hover:bg-gray-100/70 hover:text-brand-600 transition-colors font-semibold"
-              >
-                Explore Marketplace
-              </Link>
-              {userProfile && (
+          <>
+            {/* Backdrop overlay for mobile menu */}
+            <div
+              className="fixed inset-0 top-16 bg-black/40 backdrop-blur-xs z-40 sm:hidden animate-in fade-in duration-200"
+              onClick={() => setIsOpen(false)}
+              aria-hidden="true"
+            />
+
+            {/* Solid Menu Panel */}
+            <div className="sm:hidden absolute top-16 left-0 right-0 z-50 bg-white border-b border-gray-200 px-4 py-4 space-y-3 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="flex flex-col space-y-1 text-sm font-medium text-gray-700">
                 <Link
-                  to="/my-listings"
+                  to="/"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center min-h-[44px] px-3 rounded-md hover:bg-gray-100/70 hover:text-brand-600 transition-colors font-semibold"
                 >
-                  My Listings
+                  Explore Marketplace
                 </Link>
-              )}
-              {userProfile && (
-                <Link
-                  to="/notifications"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center justify-between min-h-[44px] px-3 rounded-md hover:bg-gray-100/70 hover:text-brand-600 transition-colors font-semibold"
-                >
-                  <span>Notifications</span>
-                  {unreadCount > 0 && (
-                    <span className="text-xs bg-brand-500 text-white px-2 py-0.5 rounded-full font-bold">
-                      {unreadCount}
-                    </span>
-                  )}
-                </Link>
-              )}
-            </div>
-
-            <div className="pt-2 border-t border-gray-100">
-              {userProfile ? (
-                <div className="flex items-center justify-between min-h-[44px] px-3 rounded-md bg-gray-50/70">
+                {userProfile && (
                   <Link
-                    to="/profile"
+                    to="/my-listings"
                     onClick={() => setIsOpen(false)}
-                    className="font-bold text-xs text-gray-900 hover:text-brand-600 truncate max-w-[180px]"
+                    className="flex items-center min-h-[44px] px-3 rounded-md hover:bg-gray-100/70 hover:text-brand-600 transition-colors font-semibold"
                   >
-                    View Profile ({displayName})
+                    My Listings
                   </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="text-red-600 hover:text-red-700 font-bold text-xs cursor-pointer py-1 px-2 rounded hover:bg-red-50"
+                )}
+                {userProfile && (
+                  <Link
+                    to="/notifications"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center justify-between min-h-[44px] px-3 rounded-md hover:bg-gray-100/70 hover:text-brand-600 transition-colors font-semibold"
                   >
-                    Log out
-                  </button>
-                </div>
-              ) : (
-                <div className="flex gap-2 pt-1">
-                  <button
-                    onClick={() => {
-                      setAuthModalMode('login');
-                      setIsAuthModalOpen(true);
-                      setIsOpen(false);
-                    }}
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 min-h-[44px] rounded-md font-bold text-xs flex items-center justify-center transition-colors cursor-pointer"
-                  >
-                    Log In
-                  </button>
-                  <button
-                    onClick={() => {
-                      setAuthModalMode('register');
-                      setIsAuthModalOpen(true);
-                      setIsOpen(false);
-                    }}
-                    className="flex-1 bg-brand-500 hover:bg-brand-600 text-white min-h-[44px] rounded-md font-bold text-xs flex items-center justify-center transition-colors cursor-pointer shadow-xs"
-                  >
-                    Sign Up
-                  </button>
-                </div>
-              )}
+                    <span>Notifications</span>
+                    {unreadCount > 0 && (
+                      <span className="text-xs bg-brand-500 text-white px-2 py-0.5 rounded-full font-bold">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </Link>
+                )}
+              </div>
+
+              <div className="pt-2 border-t border-gray-100">
+                {userProfile ? (
+                  <div className="flex items-center justify-between min-h-[44px] px-3 rounded-md bg-gray-50/70">
+                    <Link
+                      to="/profile"
+                      onClick={() => setIsOpen(false)}
+                      className="font-bold text-xs text-gray-900 hover:text-brand-600 truncate max-w-[180px]"
+                    >
+                      View Profile ({displayName})
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="text-red-600 hover:text-red-700 font-bold text-xs cursor-pointer py-1 px-2 rounded hover:bg-red-50"
+                    >
+                      Log out
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={() => {
+                        setAuthModalMode('login');
+                        setIsAuthModalOpen(true);
+                        setIsOpen(false);
+                      }}
+                      className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 min-h-[44px] rounded-md font-bold text-xs flex items-center justify-center transition-colors cursor-pointer"
+                    >
+                      Log In
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAuthModalMode('register');
+                        setIsAuthModalOpen(true);
+                        setIsOpen(false);
+                      }}
+                      className="flex-1 bg-brand-500 hover:bg-brand-600 text-white min-h-[44px] rounded-md font-bold text-xs flex items-center justify-center transition-colors cursor-pointer shadow-xs"
+                    >
+                      Sign Up
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          </>
         )}
       </nav>
 

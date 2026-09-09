@@ -173,7 +173,7 @@ export default function Home() {
       {/* Category Pills Bar */}
       <div className="bg-white/70 backdrop-blur-md border-b border-gray-100 shadow-sm relative z-10">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none touch-pan-x pr-4">
+          <div className="flex items-center gap-2 overflow-x-auto py-0.5 scrollbar-none no-scrollbar touch-pan-x pr-4">
             <button
               onClick={() => handleCategoryClick('ALL')}
               className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border shrink-0 ${selectedCategory === 'ALL'
@@ -235,12 +235,12 @@ export default function Home() {
             </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-2.5 w-full md:w-auto">
+          <div className="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-1.5 sm:gap-2.5 w-full md:w-auto">
             {/* Transaction Mode Filter */}
             <select
               value={transactionType}
               onChange={(e) => handleTransactionTypeChange(e.target.value)}
-              className="bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-md px-2.5 sm:px-3 py-2 outline-none focus:ring-1 focus:ring-brand-500 shadow-sm truncate"
+              className="w-full sm:w-auto bg-white border border-gray-200 text-gray-700 text-[11px] sm:text-xs font-medium rounded-md px-1.5 sm:px-3 py-2 outline-none focus:ring-1 focus:ring-brand-500 shadow-2xs truncate cursor-pointer"
             >
               {TRANSACTION_FILTERS.map((t) => (
                 <option key={t.value} value={t.value}>
@@ -253,7 +253,7 @@ export default function Home() {
             <select
               value={conditionFilter}
               onChange={(e) => setConditionFilter(e.target.value)}
-              className="bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-md px-2.5 sm:px-3 py-2 outline-none focus:ring-1 focus:ring-brand-500 shadow-sm truncate"
+              className="w-full sm:w-auto bg-white border border-gray-200 text-gray-700 text-[11px] sm:text-xs font-medium rounded-md px-1.5 sm:px-3 py-2 outline-none focus:ring-1 focus:ring-brand-500 shadow-2xs truncate cursor-pointer"
             >
               <option value="ALL">All Conditions</option>
               <option value="NEW">Brand New</option>
@@ -264,12 +264,12 @@ export default function Home() {
             </select>
 
             {/* Sorting Dropdown */}
-            <div className="col-span-2 sm:col-span-1 flex items-center bg-white border border-gray-200 rounded-md px-2.5 py-1.5 shadow-sm">
-              <ArrowUpDown className="w-3.5 h-3.5 text-gray-400 mr-1.5 shrink-0" />
+            <div className="w-full sm:w-auto flex items-center bg-white border border-gray-200 rounded-md px-1.5 sm:px-2.5 py-2 shadow-2xs">
+              <ArrowUpDown className="w-3 h-3 text-gray-400 mr-1 shrink-0" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full bg-transparent text-gray-700 text-xs font-medium outline-none cursor-pointer"
+                className="w-full bg-transparent text-gray-700 text-[11px] sm:text-xs font-medium outline-none cursor-pointer truncate"
               >
                 {SORT_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>

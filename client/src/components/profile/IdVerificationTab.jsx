@@ -22,6 +22,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { extractLpuCardDetails } from '../../utils/idCardVerification';
+import { compressImageToDataUrl } from '../../utils/compressImage';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -333,7 +334,7 @@ export default function IdVerificationTab({ profile, onProfileUpdated }) {
 
   const displayedCardImage = idFrontImage || profile?.id_card_image || null;
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -342,18 +343,29 @@ export default function IdVerificationTab({ profile, onProfileUpdated }) {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File too large. Maximum size allowed is 5MB.');
+    if (file.size > 12 * 1024 * 1024) {
+      toast.error('File too large. Maximum size allowed is 12MB.');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setIdFrontImage(reader.result);
+    try {
+      const compressedDataUrl = await compressImageToDataUrl(file, {
+        maxWidth: 1000,
+        maxHeight: 700,
+        quality: 0.75,
+      });
+      setIdFrontImage(compressedDataUrl);
       setRejectionInfo(null);
-      toast.success('ID photo loaded in preview.');
-    };
-    reader.readAsDataURL(file);
+      toast.success('ID photo loaded & compressed.');
+    } catch {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setIdFrontImage(reader.result);
+        setRejectionInfo(null);
+        toast.success('ID photo loaded in preview.');
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const triggerCelebrationConfetti = () => {

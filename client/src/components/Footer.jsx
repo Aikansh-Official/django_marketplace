@@ -1,8 +1,26 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import logoImg from '../assets/LPXchange_Logo.jpeg';
 
 export default function Footer() {
+  const location = useLocation();
   const currentYear = new Date().getFullYear();
+
+  // Normalize current pathname (strip trailing slash)
+  const pathname = location.pathname.replace(/\/$/, '') || '/';
+
+  // Routes where Footer should be visible:
+  // - Home ('/')
+  // - Public Item Details ('/listing/:id')
+  // - Public Informational & Legal pages ('/about', '/guidelines', '/privacy', '/terms')
+  // Hidden on action & dashboard pages like /profile, /sell, /create-listing, /edit-listing, /my-listings, /notifications
+  const isAllowed =
+    pathname === '/' ||
+    pathname.startsWith('/listing/') ||
+    ['/about', '/guidelines', '/privacy', '/terms'].includes(pathname);
+
+  if (!isAllowed) {
+    return null;
+  }
 
   return (
     <footer className="bg-white border-t border-gray-200 text-gray-600 text-sm mt-auto">

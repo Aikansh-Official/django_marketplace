@@ -98,3 +98,72 @@ export async function compressImage(file, options = {}) {
     img.src = url;
   });
 }
+
+/**
+ * Compress an image file or data URL directly into a compact Base64 Data URL.
+ * Ideal for student ID card uploads and document storage.
+ *
+ * @param {File|Blob|string} input - File object or data URL string
+ * @param {object} options
+ * @param {number} options.maxWidth - Max width in px (default: 1000)
+ * @param {number} options.maxHeight - Max height in px (default: 700)
+ * @param {number} options.quality - JPEG quality 0.0–1.0 (default: 0.75)
+ * @returns {Promise<string>} Compressed Base64 data URL
+ */
+export async function compressImageToDataUrl(input, options = {}) {
+  const {
+    maxWidth = 1000,
+    maxHeight = 700,
+    quality = 0.75,
+  } = options;
+
+  return new Promise((resolve, reject) => {
+    let src = '';
+    let objectUrlToRevoke = null;
+
+    if (typeof input === 'string') {
+      src = input;
+    } else if (input instanceof Blob || input instanceof File) {
+      objectUrlToRevoke = URL.createObjectURL(input);
+      src = objectUrlToRevoke;
+    } else {
+      return reject(new Error('Invalid image input for compression.'));
+    }
+
+    const img = new Image();
+
+    img.onload = () => {
+      if (objectUrlToRevoke) {
+        URL.revokeObjectURL(objectUrlToRevoke);
+      }
+
+      let { width, height } = img;
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+      resolve(compressedDataUrl);
+    };
+
+    img.onerror = (err) => {
+      if (objectUrlToRevoke) {
+        URL.revokeObjectURL(objectUrlToRevoke);
+      }
+      reject(err);
+    };
+
+    img.src = src;
+  });
+}
