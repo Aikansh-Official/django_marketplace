@@ -230,8 +230,8 @@ export default function HandoverScannerModal({ listingId, defaultOfferId, onClos
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 relative animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 shadow-2xl border border-gray-100 relative animate-in fade-in zoom-in-95 duration-200">
         {/* Close Button */}
         <button
           onClick={() => {
@@ -411,7 +411,7 @@ export default function HandoverScannerModal({ listingId, defaultOfferId, onClos
             {/* TAB 1: Enter 6-digit PIN */}
             {activeTab === 'pin' && (
               <div className="space-y-4 py-2">
-                <div className="flex justify-center gap-2" onPaste={handlePaste}>
+                <div className="flex justify-center gap-1 sm:gap-2" onPaste={handlePaste}>
                   {pinDigits.map((digit, idx) => (
                     <input
                       key={idx}
@@ -423,7 +423,7 @@ export default function HandoverScannerModal({ listingId, defaultOfferId, onClos
                       onChange={(e) => handlePinChange(idx, e.target.value)}
                       onKeyDown={(e) => handleKeyDown(idx, e)}
                       autoFocus={idx === 0}
-                      className="w-11 h-13 text-center font-mono text-xl font-black bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:bg-white outline-none transition-all shadow-2xs"
+                      className="w-9 sm:w-11 h-11 sm:h-13 text-center font-mono text-lg sm:text-xl font-black bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:bg-white outline-none transition-all shadow-2xs"
                     />
                   ))}
                 </div>

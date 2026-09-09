@@ -505,7 +505,7 @@ export default function IdVerificationTab({ profile, onProfileUpdated }) {
         {/* 2-Column Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column: Verification Details */}
-          <div className="lg:col-span-6 bg-white rounded-md border border-gray-200/90 p-6 shadow-sm space-y-5">
+          <div className="lg:col-span-6 bg-white rounded-md border border-gray-200/90 p-4 sm:p-6 shadow-sm space-y-5">
             <div className="flex items-center gap-3.5">
               <div className="w-12 h-12 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center flex-shrink-0 shadow-xs">
                 <BadgeCheck className="w-7 h-7" />
@@ -600,7 +600,7 @@ export default function IdVerificationTab({ profile, onProfileUpdated }) {
           </div>
 
           {/* Right Column: Verified ID Card Image Display */}
-          <div className="lg:col-span-6 bg-white rounded-md border border-gray-200/90 p-6 shadow-sm space-y-3">
+          <div className="lg:col-span-6 bg-white rounded-md border border-gray-200/90 p-4 sm:p-6 shadow-sm space-y-3">
             <div className="border-b border-gray-100 pb-2.5 flex items-center justify-between">
               <h3 className="text-xs font-extrabold text-gray-900 uppercase tracking-wider flex items-center gap-2">
                 <FileText className="w-4 h-4 text-brand-600" />
@@ -690,7 +690,7 @@ export default function IdVerificationTab({ profile, onProfileUpdated }) {
       {/* 2-Column Grid: Left = Form / Controls | Right = ID Card Preview */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* LEFT COLUMN: Controls & Upload Input (6 cols) */}
-        <div className="lg:col-span-6 bg-white rounded-md border border-gray-200/90 p-6 shadow-sm space-y-5">
+        <div className="lg:col-span-6 bg-white rounded-md border border-gray-200/90 p-4 sm:p-6 shadow-sm space-y-5">
           <div className="border-b border-gray-100 pb-3">
             <h3 className="text-xs font-extrabold text-gray-900 uppercase tracking-wider flex items-center gap-2">
               <Camera className="w-4 h-4 text-brand-600" />
@@ -748,11 +748,11 @@ export default function IdVerificationTab({ profile, onProfileUpdated }) {
                 Front Side Photo (JPG, PNG, WEBP)
               </label>
 
-              <label className="border-2 border-dashed border-gray-300 hover:border-brand-500 rounded-md p-6 flex flex-col items-center justify-center cursor-pointer bg-gray-50/40 hover:bg-white transition-all group shadow-2xs">
+              <label className="border-2 border-dashed border-gray-300 hover:border-brand-500 rounded-md p-4 sm:p-6 flex flex-col items-center justify-center cursor-pointer bg-gray-50/40 hover:bg-white transition-all group shadow-2xs">
                 <div className="w-11 h-11 rounded-md bg-brand-50 text-brand-600 flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform shadow-xs">
                   <Camera className="w-5 h-5" />
                 </div>
-                <span className="text-xs font-bold text-gray-800">
+                <span className="text-xs font-bold text-gray-800 text-center">
                   {idFrontImage ? 'Change ID Card Photo' : 'Click to select or capture ID photo'}
                 </span>
                 <span className="text-[11px] text-gray-400 mt-0.5">
@@ -789,7 +789,7 @@ export default function IdVerificationTab({ profile, onProfileUpdated }) {
         </div>
 
         {/* RIGHT COLUMN: Large ID Card Image Preview (6 cols) */}
-        <div className="lg:col-span-6 bg-white rounded-md border border-gray-200/90 p-6 shadow-sm space-y-4">
+        <div className="lg:col-span-6 bg-white rounded-md border border-gray-200/90 p-4 sm:p-6 shadow-sm space-y-4">
           <div className="border-b border-gray-100 pb-3 flex items-center justify-between">
             <h3 className="text-xs font-extrabold text-gray-900 uppercase tracking-wider flex items-center gap-2">
               <FileText className="w-4 h-4 text-brand-600" />

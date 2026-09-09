@@ -259,9 +259,9 @@ export default function EditListing() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 animate-fade-in-up">
       {/* Top Header */}
-      <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8 pb-4 border-b border-gray-200">
         <div>
           <button
             onClick={() => navigate(-1)}
@@ -270,7 +270,7 @@ export default function EditListing() {
             <ArrowLeft className="w-4 h-4" />
             Back to Listing
           </button>
-          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900">
             Edit Listing
           </h1>
           <p className="text-gray-500 text-xs mt-0.5">
@@ -279,7 +279,7 @@ export default function EditListing() {
         </div>
 
         {/* Status Dropdown */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <span className="text-xs font-semibold text-gray-600">Status:</span>
           <select
             value={status}
@@ -296,14 +296,14 @@ export default function EditListing() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Photos Box */}
-        <div className="bg-white border border-gray-200 rounded-md p-6 shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-md p-4 sm:p-6 shadow-sm">
           <div className="flex justify-between items-center mb-3">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-gray-900 mb-4">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-gray-900 mb-2">
               Product Photos ({images.length}/4)
             </h2>
           </div>
 
-          <div className="flex gap-2 mb-4">
+          <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-2 mb-4">
             <input
               type="file"
               id="edit-file-upload"
@@ -315,7 +315,7 @@ export default function EditListing() {
             />
             <label
               htmlFor="edit-file-upload"
-              className={`border border-brand-200 text-brand-700 text-xs font-semibold px-4 py-2 rounded-md transition-colors inline-flex items-center gap-1.5 ${uploading ? 'bg-brand-100 opacity-60 pointer-events-none' : 'cursor-pointer bg-brand-50 hover:bg-brand-100'}`}
+              className={`border border-brand-200 text-brand-700 text-xs font-semibold px-4 py-2.5 rounded-md transition-colors inline-flex items-center justify-center gap-1.5 ${uploading ? 'bg-brand-100 opacity-60 pointer-events-none' : 'cursor-pointer bg-brand-50 hover:bg-brand-100'}`}
             >
               {uploading ? (
                 <div className="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
@@ -331,12 +331,12 @@ export default function EditListing() {
                 placeholder="Or paste an image URL..."
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-xs focus:ring-2 focus:ring-brand-500 outline-none"
+                className="w-full bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 outline-none"
               />
               <button
                 type="button"
                 onClick={handleAddImageUrl}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-md transition-colors"
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium px-3 py-2 rounded-md transition-colors whitespace-nowrap"
               >
                 Add URL
               </button>
@@ -380,7 +380,7 @@ export default function EditListing() {
         </div>
 
         {/* Title & Category */}
-        <div className="bg-white border border-gray-200 rounded-md p-6 shadow-sm space-y-4">
+        <div className="bg-white border border-gray-200 rounded-md p-4 sm:p-6 shadow-sm space-y-4">
           <div>
             <label className="block text-xs font-bold text-gray-900 mb-1">Title</label>
             <input
@@ -422,7 +422,7 @@ export default function EditListing() {
         </div>
 
         {/* Transaction Mode & Price */}
-        <div className="bg-white border border-gray-200 rounded-md p-6 shadow-sm space-y-4">
+        <div className="bg-white border border-gray-200 rounded-md p-4 sm:p-6 shadow-sm space-y-4">
           <div className="grid grid-cols-2 gap-3">
             {['SELL', 'DONATE'].map((type) => (
               <button
@@ -496,7 +496,7 @@ export default function EditListing() {
         </div>
 
         {/* Location & Contacts */}
-        <div className="bg-white border border-gray-200 rounded-md p-6 shadow-sm space-y-4">
+        <div className="bg-white border border-gray-200 rounded-md p-4 sm:p-6 shadow-sm space-y-4">
           <div>
             <label className="block text-xs font-bold text-gray-900 mb-1">
               Campus Location
@@ -553,7 +553,7 @@ export default function EditListing() {
         </div>
 
         {/* Description */}
-        <div className="bg-white border border-gray-200 rounded-md p-6 shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-md p-4 sm:p-6 shadow-sm">
           <label className="block text-xs font-bold text-gray-900 mb-1">Description</label>
           <textarea
             required
@@ -565,18 +565,18 @@ export default function EditListing() {
         </div>
 
         {/* Buttons */}
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-2">
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-medium py-2.5 px-6 rounded-md"
+            className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-medium py-2.5 px-6 rounded-md text-center justify-center flex items-center"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold py-2.5 px-6 rounded-md shadow-md disabled:opacity-50"
+            className="bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold py-2.5 px-6 rounded-md shadow-md disabled:opacity-50 text-center justify-center flex items-center"
           >
             {loading ? 'Saving Changes...' : 'Save Changes'}
           </button>

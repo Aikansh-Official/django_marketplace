@@ -172,11 +172,11 @@ export default function Home() {
     <div className="flex flex-col min-h-[calc(100vh-140px)] w-full">
       {/* Category Pills Bar */}
       <div className="bg-white/70 backdrop-blur-md border-b border-gray-100 shadow-sm relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none touch-pan-x pr-4">
             <button
               onClick={() => handleCategoryClick('ALL')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${selectedCategory === 'ALL'
+              className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border shrink-0 ${selectedCategory === 'ALL'
                   ? 'bg-brand-500 text-white border-brand-500 shadow-sm'
                   : 'bg-white border-gray-200 text-gray-700 hover:border-brand-300'
                 }`}
@@ -190,7 +190,7 @@ export default function Home() {
                 <button
                   key={cat.id}
                   onClick={() => handleCategoryClick(cat.slug)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap border ${isSelected
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap border shrink-0 ${isSelected
                       ? 'bg-brand-500 text-white border-brand-500 shadow-sm'
                       : 'bg-white border-gray-200 text-gray-700 hover:border-brand-300'
                     }`}
@@ -209,17 +209,17 @@ export default function Home() {
       </div>
 
       {/* Main Content Area */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 w-full">
         {/* Controls Row: Title, Filters & Sorting */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <h1 className="text-lg sm:text-xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
               {searchQuery ? (
                 <>
-                  <span>Results for &ldquo;{searchQuery}&rdquo;</span>
+                  <span className="truncate max-w-[200px] sm:max-w-none">Results for &ldquo;{searchQuery}&rdquo;</span>
                   <button
                     onClick={handleClearSearch}
-                    className="text-xs font-semibold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-2.5 py-1 rounded-full transition-colors flex items-center gap-1 cursor-pointer"
+                    className="text-xs font-semibold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-2 py-0.5 sm:py-1 rounded-full transition-colors flex items-center gap-1 cursor-pointer shrink-0"
                     title="Clear search filter"
                   >
                     <X className="w-3 h-3" />
@@ -230,17 +230,17 @@ export default function Home() {
                 ? 'Campus Marketplace Recommendations'
                 : categories.find((c) => c.slug === selectedCategory)?.name || 'Listings'}
             </h1>
-            <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+            <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full shrink-0">
               {listings.length} {listings.length === 1 ? 'item' : 'items'}
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-2.5 w-full md:w-auto">
             {/* Transaction Mode Filter */}
             <select
               value={transactionType}
               onChange={(e) => handleTransactionTypeChange(e.target.value)}
-              className="bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-md px-3 py-2 outline-none focus:ring-1 focus:ring-brand-500 shadow-sm"
+              className="bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-md px-2.5 sm:px-3 py-2 outline-none focus:ring-1 focus:ring-brand-500 shadow-sm truncate"
             >
               {TRANSACTION_FILTERS.map((t) => (
                 <option key={t.value} value={t.value}>
@@ -253,7 +253,7 @@ export default function Home() {
             <select
               value={conditionFilter}
               onChange={(e) => setConditionFilter(e.target.value)}
-              className="bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-md px-3 py-2 outline-none focus:ring-1 focus:ring-brand-500 shadow-sm"
+              className="bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-md px-2.5 sm:px-3 py-2 outline-none focus:ring-1 focus:ring-brand-500 shadow-sm truncate"
             >
               <option value="ALL">All Conditions</option>
               <option value="NEW">Brand New</option>
@@ -264,12 +264,12 @@ export default function Home() {
             </select>
 
             {/* Sorting Dropdown */}
-            <div className="flex items-center bg-white border border-gray-200 rounded-md px-2.5 py-1.5 shadow-sm">
-              <ArrowUpDown className="w-3.5 h-3.5 text-gray-400 mr-1.5" />
+            <div className="col-span-2 sm:col-span-1 flex items-center bg-white border border-gray-200 rounded-md px-2.5 py-1.5 shadow-sm">
+              <ArrowUpDown className="w-3.5 h-3.5 text-gray-400 mr-1.5 shrink-0" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-transparent text-gray-700 text-xs font-medium outline-none cursor-pointer"
+                className="w-full bg-transparent text-gray-700 text-xs font-medium outline-none cursor-pointer"
               >
                 {SORT_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -340,7 +340,7 @@ export default function Home() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 animate-fade-in-up">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 animate-fade-in-up">
             {listings.map((listing) => {
               const primaryImage =
                 listing.images?.find((img) => img.is_primary)?.image_url ||
@@ -355,7 +355,7 @@ export default function Home() {
                   className="bg-white border border-gray-200 rounded-md overflow-hidden hover:shadow-xl hover:border-brand-200 transition-all duration-200 group flex flex-col"
                 >
                   {/* Image Container */}
-                  <div className="relative h-48 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                  <div className="relative h-36 sm:h-44 md:h-48 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
                     {primaryImage ? (
                       <img
                         src={primaryImage}
@@ -364,8 +364,8 @@ export default function Home() {
                       />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-100 group-hover:bg-gray-200 transition-colors">
-                        <Package className="w-8 h-8 mb-2 opacity-50" />
-                        <span className="text-[10px] font-semibold uppercase tracking-wider opacity-60">No Image</span>
+                        <Package className="w-7 h-7 sm:w-8 sm:h-8 mb-1 sm:mb-2 opacity-50" />
+                        <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider opacity-60">No Image</span>
                       </div>
                     )}
 
@@ -373,52 +373,52 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={(e) => toggleFavorite(e, listing)}
-                      className={`absolute top-2.5 right-2.5 p-1.5 rounded-full shadow-sm transition-all z-10 ${isFav
+                      className={`absolute top-2 right-2 sm:top-2.5 sm:right-2.5 p-1.5 rounded-full shadow-sm transition-all z-10 ${isFav
                           ? 'bg-rose-50 text-rose-500'
                           : 'bg-white/80 hover:bg-white text-gray-400 hover:text-rose-500'
                         }`}
                       title={isFav ? 'Remove from Saved' : 'Save Item'}
                     >
                       <Heart
-                        className="h-4 w-4"
+                        className="h-3.5 w-3.5 sm:h-4 sm:w-4"
                         fill={isFav ? 'currentColor' : 'none'}
                       />
                     </button>
 
                     {/* Mode Badges */}
                     {listing.transaction_type === 'DONATE' && (
-                      <div className="absolute top-2.5 left-2.5 bg-green-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                        FREE DONATION
+                      <div className="absolute top-2 left-2 sm:top-2.5 sm:left-2.5 bg-green-600 text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full shadow-sm">
+                        FREE
                       </div>
                     )}
 
                     {/* Condition Badge */}
-                    <div className="absolute bottom-2.5 left-2.5 bg-black/60 backdrop-blur-xs text-white text-[9px] font-semibold px-2 py-0.5 rounded">
+                    <div className="absolute bottom-2 left-2 sm:bottom-2.5 sm:left-2.5 bg-black/60 backdrop-blur-xs text-white text-[8px] sm:text-[9px] font-semibold px-1.5 sm:px-2 py-0.5 rounded">
                       {listing.condition ? listing.condition.replace('_', ' ') : 'GOOD'}
                     </div>
                   </div>
 
                   {/* Content Container */}
-                  <div className="p-4 flex flex-col flex-grow">
+                  <div className="p-2.5 sm:p-4 flex flex-col flex-grow">
                     <div className="flex items-baseline justify-between mb-1">
-                      <h3 className="font-extrabold text-xl text-gray-900 tracking-tight">
+                      <h3 className="font-black text-base sm:text-xl text-gray-900 tracking-tight">
                         {listing.transaction_type === 'DONATE' ? 'Free' : `Rs ${listing.price}`}
                       </h3>
                     </div>
 
                     <p
-                      className="text-gray-700 text-xs font-medium line-clamp-2 mb-3 group-hover:text-brand-600 transition-colors"
+                      className="text-gray-700 text-xs sm:text-xs font-medium line-clamp-2 mb-2 sm:mb-3 group-hover:text-brand-600 transition-colors"
                       title={listing.title}
                     >
                       {listing.title}
                     </p>
 
-                    <div className="mt-auto pt-3 border-t border-gray-100 flex justify-between items-center text-[11px] text-gray-500">
+                    <div className="mt-auto pt-2 sm:pt-3 border-t border-gray-100 flex justify-between items-center text-[10px] sm:text-[11px] text-gray-500">
                       <span className="flex items-center gap-1 truncate max-w-[65%]">
                         <MapPin className="h-3 w-3 flex-shrink-0 text-gray-400" />
                         <span className="truncate">{listing.location}</span>
                       </span>
-                      <span className="font-bold text-[10px] text-gray-400 uppercase whitespace-nowrap">
+                      <span className="font-bold text-[9px] sm:text-[10px] text-gray-400 uppercase whitespace-nowrap">
                         {formatDate(listing.created_at)}
                       </span>
                     </div>

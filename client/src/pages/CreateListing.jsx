@@ -237,27 +237,26 @@ export default function CreateListing() {
 
   const selectedCategoryObj = categories.find((c) => String(c.id) === String(categoryId));
   const coverImage = images[primaryIndex] || images[0] || '';
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 pb-4 border-b border-gray-200">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 animate-fade-in-up">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4 mb-6 sm:mb-8 pb-4 border-b border-gray-200">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900">
             Post a Listing
           </h1>
-          <p className="text-gray-500 text-sm mt-1">
+          <p className="text-gray-500 text-xs sm:text-sm mt-1">
             Sell or donate items to verified students across LPU Campus.
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
         {/* Left / Main Form Column */}
-        <form onSubmit={handleSubmit} className="lg:col-span-8 space-y-8">
+        <form onSubmit={handleSubmit} className="lg:col-span-8 space-y-6 sm:space-y-8">
 
           {/* Section 1: Photos */}
-          <div className="bg-white/90 backdrop-blur-md border border-gray-200 shadow-sm rounded-md p-6">
+          <div className="bg-white/90 backdrop-blur-md border border-gray-200 shadow-sm rounded-md p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
@@ -372,7 +371,7 @@ export default function CreateListing() {
           </div>
 
           {/* Section 2: Title & Category */}
-          <div className="bg-white/90 backdrop-blur-md border border-gray-200 shadow-sm rounded-md p-6 space-y-6">
+          <div className="bg-white/90 backdrop-blur-md border border-gray-200 shadow-sm rounded-md p-4 sm:p-6 space-y-5 sm:space-y-6">
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-1">
                 Product Title <span className="text-red-500">*</span>
@@ -408,7 +407,7 @@ export default function CreateListing() {
                       key={cat.id}
                       type="button"
                       onClick={() => setCategoryId(cat.id)}
-                      className={`flex items-center gap-2.5 p-3 rounded-md border text-left transition-all ${isSelected
+                      className={`flex items-center gap-2.5 p-2.5 sm:p-3 rounded-md border text-left transition-all ${isSelected
                           ? 'border-brand-500 bg-brand-50 text-brand-800 font-bold shadow-sm'
                           : 'border-gray-200 bg-gray-50/50 hover:bg-gray-100/80 text-gray-700 font-medium'
                         }`}
@@ -427,7 +426,7 @@ export default function CreateListing() {
           </div>
 
           {/* Section 3: Transaction Type, Price & Condition */}
-          <div className="bg-white/90 backdrop-blur-md border border-gray-200 shadow-sm rounded-md p-6 space-y-6">
+          <div className="bg-white/90 backdrop-blur-md border border-gray-200 shadow-sm rounded-md p-4 sm:p-6 space-y-5 sm:space-y-6">
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-2">
                 Transaction Mode
@@ -531,7 +530,7 @@ export default function CreateListing() {
           </div>
 
           {/* Section 4: Location & Contact Preferences */}
-          <div className="bg-white/90 backdrop-blur-md border border-gray-200 shadow-sm rounded-md p-6 space-y-6">
+          <div className="bg-white/90 backdrop-blur-md border border-gray-200 shadow-sm rounded-md p-4 sm:p-6 space-y-5 sm:space-y-6">
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-1">
                 Campus Location <span className="text-red-500">*</span>
@@ -610,7 +609,7 @@ export default function CreateListing() {
           </div>
 
           {/* Section 5: Detailed Description */}
-          <div className="bg-white/90 backdrop-blur-md border border-gray-200 shadow-sm rounded-md p-6">
+          <div className="bg-white/90 backdrop-blur-md border border-gray-200 shadow-sm rounded-md p-4 sm:p-6">
             <div className="flex justify-between items-center mb-1">
               <label className="block text-sm font-bold text-gray-900">
                 Detailed Description <span className="text-red-500">*</span>
@@ -632,18 +631,18 @@ export default function CreateListing() {
           </div>
 
           {/* Submit Button */}
-          <div className="flex items-center justify-end gap-4 pt-2">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4 pt-2">
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-medium py-3 px-6 rounded-md transition-all text-sm"
+              className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-medium py-3 px-6 rounded-md transition-all text-sm text-center justify-center flex items-center"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-semibold py-3 px-8 rounded-md transition-all shadow-md hover:shadow-lg text-sm flex items-center gap-2"
+              className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-semibold py-3 px-8 rounded-md transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>

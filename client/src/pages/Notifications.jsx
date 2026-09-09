@@ -208,11 +208,11 @@ export default function Notifications() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 animate-fade-in-up">
       {/* Top Banner - matching MyListings */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-4 border-b border-gray-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8 pb-4 border-b border-gray-200">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900">
             Notifications
           </h1>
           <p className="text-gray-500 text-xs mt-1">
@@ -255,38 +255,38 @@ export default function Notifications() {
       </div>
 
       {/* Metrics Row - identical to MyListings metrics cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white border border-gray-200 rounded-md p-4 shadow-sm">
-          <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 mb-6 sm:mb-8">
+        <div className="bg-white border border-gray-200 rounded-md p-3 sm:p-4 shadow-sm">
+          <div className="text-[10px] sm:text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
             Total Alerts
           </div>
-          <div className="text-2xl font-extrabold text-gray-900 mt-1">{totalNotifications}</div>
+          <div className="text-xl sm:text-2xl font-extrabold text-gray-900 mt-1">{totalNotifications}</div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-md p-4 shadow-sm">
-          <div className="text-[11px] font-semibold text-brand-600 uppercase tracking-wider">
+        <div className="bg-white border border-gray-200 rounded-md p-3 sm:p-4 shadow-sm">
+          <div className="text-[10px] sm:text-[11px] font-semibold text-brand-600 uppercase tracking-wider">
             Unread Alerts
           </div>
-          <div className="text-2xl font-extrabold text-brand-700 mt-1">{unreadCount}</div>
+          <div className="text-xl sm:text-2xl font-extrabold text-brand-700 mt-1">{unreadCount}</div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-md p-4 shadow-sm">
-          <div className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">
+        <div className="bg-white border border-gray-200 rounded-md p-3 sm:p-4 shadow-sm">
+          <div className="text-[10px] sm:text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">
             Purchase Deals
           </div>
-          <div className="text-2xl font-extrabold text-emerald-700 mt-1">{dealCount}</div>
+          <div className="text-xl sm:text-2xl font-extrabold text-emerald-700 mt-1">{dealCount}</div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-md p-4 shadow-sm">
-          <div className="text-[11px] font-semibold text-purple-600 uppercase tracking-wider">
+        <div className="bg-white border border-gray-200 rounded-md p-3 sm:p-4 shadow-sm">
+          <div className="text-[10px] sm:text-[11px] font-semibold text-purple-600 uppercase tracking-wider">
             Campus Alerts
           </div>
-          <div className="text-2xl font-extrabold text-purple-700 mt-1">{generalCount}</div>
+          <div className="text-xl sm:text-2xl font-extrabold text-purple-700 mt-1">{generalCount}</div>
         </div>
       </div>
 
       {/* Filter Tabs - matching MyListings tabs */}
-      <div className="flex items-center gap-2 border-b border-gray-200 pb-3 mb-6 overflow-x-auto">
+      <div className="flex items-center gap-1.5 sm:gap-2 border-b border-gray-200 pb-2 sm:pb-3 mb-6 overflow-x-auto -mx-1 px-1 touch-pan-x scrollbar-none">
         {[
           { key: 'ALL', label: `All Alerts (${totalNotifications})` },
           { key: 'UNREAD', label: `Unread (${unreadCount})` },

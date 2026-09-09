@@ -265,35 +265,35 @@ export default function OrdersSellsTab({ onListingsCountChange }) {
       {subTab === 'selling' ? (
         <>
           {/* Metrics Row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-white border border-gray-200/90 rounded-md p-4 shadow-sm">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
+            <div className="bg-white border border-gray-200/90 rounded-md p-3 sm:p-4 shadow-sm">
               <div className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">
                 Total Listings
               </div>
-              <div className="text-2xl font-black text-gray-900 mt-1">{totalListings}</div>
+              <div className="text-xl sm:text-2xl font-black text-gray-900 mt-1">{totalListings}</div>
             </div>
-            <div className="bg-white border border-gray-200/90 rounded-md p-4 shadow-sm">
+            <div className="bg-white border border-gray-200/90 rounded-md p-3 sm:p-4 shadow-sm">
               <div className="text-[10px] font-extrabold text-emerald-600 uppercase tracking-wider">
                 Active Now
               </div>
-              <div className="text-2xl font-black text-emerald-700 mt-1">{activeCount}</div>
+              <div className="text-xl sm:text-2xl font-black text-emerald-700 mt-1">{activeCount}</div>
             </div>
-            <div className="bg-white border border-gray-200/90 rounded-md p-4 shadow-sm">
+            <div className="bg-white border border-gray-200/90 rounded-md p-3 sm:p-4 shadow-sm">
               <div className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">
                 Items Sold
               </div>
-              <div className="text-2xl font-black text-gray-700 mt-1">{soldCount}</div>
+              <div className="text-xl sm:text-2xl font-black text-gray-700 mt-1">{soldCount}</div>
             </div>
-            <div className="bg-white border border-gray-200/90 rounded-md p-4 shadow-sm">
+            <div className="bg-white border border-gray-200/90 rounded-md p-3 sm:p-4 shadow-sm">
               <div className="text-[10px] font-extrabold text-brand-600 uppercase tracking-wider">
                 Total Views
               </div>
-              <div className="text-2xl font-black text-brand-700 mt-1">{totalViews}</div>
+              <div className="text-xl sm:text-2xl font-black text-brand-700 mt-1">{totalViews}</div>
             </div>
           </div>
 
           {/* Status Filter Buttons */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 -mx-1 px-1 touch-pan-x scrollbar-none">
             {[
               { key: 'ALL', label: 'All Items' },
               { key: 'ACTIVE', label: 'Active' },
@@ -304,7 +304,7 @@ export default function OrdersSellsTab({ onListingsCountChange }) {
               <button
                 key={tab.key}
                 onClick={() => setStatusFilter(tab.key)}
-                className={`px-3.5 py-1.5 text-xs font-bold rounded-md whitespace-nowrap transition-all ${
+                className={`px-3 py-1.5 text-xs font-bold rounded-md whitespace-nowrap transition-all ${
                   statusFilter === tab.key
                     ? 'bg-gray-900 text-white shadow-sm'
                     : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
@@ -321,7 +321,7 @@ export default function OrdersSellsTab({ onListingsCountChange }) {
               <div className="w-8 h-8 border-3 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
           ) : listings.length === 0 ? (
-            <div className="bg-white border border-gray-200/90 rounded-md p-12 text-center shadow-sm">
+            <div className="bg-white border border-gray-200/90 rounded-md p-8 sm:p-12 text-center shadow-sm">
               <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
               <h3 className="text-sm font-bold text-gray-900">No listings found</h3>
               <p className="text-xs text-gray-500 mt-1 mb-5">
@@ -345,12 +345,12 @@ export default function OrdersSellsTab({ onListingsCountChange }) {
                 return (
                   <div
                     key={item.id}
-                    className="bg-white border border-gray-200/90 rounded-md p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:border-gray-300 transition-all"
+                    className="bg-white border border-gray-200/90 rounded-md p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3.5 sm:gap-4 shadow-sm hover:border-gray-300 transition-all"
                   >
                     {/* Left Thumbnail & Info */}
-                    <div className="flex items-center gap-4 min-w-0">
-                      {/* Fixed 20x20 thumbnail size */}
-                      <div className="w-20 h-20 rounded-md bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200 flex items-center justify-center">
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                      {/* Responsive thumbnail size */}
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-md bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200 flex items-center justify-center">
                         {cover ? (
                           <img
                             src={cover}

@@ -9,10 +9,10 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
         {/* Main Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-8 border-b border-gray-100">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 pb-8 border-b border-gray-100">
 
           {/* Brand Info */}
-          <div className="space-y-3 md:col-span-1">
+          <div className="space-y-3 sm:col-span-2 md:col-span-1">
             <Link to="/" className="flex items-center gap-2">
               <img
                 src={logoImg}

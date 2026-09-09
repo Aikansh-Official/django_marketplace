@@ -188,16 +188,16 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-full gap-2 sm:gap-4 lg:gap-6">
 
             {/* Left: Brand Logo & Links */}
-            <div className="flex items-center gap-3 lg:gap-5 flex-shrink-0">
-              <Link to="/" className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 sm:gap-3 lg:gap-5 flex-shrink-0">
+              <Link to="/" className="flex items-center gap-2 sm:gap-2.5">
                 <img
                   src={logoImg}
                   alt="LPXchange"
-                  className="h-9 w-9 object-cover rounded-lg shadow-2xs"
+                  className="h-8 w-8 sm:h-9 sm:w-9 object-cover rounded-lg shadow-2xs shrink-0"
                 />
                 <div className="flex items-baseline">
-                  <span className="text-xl font-bold tracking-tight text-gray-950 font-display">LP</span>
-                  <span className="text-xl font-bold tracking-tight text-brand-500 font-display">Xchange</span>
+                  <span className="text-lg sm:text-xl font-bold tracking-tight text-gray-950 font-display">LP</span>
+                  <span className="text-lg sm:text-xl font-bold tracking-tight text-brand-500 font-display">Xchange</span>
                 </div>
               </Link>
 
@@ -215,10 +215,10 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Center: Search Bar (Main Navbar Search) */}
+            {/* Center: Search Bar (Main Navbar Search) - Responsive width on tablets */}
             <form
               onSubmit={handleSearchSubmit}
-              className="flex-1 max-w-md lg:max-w-xl hidden sm:flex items-center"
+              className="flex-1 max-w-xs md:max-w-md lg:max-w-xl hidden sm:flex items-center"
             >
               <div className="relative w-full flex items-center group">
                 <div className="absolute left-3.5 pointer-events-none text-gray-400 group-focus-within:text-brand-500 transition-colors">
@@ -228,14 +228,14 @@ export default function Navbar() {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search textbooks, calculators, notes, headphones, others..."
-                  className="w-full pl-10 pr-24 py-2 text-xs sm:text-sm bg-gray-50/90 hover:bg-gray-100/70 focus:bg-white border border-gray-200 hover:border-gray-300 focus:border-brand-500 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-500/20 text-gray-800 placeholder-gray-400 transition-all font-medium shadow-2xs"
+                  placeholder="Search textbooks, calculators, notes, essentials..."
+                  className="w-full pl-10 pr-20 md:pr-24 py-2 text-xs sm:text-sm bg-gray-50/90 hover:bg-gray-100/70 focus:bg-white border border-gray-200 hover:border-gray-300 focus:border-brand-500 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-500/20 text-gray-800 placeholder-gray-400 transition-all font-medium shadow-2xs"
                 />
                 {searchTerm && (
                   <button
                     type="button"
                     onClick={handleClearSearch}
-                    className="absolute right-20 text-gray-400 hover:text-gray-600 p-1 rounded-full transition-colors"
+                    className="absolute right-16 md:right-20 text-gray-400 hover:text-gray-600 p-1 rounded-full transition-colors"
                     title="Clear search"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -243,7 +243,7 @@ export default function Navbar() {
                 )}
                 <button
                   type="submit"
-                  className="absolute right-1.5 bg-brand-500 hover:bg-brand-600 active:scale-95 text-white text-xs font-semibold px-3 py-1.5 rounded-full transition-all flex items-center gap-1 shadow-2xs"
+                  className="absolute right-1.5 bg-brand-500 hover:bg-brand-600 active:scale-95 text-white text-xs font-semibold px-2.5 md:px-3 py-1.5 rounded-full transition-all flex items-center gap-1 shadow-2xs"
                 >
                   <span>Search</span>
                 </button>
@@ -460,12 +460,12 @@ export default function Navbar() {
 
         {/* Mobile Dropdown */}
         {isOpen && (
-          <div className="sm:hidden bg-white border-b border-gray-200 px-4 py-3 space-y-2 shadow-lg">
+          <div className="sm:hidden bg-white/98 backdrop-blur-md border-b border-gray-200 px-4 py-3 space-y-3 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
             <div className="flex flex-col space-y-1 text-sm font-medium text-gray-700">
               <Link
                 to="/"
                 onClick={() => setIsOpen(false)}
-                className="py-2 hover:text-brand-600 transition-colors"
+                className="flex items-center min-h-[44px] px-3 rounded-md hover:bg-gray-100/70 hover:text-brand-600 transition-colors font-semibold"
               >
                 Explore Marketplace
               </Link>
@@ -473,7 +473,7 @@ export default function Navbar() {
                 <Link
                   to="/my-listings"
                   onClick={() => setIsOpen(false)}
-                  className="py-2 hover:text-brand-600 transition-colors"
+                  className="flex items-center min-h-[44px] px-3 rounded-md hover:bg-gray-100/70 hover:text-brand-600 transition-colors font-semibold"
                 >
                   My Listings
                 </Link>
@@ -482,7 +482,7 @@ export default function Navbar() {
                 <Link
                   to="/notifications"
                   onClick={() => setIsOpen(false)}
-                  className="py-2 flex items-center justify-between hover:text-brand-600 transition-colors"
+                  className="flex items-center justify-between min-h-[44px] px-3 rounded-md hover:bg-gray-100/70 hover:text-brand-600 transition-colors font-semibold"
                 >
                   <span>Notifications</span>
                   {unreadCount > 0 && (
@@ -496,15 +496,18 @@ export default function Navbar() {
 
             <div className="pt-2 border-t border-gray-100">
               {userProfile ? (
-                <div className="flex items-center justify-between text-xs pt-1">
+                <div className="flex items-center justify-between min-h-[44px] px-3 rounded-md bg-gray-50/70">
                   <Link
                     to="/profile"
                     onClick={() => setIsOpen(false)}
-                    className="font-semibold text-gray-900 hover:text-brand-600"
+                    className="font-bold text-xs text-gray-900 hover:text-brand-600 truncate max-w-[180px]"
                   >
                     View Profile ({displayName})
                   </Link>
-                  <button onClick={handleLogout} className="text-red-600 font-medium">
+                  <button
+                    onClick={handleLogout}
+                    className="text-red-600 hover:text-red-700 font-bold text-xs cursor-pointer py-1 px-2 rounded hover:bg-red-50"
+                  >
                     Log out
                   </button>
                 </div>
@@ -516,7 +519,7 @@ export default function Navbar() {
                       setIsAuthModalOpen(true);
                       setIsOpen(false);
                     }}
-                    className="flex-1 bg-gray-100 text-gray-800 py-2 rounded-md font-semibold text-xs text-center"
+                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 min-h-[44px] rounded-md font-bold text-xs flex items-center justify-center transition-colors cursor-pointer"
                   >
                     Log In
                   </button>
@@ -526,7 +529,7 @@ export default function Navbar() {
                       setIsAuthModalOpen(true);
                       setIsOpen(false);
                     }}
-                    className="flex-1 bg-brand-500 text-white py-2 rounded-md font-semibold text-xs text-center"
+                    className="flex-1 bg-brand-500 hover:bg-brand-600 text-white min-h-[44px] rounded-md font-bold text-xs flex items-center justify-center transition-colors cursor-pointer shadow-xs"
                   >
                     Sign Up
                   </button>

@@ -67,30 +67,43 @@ export default function ProfileSidebar({
   return (
     <div className="w-full lg:w-72 flex-shrink-0 space-y-4">
       {/* User Mini Profile Card */}
-      <div className="bg-white rounded-md border border-gray-200/90 p-5 shadow-sm">
-        <div className="flex items-center gap-3.5">
-          {/* Avatar with guaranteed valid size */}
-          <div className="w-12 h-12 rounded-md bg-gradient-to-tr from-brand-500 to-brand-400 text-white flex items-center justify-center font-black text-xl shadow-xs flex-shrink-0">
-            {firstLetter}
+      <div className="bg-white rounded-md border border-gray-200/90 p-4 sm:p-5 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Avatar with guaranteed valid size */}
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-md bg-gradient-to-tr from-brand-500 to-brand-400 text-white flex items-center justify-center font-black text-lg sm:text-xl shadow-xs flex-shrink-0">
+              {firstLetter}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <h2 className="font-extrabold text-sm text-gray-900 truncate">
+                  {displayName}
+                </h2>
+                {profile?.is_id_verified && (
+                  <span title="Official Student ID Verified" className="inline-flex shrink-0">
+                    <BadgeCheck className="w-4 h-4 text-emerald-600" />
+                  </span>
+                )}
+              </div>
+              <p className="text-xs font-medium text-gray-500 truncate">@{profile?.username}</p>
+            </div>
           </div>
 
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <h2 className="font-extrabold text-sm text-gray-900 truncate">
-                {displayName}
-              </h2>
-              {profile?.is_id_verified && (
-                <span title="Official Student ID Verified" className="inline-flex shrink-0">
-                  <BadgeCheck className="w-4 h-4 text-emerald-600" />
-                </span>
-              )}
-            </div>
-            <p className="text-xs font-medium text-gray-500 truncate">@{profile?.username}</p>
-          </div>
+          {/* Mobile quick sign out */}
+          <button
+            type="button"
+            onClick={onLogoutClick}
+            className="lg:hidden p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors flex-shrink-0"
+            title="Sign out"
+            aria-label="Sign out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Trust Score Snapshot */}
-        <div className="mt-4 pt-3.5 border-t border-gray-100">
+        <div className="mt-3.5 pt-3 border-t border-gray-100">
           <div className="flex items-center justify-between text-xs mb-1.5">
             <span className="text-gray-500 font-semibold flex items-center gap-1.5">
               <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
@@ -109,8 +122,8 @@ export default function ProfileSidebar({
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <nav className="bg-white rounded-md border border-gray-200/90 p-2 shadow-sm space-y-1">
+      {/* Navigation Tabs (Desktop only - mobile uses top slider) */}
+      <nav className="hidden lg:block bg-white rounded-md border border-gray-200/90 p-2 shadow-sm space-y-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;

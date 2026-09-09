@@ -104,9 +104,9 @@ export default function Profile() {
   if (!profile) return null;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 animate-fade-in-up">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 animate-fade-in-up">
       {/* Mobile Top Tabs Slider */}
-      <div className="lg:hidden flex items-center gap-2 overflow-x-auto pb-3 mb-4 scrollbar-none">
+      <div className="lg:hidden flex items-center gap-2 overflow-x-auto pb-2 mb-4 scrollbar-none touch-pan-x -mx-1 px-1">
         {[
           { id: 'personal-info', label: 'Personal Info' },
           { id: 'orders-sells', label: `Manage Orders (${listingsCount})` },
@@ -116,7 +116,7 @@ export default function Profile() {
           <button
             key={tab.id}
             onClick={() => handleTabChange(tab.id)}
-            className={`px-3.5 py-1.5 rounded-md text-xs font-bold whitespace-nowrap transition-all ${
+            className={`px-3.5 py-2 rounded-md text-xs font-bold whitespace-nowrap transition-all ${
               activeTab === tab.id
                 ? 'bg-brand-500 text-white shadow-xs'
                 : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'

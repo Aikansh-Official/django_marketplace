@@ -422,33 +422,33 @@ export default function ProductDetail() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 animate-fade-in-up">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 md:pb-8 animate-fade-in-up">
       {/* Navigation Breadcrumb */}
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
-          <Link to="/" className="hover:text-brand-600 transition-colors flex items-center gap-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6">
+        <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-gray-500 font-medium overflow-hidden">
+          <Link to="/" className="hover:text-brand-600 transition-colors flex items-center gap-1 shrink-0">
             <ArrowLeft className="w-3.5 h-3.5" />
             Marketplace
           </Link>
           <span>/</span>
           {listing.category && (
             <>
-              <Link to={`/?category=${listing.category.slug}`} className="hover:text-brand-600">
+              <Link to={`/?category=${listing.category.slug}`} className="hover:text-brand-600 shrink-0">
                 {listing.category.name}
               </Link>
               <span>/</span>
             </>
           )}
-          <span className="text-gray-800 font-semibold truncate max-w-[200px] sm:max-w-xs">
+          <span className="text-gray-800 font-semibold truncate max-w-[140px] sm:max-w-xs">
             {listing.title}
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
           <button
             type="button"
             onClick={handleToggleSave}
-            className={`flex items-center gap-1.5 border px-3 py-1.5 rounded-md text-xs font-semibold transition-all shadow-xs ${
+            className={`flex items-center gap-1.5 border px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-semibold transition-all shadow-xs ${
               isSaved
                 ? 'bg-rose-50 border-rose-200 text-rose-600'
                 : 'bg-white border-gray-200 hover:border-brand-500 text-gray-600 hover:text-brand-600'
@@ -461,7 +461,7 @@ export default function ProductDetail() {
           <button
             type="button"
             onClick={handleShare}
-            className="flex items-center gap-1.5 bg-white border border-gray-200 hover:border-brand-500 text-gray-600 hover:text-brand-600 px-3 py-1.5 rounded-md text-xs font-semibold transition-all shadow-xs"
+            className="flex items-center gap-1.5 bg-white border border-gray-200 hover:border-brand-500 text-gray-600 hover:text-brand-600 px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-semibold transition-all shadow-xs"
           >
             <Share2 className="w-3.5 h-3.5" />
             Share
@@ -804,7 +804,7 @@ export default function ProductDetail() {
         <div className="lg:col-span-8 space-y-6">
           {/* Hero Image Container */}
           <div className="bg-white border border-gray-200 rounded-md overflow-hidden shadow-sm">
-            <div className="relative h-80 sm:h-[420px] w-full bg-gray-100 flex items-center justify-center group">
+            <div className="relative h-64 sm:h-80 md:h-96 lg:h-[420px] w-full bg-gray-100 flex items-center justify-center group">
               {currentImage ? (
                 <img
                   src={currentImage}
@@ -1431,6 +1431,47 @@ export default function ProductDetail() {
           onClose={() => setShowScannerModal(false)}
           onSuccess={handleDealCompleted}
         />
+      )}
+
+      {/* Mobile Sticky Bottom CTA Bar (Visible only on screens < md) */}
+      {!isOwner && listing.status === 'ACTIVE' && (
+        <div className="fixed md:hidden bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-[10px] uppercase font-bold text-gray-400">Price</div>
+            <div className="font-black text-lg text-gray-950 truncate">
+              {listing.transaction_type === 'DONATE' ? 'Free' : `Rs ${listing.price}`}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {waUrl && (
+              <a
+                href={waUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 rounded-md shadow-xs flex items-center justify-center"
+                title="Chat on WhatsApp"
+              >
+                <MessageSquare className="w-4 h-4" />
+              </a>
+            )}
+
+            {userOffer?.status === 'PENDING' ? (
+              <div className="bg-blue-50 border border-blue-200 text-blue-800 px-3 py-2 rounded-md text-xs font-bold text-center">
+                Request Pending
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowBuyModal(true)}
+                className="bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-md text-xs shadow-md flex items-center gap-1.5 cursor-pointer"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                <span>{listing.transaction_type === 'DONATE' ? 'Request Free' : 'Buy Now'}</span>
+              </button>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

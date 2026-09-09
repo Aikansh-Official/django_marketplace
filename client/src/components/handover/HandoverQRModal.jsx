@@ -194,11 +194,11 @@ export default function HandoverQRModal({
     const digits = pin.padEnd(6, '-').slice(0, 6).split('');
 
     return (
-      <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+      <div className="flex items-center justify-center gap-1 sm:gap-2">
         {digits.map((digit, idx) => (
           <div
             key={idx}
-            className="w-10 h-12 sm:w-11 sm:h-12 flex items-center justify-center bg-gray-50 rounded-xl border border-gray-200 font-mono text-xl sm:text-2xl font-bold text-gray-900 select-all"
+            className="w-9 h-11 sm:w-11 sm:h-12 flex items-center justify-center bg-gray-50 rounded-xl border border-gray-200 font-mono text-lg sm:text-2xl font-bold text-gray-900 select-all"
           >
             {digit}
           </div>
@@ -208,8 +208,8 @@ export default function HandoverQRModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-gray-100 relative animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-sm w-full p-4 sm:p-5 shadow-2xl border border-gray-100 relative animate-in fade-in zoom-in-95 duration-200">
         
         {/* Close Button */}
         <button

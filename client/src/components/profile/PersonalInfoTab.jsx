@@ -95,25 +95,25 @@ export default function PersonalInfoTab({ profile, onProfileUpdated }) {
         </div>
 
         {/* Profile Identity Bar */}
-        <div className="px-6 sm:px-8 pb-6 pt-0">
+        <div className="px-4 sm:px-8 pb-5 sm:pb-6 pt-0">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6">
             {/* Avatar & Name Row */}
-            <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-end gap-3.5 sm:gap-6">
               {/* Large Avatar */}
-              <div className="-mt-14 sm:-mt-18 w-28 h-28 sm:w-32 sm:h-32 rounded-md bg-white p-2 shadow-xl ring-4 ring-white flex-shrink-0 relative z-10">
-                <div className="w-full h-full rounded-md bg-gradient-to-tr from-brand-500 to-brand-400 text-white flex items-center justify-center text-4xl sm:text-5xl font-black shadow-inner">
+              <div className="-mt-12 sm:-mt-18 w-24 h-24 sm:w-32 sm:h-32 rounded-md bg-white p-1.5 sm:p-2 shadow-xl ring-4 ring-white flex-shrink-0 relative z-10">
+                <div className="w-full h-full rounded-md bg-gradient-to-tr from-brand-500 to-brand-400 text-white flex items-center justify-center text-3xl sm:text-5xl font-black shadow-inner">
                   {firstLetter}
                 </div>
               </div>
 
               {/* Name, Badges & Reg No - Generous top spacing from banner */}
-              <div className="pt-3 sm:pt-5 pb-1 sm:pb-2 min-w-0 space-y-1.5">
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
+              <div className="pt-2 sm:pt-5 pb-1 sm:pb-2 min-w-0 space-y-1 sm:space-y-1.5">
+                <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+                  <h1 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tight">
                     {fullName}
                   </h1>
                   {profile?.is_id_verified && (
-                    <span className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full shadow-xs">
+                    <span className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-xs">
                       <BadgeCheck className="w-4 h-4 text-emerald-600" />
                       ID Verified
                     </span>
@@ -173,7 +173,7 @@ export default function PersonalInfoTab({ profile, onProfileUpdated }) {
       {/* Two Column Grid: Details on Left & Trust/Status on Right */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Personal Information Form (7 cols) */}
-        <div className="lg:col-span-7 bg-white rounded-md border border-gray-200/90 p-6 shadow-sm space-y-5">
+        <div className="lg:col-span-7 bg-white rounded-md border border-gray-200/90 p-4 sm:p-6 shadow-sm space-y-5">
           <div className="border-b border-gray-100 pb-3 flex items-center justify-between">
             <h3 className="text-xs font-extrabold text-gray-900 uppercase tracking-wider flex items-center gap-2">
               <User className="w-4 h-4 text-brand-600" />
@@ -283,7 +283,7 @@ export default function PersonalInfoTab({ profile, onProfileUpdated }) {
         {/* Right Column: Status, Trust, & Perks (5 cols) */}
         <div className="lg:col-span-5 space-y-5">
           {/* Campus Trust Score Breakdown */}
-          <div className="bg-white rounded-md border border-gray-200/90 p-5 shadow-sm space-y-3">
+          <div className="bg-white rounded-md border border-gray-200/90 p-4 sm:p-5 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Star className="w-4 h-4 text-amber-500 fill-amber-400" />

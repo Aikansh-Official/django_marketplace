@@ -341,7 +341,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
             </div>
 
             {/* Scrollable Content */}
-            <div className="overflow-y-auto px-8 sm:px-12 py-10 sm:py-12 flex-grow flex flex-col justify-center">
+            <div className="overflow-y-auto px-5 sm:px-10 md:px-12 py-7 sm:py-10 flex-grow flex flex-col justify-center">
               {mode === 'login' ? (
                 <LoginForm
                   onSwitch={() => setMode('register')}
@@ -762,7 +762,7 @@ function RegisterForm({
                     {isCompleted ? <Check className="w-4 h-4" /> : item.num}
                   </div>
                   <span
-                    className={`text-[11px] mt-1.5 font-bold tracking-tight ${isCurrent ? 'text-brand-600' : isCompleted ? 'text-emerald-700' : 'text-gray-400'
+                    className={`text-[10px] sm:text-[11px] mt-1.5 font-bold tracking-tight text-center ${isCurrent ? 'text-brand-600' : isCompleted ? 'text-emerald-700' : 'text-gray-400'
                       }`}
                   >
                     {item.label}
@@ -770,7 +770,7 @@ function RegisterForm({
                 </div>
                 {idx < 3 && (
                   <div
-                    className={`flex-1 h-0.5 mx-2 -mt-5 transition-all ${step > idx + 1 ? 'bg-emerald-500' : 'bg-gray-200'
+                    className={`flex-1 h-0.5 mx-1 sm:mx-2 -mt-5 transition-all ${step > idx + 1 ? 'bg-emerald-500' : 'bg-gray-200'
                       }`}
                   />
                 )}
