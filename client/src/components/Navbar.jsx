@@ -15,7 +15,7 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
-import logoImg from '../assets/LPXchange_Logo.jpeg';
+import logoImg from '../assets/CampusXChange_Logo.jpeg';
 import AuthModal from './AuthModal';
 import SavedItemsDrawer from './SavedItemsDrawer';
 import { getSavedCount } from '../utils/savedStore';
@@ -192,7 +192,7 @@ export default function Navbar() {
               <Link to="/" className="flex items-center gap-2 sm:gap-2.5">
                 <img
                   src={logoImg}
-                  alt="LPXchange"
+                  alt="CampusXChange"
                   className="h-8 w-8 sm:h-9 sm:w-9 object-cover rounded-lg shadow-2xs shrink-0"
                 />
                 <div className="flex items-baseline">

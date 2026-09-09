@@ -1,4 +1,4 @@
-# 📱 LPXchange — Android Login & Registration Complete Specification
+# 📱 CampusXChange — Android Login & Registration Complete Specification
 
 > **Target Platform:** Android (Native)  
 > **Tech Stack:** Kotlin, Jetpack Compose, Material 3, Clean Architecture + MVVM, Retrofit, OkHttp, Jetpack DataStore, Hilt  
@@ -159,11 +159,11 @@ The Android application adopts the identical brand identity defined in `client/t
 ### 3.2 Jetpack Compose Theme Definition (`Color.kt`)
 
 ```kotlin
-package com.LPXchange.app.ui.theme
+package com.CampusXChange.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// LPXchange Brand Palette
+// CampusXChange Brand Palette
 val Brand50 = Color(0xFFFFF4ED)
 val Brand100 = Color(0xFFFFE5D3)
 val Brand200 = Color(0xFFFFC6A2)
@@ -203,7 +203,7 @@ val SuccessGreenBg = Color(0xFFECFDF5)
 - **Inputs:** `15.sp`, Medium, `TextInkPrimary`.
 
 ```kotlin
-package com.LPXchange.app.ui.theme
+package com.CampusXChange.app.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
@@ -211,7 +211,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-val LPXchangeTypography = Typography(
+val CampusXChangeTypography = Typography(
     headlineLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Black,
@@ -259,13 +259,13 @@ val LPXchangeTypography = Typography(
 Following `DESIGN_SYSTEM.md`, elements use soft rounded corners (`rounded-md` in Tailwind = `8.dp` to `12.dp` in Compose).
 
 ```kotlin
-package com.LPXchange.app.ui.theme
+package com.CampusXChange.app.ui.theme
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
-val LPXchangeShapes = Shapes(
+val CampusXChangeShapes = Shapes(
     small = RoundedCornerShape(6.dp),
     medium = RoundedCornerShape(8.dp),    // Inputs, Buttons, OTP boxes
     large = RoundedCornerShape(16.dp),   // Cards, BottomSheets
@@ -296,16 +296,16 @@ AppNavigation
 ### 5.2 Navigation Implementation (`AuthNavigation.kt`)
 
 ```kotlin
-package com.LPXchange.app.navigation
+package com.CampusXChange.app.navigation
 
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
-import com.LPXchange.app.ui.auth.login.LoginScreen
-import com.LPXchange.app.ui.auth.register.RegisterStep1Screen
-import com.LPXchange.app.ui.auth.register.RegisterOtpScreen
-import com.LPXchange.app.ui.auth.register.RegisterPasswordScreen
+import com.CampusXChange.app.ui.auth.login.LoginScreen
+import com.CampusXChange.app.ui.auth.register.RegisterStep1Screen
+import com.CampusXChange.app.ui.auth.register.RegisterOtpScreen
+import com.CampusXChange.app.ui.auth.register.RegisterPasswordScreen
 
 sealed class AuthRoute(val route: String) {
     object Login : AuthRoute("auth/login")
@@ -580,7 +580,7 @@ Base URL: `http://<YOUR_DJANGO_SERVER_IP>:8000/api/auth/`
 ### 7.1 Retrofit API Service & DTOs
 
 ```kotlin
-package com.LPXchange.app.data.remote
+package com.CampusXChange.app.data.remote
 
 import com.google.gson.annotations.SerializedName
 import retrofit2.Response
@@ -664,14 +664,14 @@ interface AuthApiService {
 ### 7.2 Token Management (Jetpack DataStore)
 
 ```kotlin
-package com.LPXchange.app.data.local
+package com.CampusXChange.app.data.local
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.google.gson.Gson
-import com.LPXchange.app.data.remote.UserDto
+import com.CampusXChange.app.data.remote.UserDto
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -679,7 +679,7 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private val Context.authDataStore by preferencesDataStore("LPXchange_auth_prefs")
+private val Context.authDataStore by preferencesDataStore("CampusXChange_auth_prefs")
 
 @Singleton
 class TokenManager @Inject constructor(
@@ -726,9 +726,9 @@ class TokenManager @Inject constructor(
 ### 7.3 OkHttp Auth Interceptor & Token Authenticator
 
 ```kotlin
-package com.LPXchange.app.data.remote
+package com.CampusXChange.app.data.remote
 
-import com.LPXchange.app.data.local.TokenManager
+import com.CampusXChange.app.data.local.TokenManager
 import kotlinx.coroutines.runBlocking
 import okhttp3.*
 import javax.inject.Inject
@@ -807,13 +807,13 @@ class TokenAuthenticator @Inject constructor(
 
 #### 7.4.1 Login ViewModel
 ```kotlin
-package com.LPXchange.app.ui.auth.login
+package com.CampusXChange.app.ui.auth.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.LPXchange.app.data.local.TokenManager
-import com.LPXchange.app.data.remote.AuthApiService
-import com.LPXchange.app.data.remote.LoginRequest
+import com.CampusXChange.app.data.local.TokenManager
+import com.CampusXChange.app.data.remote.AuthApiService
+import com.CampusXChange.app.data.remote.LoginRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -891,12 +891,12 @@ class LoginViewModel @Inject constructor(
 
 #### 7.4.2 Register ViewModel (Debounced Username & 3-Step Wizard)
 ```kotlin
-package com.LPXchange.app.ui.auth.register
+package com.CampusXChange.app.ui.auth.register
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.LPXchange.app.data.local.TokenManager
-import com.LPXchange.app.data.remote.*
+import com.CampusXChange.app.data.local.TokenManager
+import com.CampusXChange.app.data.remote.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -1067,7 +1067,7 @@ class RegisterViewModel @Inject constructor(
 #### 7.5.1 Styled Auth Input Components (`AuthComponents.kt`)
 
 ```kotlin
-package com.LPXchange.app.ui.auth.components
+package com.CampusXChange.app.ui.auth.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -1086,10 +1086,10 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.LPXchange.app.ui.theme.*
+import com.CampusXChange.app.ui.theme.*
 
 @Composable
-fun LPXchangeInputField(
+fun CampusXChangeInputField(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
@@ -1138,7 +1138,7 @@ fun LPXchangeInputField(
 }
 
 @Composable
-fun LPXchangePrimaryButton(
+fun CampusXChangePrimaryButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -1219,7 +1219,7 @@ fun OtpCodeInput(
 #### 7.5.2 Login Screen (`LoginScreen.kt`)
 
 ```kotlin
-package com.LPXchange.app.ui.auth.login
+package com.CampusXChange.app.ui.auth.login
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -1236,9 +1236,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.LPXchange.app.ui.auth.components.LPXchangeInputField
-import com.LPXchange.app.ui.auth.components.LPXchangePrimaryButton
-import com.LPXchange.app.ui.theme.*
+import com.CampusXChange.app.ui.auth.components.CampusXChangeInputField
+import com.CampusXChange.app.ui.auth.components.CampusXChangePrimaryButton
+import com.CampusXChange.app.ui.theme.*
 
 @Composable
 fun LoginScreen(
@@ -1282,7 +1282,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             // Form Fields
-            LPXchangeInputField(
+            CampusXChangeInputField(
                 label = "Registration Number",
                 value = state.regNo,
                 onValueChange = { viewModel.onRegNoChange(it) },
@@ -1293,7 +1293,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            LPXchangeInputField(
+            CampusXChangeInputField(
                 label = "Password",
                 value = state.password,
                 onValueChange = { viewModel.onPasswordChange(it) },
@@ -1315,7 +1315,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            LPXchangePrimaryButton(
+            CampusXChangePrimaryButton(
                 text = "Sign In",
                 onClick = { viewModel.submitLogin() },
                 isLoading = state.isLoading

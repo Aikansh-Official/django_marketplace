@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import logoImg from '../assets/LPXchange_Logo.jpeg';
+import logoImg from '../assets/CampusXChange_Logo.jpeg';
 
 export default function Footer() {
   const location = useLocation();
@@ -34,7 +34,7 @@ export default function Footer() {
             <Link to="/" className="flex items-center gap-2">
               <img
                 src={logoImg}
-                alt="LPXchange"
+                alt="CampusXChange"
                 className="h-8 w-8 object-cover rounded-lg"
               />
               <div className="flex items-baseline">
@@ -103,7 +103,7 @@ export default function Footer() {
             <ul className="space-y-2 text-xs">
               <li>
                 <Link to="/about" className="text-gray-500 hover:text-gray-900 transition-colors">
-                  About LPXchange
+                  About CampusXChange
                 </Link>
               </li>
               <li>
@@ -129,7 +129,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-400">
           <p>
-            &copy; {currentYear} LPXchange. A campus marketplace for LPU students.
+            &copy; {currentYear} CampusXChange. A campus marketplace for LPU students.
           </p>
           <p className="flex items-center gap-1 font-medium text-gray-500">
             Made by LPU Student

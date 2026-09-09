@@ -9,7 +9,7 @@ import {
 
 /**
  * ThemeBackground
- * 100% Auto-Animated Shopping & Campus Marketplace Themed Background for LPXchange.
+ * 100% Auto-Animated Shopping & Campus Marketplace Themed Background for CampusXChange.
  * Features floating glassmorphic shopping badges, translucent marketplace watermarks,
  * swinging price tags, delivery parcels, savings coins, and twinkling deal sparkles.
  * Zero CPU overhead, fully GPU-accelerated CSS animations.

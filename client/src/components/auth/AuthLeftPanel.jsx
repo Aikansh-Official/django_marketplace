@@ -8,7 +8,7 @@ import {
   X,
   Upload
 } from 'lucide-react';
-import logoImg from '../../assets/LPXchange_Logo.jpeg';
+import logoImg from '../../assets/CampusXChange_Logo.jpeg';
 
 export default function AuthLeftPanel({
   mode,
@@ -34,7 +34,7 @@ export default function AuthLeftPanel({
         <div className="h-full w-full bg-gradient-to-br from-brand-500 to-brand-600 p-8 sm:p-10 flex flex-col justify-center items-center text-center text-white">
           <div className="flex flex-col items-center">
             <div className="w-20 h-20 rounded-md bg-white p-1.5 shadow-md mb-4 flex items-center justify-center">
-              <img src={logoImg} alt="LPXchange Logo" className="w-full h-full object-cover rounded" />
+              <img src={logoImg} alt="CampusXChange Logo" className="w-full h-full object-cover rounded" />
             </div>
 
             <div className="flex items-baseline">

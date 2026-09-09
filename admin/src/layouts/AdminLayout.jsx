@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { LayoutDashboard, Users, ShoppingCart, AlertTriangle, Settings, LogOut, Clock } from 'lucide-react';
-import logoImg from '../assets/LPXchange_Logo.jpeg';
+import logoImg from '../assets/CampusXChange_Logo.jpeg';
 
 export default function AdminLayout({ setAuth }) {
   const [time, setTime] = useState(new Date());
@@ -44,10 +44,10 @@ export default function AdminLayout({ setAuth }) {
       {/* Sidebar - Simple Solid Design */}
       <aside className="w-64 bg-ink-900 text-white flex flex-col shadow-xl z-30">
         <div className="h-20 flex items-center gap-3 px-6 border-b border-gray-800">
-          <img src={logoImg} alt="LPXchange Logo" className="h-9 w-9 object-cover rounded-full ring-2 ring-brand-500" />
+          <img src={logoImg} alt="CampusXChange Logo" className="h-9 w-9 object-cover rounded-full ring-2 ring-brand-500" />
           <div>
             <h1 className="text-lg font-bold text-white uppercase tracking-wide leading-tight">
-              LPXchange
+              CampusXChange
             </h1>
             <span className="text-[10px] text-brand-400 tracking-wider font-bold">ADMIN PANEL</span>
           </div>
@@ -79,7 +79,7 @@ export default function AdminLayout({ setAuth }) {
             </div>
             <div className="overflow-hidden">
               <p className="text-sm font-bold text-white truncate">{adminUser ? adminUser.full_name || adminUser.username : 'Admin User'}</p>
-              <p className="text-xs text-gray-500 truncate">{adminUser ? adminUser.email : 'admin@lpxchange.in'}</p>
+              <p className="text-xs text-gray-500 truncate">{adminUser ? adminUser.email : 'admin@campusxchange.in'}</p>
             </div>
           </div>
           <button 

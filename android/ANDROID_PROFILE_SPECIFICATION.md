@@ -1,4 +1,4 @@
-# 👤 LPXchange — Android Profile & Student Identity Specification
+# 👤 CampusXChange — Android Profile & Student Identity Specification
 
 > **Target Platform:** Android (Native)  
 > **Tech Stack:** Kotlin, Jetpack Compose, Material 3, MVVM, Retrofit, Jetpack DataStore, Coil, Hilt  
@@ -106,10 +106,10 @@ Base Score: 50 pts (Verified Email via OTP)
 
 ## 3. Color Palette & Material 3 Tokens
 
-Matches the official LPXchange theme:
+Matches the official CampusXChange theme:
 
 ```kotlin
-package com.LPXchange.app.ui.theme
+package com.CampusXChange.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
@@ -167,7 +167,7 @@ MainNavGraph ("main_graph")
   "is_verified_student": true,
   "college_domain": "gmail.com",
   "trust_score": 75,
-  "profile_picture_url": "https://res.cloudinary.com/LPXchange/image/upload/v12345/avatar.jpg",
+  "profile_picture_url": "https://res.cloudinary.com/CampusXChange/image/upload/v12345/avatar.jpg",
   "date_joined": "2026-08-15T10:30:00Z"
 }
 ```
@@ -220,7 +220,7 @@ MainNavGraph ("main_graph")
 #### Response `200 OK`:
 ```json
 {
-  "url": "https://res.cloudinary.com/demo/image/upload/v1690000000/LPXchange_profiles/xyz.jpg"
+  "url": "https://res.cloudinary.com/demo/image/upload/v1690000000/CampusXChange_profiles/xyz.jpg"
 }
 ```
 
@@ -251,7 +251,7 @@ MainNavGraph ("main_graph")
 ### 6.1 DTOs & Retrofit Profile Service
 
 ```kotlin
-package com.LPXchange.app.data.remote
+package com.CampusXChange.app.data.remote
 
 import com.google.gson.annotations.SerializedName
 import okhttp3.MultipartBody
@@ -289,12 +289,12 @@ interface ProfileApiService {
 ### 6.2 Profile Repository & Local Cache
 
 ```kotlin
-package com.LPXchange.app.data.repository
+package com.CampusXChange.app.data.repository
 
-import com.LPXchange.app.data.local.TokenManager
-import com.LPXchange.app.data.remote.ProfileApiService
-import com.LPXchange.app.data.remote.UpdateProfileRequest
-import com.LPXchange.app.data.remote.UserDto
+import com.CampusXChange.app.data.local.TokenManager
+import com.CampusXChange.app.data.remote.ProfileApiService
+import com.CampusXChange.app.data.remote.UpdateProfileRequest
+import com.CampusXChange.app.data.remote.UserDto
 import kotlinx.coroutines.flow.Flow
 import okhttp3.MultipartBody
 import javax.inject.Inject
@@ -362,7 +362,7 @@ class ProfileRepository @Inject constructor(
         return try {
             val refresh = tokenManager.getRefreshToken()
             if (!refresh.isNullOrEmpty()) {
-                api.logout(com.LPXchange.app.data.remote.RefreshTokenRequest(refresh))
+                api.logout(com.CampusXChange.app.data.remote.RefreshTokenRequest(refresh))
             }
             tokenManager.clearSession()
             Result.success(Unit)
@@ -379,12 +379,12 @@ class ProfileRepository @Inject constructor(
 ### 6.3 Profile ViewModel (StateFlow & UiState)
 
 ```kotlin
-package com.LPXchange.app.ui.profile
+package com.CampusXChange.app.ui.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.LPXchange.app.data.remote.UserDto
-import com.LPXchange.app.data.repository.ProfileRepository
+import com.CampusXChange.app.data.remote.UserDto
+import com.CampusXChange.app.data.repository.ProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -473,7 +473,7 @@ class ProfileViewModel @Inject constructor(
 #### 6.4.1 Main Profile Screen (`ProfileScreen.kt`)
 
 ```kotlin
-package com.LPXchange.app.ui.profile
+package com.CampusXChange.app.ui.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -495,7 +495,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.LPXchange.app.ui.theme.*
+import com.CampusXChange.app.ui.theme.*
 
 @Composable
 fun ProfileScreen(
@@ -516,7 +516,7 @@ fun ProfileScreen(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
-            title = { Text("Log Out of LPXchange?", fontWeight = FontWeight.Bold) },
+            title = { Text("Log Out of CampusXChange?", fontWeight = FontWeight.Bold) },
             text = { Text("You will need to sign in again to create listings or make offers.") },
             confirmButton = {
                 Button(

@@ -1,4 +1,4 @@
-# 💬 LPXchange — Android Real-Time Chat & Messaging Specification
+# 💬 CampusXChange — Android Real-Time Chat & Messaging Specification
 
 > **Target Platform:** Android (Native)  
 > **Tech Stack:** Kotlin, Jetpack Compose, WebSockets (OkHttp / Scarlet), Room DB, Material 3, Hilt  
@@ -28,7 +28,7 @@
 
 ## 1. System Architecture & WebSocket Pipeline
 
-LPXchange provides instant student-to-student chat with conversations directly attached to a marketplace listing.
+CampusXChange provides instant student-to-student chat with conversations directly attached to a marketplace listing.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -76,7 +76,7 @@ LPXchange provides instant student-to-student chat with conversations directly a
 ## 3. Color Palette & Material 3 Chat Styling
 
 ```kotlin
-package com.LPXchange.app.ui.theme
+package com.CampusXChange.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
@@ -145,7 +145,7 @@ Connection URL: `ws://<server-ip>:8000/ws/chat/{roomId}/?token=<access_token>`
 ### 6.1 Message Entity & Room Local Database
 
 ```kotlin
-package com.LPXchange.app.data.local.chat
+package com.CampusXChange.app.data.local.chat
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
@@ -181,10 +181,10 @@ interface ChatDao {
 ### 6.2 OkHttp WebSocket Manager (Auto-Reconnect & Ping)
 
 ```kotlin
-package com.LPXchange.app.data.remote.chat
+package com.CampusXChange.app.data.remote.chat
 
 import com.google.gson.Gson
-import com.LPXchange.app.data.local.TokenManager
+import com.CampusXChange.app.data.local.TokenManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -256,13 +256,13 @@ class ChatWebSocketClient @Inject constructor(
 ### 6.3 Chat ViewModel (Coroutines & StateFlow)
 
 ```kotlin
-package com.LPXchange.app.ui.chat
+package com.CampusXChange.app.ui.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.LPXchange.app.data.local.chat.ChatDao
-import com.LPXchange.app.data.local.chat.ChatMessageEntity
-import com.LPXchange.app.data.remote.chat.ChatWebSocketClient
+import com.CampusXChange.app.data.local.chat.ChatDao
+import com.CampusXChange.app.data.local.chat.ChatMessageEntity
+import com.CampusXChange.app.data.remote.chat.ChatWebSocketClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -357,7 +357,7 @@ class ChatViewModel @Inject constructor(
 ### 6.4 ChatScreen Composable & Bubbles
 
 ```kotlin
-package com.LPXchange.app.ui.chat
+package com.CampusXChange.app.ui.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -373,8 +373,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.LPXchange.app.data.local.chat.ChatMessageEntity
-import com.LPXchange.app.ui.theme.*
+import com.CampusXChange.app.data.local.chat.ChatMessageEntity
+import com.CampusXChange.app.ui.theme.*
 
 @Composable
 fun ChatScreen(

@@ -15,7 +15,7 @@ export default function LogoutModal({ isOpen, onClose, onConfirm, loggingOut }) 
         </div>
 
         <h3 className="text-xl font-bold text-gray-900 text-center">
-          Log Out of LPXchange?
+          Log Out of CampusXChange?
         </h3>
         <p className="text-sm text-gray-500 text-center mt-2">
           You will be logged out of your campus account on this device. You will need to sign in again to manage your listings, saved items, or messages.

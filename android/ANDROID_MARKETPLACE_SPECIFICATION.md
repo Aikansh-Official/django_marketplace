@@ -1,4 +1,4 @@
-# 🛒 LPXchange — Android Marketplace & Browsing Specification
+# 🛒 CampusXChange — Android Marketplace & Browsing Specification
 
 > **Target Platform:** Android (Native)  
 > **Tech Stack:** Kotlin, Jetpack Compose, Material 3, MVVM, Retrofit, Coil, StateFlow, Hilt  
@@ -95,10 +95,10 @@ The Marketplace browsing engine utilizes a **two-column adaptive grid** with pul
 
 ## 3. Color Palette & Material 3 Styling
 
-Matches the LPXchange Brand Guidelines:
+Matches the CampusXChange Brand Guidelines:
 
 ```kotlin
-package com.LPXchange.app.ui.theme
+package com.CampusXChange.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
@@ -195,7 +195,7 @@ sealed class MarketplaceRoute(val route: String) {
     "images": [
       {
         "id": 201,
-        "image_url": "https://res.cloudinary.com/LPXchange/image/upload/v1234/book1.jpg",
+        "image_url": "https://res.cloudinary.com/CampusXChange/image/upload/v1234/book1.jpg",
         "is_primary": true
       }
     ]
@@ -210,7 +210,7 @@ sealed class MarketplaceRoute(val route: String) {
 ### 6.1 DTOs & Retrofit Service
 
 ```kotlin
-package com.LPXchange.app.data.remote
+package com.CampusXChange.app.data.remote
 
 import com.google.gson.annotations.SerializedName
 import retrofit2.Response
@@ -276,11 +276,11 @@ interface MarketplaceApiService {
 ### 6.2 Marketplace Repository
 
 ```kotlin
-package com.LPXchange.app.data.repository
+package com.CampusXChange.app.data.repository
 
-import com.LPXchange.app.data.remote.CategoryDto
-import com.LPXchange.app.data.remote.ListingDto
-import com.LPXchange.app.data.remote.MarketplaceApiService
+import com.CampusXChange.app.data.remote.CategoryDto
+import com.CampusXChange.app.data.remote.ListingDto
+import com.CampusXChange.app.data.remote.MarketplaceApiService
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -333,13 +333,13 @@ class MarketplaceRepository @Inject constructor(
 ### 6.3 Marketplace ViewModel (Debounce Search & Filters)
 
 ```kotlin
-package com.LPXchange.app.ui.marketplace
+package com.CampusXChange.app.ui.marketplace
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.LPXchange.app.data.remote.CategoryDto
-import com.LPXchange.app.data.remote.ListingDto
-import com.LPXchange.app.data.repository.MarketplaceRepository
+import com.CampusXChange.app.data.remote.CategoryDto
+import com.CampusXChange.app.data.remote.ListingDto
+import com.CampusXChange.app.data.repository.MarketplaceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -444,7 +444,7 @@ class MarketplaceViewModel @Inject constructor(
 ### 6.4 Jetpack Compose Components (ProductCard & Filters)
 
 ```kotlin
-package com.LPXchange.app.ui.marketplace.components
+package com.CampusXChange.app.ui.marketplace.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -462,8 +462,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.LPXchange.app.data.remote.ListingDto
-import com.LPXchange.app.ui.theme.*
+import com.CampusXChange.app.data.remote.ListingDto
+import com.CampusXChange.app.ui.theme.*
 
 @Composable
 fun ProductCard(
@@ -586,7 +586,7 @@ fun ProductCard(
 ### 6.5 HomeScreen Composable
 
 ```kotlin
-package com.LPXchange.app.ui.marketplace
+package com.CampusXChange.app.ui.marketplace
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -604,8 +604,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.LPXchange.app.ui.marketplace.components.ProductCard
-import com.LPXchange.app.ui.theme.*
+import com.CampusXChange.app.ui.marketplace.components.ProductCard
+import com.CampusXChange.app.ui.theme.*
 
 @Composable
 fun HomeScreen(

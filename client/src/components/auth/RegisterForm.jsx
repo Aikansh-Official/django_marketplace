@@ -336,8 +336,8 @@ export default function RegisterForm({
 
       toast.success(
         selectedRole === 'BUYER'
-          ? 'Welcome to LPXchange! Buyer account created successfully.'
-          : 'Welcome to LPXchange! Verified Seller account created successfully.'
+          ? 'Welcome to CampusXChange! Buyer account created successfully.'
+          : 'Welcome to CampusXChange! Verified Seller account created successfully.'
       );
       onSuccess();
       window.location.reload();

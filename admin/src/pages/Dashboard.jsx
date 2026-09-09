@@ -242,7 +242,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
             <div>
               <h2 className="text-base font-black text-gray-900">Registered Students</h2>
-              <p className="text-xs text-gray-500">Verified peer accounts on LPXchange</p>
+              <p className="text-xs text-gray-500">Verified peer accounts on CampusXChange</p>
             </div>
             <Link to="/students" className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1">
               View All ({stats.total_students}) <ArrowRight className="w-3.5 h-3.5" />

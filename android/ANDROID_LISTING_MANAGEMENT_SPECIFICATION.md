@@ -1,4 +1,4 @@
-# 📦 LPXchange — Android Listing Management & Selling Specification
+# 📦 CampusXChange — Android Listing Management & Selling Specification
 
 > **Target Platform:** Android (Native)  
 > **Tech Stack:** Kotlin, Jetpack Compose, Material 3, MVVM, Retrofit, CameraX / PhotoPicker, Coil, Hilt  
@@ -89,7 +89,7 @@ Students can type custom spots or tap quick-fill chips:
 ## 3. Color Palette & Material 3 Tokens
 
 ```kotlin
-package com.LPXchange.app.ui.theme
+package com.CampusXChange.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
@@ -139,11 +139,11 @@ sealed class ListingRoute(val route: String) {
   "contact_whatsapp": "9876543210",
   "images": [
     {
-      "image_url": "https://res.cloudinary.com/LPXchange/image/upload/v1234/casio1.jpg",
+      "image_url": "https://res.cloudinary.com/CampusXChange/image/upload/v1234/casio1.jpg",
       "is_primary": true
     },
     {
-      "image_url": "https://res.cloudinary.com/LPXchange/image/upload/v1234/casio2.jpg",
+      "image_url": "https://res.cloudinary.com/CampusXChange/image/upload/v1234/casio2.jpg",
       "is_primary": false
     }
   ]
@@ -217,7 +217,7 @@ sealed class ListingRoute(val route: String) {
 ### 6.1 DTOs & Retrofit Listing Service
 
 ```kotlin
-package com.LPXchange.app.data.remote
+package com.CampusXChange.app.data.remote
 
 import com.google.gson.annotations.SerializedName
 import retrofit2.Response
@@ -275,7 +275,7 @@ interface ListingManagementApiService {
 ### 6.2 Image Compression & Multi-Photo Picker
 
 ```kotlin
-package com.LPXchange.app.utils
+package com.CampusXChange.app.utils
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -323,14 +323,14 @@ object ImageUtils {
 ### 6.3 Create/Edit Listing ViewModel
 
 ```kotlin
-package com.LPXchange.app.ui.listing
+package com.CampusXChange.app.ui.listing
 
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.LPXchange.app.data.remote.*
-import com.LPXchange.app.utils.ImageUtils
+import com.CampusXChange.app.data.remote.*
+import com.CampusXChange.app.utils.ImageUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -458,7 +458,7 @@ class CreateListingViewModel @Inject constructor(
 ### 6.4 My Listings Screen (Tabs: Active, Sold, Hidden)
 
 ```kotlin
-package com.LPXchange.app.ui.listing
+package com.CampusXChange.app.ui.listing
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -470,8 +470,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.LPXchange.app.data.remote.ListingDto
-import com.LPXchange.app.ui.theme.*
+import com.CampusXChange.app.data.remote.ListingDto
+import com.CampusXChange.app.ui.theme.*
 
 @Composable
 fun MyListingsScreen(

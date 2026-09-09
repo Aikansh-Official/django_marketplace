@@ -444,7 +444,7 @@ export default function ProductDetail() {
   const cleanPhone = rawPhone.replace(/[^\d+]/g, '');
   const waPhone = (listing.contact_whatsapp || rawPhone).replace(/[^\d]/g, '');
   const waMessage = encodeURIComponent(
-    `Hi ${listing.seller?.full_name || 'there'}, I saw your listing "${listing.title}" on LPXchange for Rs ${listing.price}. Is it still available?`
+    `Hi ${listing.seller?.full_name || 'there'}, I saw your listing "${listing.title}" on CampusXChange for Rs ${listing.price}. Is it still available?`
   );
   const waUrl = waPhone ? `https://wa.me/${waPhone}?text=${waMessage}` : null;
   const callUrl = cleanPhone ? `tel:${cleanPhone}` : null;

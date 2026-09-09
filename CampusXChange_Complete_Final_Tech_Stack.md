@@ -1,8 +1,8 @@
-# 🏪 LocalTrade — Complete Technology Stack
+# 🏪 CampusXChange — Complete Technology Stack
 
 ## 1. Project Overview
 
-**LocalTrade** is a private college marketplace designed exclusively for verified students of a college/university.
+**CampusXChange** is a private college marketplace designed exclusively for verified students of a college/university.
 
 Students can buy, sell, rent, or request items such as:
 
@@ -149,7 +149,7 @@ Website ─────┼──→ Django REST API
 
 ### Why PostgreSQL?
 
-LocalTrade contains many relationships:
+CampusXChange contains many relationships:
 
 ```text
 User
@@ -279,7 +279,7 @@ Database stores image URLs and metadata while Cloudinary stores and serves the a
 
 ## College Email Verification
 
-The major USP of LocalTrade is that only verified college students can use the marketplace.
+The major USP of CampusXChange is that only verified college students can use the marketplace.
 
 Flow:
 
@@ -499,7 +499,7 @@ Matching Sellers
 FCM Notification 🔔
 ```
 
-This is one of the key differentiating features of LocalTrade.
+This is one of the key differentiating features of CampusXChange.
 
 ---
 
@@ -531,7 +531,7 @@ This makes it easier for graduating students to sell multiple items before leavi
 
 # 19. ⭐ Student Trust Score
 
-LocalTrade will rate the **student/seller**, not only the product.
+CampusXChange will rate the **student/seller**, not only the product.
 
 Possible factors:
 
@@ -862,7 +862,7 @@ for configuration and secrets.
 
 # 30. 🎯 Why This Stack?
 
-This stack is selected because LocalTrade needs:
+This stack is selected because CampusXChange needs:
 
 - A relational database
 - Strong authentication
@@ -883,7 +883,7 @@ The combination of **Django + PostgreSQL + React + Kotlin** provides a clean and
 
 ---
 
-# 🏆 LocalTrade USP
+# 🏆 CampusXChange USP
 
 The project is not intended to be a generic marketplace like a traditional e-commerce platform.
 

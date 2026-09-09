@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, User, Loader2 } from 'lucide-react';
-import logoImg from '../assets/LPXchange_Logo.jpeg';
+import logoImg from '../assets/CampusXChange_Logo.jpeg';
 import toast from 'react-hot-toast';
 import ThemeBackground from '../components/ThemeBackground';
 import axios from 'axios';
@@ -68,7 +68,7 @@ export default function Login({ setAuth }) {
           <div className="w-20 h-20 rounded-md bg-white p-1.5 border border-gray-100 shadow-xl mb-5 rotate-3 hover:rotate-0 transition-transform">
              <img src={logoImg} alt="Logo" className="w-full h-full rounded-md object-cover" />
           </div>
-          <h2 className="text-3xl font-black text-gray-900 tracking-tight">LPXchange</h2>
+          <h2 className="text-3xl font-black text-gray-900 tracking-tight">CampusXChange</h2>
           <p className="text-brand-500 text-xs tracking-[0.3em] font-bold mt-1">ADMIN PORTAL</p>
         </div>
 

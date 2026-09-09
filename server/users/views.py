@@ -141,9 +141,9 @@ class SendOTPView(APIView):
             from django.core.mail import send_mail
             try:
                 send_mail(
-                    subject="Your LPXchange Verification Code",
-                    message=f"Hello,\n\nYour OTP verification code for LPXchange is: {otp}\n\nThis code is valid for 10 minutes.\nNever share this OTP with anyone.\n\nBest regards,\nLPXchange Team",
-                    from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@lpxchange.com'),
+                    subject="Your CampusXChange Verification Code",
+                    message=f"Hello,\n\nYour OTP verification code for CampusXChange is: {otp}\n\nThis code is valid for 10 minutes.\nNever share this OTP with anyone.\n\nBest regards,\nCampusXChange Team",
+                    from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@campusxchange.com'),
                     recipient_list=[email],
                     fail_silently=False,
                 )
@@ -157,7 +157,7 @@ class SendOTPView(APIView):
 
             logger.info(f'OTP generated and sent for {email}')
             if settings.DEBUG:
-                print(f"\n=========================================\n[LPXCHANGE OTP FOR {email}]: {otp}\n=========================================\n")
+                print(f"\n=========================================\n[CAMPUSXCHANGE OTP FOR {email}]: {otp}\n=========================================\n")
                 logger.debug(f'[DEV ONLY] OTP for {email}: {otp}')
             
             return Response({"message": "OTP sent successfully."})
