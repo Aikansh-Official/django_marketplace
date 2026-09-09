@@ -21,6 +21,10 @@ import {
   ScanLine,
   FileText,
   UserCheck,
+  User,
+  Phone,
+  Mail,
+  KeyRound,
   Lock,
   Calendar,
   Activity,
@@ -132,19 +136,19 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
 
           {/* LEFT SIDE: Clean Brand Showcase */}
           <div className="hidden md:flex md:w-5/12 relative flex-col justify-center overflow-hidden">
-            {mode === 'login' ? (
-              /* LOGIN MODE BRANDING - CLEAN, SIMPLE & PROMINENT */
+            {mode === 'login' || registerStep === 1 ? (
+              /* CLEAN, SIMPLE & PROMINENT BRANDING FOR LOGIN & REGISTER STEP 1 */
               <div className="h-full w-full bg-gradient-to-br from-brand-500 to-brand-600 p-8 sm:p-10 flex flex-col justify-center items-center text-center text-white">
                 <div className="flex flex-col items-center">
                   <div className="w-20 h-20 rounded-md bg-white p-1.5 shadow-md mb-4 flex items-center justify-center">
                     <img src={logoImg} alt="LPXchange Logo" className="w-full h-full object-cover rounded" />
                   </div>
-                  
+
                   <div className="flex items-baseline">
                     <span className="text-3xl sm:text-4xl font-black tracking-tight text-white font-display">LP</span>
                     <span className="text-3xl sm:text-4xl font-black tracking-tight text-brand-100 font-display">Xchange</span>
                   </div>
-                  
+
                   <p className="text-white/90 text-sm mt-3 max-w-[260px] leading-relaxed">
                     Campus marketplace exclusively for students of Lovely Professional University.
                   </p>
@@ -152,36 +156,6 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
                   <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-white/15 text-white text-xs font-semibold border border-white/25 shadow-xs">
                     <ShieldCheck className="w-4 h-4 text-white" />
                     <span>100% Student Verified Platform</span>
-                  </div>
-                </div>
-              </div>
-            ) : registerStep === 1 ? (
-              /* REGISTER STEP 1 - CLEAN, SIMPLE & PROMINENT */
-              <div className="h-full w-full bg-gradient-to-br from-brand-500 to-brand-600 p-8 flex flex-col justify-center items-center text-center text-white">
-                <div className="flex flex-col items-center w-full max-w-[280px]">
-                  <div className="w-16 h-16 rounded-md bg-white p-1 shadow-md mb-3 flex items-center justify-center">
-                    <img src={logoImg} alt="LPXchange Logo" className="w-full h-full object-cover rounded" />
-                  </div>
-                  
-                  <div className="flex items-baseline mb-1">
-                    <span className="text-2xl sm:text-3xl font-black tracking-tight text-white font-display">LP</span>
-                    <span className="text-2xl sm:text-3xl font-black tracking-tight text-brand-100 font-display">Xchange</span>
-                  </div>
-                  <h3 className="text-xs font-bold text-white/90 uppercase tracking-wider mb-4">Quick Registration</h3>
-
-                  <div className="w-full space-y-2.5 text-left text-xs">
-                    <div className="flex items-center gap-3 p-2.5 rounded-md bg-white/10 border border-white/20">
-                      <span className="w-5 h-5 rounded bg-white text-brand-600 font-bold text-[11px] flex items-center justify-center flex-shrink-0">1</span>
-                      <span className="text-white font-medium text-xs">LPU Reg No & OTP</span>
-                    </div>
-                    <div className="flex items-center gap-3 p-2.5 rounded-md bg-white/10 border border-white/20">
-                      <span className="w-5 h-5 rounded bg-white text-brand-600 font-bold text-[11px] flex items-center justify-center flex-shrink-0">2</span>
-                      <span className="text-white font-medium text-xs">Student ID Photo Verification</span>
-                    </div>
-                    <div className="flex items-center gap-3 p-2.5 rounded-md bg-white/10 border border-white/20">
-                      <span className="w-5 h-5 rounded bg-white text-brand-600 font-bold text-[11px] flex items-center justify-center flex-shrink-0">3</span>
-                      <span className="text-white font-medium text-xs">Set Password & Start Trading</span>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -317,57 +291,37 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
                 </div>
               </div>
             ) : (
-              /* REGISTER STEP 3 & 4: Verified Identity Preview */
-              <div className="h-full w-full bg-gradient-to-br from-emerald-700 via-emerald-800 to-gray-900 p-8 flex flex-col justify-between text-white relative">
-                <div>
-                  <div className="inline-flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 text-[10px] font-black uppercase px-2.5 py-1 rounded-full mb-4">
-                    <BadgeCheck className="w-3.5 h-3.5 text-emerald-300" />
-                    Identity Verified
+              /* REGISTER STEP 3 & 4: Simple & Clean Verified ID Preview */
+              <div className="h-full w-full bg-gradient-to-br from-brand-500 to-brand-600 p-8 flex flex-col justify-center items-center text-center text-white">
+                <div className="flex flex-col items-center w-full max-w-[280px]">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold border border-white/25 mb-3 shadow-2xs">
+                    <BadgeCheck className="w-4 h-4 text-white" />
+                    <span>ID Verified</span>
                   </div>
-                  <h3 className="text-xl font-black">Student Credentials Matched</h3>
-                  <p className="text-emerald-100 text-xs mt-1">
-                    Your physical ID card was successfully cross-checked with your registration details.
+
+                  <h3 className="text-xl sm:text-2xl font-black text-white font-display tracking-tight">
+                    Student ID Verified
+                  </h3>
+                  <p className="text-white/85 text-xs mt-1 mb-4">
+                    Credentials matched successfully
                   </p>
 
                   {/* ID Card Display Card */}
                   {idFrontImage && (
-                    <div className="mt-5 rounded-md overflow-hidden border-2 border-emerald-400/40 bg-black/40 p-2 shadow-lg">
+                    <div className="w-full rounded-md overflow-hidden bg-white p-1.5 shadow-md border border-white/20 mb-4">
                       <img
                         src={idFrontImage}
                         alt="Verified Student ID"
-                        className="max-h-48 w-full object-contain rounded"
+                        className="max-h-44 w-full object-contain rounded"
                       />
                     </div>
                   )}
 
-                  {/* Badges */}
-                  {extractedCardData && (
-                    <div className="mt-4 bg-white/10 backdrop-blur-xs rounded-md p-3 border border-white/20 space-y-1.5 text-xs">
-                      {extractedCardData.program && (
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-emerald-200 font-medium">Program</span>
-                          <span className="font-bold text-white truncate max-w-[170px]">{extractedCardData.program}</span>
-                        </div>
-                      )}
-                      {extractedCardData.validity && (
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-emerald-200 font-medium">Validity</span>
-                          <span className="font-bold text-white">{extractedCardData.validity}</span>
-                        </div>
-                      )}
-                      {extractedCardData.bloodGroup && (
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-emerald-200 font-medium">Blood Group</span>
-                          <span className="font-bold text-white">{extractedCardData.bloodGroup}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2 text-xs text-emerald-200 bg-white/10 px-3 py-2 rounded border border-white/20 mt-4">
-                  <Sparkles className="w-4 h-4 text-amber-300 flex-shrink-0" />
-                  <span>+10 Trust Score awarded immediately upon completion!</span>
+                  {/* Clean Student Info */}
+                  <div className="w-full py-2.5 px-4 rounded-md bg-white/10 border border-white/20 text-white text-xs">
+                    <p className="font-bold text-sm">{fullNameValue || 'Student'}</p>
+                    <p className="text-white/80 font-mono text-xs mt-0.5">Reg No: {usernameValue}</p>
+                  </div>
                 </div>
               </div>
             )}
@@ -565,6 +519,7 @@ function RegisterForm({
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState('idle');
   const usernameValue = watch("username");
   const fullNameValue = watch("full_name");
@@ -613,7 +568,7 @@ function RegisterForm({
 
     setIsScanning(true);
     setScanProgress(10);
-    setScanStatus('Checking document authenticity & layout...');
+    setScanStatus('Scanning...');
     setRejectionInfo(null);
 
     try {
@@ -629,7 +584,7 @@ function RegisterForm({
       }
 
       setScanProgress(20);
-      setScanStatus('Reading card text via intelligent OCR...');
+      setScanStatus('Scanning...');
 
       // 2. Optical Character Recognition via Tesseract
       const { data: { text } } = await Tesseract.recognize(idFrontImage, 'eng', {
@@ -637,15 +592,15 @@ function RegisterForm({
           if (m.status === 'recognizing text') {
             const pct = Math.round((m.progress || 0) * 100);
             setScanProgress(Math.max(20, pct));
-            setScanStatus(`Reading card text (${pct}%)...`);
+            setScanStatus(`Scanning (${pct}%)...`);
           } else if (m.status) {
-            setScanStatus(`${m.status.replace(/_/g, ' ')}...`);
+            setScanStatus('Scanning...');
           }
         }
       });
 
       setScanProgress(100);
-      setScanStatus('Verifying registration number, student name & university credentials...');
+      setScanStatus('Verifying...');
 
       // 3. Multi-Anchor LPU Validation & Field Extraction
       const result = extractLpuCardDetails(text, usernameValue, fullNameValue);
@@ -674,11 +629,11 @@ function RegisterForm({
         setIsIdVerified(false);
         setExtractedCardData(null);
         setRejectionInfo({ reason: result.reason });
-        toast.error('Verification Rejected: ' + result.reason, { duration: 5000 });
+        toast.error(result.reason);
       }
     } catch (ocrErr) {
       console.error('OCR Error:', ocrErr);
-      const errMsg = 'Failed to read ID card photo. Please upload a clearer photo with good lighting.';
+      const errMsg = 'Could not read ID card. Please upload a clearer photo.';
       toast.error(errMsg);
       setRejectionInfo({ reason: errMsg });
     } finally {
@@ -693,10 +648,11 @@ function RegisterForm({
     setIsLoading(true);
     try {
       await axios.post(`${API_BASE}/auth/send-otp/`, { email: emailValue });
-      toast.success(`Verification code sent to ${emailValue}! (Check server console)`);
+      toast.success(`Verification code sent to ${emailValue}!`);
       setStep(3);
     } catch (e) {
-      toast.error(e.response?.data?.email?.[0] || "Failed to send OTP.");
+      const errMsg = e.response?.data?.error || e.response?.data?.email?.[0] || e.response?.data?.detail || "Failed to send OTP.";
+      toast.error(errMsg);
     }
     setIsLoading(false);
   };
@@ -780,9 +736,9 @@ function RegisterForm({
   };
 
   return (
-    <div>
+    <div className="w-full max-w-sm sm:max-w-md mx-auto">
       {/* TOP MULTI-STEP PROGRESS INDICATOR */}
-      <div className="mb-5 pb-3 border-b border-gray-100">
+      <div className="mb-6 pb-4 border-b border-gray-100">
         <div className="flex items-center justify-between max-w-sm mx-auto">
           {[
             { num: 1, label: 'Details' },
@@ -796,17 +752,17 @@ function RegisterForm({
               <React.Fragment key={item.num}>
                 <div className="flex flex-col items-center">
                   <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all shadow-2xs ${isCompleted
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all shadow-xs ${isCompleted
                       ? 'bg-emerald-600 text-white'
                       : isCurrent
-                        ? 'bg-brand-500 text-white ring-4 ring-brand-100 font-extrabold'
-                        : 'bg-gray-100 text-gray-400'
+                        ? 'bg-brand-500 text-white ring-4 ring-brand-500/20 font-black'
+                        : 'bg-gray-100 text-gray-400 font-medium'
                       }`}
                   >
-                    {isCompleted ? <Check className="w-3.5 h-3.5" /> : item.num}
+                    {isCompleted ? <Check className="w-4 h-4" /> : item.num}
                   </div>
                   <span
-                    className={`text-[10px] mt-1 font-bold tracking-tight ${isCurrent ? 'text-brand-600' : isCompleted ? 'text-emerald-700' : 'text-gray-400'
+                    className={`text-[11px] mt-1.5 font-bold tracking-tight ${isCurrent ? 'text-brand-600' : isCompleted ? 'text-emerald-700' : 'text-gray-400'
                       }`}
                   >
                     {item.label}
@@ -814,7 +770,7 @@ function RegisterForm({
                 </div>
                 {idx < 3 && (
                   <div
-                    className={`flex-1 h-0.5 mx-1.5 -mt-4 transition-all ${step > idx + 1 ? 'bg-emerald-500' : 'bg-gray-200'
+                    className={`flex-1 h-0.5 mx-2 -mt-5 transition-all ${step > idx + 1 ? 'bg-emerald-500' : 'bg-gray-200'
                       }`}
                   />
                 )}
@@ -828,79 +784,101 @@ function RegisterForm({
 
         {/* STEP 1: BASIC STUDENT DETAILS */}
         {step === 1 && (
-          <>
-            <div className="mb-3 text-center">
-              <h2 className="text-lg font-black text-gray-900">Create Student Account</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Enter your student information to get started</p>
+          <div className="space-y-4">
+            <div className="mb-6 text-center">
+              <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight font-display">
+                Create Student Account
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Enter your student information to get started
+              </p>
             </div>
 
             <div>
-              <label className="block text-[11px] font-black text-gray-500 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                 Full Name (as on ID card)
               </label>
-              <input
-                {...register('full_name')}
-                maxLength={50}
-                className="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-md px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
-                placeholder="e.g. Anshu"
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                  <User className="w-4 h-4" />
+                </div>
+                <input
+                  {...register('full_name')}
+                  maxLength={50}
+                  className="w-full bg-gray-50/80 hover:bg-white focus:bg-white border border-gray-200 text-gray-900 font-medium rounded-md pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all placeholder:text-gray-400"
+                  placeholder="e.g. Anshu"
+                />
+              </div>
               {errors.full_name && <p className="text-red-500 text-xs font-medium mt-1">{errors.full_name.message}</p>}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
-                <label className="block text-[11px] font-black text-gray-500 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                   Registration Number
                 </label>
                 <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                    <UserCheck className="w-4 h-4" />
+                  </div>
                   <input
                     type="text"
                     inputMode="numeric"
                     maxLength={8}
                     {...register('username')}
-                    className={`w-full border text-gray-900 font-medium rounded-md px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:border-brand-500 transition-all pr-8 ${usernameStatus === 'taken'
-                      ? 'bg-red-50 border-red-200 focus:ring-red-500'
+                    className={`w-full border text-gray-900 font-medium rounded-md pl-10 pr-9 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-brand-500 transition-all placeholder:text-gray-400 ${usernameStatus === 'taken'
+                      ? 'bg-red-50/80 border-red-200 focus:ring-red-500/20'
                       : usernameStatus === 'available'
-                        ? 'bg-green-50 border-green-200 focus:ring-green-500'
-                        : 'bg-gray-50 border-gray-200 focus:ring-brand-500'
+                        ? 'bg-emerald-50/80 border-emerald-200 focus:ring-emerald-500/20'
+                        : 'bg-gray-50/80 hover:bg-white focus:bg-white border-gray-200 focus:ring-brand-500/20'
                       }`}
                     placeholder="e.g. 12345678"
                   />
-                  <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
-                    {usernameStatus === 'checking' && <Loader2 className="h-3.5 w-3.5 text-gray-400 animate-spin" />}
-                    {usernameStatus === 'available' && <Check className="h-3.5 w-3.5 text-green-500" />}
-                    {usernameStatus === 'taken' && <X className="h-3.5 w-3.5 text-red-500" />}
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    {usernameStatus === 'checking' && <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />}
+                    {usernameStatus === 'available' && <Check className="h-4 w-4 text-emerald-600" />}
+                    {usernameStatus === 'taken' && <X className="h-4 w-4 text-red-500" />}
                   </div>
                 </div>
                 {errors.username && <p className="text-red-500 text-xs font-medium mt-1">{errors.username.message}</p>}
               </div>
 
               <div>
-                <label className="block text-[11px] font-black text-gray-500 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                   Phone
                 </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={10}
-                  {...register('phone_number')}
-                  className="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-md px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
-                  placeholder="10-digit phone"
-                />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                    <Phone className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={10}
+                    {...register('phone_number')}
+                    className="w-full bg-gray-50/80 hover:bg-white focus:bg-white border border-gray-200 text-gray-900 font-medium rounded-md pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all placeholder:text-gray-400"
+                    placeholder="10-digit phone"
+                  />
+                </div>
                 {errors.phone_number && <p className="text-red-500 text-xs font-medium mt-1">{errors.phone_number.message}</p>}
               </div>
             </div>
 
             <div>
-              <label className="block text-[11px] font-black text-gray-500 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                 Email
               </label>
-              <input
-                type="email"
-                {...register('email')}
-                className="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-md px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
-                placeholder="yourname@gmail.com"
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <input
+                  type="email"
+                  {...register('email')}
+                  className="w-full bg-gray-50/80 hover:bg-white focus:bg-white border border-gray-200 text-gray-900 font-medium rounded-md pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all placeholder:text-gray-400"
+                  placeholder="yourname@gmail.com"
+                />
+              </div>
               {errors.email && <p className="text-red-500 text-xs font-medium mt-1">{errors.email.message}</p>}
             </div>
 
@@ -908,30 +886,29 @@ function RegisterForm({
               type="button"
               onClick={handleProceedToIdVerification}
               disabled={usernameStatus === 'checking' || usernameStatus === 'taken'}
-              className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-md transition-all shadow-md hover:shadow-lg mt-4 disabled:opacity-60 text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full bg-brand-500 hover:bg-brand-600 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg mt-5 disabled:opacity-70 text-sm flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Proceed to Step 2: ID Verification</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-4 h-4" />
             </button>
-          </>
+          </div>
         )}
 
         {/* STEP 2: STUDENT ID CARD UPLOAD & INTELLIGENT OCR VERIFICATION */}
         {step === 2 && (
-          <div className="space-y-3.5">
-            <div className="border-b border-gray-100 pb-2">
-              <h3 className="text-sm font-black text-gray-900 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-brand-600" />
+          <div className="space-y-4">
+            <div className="mb-2 text-center">
+              <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight font-display flex items-center justify-center gap-2">
                 Verify Student ID Card
-              </h3>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Upload your front ID card photo on the left to verify your registration details.
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Upload your front student ID card photo to verify your registration details
               </p>
             </div>
 
             {/* Mobile-Only ID Card Upload Area (Rendered only on < md screens) */}
             <div className="md:hidden">
-              <label className="border-2 border-dashed border-gray-300 rounded-md p-4 flex flex-col items-center justify-center cursor-pointer bg-gray-50/50">
+              <label className="border-2 border-dashed border-gray-300 rounded-md p-4 flex flex-col items-center justify-center cursor-pointer bg-gray-50/50 hover:bg-gray-50 transition-colors">
                 <Camera className="w-6 h-6 text-brand-500 mb-1" />
                 <span className="text-xs font-bold text-gray-800">
                   {idFrontImage ? 'Change ID Card Photo' : 'Upload Front ID Photo'}
@@ -961,59 +938,59 @@ function RegisterForm({
             </div>
 
             {/* Verification Checklist */}
-            <div className="bg-gray-50 border border-gray-200/90 rounded-md p-3.5 space-y-2.5">
-              <span className="text-[10px] font-black uppercase text-gray-400 tracking-wider block">
+            <div className="bg-gray-50/80 border border-gray-200 rounded-md p-4 space-y-3">
+              <span className="text-[11px] font-black uppercase text-gray-400 tracking-wider block">
                 Details Cross-Matching
               </span>
 
               {/* Reg Number Match */}
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-gray-700">Registration Number:</span>
-                  <span className="font-mono font-bold text-gray-900 bg-white px-2 py-0.5 rounded border border-gray-200">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-gray-700">Registration No:</span>
+                  <span className="font-mono font-bold text-gray-900 bg-white px-2 py-0.5 rounded border border-gray-200 text-xs">
                     {usernameValue}
                   </span>
                 </div>
                 {isIdVerified ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                    <Check className="w-3 h-3" /> Matched
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                    <Check className="w-3.5 h-3.5" /> Matched
                   </span>
                 ) : (
-                  <span className="text-[10px] font-medium text-gray-400 bg-gray-200/70 px-2 py-0.5 rounded">
+                  <span className="text-xs font-medium text-gray-400 bg-gray-200/70 px-2 py-0.5 rounded">
                     Pending Scan
                   </span>
                 )}
               </div>
 
               {/* Student Name Match */}
-              <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-200/60">
-                <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200/60">
+                <div className="flex items-center gap-2">
                   <span className="font-bold text-gray-700">Student Name:</span>
                   <span className="font-bold text-gray-900">{fullNameValue}</span>
                 </div>
                 {isIdVerified ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                    <Check className="w-3 h-3" /> Matched
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                    <Check className="w-3.5 h-3.5" /> Matched
                   </span>
                 ) : (
-                  <span className="text-[10px] font-medium text-gray-400 bg-gray-200/70 px-2 py-0.5 rounded">
+                  <span className="text-xs font-medium text-gray-400 bg-gray-200/70 px-2 py-0.5 rounded">
                     Pending Scan
                   </span>
                 )}
               </div>
 
               {/* University Branding */}
-              <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-200/60">
-                <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200/60">
+                <div className="flex items-center gap-2">
                   <span className="font-bold text-gray-700">University:</span>
-                  <span className="text-gray-900">Lovely Professional University</span>
+                  <span className="text-gray-900 font-medium">Lovely Professional University</span>
                 </div>
                 {isIdVerified ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                    <Check className="w-3 h-3" /> Verified
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                    <Check className="w-3.5 h-3.5" /> Verified
                   </span>
                 ) : (
-                  <span className="text-[10px] font-medium text-gray-400 bg-gray-200/70 px-2 py-0.5 rounded">
+                  <span className="text-xs font-medium text-gray-400 bg-gray-200/70 px-2 py-0.5 rounded">
                     Pending Scan
                   </span>
                 )}
@@ -1022,39 +999,39 @@ function RegisterForm({
 
             {/* Extracted Extra Card Data Badges */}
             {extractedCardData && (
-              <div className="bg-emerald-50/60 border border-emerald-200 rounded-md p-3 space-y-2">
+              <div className="bg-emerald-50/60 border border-emerald-200 rounded-md p-3.5 space-y-2">
                 <span className="text-[10px] font-black uppercase text-emerald-800 tracking-wider flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-emerald-600" />
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
                   Extracted Card Information
                 </span>
-                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <div className="grid grid-cols-2 gap-2 text-xs">
                   {extractedCardData.program && (
-                    <div className="bg-white/80 p-1.5 rounded border border-emerald-100 flex items-center gap-1.5 col-span-2">
-                      <GraduationCap className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <div className="bg-white/80 p-2 rounded border border-emerald-100 flex items-center gap-1.5 col-span-2">
+                      <GraduationCap className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                       <span className="text-gray-700 font-medium truncate">
                         <strong className="text-gray-900">Program:</strong> {extractedCardData.program}
                       </span>
                     </div>
                   )}
                   {extractedCardData.validity && (
-                    <div className="bg-white/80 p-1.5 rounded border border-emerald-100 flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <div className="bg-white/80 p-2 rounded border border-emerald-100 flex items-center gap-1.5">
+                      <Calendar className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                       <span className="text-gray-700 font-medium">
                         <strong className="text-gray-900">Valid:</strong> {extractedCardData.validity}
                       </span>
                     </div>
                   )}
                   {extractedCardData.bloodGroup && (
-                    <div className="bg-white/80 p-1.5 rounded border border-emerald-100 flex items-center gap-1.5">
-                      <Activity className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <div className="bg-white/80 p-2 rounded border border-emerald-100 flex items-center gap-1.5">
+                      <Activity className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                       <span className="text-gray-700 font-medium">
-                        <strong className="text-gray-900">Blood Grp:</strong> {extractedCardData.bloodGroup}
+                        <strong className="text-gray-900">Blood:</strong> {extractedCardData.bloodGroup}
                       </span>
                     </div>
                   )}
                   {extractedCardData.batch && (
-                    <div className="bg-white/80 p-1.5 rounded border border-emerald-100 flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <div className="bg-white/80 p-2 rounded border border-emerald-100 flex items-center gap-1.5">
+                      <Calendar className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                       <span className="text-gray-700 font-medium">
                         <strong className="text-gray-900">Batch:</strong> {extractedCardData.batch}
                       </span>
@@ -1064,29 +1041,27 @@ function RegisterForm({
               </div>
             )}
 
-            {/* Rejection Alert */}
+            {/* Rejection Alert - Clean One Line */}
             {rejectionInfo && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-3 text-xs text-red-900 space-y-1">
-                <div className="font-bold flex items-center gap-1 text-red-800">
-                  <AlertTriangle className="w-3.5 h-3.5" /> Verification Failed
-                </div>
-                <p className="text-[11px] leading-relaxed text-red-700">{rejectionInfo.reason}</p>
+              <div className="bg-red-50 border border-red-200 rounded-md px-3.5 py-2.5 text-xs text-red-700 flex items-center gap-2 shadow-2xs">
+                <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                <span className="font-semibold">{rejectionInfo.reason}</span>
               </div>
             )}
 
             {/* Action Buttons */}
-            <div className="space-y-2 pt-1">
+            <div className="space-y-2.5 pt-1">
               {!isIdVerified ? (
                 <button
                   type="button"
                   onClick={handleScanAndVerifyId}
                   disabled={isScanning || !idFrontImage}
-                  className="w-full bg-brand-500 hover:bg-brand-600 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-bold py-2.5 px-4 rounded-md transition-all shadow-md hover:shadow-lg text-xs flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full bg-brand-500 hover:bg-brand-600 active:scale-[0.99] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isScanning ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Scanning & Authenticating ID...</span>
+                      <span>Scanning & Verifying...</span>
                     </>
                   ) : (
                     <>
@@ -1100,14 +1075,14 @@ function RegisterForm({
                   type="button"
                   onClick={handleProceedToOtp}
                   disabled={isLoading}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-md transition-all shadow-md hover:shadow-lg text-xs flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isLoading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <>
                       <span>Proceed to Step 3: Verify Email OTP</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      <ArrowRight className="w-4 h-4" />
                     </>
                   )}
                 </button>
@@ -1126,7 +1101,7 @@ function RegisterForm({
                 <button
                   type="button"
                   onClick={handleSkipIdVerification}
-                  className="text-[11px] text-gray-400 hover:text-gray-600 hover:underline cursor-pointer"
+                  className="text-xs text-gray-400 hover:text-gray-600 hover:underline cursor-pointer"
                 >
                   Skip for now (verify in profile)
                 </button>
@@ -1138,20 +1113,23 @@ function RegisterForm({
         {/* STEP 3: EMAIL OTP VERIFICATION */}
         {step === 3 && (
           <div className="space-y-4">
-            <div className="text-center p-3.5 bg-blue-50 text-blue-900 rounded-md border border-blue-100 text-xs">
-              <p className="font-medium">
-                A 6-digit verification code has been sent to <strong>{emailValue}</strong>
+            <div className="mb-3 text-center">
+              <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight font-display">
+                Enter Verification Code
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                6-digit code sent to <strong className="text-gray-800 font-semibold">{emailValue}</strong>
               </p>
             </div>
 
             <div>
-              <label className="block text-[11px] font-black text-gray-500 uppercase tracking-wider mb-1.5 text-center">
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 text-center">
                 Enter 6-Digit OTP
               </label>
               <input
                 type="text"
                 {...register('otp')}
-                className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-center font-black tracking-[0.5em] text-xl rounded-md px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
+                className="w-full bg-gray-50/80 hover:bg-white focus:bg-white border border-gray-200 text-gray-900 text-center font-black tracking-[0.4em] text-2xl rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all placeholder:text-gray-300"
                 placeholder="••••••"
                 maxLength={6}
               />
@@ -1162,9 +1140,19 @@ function RegisterForm({
               type="button"
               onClick={handleVerifyOTP}
               disabled={isLoading}
-              className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-md transition-all shadow-md hover:shadow-lg text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
+              className="w-full bg-brand-500 hover:bg-brand-600 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
             >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Verify Code & Continue'}
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Verifying Code...</span>
+                </>
+              ) : (
+                <>
+                  <span>Verify Code & Continue</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
 
             <div className="flex items-center justify-between text-xs pt-1">
@@ -1191,35 +1179,56 @@ function RegisterForm({
         {/* STEP 4: PASSWORD SETUP & REGISTRATION FINISH */}
         {step === 4 && (
           <div className="space-y-4">
-            <div className="text-center p-3 bg-green-50 text-green-800 rounded-md border border-green-100 flex items-center justify-center gap-2 text-xs">
-              <Check className="h-4 w-4 text-green-600" />
-              <p className="font-bold">Email & Credentials Authenticated!</p>
+            <div className="mb-3 text-center">
+              <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight font-display">
+                Set Your Password
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Create a secure password for your student account
+              </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-3.5">
               <div>
-                <label className="block text-[11px] font-black text-gray-500 uppercase tracking-wider mb-1">
-                  Set Password
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Password
                 </label>
-                <input
-                  type="password"
-                  {...register('password')}
-                  className="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-md px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
-                  placeholder="Min 8 characters"
-                />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <input
+                    type={showRegPassword ? 'text' : 'password'}
+                    {...register('password')}
+                    className="w-full bg-gray-50/80 hover:bg-white focus:bg-white border border-gray-200 text-gray-900 font-medium rounded-md pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all placeholder:text-gray-400"
+                    placeholder="Min 8 characters"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRegPassword(!showRegPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
+                  >
+                    {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
                 {errors.password && <p className="text-red-500 text-xs font-medium mt-1">{errors.password.message}</p>}
               </div>
 
               <div>
-                <label className="block text-[11px] font-black text-gray-500 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                   Confirm Password
                 </label>
-                <input
-                  type="password"
-                  {...register('password_confirm')}
-                  className="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-md px-3.5 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all"
-                  placeholder="Re-enter password"
-                />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <input
+                    type={showRegPassword ? 'text' : 'password'}
+                    {...register('password_confirm')}
+                    className="w-full bg-gray-50/80 hover:bg-white focus:bg-white border border-gray-200 text-gray-900 font-medium rounded-md pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all placeholder:text-gray-400"
+                    placeholder="Re-enter password"
+                  />
+                </div>
                 {errors.password_confirm && <p className="text-red-500 text-xs font-medium mt-1">{errors.password_confirm.message}</p>}
               </div>
             </div>
@@ -1227,7 +1236,7 @@ function RegisterForm({
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-md transition-all shadow-md hover:shadow-lg mt-3 disabled:opacity-70 text-xs flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full bg-brand-500 hover:bg-brand-600 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg mt-5 disabled:opacity-70 text-sm flex items-center justify-center gap-2 cursor-pointer"
             >
               {isLoading ? (
                 <>
@@ -1245,9 +1254,13 @@ function RegisterForm({
         )}
       </form>
 
-      <div className="mt-4 text-center text-xs font-medium text-gray-500">
+      <div className="mt-5 text-center text-xs font-medium text-gray-500">
         Already have an account?{' '}
-        <button onClick={onSwitch} type="button" className="text-brand-600 hover:text-brand-700 font-bold cursor-pointer">
+        <button
+          onClick={onSwitch}
+          type="button"
+          className="text-brand-600 hover:text-brand-700 font-bold hover:underline cursor-pointer"
+        >
           Sign in
         </button>
       </div>

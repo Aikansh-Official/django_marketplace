@@ -120,8 +120,11 @@ class SendOTPView(APIView):
     throttle_scope = 'signup'
 
     def post(self, request):
-        serializer = SendOTPSerializer(data=request.data)
-        if serializer.is_valid():
+        try:
+            serializer = SendOTPSerializer(data=request.data)
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
             email = serializer.validated_data['email']
             otp = str(random.randint(100000, 999999))
             
@@ -145,8 +148,8 @@ class SendOTPView(APIView):
                     fail_silently=False,
                 )
             except Exception as mail_err:
-                logger.error(f"Failed to send OTP email to {email}: {mail_err}")
-                if not settings.DEBUG:
+                logger.warning(f"Failed to send OTP email to {email}: {mail_err}")
+                if not settings.DEBUG and getattr(settings, 'EMAIL_HOST_USER', None):
                     return Response(
                         {"error": "Failed to send verification email. Please try again later."},
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -154,10 +157,16 @@ class SendOTPView(APIView):
 
             logger.info(f'OTP generated and sent for {email}')
             if settings.DEBUG:
+                print(f"\n=========================================\n[LPXCHANGE OTP FOR {email}]: {otp}\n=========================================\n")
                 logger.debug(f'[DEV ONLY] OTP for {email}: {otp}')
             
             return Response({"message": "OTP sent successfully."})
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.exception(f"Unexpected error in SendOTPView: {e}")
+            return Response(
+                {"error": f"Failed to send OTP: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class VerifyOTPView(APIView):
     permission_classes = (AllowAny,)

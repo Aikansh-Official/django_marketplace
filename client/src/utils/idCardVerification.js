@@ -14,7 +14,7 @@ export function matchRegistrationNumber(rawText, targetReg) {
     return {
       matched: false,
       detected: null,
-      reason: 'No legible text was detected from the uploaded image.'
+      reason: 'Please upload a clearer photo.'
     };
   }
 
@@ -59,14 +59,14 @@ export function matchRegistrationNumber(rawText, targetReg) {
     return {
       matched: false,
       detected: foreignNumber,
-      reason: `Mismatched Registration Number: Found ID number "${foreignNumber}" on card, but your account is registered as "${target}".`
+      reason: `Registration number (${foreignNumber}) does not match your entered number (${target}).`
     };
   }
 
   return {
     matched: false,
     detected: null,
-    reason: `Registration Number Not Found: Could not detect registration number "${target}" on the uploaded ID card photo.`
+    reason: `Registration number (${target}) not found on uploaded ID card.`
   };
 }
 
@@ -99,7 +99,7 @@ export async function checkImageAuthenticity(imageSrc) {
         if (aspectRatio < 0.92) {
           return resolve({
             isAuthentic: false,
-            reason: 'Invalid Document Orientation: Student ID cards are landscape (horizontal). Please capture the entire ID card horizontally without vertical cropping.'
+            reason: 'Please upload a horizontal (landscape) photo of your ID card.'
           });
         }
 
@@ -141,7 +141,7 @@ export async function checkImageAuthenticity(imageSrc) {
         if (dominantColorPercent > 82 && uniqueColorsCount < 22) {
           return resolve({
             isAuthentic: false,
-            reason: 'Authentication Failed: Unrecognized document format. Please upload a clear, original photo of your physical student ID card.'
+            reason: 'Invalid document: Please upload your physical student ID card.'
           });
         }
 
@@ -176,7 +176,7 @@ export async function checkImageAuthenticity(imageSrc) {
         if (photoStdDev < 8.0 && dominantColorPercent > 70) {
           return resolve({
             isAuthentic: false,
-            reason: 'Authentication Failed: Unrecognized ID card format. Please upload a clear, uncropped photo of your official student ID card.'
+            reason: 'Invalid format: Please upload a clear photo of your student ID card.'
           });
         }
 
@@ -188,7 +188,7 @@ export async function checkImageAuthenticity(imageSrc) {
     };
 
     img.onerror = () => {
-      resolve({ isAuthentic: false, reason: 'Failed to inspect image. Please ensure the file is a valid photo.' });
+      resolve({ isAuthentic: false, reason: 'Invalid image file. Please upload a clear photo.' });
     };
 
     img.src = imageSrc;
@@ -203,7 +203,7 @@ export function validateLpuIdCard(rawText, targetReg, studentName) {
   if (!rawText || !rawText.trim()) {
     return {
       isValid: false,
-      reason: 'No legible text could be read from this image. Please ensure good lighting and clear camera focus.'
+      reason: 'No legible text detected. Please upload a clearer photo.'
     };
   }
 
@@ -228,7 +228,7 @@ export function validateLpuIdCard(rawText, targetReg, studentName) {
   if (!hasOfficialName && !hasLpuAcronym) {
     return {
       isValid: false,
-      reason: 'Authentication Failed: Could not verify official university credentials on the card. Please upload a clear photo of your official student ID card.'
+      reason: 'University credentials not found. Please upload a valid LPU ID card.'
     };
   }
 
@@ -246,7 +246,7 @@ export function validateLpuIdCard(rawText, targetReg, studentName) {
   if (matchedAnchorsCount < requiredAnchors) {
     return {
       isValid: false,
-      reason: 'Authentication Failed: Document format does not match official student ID card records. Please upload a clear, uncropped photo of your physical LPU ID card.'
+      reason: 'Card format does not match official LPU student ID.'
     };
   }
 
@@ -278,7 +278,7 @@ export function validateLpuIdCard(rawText, targetReg, studentName) {
     if (missingParts.length > 0) {
       return {
         isValid: false,
-        reason: 'Authentication Failed: Student name on the card does not match your registered account name. Please ensure your registered name matches your ID card.'
+        reason: 'Student name on card does not match your entered name.'
       };
     }
     nameMatched = true;

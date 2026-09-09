@@ -184,7 +184,7 @@ MAILERS = {
     'default': {
         'BACKEND': os.environ.get(
             'EMAIL_BACKEND',
-            'django.core.mail.backends.smtp.EmailBackend' if not DEBUG else 'django.core.mail.backends.console.EmailBackend'
+            'django.core.mail.backends.console.EmailBackend' if DEBUG else 'django.core.mail.backends.smtp.EmailBackend'
         ),
         'HOST': os.environ.get('EMAIL_HOST', 'smtp.gmail.com'),
         'PORT': int(os.environ.get('EMAIL_PORT', '587')),
