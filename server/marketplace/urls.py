@@ -10,7 +10,9 @@ from .views import (
     DeleteNotificationView, ClearAllNotificationsView,
     GenerateHandoverQRView, VerifyHandoverView, ConfirmHandoverView, CancelDealView,
     AdminDashboardStatsView, AdminListingDetailView,
-    AdminDealListView, AdminDealActionView
+    AdminDealListView, AdminDealActionView,
+    AdminBroadcastNotificationView, AdminDirectNotificationView, AdminNotificationStatsView,
+    UrgentNotificationView
 )
 
 urlpatterns = [
@@ -25,6 +27,7 @@ urlpatterns = [
     path('handover/verify/', VerifyHandoverView.as_view(), name='verify-handover'),
     path('handover/confirm/', ConfirmHandoverView.as_view(), name='confirm-handover'),
     path('notifications/', NotificationListView.as_view(), name='notifications-list'),
+    path('notifications/urgent/', UrgentNotificationView.as_view(), name='urgent-notification'),
     path('notifications/<int:pk>/read/', MarkNotificationReadView.as_view(), name='mark-notification-read'),
     path('notifications/<int:pk>/delete/', DeleteNotificationView.as_view(), name='delete-notification'),
     path('notifications/clear-all/', ClearAllNotificationsView.as_view(), name='clear-all-notifications'),
@@ -43,6 +46,9 @@ urlpatterns = [
     path('admin/reports/<int:pk>/', AdminListingReportUpdateView.as_view(), name='admin-report-update'),
     path('admin/deals/', AdminDealListView.as_view(), name='admin-deal-list'),
     path('admin/deals/<int:pk>/action/', AdminDealActionView.as_view(), name='admin-deal-action'),
+    path('admin/broadcasts/', AdminBroadcastNotificationView.as_view(), name='admin-broadcasts'),
+    path('admin/direct-notice/', AdminDirectNotificationView.as_view(), name='admin-direct-notice'),
+    path('admin/notifications/stats/', AdminNotificationStatsView.as_view(), name='admin-notification-stats'),
     path('admin/banned-words/', AdminBannedWordsView.as_view(), name='admin-banned-words'),
     path('admin/settings/', AdminPlatformSettingsView.as_view(), name='admin-settings'),
     path('upload-image/', UploadImageView.as_view(), name='upload-image'),

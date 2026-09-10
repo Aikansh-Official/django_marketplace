@@ -15,7 +15,11 @@ import {
   ExternalLink,
   ChevronRight,
   Tag,
-  AlertCircle
+  AlertCircle,
+  Megaphone,
+  ShieldAlert,
+  Radio,
+  AlertTriangle
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -109,37 +113,43 @@ export default function Notifications() {
   const totalNotifications = notifications.length;
   const unreadCount = notifications.filter((n) => !n.is_read).length;
   const dealCount = notifications.filter((n) =>
-    ['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'ITEM_SOLD'].includes(
+    ['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'ITEM_SOLD', 'DEAL_CANCELLED', 'HANDOVER_READY'].includes(
       n.notification_type
     )
   ).length;
-  const generalCount = notifications.filter(
-    (n) =>
-      n.notification_type === 'GENERAL' ||
-      !['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'ITEM_SOLD'].includes(
-        n.notification_type
-      )
+  const broadcastCount = notifications.filter((n) =>
+    ['BROADCAST', 'DIRECT_WARNING'].includes(n.notification_type) || n.priority === 'URGENT'
   ).length;
 
   // Filter list
   const filteredNotifications = notifications.filter((n) => {
     if (filter === 'UNREAD') return !n.is_read;
     if (filter === 'TRADE')
-      return ['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'ITEM_SOLD'].includes(
+      return ['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'ITEM_SOLD', 'DEAL_CANCELLED', 'HANDOVER_READY'].includes(
         n.notification_type
       );
-    if (filter === 'GENERAL')
-      return (
-        n.notification_type === 'GENERAL' ||
-        !['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'ITEM_SOLD'].includes(
-          n.notification_type
-        )
-      );
+    if (filter === 'BROADCAST')
+      return ['BROADCAST', 'DIRECT_WARNING'].includes(n.notification_type) || n.priority === 'URGENT';
     return true;
   });
 
-  const getTypeBadge = (type) => {
+  const getTypeBadge = (notif) => {
+    const type = notif.notification_type;
     switch (type) {
+      case 'BROADCAST':
+        return (
+          <span className="inline-flex items-center gap-1 bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <Megaphone className="w-3 h-3 text-indigo-600" />
+            Campus Broadcast
+          </span>
+        );
+      case 'DIRECT_WARNING':
+        return (
+          <span className="inline-flex items-center gap-1 bg-amber-50 border border-amber-300 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <ShieldAlert className="w-3 h-3 text-amber-600" />
+            Official Notice
+          </span>
+        );
       case 'BUY_REQUEST':
         return (
           <span className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
@@ -168,18 +178,51 @@ export default function Notifications() {
             Item Sold
           </span>
         );
+      case 'DEAL_CANCELLED':
+        return (
+          <span className="inline-flex items-center gap-1 bg-red-50 border border-red-200 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <XCircle className="w-3 h-3 text-red-600" />
+            Deal Cancelled
+          </span>
+        );
       default:
         return (
           <span className="inline-flex items-center gap-1 bg-blue-50 border border-blue-200 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+            <Bell className="w-3 h-3 text-blue-500" />
             Campus Alert
           </span>
         );
     }
   };
 
-  const getNotificationIcon = (type) => {
+  const getPriorityBadge = (priority) => {
+    if (priority === 'URGENT') {
+      return (
+        <span className="inline-flex items-center gap-1 bg-red-100 border border-red-300 text-red-700 text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+          URGENT
+        </span>
+      );
+    }
+    if (priority === 'HIGH') {
+      return (
+        <span className="inline-flex items-center gap-1 bg-amber-100 border border-amber-300 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+          HIGH
+        </span>
+      );
+    }
+    return null;
+  };
+
+  const getNotificationIcon = (type, priority) => {
+    if (priority === 'URGENT') {
+      return <AlertTriangle className="w-6 h-6 text-red-600 animate-bounce" />;
+    }
     switch (type) {
+      case 'BROADCAST':
+        return <Megaphone className="w-6 h-6 text-indigo-600" />;
+      case 'DIRECT_WARNING':
+        return <ShieldAlert className="w-6 h-6 text-amber-600" />;
       case 'BUY_REQUEST':
         return <ShoppingBag className="w-6 h-6 text-amber-600" />;
       case 'REQUEST_ACCEPTED':
@@ -188,6 +231,8 @@ export default function Notifications() {
         return <XCircle className="w-6 h-6 text-rose-600" />;
       case 'ITEM_SOLD':
         return <Package className="w-6 h-6 text-purple-600" />;
+      case 'DEAL_CANCELLED':
+        return <XCircle className="w-6 h-6 text-red-600" />;
       default:
         return <Bell className="w-6 h-6 text-blue-600" />;
     }
@@ -285,17 +330,17 @@ export default function Notifications() {
         </div>
 
         <div className="bg-white border border-gray-200 rounded-md p-3 sm:p-4 shadow-sm">
+          <div className="text-[10px] sm:text-[11px] font-semibold text-indigo-600 uppercase tracking-wider">
+            Campus Broadcasts
+          </div>
+          <div className="text-xl sm:text-2xl font-extrabold text-indigo-700 mt-1">{broadcastCount}</div>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-md p-3 sm:p-4 shadow-sm">
           <div className="text-[10px] sm:text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">
             Purchase Deals
           </div>
           <div className="text-xl sm:text-2xl font-extrabold text-emerald-700 mt-1">{dealCount}</div>
-        </div>
-
-        <div className="bg-white border border-gray-200 rounded-md p-3 sm:p-4 shadow-sm">
-          <div className="text-[10px] sm:text-[11px] font-semibold text-purple-600 uppercase tracking-wider">
-            Campus Alerts
-          </div>
-          <div className="text-xl sm:text-2xl font-extrabold text-purple-700 mt-1">{generalCount}</div>
         </div>
       </div>
 
@@ -304,8 +349,8 @@ export default function Notifications() {
         {[
           { key: 'ALL', label: `All Alerts (${totalNotifications})` },
           { key: 'UNREAD', label: `Unread (${unreadCount})` },
+          { key: 'BROADCAST', label: `Campus Broadcasts (${broadcastCount})` },
           { key: 'TRADE', label: `Purchase Requests (${dealCount})` },
-          { key: 'GENERAL', label: `General (${generalCount})` },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -346,12 +391,19 @@ export default function Notifications() {
         <div className="space-y-3 animate-fade-in-up">
           {filteredNotifications.map((notif) => {
             const listingId = notif.listing || notif.related_listing;
+            const isUrgent = notif.priority === 'URGENT';
+            const isHigh = notif.priority === 'HIGH';
+
             return (
               <div
                 key={notif.id}
                 onClick={() => !notif.is_read && handleMarkRead(notif.id)}
                 className={`bg-white border rounded-md p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:border-gray-300 transition-all ${
-                  !notif.is_read
+                  isUrgent
+                    ? 'border-l-4 border-l-red-600 bg-red-50/20 border-red-200 shadow-md'
+                    : isHigh
+                    ? 'border-l-4 border-l-amber-500 bg-amber-50/15 border-amber-200'
+                    : !notif.is_read
                     ? 'border-l-4 border-l-brand-500 border-gray-200 bg-brand-50/15'
                     : 'border-gray-200'
                 }`}
@@ -367,14 +419,15 @@ export default function Notifications() {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gray-50">
-                        {getNotificationIcon(notif.notification_type)}
+                        {getNotificationIcon(notif.notification_type, notif.priority)}
                       </div>
                     )}
                   </div>
 
                   <div className="min-w-0 space-y-1 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      {getTypeBadge(notif.notification_type)}
+                      {getTypeBadge(notif)}
+                      {getPriorityBadge(notif.priority)}
                       {!notif.is_read && (
                         <span className="inline-flex items-center gap-1 bg-brand-50 border border-brand-200 text-brand-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
                           <span className="w-1.5 h-1.5 rounded-full bg-brand-500"></span>
@@ -391,11 +444,12 @@ export default function Notifications() {
                       {notif.title}
                     </h4>
 
-                    <p className="text-xs text-gray-600 leading-relaxed">
+                    <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">
                       {notif.message}
                     </p>
 
-                    {listingId && (
+                    {/* Action link or Listing link */}
+                    {listingId ? (
                       <div className="flex flex-wrap items-center gap-1.5 text-xs text-gray-500 pt-0.5">
                         <span className="flex items-center gap-1 text-gray-400">
                           <Tag className="w-3 h-3 text-brand-500" />
@@ -410,7 +464,18 @@ export default function Notifications() {
                           <ChevronRight className="w-3 h-3 text-gray-400" />
                         </Link>
                       </div>
-                    )}
+                    ) : notif.link ? (
+                      <div className="pt-1">
+                        <a
+                          href={notif.link}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 text-xs font-bold text-brand-600 hover:text-brand-700 hover:underline"
+                        >
+                          <span>Open Notice Action Link</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
 

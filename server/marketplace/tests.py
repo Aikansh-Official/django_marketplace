@@ -227,4 +227,52 @@ class MarketplaceHandoverTests(TestCase):
         offer = Offer.objects.get(pk=offer_id)
         self.assertEqual(offer.status, 'COMPLETED')
 
+    def test_admin_broadcast_and_direct_messaging(self):
+        # 1. Non-admin blocked
+        self.client.force_authenticate(user=self.buyer)
+        res = self.client.post('/api/marketplace/admin/broadcasts/', {
+            'title': 'Hackathon Alert',
+            'message': 'Coding contest tonight',
+            'priority': 'URGENT'
+        })
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 2. Admin sends campus-wide broadcast
+        self.client.force_authenticate(user=self.admin)
+        res = self.client.post('/api/marketplace/admin/broadcasts/', {
+            'title': 'Semester End Clearance',
+            'message': 'Hostel clearance sale starts now!',
+            'target_audience': 'ALL',
+            'priority': 'URGENT',
+            'link': '/my-listings'
+        })
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertGreater(res.data['broadcast']['recipients_count'], 0)
+
+        # 3. Buyer checks urgent notification endpoint
+        self.client.force_authenticate(user=self.buyer)
+        urgent_res = self.client.get('/api/marketplace/notifications/urgent/')
+        self.assertEqual(urgent_res.status_code, status.HTTP_200_OK)
+        self.assertIsNotNone(urgent_res.data.get('urgent'))
+        self.assertEqual(urgent_res.data['urgent']['title'], 'Semester End Clearance')
+        self.assertEqual(urgent_res.data['urgent']['priority'], 'URGENT')
+
+        # 4. Admin sends direct warning to seller
+        self.client.force_authenticate(user=self.admin)
+        direct_res = self.client.post('/api/marketplace/admin/direct-notice/', {
+            'recipient_id': self.seller.id,
+            'title': 'ID Verification Request',
+            'message': 'Please re-upload your ID card.',
+            'priority': 'HIGH',
+            'link': '/profile'
+        })
+        self.assertEqual(direct_res.status_code, status.HTTP_201_CREATED)
+
+        # Seller sees the direct notice
+        self.client.force_authenticate(user=self.seller)
+        notifs_res = self.client.get('/api/marketplace/notifications/')
+        self.assertEqual(notifs_res.status_code, status.HTTP_200_OK)
+        self.assertTrue(any(n['title'] == 'ID Verification Request' for n in notifs_res.data))
+
+
 

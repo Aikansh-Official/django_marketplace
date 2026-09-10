@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import AnnouncementBanner from './components/AnnouncementBanner';
+import UrgentNoticeModal from './components/UrgentNoticeModal';
 import Footer from './components/Footer';
 import Home from './pages/Home';
 
@@ -35,6 +36,7 @@ function App() {
             <Navbar />
           <main className="flex-grow pt-16">
             <AnnouncementBanner />
+            <UrgentNoticeModal />
             <Routes>
               <Route path="/" element={<Home />} />
 

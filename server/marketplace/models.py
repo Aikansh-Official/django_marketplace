@@ -139,15 +139,24 @@ class Notification(models.Model):
         ('HANDOVER_READY', 'Handover QR Ready'),
         ('ITEM_SOLD', 'Item Sold / Handover Completed'),
         ('DEAL_CANCELLED', 'Deal Cancelled'),
+        ('BROADCAST', 'Campus Broadcast Announcement'),
+        ('DIRECT_WARNING', 'Official Direct Notice / Warning'),
         ('GENERAL', 'General Alert'),
+    )
+    PRIORITIES = (
+        ('NORMAL', 'Normal'),
+        ('HIGH', 'High'),
+        ('URGENT', 'Urgent'),
     )
 
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
     sender = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='notifications_sent')
     notification_type = models.CharField(max_length=30, choices=TYPES, default='GENERAL')
+    priority = models.CharField(max_length=10, choices=PRIORITIES, default='NORMAL')
     title = models.CharField(max_length=255)
     message = models.TextField()
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, null=True, blank=True, related_name='notifications')
+    link = models.CharField(max_length=255, blank=True, default='')
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -155,7 +164,37 @@ class Notification(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"Notification for {self.recipient}: {self.title}"
+        return f"Notification for {self.recipient}: {self.title} ({self.priority})"
+
+
+class BroadcastLog(models.Model):
+    AUDIENCE_CHOICES = (
+        ('ALL', 'All Students'),
+        ('SELLERS', 'All Sellers'),
+        ('BUYERS', 'All Buyers'),
+        ('UNVERIFIED', 'Unverified Students'),
+    )
+    PRIORITY_CHOICES = (
+        ('NORMAL', 'Normal'),
+        ('HIGH', 'High'),
+        ('URGENT', 'Urgent'),
+    )
+
+    sender = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='broadcast_logs')
+    target_audience = models.CharField(max_length=20, choices=AUDIENCE_CHOICES, default='ALL')
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='NORMAL')
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    link = models.CharField(max_length=255, blank=True, default='')
+    recipients_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"BroadcastLog #{self.id}: {self.title} ({self.recipients_count} recipients)"
+
 
 
 class Wishlist(models.Model):

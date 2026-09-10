@@ -9,6 +9,7 @@ import Listings from './pages/Listings';
 import Categories from './pages/Categories';
 import Reports from './pages/Reports';
 import Deals from './pages/Deals';
+import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 
@@ -75,6 +76,7 @@ function App() {
           <Route path="deals" element={<Deals />} />
           <Route path="categories" element={<Categories />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="notifications" element={<Notifications />} />
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.utils import timezone
 from .models import (
-    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession
+    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession, BroadcastLog
 )
 from .cloudinary_upload import (
     upload_base64_to_cloudinary, is_base64_image, is_url
@@ -337,12 +337,17 @@ class OfferSerializer(serializers.ModelSerializer):
 class NotificationSerializer(serializers.ModelSerializer):
     listing_title = serializers.CharField(source='listing.title', read_only=True)
     listing_image = serializers.SerializerMethodField()
+    sender_name = serializers.CharField(source='sender.full_name', read_only=True, default='')
+    sender_username = serializers.CharField(source='sender.username', read_only=True, default='')
+    sender_is_staff = serializers.BooleanField(source='sender.is_staff', read_only=True, default=False)
 
     class Meta:
         model = Notification
         fields = [
-            'id', 'notification_type', 'title', 'message',
-            'listing', 'listing_title', 'listing_image', 'is_read', 'created_at'
+            'id', 'notification_type', 'priority', 'title', 'message', 'link',
+            'listing', 'listing_title', 'listing_image',
+            'sender', 'sender_name', 'sender_username', 'sender_is_staff',
+            'is_read', 'created_at'
         ]
         read_only_fields = ['created_at']
 
@@ -351,6 +356,21 @@ class NotificationSerializer(serializers.ModelSerializer):
             img = obj.listing.images.filter(is_primary=True).first() or obj.listing.images.first()
             return img.image_url if img else None
         return None
+
+
+class BroadcastLogSerializer(serializers.ModelSerializer):
+    sender_name = serializers.CharField(source='sender.full_name', read_only=True, default='')
+    sender_username = serializers.CharField(source='sender.username', read_only=True, default='')
+
+    class Meta:
+        model = BroadcastLog
+        fields = [
+            'id', 'sender', 'sender_name', 'sender_username',
+            'target_audience', 'priority', 'title', 'message', 'link',
+            'recipients_count', 'created_at'
+        ]
+        read_only_fields = fields
+
 
 
 class ListingReportSerializer(serializers.ModelSerializer):

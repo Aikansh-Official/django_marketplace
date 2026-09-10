@@ -11,14 +11,17 @@ from django.db.models import Q, F
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
+from django.contrib.auth import get_user_model
+User = get_user_model()
+
 from .models import (
-    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession
+    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession, BroadcastLog
 )
 from .serializers import (
     ListingSerializer, ListingCreateUpdateSerializer, CategorySerializer,
     AdminCategorySerializer, OfferSerializer, ListingReportSerializer,
     ListingReportCreateSerializer, PlatformSettingSerializer, NotificationSerializer,
-    HandoverSessionSerializer, AdminDealSerializer
+    HandoverSessionSerializer, AdminDealSerializer, BroadcastLogSerializer
 )
 from .cloudinary_upload import upload_image_to_cloudinary
 
@@ -1354,5 +1357,180 @@ class AdminDealActionView(APIView):
 
         else:
             return Response({'error': f"Unknown action '{action}'. Allowed actions: FORCE_CANCEL, FORCE_COMPLETE."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminBroadcastNotificationView(APIView):
+    """
+    Administrator endpoint to dispatch campus-wide or role-targeted broadcast announcements,
+    and retrieve past broadcast audit logs.
+    """
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        logs = BroadcastLog.objects.select_related('sender').order_by('-created_at')[:100]
+        serializer = BroadcastLogSerializer(logs, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        target_audience = request.data.get('target_audience', 'ALL').strip().upper()
+        priority = request.data.get('priority', 'NORMAL').strip().upper()
+        title = request.data.get('title', '').strip()
+        message = request.data.get('message', '').strip()
+        link = request.data.get('link', '').strip()
+
+        if not title or not message:
+            return Response({'error': 'Title and Message body are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        valid_audiences = ['ALL', 'SELLERS', 'BUYERS', 'UNVERIFIED']
+        if target_audience not in valid_audiences:
+            target_audience = 'ALL'
+
+        valid_priorities = ['NORMAL', 'HIGH', 'URGENT']
+        if priority not in valid_priorities:
+            priority = 'NORMAL'
+
+        # Filter recipient students based on target audience
+        recipients = User.objects.filter(is_active=True)
+        if target_audience == 'SELLERS':
+            recipients = recipients.filter(role='SELLER')
+        elif target_audience == 'BUYERS':
+            recipients = recipients.filter(role='BUYER')
+        elif target_audience == 'UNVERIFIED':
+            recipients = recipients.filter(is_id_verified=False)
+
+        recipients_count = recipients.count()
+        if recipients_count == 0:
+            return Response({'error': 'No active students found in the selected target audience.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            # 1. Create Broadcast Log
+            log = BroadcastLog.objects.create(
+                sender=request.user,
+                target_audience=target_audience,
+                priority=priority,
+                title=title,
+                message=message,
+                link=link,
+                recipients_count=recipients_count
+            )
+
+            # 2. Bulk create individual in-app notifications
+            notifications = [
+                Notification(
+                    recipient=student,
+                    sender=request.user,
+                    notification_type='BROADCAST',
+                    priority=priority,
+                    title=title,
+                    message=message,
+                    link=link
+                )
+                for student in recipients
+            ]
+            Notification.objects.bulk_create(notifications, batch_size=500)
+
+        serializer = BroadcastLogSerializer(log)
+        return Response({
+            'success': True,
+            'message': f"Broadcast successfully dispatched to {recipients_count} students.",
+            'broadcast': serializer.data
+        }, status=status.HTTP_201_CREATED)
+
+
+class AdminDirectNotificationView(APIView):
+    """
+    Administrator endpoint to dispatch official direct warnings or individual notices
+    directly to a specific student account.
+    """
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request):
+        recipient_id = request.data.get('recipient_id')
+        title = request.data.get('title', '').strip()
+        message = request.data.get('message', '').strip()
+        priority = request.data.get('priority', 'HIGH').strip().upper()
+        link = request.data.get('link', '').strip()
+
+        if not recipient_id:
+            return Response({'error': 'Recipient student ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not title or not message:
+            return Response({'error': 'Title and Message are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            student = User.objects.get(pk=recipient_id)
+        except User.DoesNotExist:
+            return Response({'error': 'Student user not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        valid_priorities = ['NORMAL', 'HIGH', 'URGENT']
+        if priority not in valid_priorities:
+            priority = 'HIGH'
+
+        notif = Notification.objects.create(
+            recipient=student,
+            sender=request.user,
+            notification_type='DIRECT_WARNING',
+            priority=priority,
+            title=title,
+            message=message,
+            link=link
+        )
+
+        serializer = NotificationSerializer(notif)
+        recipient_name = student.full_name or student.username
+        return Response({
+            'success': True,
+            'message': f"Official notice successfully delivered to {recipient_name} (@{student.username}).",
+            'notification': serializer.data
+        }, status=status.HTTP_201_CREATED)
+
+
+class AdminNotificationStatsView(APIView):
+    """
+    Administrator endpoint to fetch notification metrics and audience counts.
+    """
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        total_broadcasts = BroadcastLog.objects.count()
+        total_students_reached = sum(BroadcastLog.objects.values_list('recipients_count', flat=True)) or 0
+        urgent_broadcasts = BroadcastLog.objects.filter(priority='URGENT').count()
+        direct_notices_sent = Notification.objects.filter(notification_type='DIRECT_WARNING').count()
+
+        audience_counts = {
+            'ALL': User.objects.filter(is_active=True).count(),
+            'SELLERS': User.objects.filter(is_active=True, role='SELLER').count(),
+            'BUYERS': User.objects.filter(is_active=True, role='BUYER').count(),
+            'UNVERIFIED': User.objects.filter(is_active=True, is_id_verified=False).count(),
+        }
+
+        return Response({
+            'total_broadcasts': total_broadcasts,
+            'total_students_reached': total_students_reached,
+            'urgent_broadcasts': urgent_broadcasts,
+            'direct_notices_sent': direct_notices_sent,
+            'audience_counts': audience_counts
+        })
+
+
+class UrgentNotificationView(APIView):
+    """
+    Endpoint for authenticated student users to check if there is an unread urgent
+    administrative alert or campus broadcast requiring immediate modal acknowledgment.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        urgent_notif = Notification.objects.filter(
+            recipient=request.user,
+            priority='URGENT',
+            is_read=False
+        ).select_related('sender').order_by('-created_at').first()
+
+        if urgent_notif:
+            return Response({
+                'urgent': NotificationSerializer(urgent_notif).data
+            })
+        return Response({'urgent': None})
+
 
 

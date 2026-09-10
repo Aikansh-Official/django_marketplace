@@ -155,27 +155,51 @@
 ---
 
 ## ═══════════════════════════════════════════════════════
-## 📋 PHASE 5: Broadcast Notifications & Direct Messaging
+## 🟢 PHASE 5: Broadcast Notifications & Direct Messaging
 ## ═══════════════════════════════════════════════════════
-- **Status**: ⏳ **UP NEXT**
-- **Target Pages**: `admin/src/pages/Notifications.jsx` (New Page)
+- **Status**: ✅ **COMPLETED & VERIFIED**
+- **Primary Admin Pages**: `admin/src/pages/Notifications.jsx`
+- **Primary Client Components**: `client/src/components/UrgentNoticeModal.jsx` & `client/src/pages/Notifications.jsx`
 
 ### 5.1 Campus Broadcast Announcements
-- **Campus-Wide Push**: Send in-app notifications to all registered students (e.g., "End-of-Semester Hostel Clearance Sale is live!").
-- **Targeted Broadcasts**: Filter recipients by Role (`All Sellers`, `All Buyers`, `Unverified Students`).
-- **Priority Levels**: `Normal`, `High`, `Urgent` (triggers prominent popup on next student login).
+- **Campus-Wide Push**: Dispatch in-app announcements reaching all active registered students in real-time.
+- **Targeted Cohorts**: Filter recipients by student role:
+  - `ALL`: All registered campus students.
+  - `SELLERS`: Active campus sellers.
+  - `BUYERS`: Student buyers.
+  - `UNVERIFIED`: Students with unverified physical ID cards (for verification drives).
+- **Priority Tier System**:
+  - `NORMAL`: Standard in-app notification with bell badge.
+  - `HIGH`: Amber alert with high visibility in notification center.
+  - `URGENT`: Critical administrative notice that triggers the **UrgentNoticeModal** popup overlay on student devices with formal acknowledgment prompt.
+- **Interactive Mobile Device Live Previewer**: Real-time rendering of the student's notification card and critical modal overlay inside the admin composer.
 
 ### 5.2 Direct Student Warnings & Notices
-- **Direct Notice from Admin**: Send individual official alerts (e.g., "Please re-upload your student ID card due to blurry image").
-- **Pre-Configured Notification Templates**: One-click quick messaging templates for common scenarios.
-- **Notification History Log**: Admin view of all broadcast and direct messages ever dispatched.
+- **Direct Student Selector**: Real-time search across student registration numbers, names, and college emails with live student profile card preview (role, trust score, ID verification status).
+- **Pre-Configured Instant Templates**:
+  - 🪪 *ID Card Re-upload Request*: Prompts students with blurry or expired ID card uploads to resubmit.
+  - ⚠️ *Prohibited Item Warning*: Formal compliance warning detailing listing safety policy violations.
+  - 🤝 *Trade Dispute Inquiry*: Urgent intervention alert regarding an unfulfilled deal or dispute.
+  - ⏳ *Unresponsive Offer Reminder*: Gentle reminder urging quick response times to protect student trust scores.
+- **Broadcast History & Audit Log**:
+  - Searchable log tracking all past announcements: timestamp, target cohort, priority badge, subject, message snippet, recipient count, and sender admin username.
+
+### 5.3 User (Student) Experience & Urgent Modal Suite
+- **Interactive Client Notifications Page (`client/src/pages/Notifications.jsx`)**:
+  - Distinctive badges and icons for `BROADCAST` (indigo megaphone) and `DIRECT_WARNING` (amber shield).
+  - Urgent priority styling: pulsing red badge and high-contrast red alert border.
+  - Action deep links linking students directly to relevant campus pages (`/profile`, `/my-listings`, `/guidelines`).
+  - Metrics tabs: `All Alerts`, `Unread`, `Campus Broadcasts`, and `Purchase Requests`.
+- **Urgent Notice Modal (`client/src/components/UrgentNoticeModal.jsx`)**:
+  - Automatic check on login and live websocket/polling events for unread `priority='URGENT'` administrative alerts.
+  - Full-screen high-priority alert dialog with bounce animation, critical warning shield, message body, action button, and "I Acknowledge & Understand" dismiss button.
 
 ---
 
 ## ═══════════════════════════════════════════════════════
 ## 📋 PHASE 6: Advanced Analytics, Growth Charts & Leaderboards
 ## ═══════════════════════════════════════════════════════
-- **Status**: 📋 **PENDING**
+- **Status**: ⏳ **UP NEXT**
 - **Target Pages**: `admin/src/pages/Analytics.jsx` & `admin/src/pages/Dashboard.jsx`
 
 ### 6.1 Visual Interactive Charts
