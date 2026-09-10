@@ -79,27 +79,18 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
       return;
     }
 
-    try {
-      const compressedDataUrl = await compressImageToDataUrl(file, {
-        maxWidth: 1000,
-        maxHeight: 700,
-        quality: 0.75,
-      });
-      setIdFrontImage(compressedDataUrl);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setIdFrontImage(reader.result);
       setIsIdVerified(false);
       setExtractedCardData(null);
       setRejectionInfo(null);
-      toast.success('ID photo loaded.');
-    } catch {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setIdFrontImage(reader.result);
-        setIsIdVerified(false);
-        setExtractedCardData(null);
-        setRejectionInfo(null);
-      };
-      reader.readAsDataURL(file);
-    }
+      toast.success('ID photo loaded successfully.');
+    };
+    reader.onerror = () => {
+      toast.error('Failed to read ID photo file.');
+    };
+    reader.readAsDataURL(file);
   };
 
   // Run OCR & authenticity verification
@@ -214,9 +205,20 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
 
     setLoading(true);
     try {
+      let compressedForDb = idFrontImage;
+      try {
+        compressedForDb = await compressImageToDataUrl(idFrontImage, {
+          maxWidth: 1000,
+          maxHeight: 700,
+          quality: 0.75,
+        });
+      } catch (compErr) {
+        console.warn('Compression before upgrade failed, using original:', compErr);
+      }
+
       const payload = {
         reg_no: username,
-        id_card_image: idFrontImage,
+        id_card_image: compressedForDb,
         id_card_data: extractedCardData || {},
         profile_photo: selfieImage,
         otp: otpCode.trim()

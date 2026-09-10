@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import Tesseract from 'tesseract.js';
 import { extractLpuCardDetails, checkImageAuthenticity } from '../../utils/idCardVerification';
+import { compressImageToDataUrl } from '../../utils/compressImage';
 import { registerSchema } from './authSchemas';
 import RegisterStepper from './RegisterStepper';
 import RegisterStepDetails from './steps/RegisterStepDetails';
@@ -57,6 +58,8 @@ export default function RegisterForm({
   setRejectionInfo,
   studentInfo,
   setStudentInfo,
+  selfieImage: propSelfieImage,
+  setSelfieImage: propSetSelfieImage,
   onSwitch,
   onSuccess
 }) {
@@ -87,7 +90,9 @@ export default function RegisterForm({
   const [usernameStatus, setUsernameStatus] = useState('idle');
   const [phoneStatus, setPhoneStatus] = useState('idle');
   const [emailStatus, setEmailStatus] = useState('idle');
-  const [selfieImage, setSelfieImage] = useState(null);
+  const [internalSelfie, setInternalSelfie] = useState(null);
+  const selfieImage = propSelfieImage !== undefined ? propSelfieImage : internalSelfie;
+  const setSelfieImage = propSetSelfieImage || setInternalSelfie;
   const usernameValue = watch("username");
   const fullNameValue = watch("full_name");
   const phoneValue = watch("phone_number");
@@ -397,11 +402,26 @@ export default function RegisterForm({
 
     setIsLoading(true);
     try {
-      // Include verified ID card image, card data, and selfie profile photo if seller
+      // Compress verified ID card image right before saving to DB
+      let compressedIdCardImage = null;
+      if (selectedRole === 'SELLER' && isIdVerified && idFrontImage) {
+        try {
+          compressedIdCardImage = await compressImageToDataUrl(idFrontImage, {
+            maxWidth: 1000,
+            maxHeight: 700,
+            quality: 0.75,
+          });
+        } catch (compErr) {
+          console.warn('ID compression failed before upload, using original:', compErr);
+          compressedIdCardImage = idFrontImage;
+        }
+      }
+
+      // Include compressed verified ID card image, card data, and selfie profile photo if seller
       const payload = {
         ...data,
         role: selectedRole,
-        id_card_image: selectedRole === 'SELLER' && isIdVerified && idFrontImage ? idFrontImage : null,
+        id_card_image: compressedIdCardImage,
         id_card_data: selectedRole === 'SELLER' && isIdVerified && extractedCardData ? extractedCardData : {},
         profile_photo: selectedRole === 'SELLER' && selfieImage ? selfieImage : null
       };

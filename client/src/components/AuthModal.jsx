@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { X } from 'lucide-react';
-import { compressImageToDataUrl } from '../utils/compressImage';
 import AuthLeftPanel from './auth/AuthLeftPanel';
 import LoginForm from './auth/LoginForm';
 import RegisterForm from './auth/RegisterForm';
@@ -13,6 +12,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
   const [registerStep, setRegisterStep] = useState(1);
   const [selectedRole, setSelectedRole] = useState('BUYER');
   const [idFrontImage, setIdFrontImage] = useState(null);
+  const [selfieImage, setSelfieImage] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [scanStatus, setScanStatus] = useState('');
@@ -31,6 +31,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
       setRegisterStep(1);
       setSelectedRole('BUYER');
       setIdFrontImage(null);
+      setSelfieImage(null);
       setIsIdVerified(false);
       setExtractedCardData(null);
       setRejectionInfo(null);
@@ -56,27 +57,18 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
       return;
     }
 
-    try {
-      const compressedDataUrl = await compressImageToDataUrl(file, {
-        maxWidth: 1000,
-        maxHeight: 700,
-        quality: 0.75,
-      });
-      setIdFrontImage(compressedDataUrl);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setIdFrontImage(reader.result);
       setIsIdVerified(false);
       setExtractedCardData(null);
       setRejectionInfo(null);
-      toast.success('ID photo loaded & compressed.');
-    } catch {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setIdFrontImage(reader.result);
-        setIsIdVerified(false);
-        setExtractedCardData(null);
-        setRejectionInfo(null);
-      };
-      reader.readAsDataURL(file);
-    }
+      toast.success('ID photo loaded successfully.');
+    };
+    reader.onerror = () => {
+      toast.error('Failed to read ID photo file.');
+    };
+    reader.readAsDataURL(file);
   };
 
   if (!isOpen) return null;
@@ -105,10 +97,13 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
             isIdVerified={isIdVerified}
             idFrontImage={idFrontImage}
             setIdFrontImage={setIdFrontImage}
+            selfieImage={selfieImage}
+            setSelfieImage={setSelfieImage}
             isScanning={isScanning}
             scanStatus={scanStatus}
             scanProgress={scanProgress}
             setIsIdVerified={setIsIdVerified}
+            extractedCardData={extractedCardData}
             setExtractedCardData={setExtractedCardData}
             setRejectionInfo={setRejectionInfo}
             fullNameValue={fullNameValue}
@@ -145,6 +140,8 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
                   setSelectedRole={setSelectedRole}
                   idFrontImage={idFrontImage}
                   setIdFrontImage={setIdFrontImage}
+                  selfieImage={selfieImage}
+                  setSelfieImage={setSelfieImage}
                   isScanning={isScanning}
                   setIsScanning={setIsScanning}
                   scanProgress={scanProgress}

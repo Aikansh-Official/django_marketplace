@@ -76,8 +76,16 @@ export default function ProfileSidebar({
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             {/* Avatar with guaranteed valid size */}
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-md bg-gradient-to-tr from-brand-500 to-brand-400 text-white flex items-center justify-center font-black text-lg sm:text-xl shadow-xs flex-shrink-0">
-              {firstLetter}
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-md bg-gradient-to-tr from-brand-500 to-brand-400 text-white flex items-center justify-center font-black text-lg sm:text-xl shadow-xs flex-shrink-0 overflow-hidden">
+              {profile?.profile_photo ? (
+                <img
+                  src={profile.profile_photo}
+                  alt={displayName}
+                  className="w-full h-full object-cover rounded-md"
+                />
+              ) : (
+                firstLetter
+              )}
             </div>
 
             <div className="min-w-0 flex-1">

@@ -195,6 +195,60 @@ export async function checkImageAuthenticity(imageSrc) {
   });
 }
 
+function levenshteinDistance(a, b) {
+  const m = a.length;
+  const n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1];
+      } else {
+        dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+      }
+    }
+  }
+  return dp[m][n];
+}
+
+function matchNamePart(part, normalizedRaw, strippedText) {
+  if (!part || part.length < 2) return true;
+
+  // 1. Exact contains check
+  if (normalizedRaw.includes(part) || strippedText.includes(part)) {
+    return true;
+  }
+
+  // 2. Token-level fuzzy match
+  const tokens = normalizedRaw.match(/[A-Z]{2,}/g) || [];
+  const maxDistance = part.length <= 3 ? 0 : part.length <= 5 ? 1 : 2;
+
+  for (const token of tokens) {
+    if (token.includes(part) || (token.length >= 4 && part.includes(token))) {
+      return true;
+    }
+    if (Math.abs(token.length - part.length) <= 1) {
+      if (levenshteinDistance(part, token) <= maxDistance) {
+        return true;
+      }
+    }
+  }
+
+  // 3. Sliding window check in strippedText
+  const pLen = part.length;
+  for (let i = 0; i <= strippedText.length - pLen; i++) {
+    const sub = strippedText.slice(i, i + pLen);
+    if (levenshteinDistance(part, sub) <= (maxDistance === 2 ? 1 : 0)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 /**
  * Multi-Anchor LPU ID Card Validation:
  * Internal verification of university credentials, structural template anchors, registration number, and student name.
@@ -272,7 +326,7 @@ export function validateLpuIdCard(rawText, targetReg, studentName) {
       nameParts.length <= 2 ? nameParts : [nameParts[0], nameParts[nameParts.length - 1]];
 
     const missingParts = requiredParts.filter(
-      (part) => !normalizedRaw.includes(part) && !strippedText.includes(part)
+      (part) => !matchNamePart(part, normalizedRaw, strippedText)
     );
 
     if (missingParts.length > 0) {

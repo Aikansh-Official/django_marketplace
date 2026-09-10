@@ -6,7 +6,8 @@ import {
   BadgeCheck,
   RefreshCw,
   X,
-  Upload
+  Upload,
+  CheckCircle2
 } from 'lucide-react';
 import logoImg from '../../assets/CampusXChange_Logo.jpeg';
 
@@ -17,10 +18,12 @@ export default function AuthLeftPanel({
   isIdVerified,
   idFrontImage,
   setIdFrontImage,
+  selfieImage,
   isScanning,
   scanStatus,
   scanProgress,
   setIsIdVerified,
+  extractedCardData,
   setExtractedCardData,
   setRejectionInfo,
   fullNameValue,
@@ -28,6 +31,9 @@ export default function AuthLeftPanel({
   fileInputRef,
   handleImageUpload,
 }) {
+  const displayFullName = fullNameValue || extractedCardData?.name || 'Student';
+  const displayRegNo = usernameValue || extractedCardData?.registration_no || '—';
+
   return (
     <div className="hidden md:flex md:w-5/12 relative flex-col justify-center overflow-hidden">
       {mode === 'login' || role === 'BUYER' || registerStep === 1 || (!isIdVerified && registerStep !== 2) ? (
@@ -39,8 +45,8 @@ export default function AuthLeftPanel({
             </div>
 
             <div className="flex items-baseline">
-              <span className="text-3xl sm:text-4xl font-black tracking-tight text-white font-display">LP</span>
-              <span className="text-3xl sm:text-4xl font-black tracking-tight text-brand-100 font-display">Xchange</span>
+              <span className="text-3xl sm:text-4xl font-black tracking-tight text-white font-display">Campus</span>
+              <span className="text-3xl sm:text-4xl font-black tracking-tight text-brand-100 font-display">XChange</span>
             </div>
 
             <p className="text-white/90 text-sm mt-3 max-w-[260px] leading-relaxed">
@@ -189,37 +195,83 @@ export default function AuthLeftPanel({
           </div>
         </div>
       ) : (
-        /* REGISTER STEP 3 & 4: Simple & Clean Verified ID Preview */
-        <div className="h-full w-full bg-gradient-to-br from-brand-500 to-brand-600 p-8 flex flex-col justify-center items-center text-center text-white">
-          <div className="flex flex-col items-center w-full max-w-[280px]">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold border border-white/25 mb-3 shadow-2xs">
+        /* REGISTER STEPS 3, 4, 5 (SELLER): ID Verified Preview & Dual Photo Showcase (ID + Selfie) */
+        <div className="h-full w-full bg-gradient-to-br from-brand-500 to-brand-600 p-5 sm:p-6 flex flex-col justify-center items-center text-center text-white">
+          <div className="flex flex-col items-center w-full max-w-[310px]">
+            {/* Verification Status Pill */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold border border-white/25 mb-2 shadow-2xs">
               <BadgeCheck className="w-4 h-4 text-white" />
-              <span>ID Verified</span>
+              <span>{selfieImage ? 'ID & Face Verified' : 'ID Verified'}</span>
             </div>
 
-            <h3 className="text-xl sm:text-2xl font-black text-white font-display tracking-tight">
-              Student ID Verified
+            <h3 className="text-xl sm:text-2xl font-black text-white font-display tracking-tight leading-tight">
+              {selfieImage ? 'Student Verified' : 'Student ID Verified'}
             </h3>
-            <p className="text-white/85 text-xs mt-1 mb-4">
-              Credentials matched successfully
+            <p className="text-white/85 text-xs mt-0.5 mb-3">
+              {selfieImage
+                ? 'ID Card & Live Selfie matched successfully'
+                : 'Credentials matched successfully'}
             </p>
 
             {/* ID Card Display Card */}
             {idFrontImage && (
-              <div className="w-full rounded-md overflow-hidden bg-white p-1.5 shadow-md border border-white/20 mb-4">
-                <img
-                  src={idFrontImage}
-                  alt="Verified Student ID"
-                  className="max-h-44 w-full object-contain rounded"
-                />
+              <div className="w-full rounded-lg overflow-hidden bg-white/10 backdrop-blur-xs border border-white/20 p-2 shadow-sm mb-2.5 text-left">
+                <div className="flex items-center justify-between text-[10px] font-bold text-white mb-1.5 px-0.5">
+                  <span className="flex items-center gap-1 uppercase tracking-wider">
+                    <ShieldCheck className="w-3.5 h-3.5 text-white" />
+                    Student ID Card
+                  </span>
+                </div>
+                <div className="rounded overflow-hidden bg-white p-1 shadow-xs flex items-center justify-center">
+                  <img
+                    src={idFrontImage}
+                    alt="Verified Student ID Card"
+                    className={`${selfieImage ? 'max-h-28 sm:max-h-30' : 'max-h-40 sm:max-h-44'} w-full object-contain rounded`}
+                  />
+                </div>
               </div>
             )}
 
-            {/* Clean Student Info */}
-            <div className="w-full py-2.5 px-4 rounded-md bg-white/10 border border-white/20 text-white text-xs">
-              <p className="font-bold text-sm">{fullNameValue || 'Student'}</p>
-              <p className="text-white/80 font-mono text-xs mt-0.5">Reg No: {usernameValue || '—'}</p>
-            </div>
+            {/* Live Selfie Photo & Student Profile (Shown prominently during Step 4 OTP and Step 5 Password) */}
+            {selfieImage ? (
+              <div className="w-full rounded-lg overflow-hidden bg-white/10 backdrop-blur-xs border border-white/20 p-2.5 shadow-sm text-left">
+                <div className="flex items-center justify-between text-[10px] font-bold text-white mb-1.5 px-0.5">
+                  <span className="flex items-center gap-1 uppercase tracking-wider">
+                    <Camera className="w-3.5 h-3.5 text-white" />
+                    Live Selfie Photo
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 bg-white/10 p-2 rounded-md border border-white/20">
+                  <div className="relative shrink-0">
+                    <img
+                      src={selfieImage}
+                      alt="Live Selfie Photo"
+                      className="w-16 h-16 sm:w-18 sm:h-18 rounded-md object-cover border-2 border-white shadow-sm bg-white/10"
+                    />
+                    <span className="absolute -bottom-1 -right-1 bg-white text-brand-600 rounded-full p-0.5 border border-brand-500/20 shadow-xs">
+                      <CheckCircle2 className="w-3 h-3" />
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-white truncate">
+                      {displayFullName}
+                    </p>
+                    <p className="text-white/80 font-mono text-xs mt-0.5 truncate">
+                      Reg No: {displayRegNo}
+                    </p>
+                    <div className="mt-1 flex items-center gap-1 text-[10px] text-white/90 font-medium">
+                      <span>✓ Liveness Passed</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Clean Student Info fallback when selfie not yet taken (Step 3) */
+              <div className="w-full py-2.5 px-4 rounded-md bg-white/10 border border-white/20 text-white text-xs text-center">
+                <p className="font-bold text-sm">{displayFullName}</p>
+                <p className="text-white/80 font-mono text-xs mt-0.5">Reg No: {displayRegNo}</p>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -101,10 +101,10 @@ def extract_cloudinary_public_id(image_url):
         if version_idx != -1:
             public_id_segments = segments[version_idx + 1:]
         else:
-            # Check for folder 'campusxchange' or 'lputrade'
+            # Check for folder 'campusxchange'
             folder_idx = -1
             for idx, seg in enumerate(segments):
-                if seg in ('campusxchange', 'lpxchange', 'lputrade'):
+                if seg in ('campusxchange',):
                     folder_idx = idx
                     break
             if folder_idx != -1:

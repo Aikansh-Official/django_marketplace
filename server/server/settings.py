@@ -217,7 +217,7 @@ REST_FRAMEWORK = {
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'lputrade-locmem-cache',
+        'LOCATION': 'campusxchange-locmem-cache',
         'TIMEOUT': 300,
     }
 }

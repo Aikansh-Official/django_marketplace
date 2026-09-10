@@ -24,8 +24,6 @@ urlpatterns = [
     path('health/', health_check, name='health-check'),
     path('api/health/', health_check, name='api-health-check'),
     path('campusxchange-admin/', admin.site.urls),
-    path('lpxchange-admin/', admin.site.urls),
-    path('lputrade-admin/', admin.site.urls),
     path('api/auth/', include('users.urls')),
     path('api/marketplace/', include('marketplace.urls')),
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),

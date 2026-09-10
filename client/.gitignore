@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# MediaPipe large binary/wasm files (loaded from CDN at runtime)
+public/mediapipe/

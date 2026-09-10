@@ -8,77 +8,12 @@ import {
   ScanFace,
   CheckCircle2,
   XCircle,
+  AlertCircle,
   Loader2,
-  Sparkles,
-  User
+  Ban
 } from 'lucide-react';
 import { compressImageToDataUrl } from '../../../utils/compressImage';
-
-// Face detection: use native FaceDetector API if available, else canvas heuristic
-async function detectFaceNative(imageSrc) {
-  if (!('FaceDetector' in window)) return null;
-  try {
-    const detector = new window.FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
-    const img = new Image();
-    img.src = imageSrc;
-    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
-    const faces = await detector.detect(img);
-    return faces.length > 0;
-  } catch {
-    return null; // API exists but failed, fallback
-  }
-}
-
-function detectFaceHeuristic(imageSrc) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const w = Math.min(img.width, 320);
-      const h = Math.min(img.height, 240);
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, w, h);
-
-      // Sample center 40% region
-      const sx = Math.floor(w * 0.3);
-      const sy = Math.floor(h * 0.2);
-      const sw = Math.floor(w * 0.4);
-      const sh = Math.floor(h * 0.6);
-      const imageData = ctx.getImageData(sx, sy, sw, sh);
-      const pixels = imageData.data;
-
-      let skinPixels = 0;
-      const totalPixels = pixels.length / 4;
-
-      for (let i = 0; i < pixels.length; i += 4) {
-        const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
-        // Skin tone detection using RGB ranges (covers multiple skin tones)
-        if (
-          r > 60 && g > 40 && b > 20 &&
-          r > g && r > b &&
-          (r - g) > 15 &&
-          Math.abs(r - g) < 130 &&
-          r < 250 && g < 230 && b < 210
-        ) {
-          skinPixels++;
-        }
-      }
-
-      const skinRatio = skinPixels / totalPixels;
-      resolve(skinRatio > 0.12); // At least 12% skin pixels in center = likely a face
-    };
-    img.onerror = () => resolve(false);
-    img.src = imageSrc;
-  });
-}
-
-async function detectFace(imageSrc) {
-  const nativeResult = await detectFaceNative(imageSrc);
-  if (nativeResult !== null) return nativeResult;
-  return detectFaceHeuristic(imageSrc);
-}
+import { analyzeFaceFrame } from '../../../utils/faceLivenessDetector';
 
 const videoConstraints = {
   width: 480,
@@ -94,30 +29,52 @@ export default function RegisterStepSelfie({
 }) {
   const webcamRef = useRef(null);
   const detectionInterval = useRef(null);
-  const [faceDetected, setFaceDetected] = useState(false);
+
+  const [liveness, setLiveness] = useState({
+    faceDetected: false,
+    eyesOpen: false,
+    leftEyeOpen: false,
+    rightEyeOpen: false,
+    noseVisible: false,
+    mouthVisible: false,
+    handDetected: false,
+    isFormal: true,
+    formalReason: null,
+    fullyVisible: false,
+    statusText: 'Align face inside guide'
+  });
+
   const [isDetecting, setIsDetecting] = useState(true);
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Run face detection every 600ms while camera is active
+  // Run face liveness, individual eye & hand detection loop every 260ms
   useEffect(() => {
     if (selfieImage || !cameraReady || cameraError) {
       if (detectionInterval.current) clearInterval(detectionInterval.current);
       return;
     }
 
-    detectionInterval.current = setInterval(async () => {
-      if (!webcamRef.current) return;
-      const screenshot = webcamRef.current.getScreenshot();
-      if (!screenshot) return;
+    let isBusy = false;
 
-      setIsDetecting(true);
-      const hasFace = await detectFace(screenshot);
-      setFaceDetected(hasFace);
-      setIsDetecting(false);
-    }, 600);
+    detectionInterval.current = setInterval(async () => {
+      if (isBusy || !webcamRef.current) return;
+      const video = webcamRef.current.video;
+      if (!video || video.readyState < 2) return;
+
+      isBusy = true;
+      try {
+        const result = await analyzeFaceFrame(video);
+        setLiveness(result);
+        setIsDetecting(false);
+      } catch (err) {
+        console.warn('Face detection error:', err);
+      } finally {
+        isBusy = false;
+      }
+    }, 260);
 
     return () => {
       if (detectionInterval.current) clearInterval(detectionInterval.current);
@@ -133,7 +90,7 @@ export default function RegisterStepSelfie({
     if (screenshot) {
       setIsProcessing(true);
       try {
-        // Convert base64 to blob for compression
+        // Convert base64 to blob for compact upload
         const res = await fetch(screenshot);
         const blob = await res.blob();
         const file = new File([blob], 'selfie.jpg', { type: 'image/jpeg' });
@@ -144,7 +101,7 @@ export default function RegisterStepSelfie({
         });
         setSelfieImage(compressed);
       } catch {
-        // Use raw screenshot if compression fails
+        // Fallback to raw screenshot if compression fails
         setSelfieImage(screenshot);
       }
       setIsProcessing(false);
@@ -154,9 +111,18 @@ export default function RegisterStepSelfie({
 
   const handleRetake = () => {
     setSelfieImage(null);
-    setFaceDetected(false);
+    setLiveness({
+      faceDetected: false,
+      eyesOpen: false,
+      leftEyeOpen: false,
+      rightEyeOpen: false,
+      noseVisible: false,
+      mouthVisible: false,
+      handDetected: false,
+      fullyVisible: false,
+      statusText: 'Align face inside guide'
+    });
     setCameraReady(false);
-    // Camera will re-mount and trigger onUserMedia
   };
 
   const handleCameraReady = () => {
@@ -168,7 +134,7 @@ export default function RegisterStepSelfie({
     console.error('Camera error:', err);
     setCameraError(
       err?.name === 'NotAllowedError'
-        ? 'Camera access denied. Please allow camera permission and try again.'
+        ? 'Camera access denied. Please allow camera permission in browser.'
         : 'Could not access camera. Please make sure your device has a camera.'
     );
   };
@@ -182,7 +148,7 @@ export default function RegisterStepSelfie({
           Take a Selfie
         </h2>
         <p className="text-sm text-gray-500 mt-1">
-          This will be used as your profile photo
+          Position your face inside the circle for verification
         </p>
       </div>
 
@@ -190,15 +156,19 @@ export default function RegisterStepSelfie({
       <div className="flex flex-col items-center">
         {!selfieImage ? (
           /* LIVE CAMERA VIEW */
-          <div className="relative">
-            {/* Circular camera viewport */}
+          <div className="relative flex flex-col items-center">
+            {/* Circular camera viewport with dynamic state border */}
             <div
-              className={`relative w-56 h-56 sm:w-64 sm:h-64 rounded-full overflow-hidden border-4 transition-all duration-300 shadow-lg ${
+              className={`relative w-60 h-60 sm:w-68 sm:h-68 rounded-full overflow-hidden border-4 transition-all duration-300 shadow-xl ${
                 cameraError
                   ? 'border-red-400'
-                  : faceDetected
-                    ? 'border-emerald-400 shadow-emerald-200/50'
-                    : 'border-gray-300'
+                  : liveness.handDetected
+                    ? 'border-red-500 shadow-red-300 ring-4 ring-red-500/25'
+                    : liveness.fullyVisible
+                      ? 'border-emerald-500 shadow-emerald-400/40 ring-4 ring-emerald-500/20'
+                      : liveness.faceDetected
+                        ? 'border-amber-400 shadow-amber-200/50'
+                        : 'border-gray-300 shadow-gray-200'
               }`}
             >
               {cameraError ? (
@@ -219,8 +189,122 @@ export default function RegisterStepSelfie({
                     onUserMedia={handleCameraReady}
                     onUserMediaError={handleCameraError}
                     className="w-full h-full object-cover"
-                    style={{ transform: 'scaleX(-1)' }}
                   />
+
+                  {/* Visual Face & Facial Landmarks Guide Overlay */}
+                  {cameraReady && (
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                      <svg
+                        viewBox="0 0 200 200"
+                        className="w-full h-full"
+                        style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.35))' }}
+                      >
+                        {/* 1. Oval Head Silhouette */}
+                        <ellipse
+                          cx="100"
+                          cy="96"
+                          rx="55"
+                          ry="69"
+                          fill="none"
+                          stroke={
+                            liveness.handDetected
+                              ? '#ef4444'
+                              : liveness.fullyVisible
+                                ? '#10b981'
+                                : liveness.faceDetected
+                                  ? '#f59e0b'
+                                  : 'rgba(255, 255, 255, 0.75)'
+                          }
+                          strokeWidth={liveness.fullyVisible || liveness.handDetected ? '3' : '2'}
+                          strokeDasharray={liveness.fullyVisible ? 'none' : '5 4'}
+                          className="transition-all duration-300"
+                        />
+
+                        {/* Top & Bottom Alignment Ticks */}
+                        <line
+                          x1="100"
+                          y1="18"
+                          x2="100"
+                          y2="26"
+                          stroke={liveness.fullyVisible ? '#10b981' : 'rgba(255,255,255,0.8)'}
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                        />
+                        <line
+                          x1="100"
+                          y1="166"
+                          x2="100"
+                          y2="174"
+                          stroke={liveness.fullyVisible ? '#10b981' : 'rgba(255,255,255,0.8)'}
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                        />
+
+                        {/* 2. Left Eye Guide Marker */}
+                        <g className="transition-all duration-200">
+                          <ellipse
+                            cx="77"
+                            cy="82"
+                            rx="11"
+                            ry="6.5"
+                            fill={liveness.leftEyeOpen ? 'rgba(16, 185, 129, 0.3)' : 'none'}
+                            stroke={liveness.leftEyeOpen ? '#10b981' : 'rgba(255, 255, 255, 0.85)'}
+                            strokeWidth={liveness.leftEyeOpen ? '2.5' : '1.8'}
+                            strokeDasharray={liveness.leftEyeOpen ? 'none' : '3 3'}
+                          />
+                          <circle
+                            cx="77"
+                            cy="82"
+                            r="2.5"
+                            fill={liveness.leftEyeOpen ? '#10b981' : 'rgba(255, 255, 255, 0.9)'}
+                          />
+                        </g>
+
+                        {/* 3. Right Eye Guide Marker */}
+                        <g className="transition-all duration-200">
+                          <ellipse
+                            cx="123"
+                            cy="82"
+                            rx="11"
+                            ry="6.5"
+                            fill={liveness.rightEyeOpen ? 'rgba(16, 185, 129, 0.3)' : 'none'}
+                            stroke={liveness.rightEyeOpen ? '#10b981' : 'rgba(255, 255, 255, 0.85)'}
+                            strokeWidth={liveness.rightEyeOpen ? '2.5' : '1.8'}
+                            strokeDasharray={liveness.rightEyeOpen ? 'none' : '3 3'}
+                          />
+                          <circle
+                            cx="123"
+                            cy="82"
+                            r="2.5"
+                            fill={liveness.rightEyeOpen ? '#10b981' : 'rgba(255, 255, 255, 0.9)'}
+                          />
+                        </g>
+
+                        {/* 4. Nose Guide Marker */}
+                        <path
+                          d="M 100 86 L 98 103 L 104 103"
+                          fill="none"
+                          stroke={liveness.noseVisible ? '#10b981' : 'rgba(255, 255, 255, 0.85)'}
+                          strokeWidth={liveness.noseVisible ? '2.5' : '1.8'}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="transition-all duration-200"
+                        />
+
+                        {/* 5. Mouth Guide Marker (Normal Mouth & Smile compatible) */}
+                        <path
+                          d="M 85 125 Q 100 137 115 125"
+                          fill="none"
+                          stroke={liveness.mouthVisible ? '#10b981' : 'rgba(255, 255, 255, 0.85)'}
+                          strokeWidth={liveness.mouthVisible ? '2.5' : '1.8'}
+                          strokeLinecap="round"
+                          strokeDasharray={liveness.mouthVisible ? 'none' : '3 3'}
+                          className="transition-all duration-200"
+                        />
+                      </svg>
+                    </div>
+                  )}
+
                   {!cameraReady && (
                     <div className="absolute inset-0 bg-gray-900/80 flex flex-col items-center justify-center">
                       <Loader2 className="w-8 h-8 text-white animate-spin mb-2" />
@@ -231,65 +315,62 @@ export default function RegisterStepSelfie({
               )}
             </div>
 
-            {/* Face detection badge */}
+            {/* Overall Status Badge */}
             {cameraReady && !cameraError && (
-              <div
-                className={`absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-md transition-all duration-300 ${
-                  faceDetected
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-gray-100 text-gray-500'
-                }`}
-              >
-                {isDetecting ? (
-                  <>
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    Detecting...
-                  </>
-                ) : faceDetected ? (
-                  <>
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Face Detected
-                  </>
-                ) : (
-                  <>
-                    <XCircle className="w-3.5 h-3.5" />
-                    No Face Found
-                  </>
-                )}
+              <div className="mt-3 flex flex-col items-center gap-2">
+                <div
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold shadow-md transition-all duration-300 ${
+                    liveness.handDetected
+                      ? 'bg-red-500 text-white animate-bounce'
+                      : liveness.fullyVisible
+                        ? 'bg-emerald-500 text-white animate-in zoom-in-95'
+                        : liveness.faceDetected
+                          ? 'bg-amber-500 text-white'
+                          : 'bg-gray-100 text-gray-600 border border-gray-200'
+                  }`}
+                >
+                  {isDetecting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Checking face & hands...
+                    </>
+                  ) : liveness.handDetected ? (
+                    <>
+                      <Ban className="w-4 h-4 text-white" />
+                      Hand Detected! Remove hands from frame
+                    </>
+                  ) : liveness.fullyVisible ? (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 text-white" />
+                      Face Verified & Ready
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="w-4 h-4 text-white" />
+                      {liveness.statusText}
+                    </>
+                  )}
+                </div>
               </div>
             )}
           </div>
         ) : (
           /* PREVIEW CAPTURED PHOTO */
           <div className="relative">
-            <div className="w-56 h-56 sm:w-64 sm:h-64 rounded-full overflow-hidden border-4 border-emerald-400 shadow-lg shadow-emerald-200/40">
+            <div className="w-60 h-60 sm:w-68 sm:h-68 rounded-full overflow-hidden border-4 border-emerald-500 shadow-xl shadow-emerald-200/40">
               <img
                 src={selfieImage}
                 alt="Captured selfie"
                 className="w-full h-full object-cover"
               />
             </div>
-            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500 text-white shadow-md">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              Photo Captured
+            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-500 text-white shadow-md whitespace-nowrap">
+              <CheckCircle2 className="w-4 h-4" />
+              Photo Captured & Verified
             </div>
           </div>
         )}
       </div>
-
-      {/* Tips */}
-      {!selfieImage && !cameraError && (
-        <div className="mt-6 bg-brand-50/50 rounded-lg p-3 border border-brand-100">
-          <p className="text-xs font-bold text-brand-700 mb-1.5 flex items-center gap-1">
-            <Sparkles className="w-3.5 h-3.5" /> Tips for a good selfie
-          </p>
-          <ul className="text-[11px] text-brand-600/80 space-y-0.5 list-disc list-inside">
-            <li>Look straight at the camera</li>
-            <li>Make sure your face is well-lit</li>
-            <li>Remove glasses or accessories covering your face</li>
-          </ul>
-        </div>
-      )}
 
       {/* Action Buttons */}
       <div className="mt-6 space-y-2.5">
@@ -298,11 +379,11 @@ export default function RegisterStepSelfie({
           <button
             type="button"
             onClick={handleCapture}
-            disabled={!faceDetected || isCapturing || isProcessing || !cameraReady || cameraError}
+            disabled={!liveness.fullyVisible || liveness.handDetected || isCapturing || isProcessing || !cameraReady || cameraError}
             className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-black text-sm tracking-tight transition-all duration-200 ${
-              faceDetected && cameraReady && !cameraError
-                ? 'bg-brand-500 hover:bg-brand-600 text-white shadow-md shadow-brand-500/25 cursor-pointer'
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              liveness.fullyVisible && !liveness.handDetected && cameraReady && !cameraError
+                ? 'bg-brand-500 hover:bg-brand-600 text-white shadow-lg shadow-brand-500/25 cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0'
+                : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
             }`}
           >
             {isCapturing || isProcessing ? (
@@ -310,10 +391,20 @@ export default function RegisterStepSelfie({
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Capturing...
               </>
+            ) : liveness.handDetected ? (
+              <>
+                <Ban className="w-4 h-4 text-red-400" />
+                Remove Hand to Enable Capture
+              </>
+            ) : !liveness.isFormal && liveness.faceDetected ? (
+              <>
+                <AlertCircle className="w-4 h-4 text-amber-500" />
+                {liveness.formalReason || 'Keep Formal Expression to Capture'}
+              </>
             ) : (
               <>
                 <Camera className="w-4 h-4" />
-                Capture Selfie
+                {liveness.fullyVisible ? 'Capture Selfie' : 'Align Face with Open Eyes & Mouth'}
               </>
             )}
           </button>

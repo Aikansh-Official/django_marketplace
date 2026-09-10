@@ -38,8 +38,8 @@ export default function Footer() {
                 className="h-8 w-8 object-cover rounded-lg"
               />
               <div className="flex items-baseline">
-                <span className="text-lg font-bold tracking-tight text-gray-950 font-display">LP</span>
-                <span className="text-lg font-bold tracking-tight text-brand-500 font-display">Xchange</span>
+                <span className="text-lg font-bold tracking-tight text-gray-950 font-display">Campus</span>
+                <span className="text-lg font-bold tracking-tight text-brand-500 font-display">XChange</span>
               </div>
             </Link>
             <p className="text-xs text-gray-500 leading-relaxed">

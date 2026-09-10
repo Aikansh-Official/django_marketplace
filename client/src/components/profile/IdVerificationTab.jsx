@@ -348,24 +348,16 @@ export default function IdVerificationTab({ profile, onProfileUpdated }) {
       return;
     }
 
-    try {
-      const compressedDataUrl = await compressImageToDataUrl(file, {
-        maxWidth: 1000,
-        maxHeight: 700,
-        quality: 0.75,
-      });
-      setIdFrontImage(compressedDataUrl);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setIdFrontImage(reader.result);
       setRejectionInfo(null);
-      toast.success('ID photo loaded & compressed.');
-    } catch {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setIdFrontImage(reader.result);
-        setRejectionInfo(null);
-        toast.success('ID photo loaded in preview.');
-      };
-      reader.readAsDataURL(file);
-    }
+      toast.success('ID photo loaded successfully.');
+    };
+    reader.onerror = () => {
+      toast.error('Failed to read ID photo file.');
+    };
+    reader.readAsDataURL(file);
   };
 
   const triggerCelebrationConfetti = () => {
@@ -436,9 +428,20 @@ export default function IdVerificationTab({ profile, onProfileUpdated }) {
       if (validationResult.isValid) {
         // MATCH SUCCESSFUL! Update backend DB model CustomUser.is_id_verified = True
         try {
+          let compressedForDb = idFrontImage;
+          try {
+            compressedForDb = await compressImageToDataUrl(idFrontImage, {
+              maxWidth: 1000,
+              maxHeight: 700,
+              quality: 0.75,
+            });
+          } catch (compErr) {
+            console.warn('Compression before upload failed, using original:', compErr);
+          }
+
           await axios.post(`${API_BASE}/auth/verify-id/`, {
             reg_no: registeredRegNo,
-            id_card_image: idFrontImage,
+            id_card_image: compressedForDb,
             id_card_data: validationResult.extraData
           });
         } catch (apiErr) {
@@ -514,136 +517,116 @@ export default function IdVerificationTab({ profile, onProfileUpdated }) {
           </span>
         </div>
 
-        {/* 2-Column Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column: Verification Details */}
-          <div className="lg:col-span-6 bg-white rounded-md border border-gray-200/90 p-4 sm:p-6 shadow-sm space-y-5">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center flex-shrink-0 shadow-xs">
-                <BadgeCheck className="w-7 h-7" />
-              </div>
-              <div>
-                <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider">
-                  +5 Trust Score Points Earned
-                </span>
-                <h3 className="text-sm font-extrabold text-gray-900 mt-1">
-                  Official Student Verified
-                </h3>
-              </div>
+        {/* Single Verified Details Card (No right side document preview) */}
+        <div className="max-w-2xl bg-white rounded-md border border-gray-200/90 p-5 sm:p-6 shadow-sm space-y-5">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center flex-shrink-0 shadow-xs">
+              <BadgeCheck className="w-7 h-7" />
             </div>
-
-            <div className="bg-gray-50 border border-gray-200/80 rounded-md p-4 space-y-3">
-              <div>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-                  Student Name
-                </span>
-                <span className="text-sm font-bold text-gray-900 flex items-center gap-1.5 mt-0.5">
-                  <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  {studentName || 'LPU Student'}
-                </span>
-              </div>
-
-              <div className="pt-2 border-t border-gray-200/60">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-                  Registration Number
-                </span>
-                <span className="text-sm font-mono font-bold text-gray-900 flex items-center gap-1.5 mt-0.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  {registeredRegNo}
-                </span>
-              </div>
-
-              {profile?.id_card_data?.program && (
-                <div className="pt-2 border-t border-gray-200/60">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-                    Program / Degree
-                  </span>
-                  <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5 mt-0.5">
-                    <GraduationCap className="w-3.5 h-3.5 text-brand-600 flex-shrink-0" />
-                    {profile.id_card_data.program}
-                  </span>
-                </div>
-              )}
-
-              {profile?.id_card_data?.validity && (
-                <div className="pt-2 border-t border-gray-200/60">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-                    Valid Upto
-                  </span>
-                  <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5 mt-0.5">
-                    <Calendar className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                    {profile.id_card_data.validity}
-                  </span>
-                </div>
-              )}
-
-              {profile?.id_card_data?.bloodGroup && (
-                <div className="pt-2 border-t border-gray-200/60">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-                    Blood Group
-                  </span>
-                  <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5 mt-0.5">
-                    <Activity className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
-                    {profile.id_card_data.bloodGroup}
-                  </span>
-                </div>
-              )}
-
-              <div className="pt-2 border-t border-gray-200/60">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-                  Marketplace Privileges
-                </span>
-                <p className="text-xs text-gray-600 mt-1 leading-relaxed">
-                  Your profile displays the Golden Verified Badge on all product listings, offers, and chat messages.
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-1">
-              <button
-                type="button"
-                onClick={handleStartReupload}
-                className="text-xs text-brand-600 hover:text-brand-700 font-bold hover:underline inline-flex items-center gap-1.5 cursor-pointer"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                Re-upload or Update ID Card Photo
-              </button>
+            <div>
+              <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider">
+                +5 Trust Score Points Earned
+              </span>
+              <h3 className="text-sm font-extrabold text-gray-900 mt-1">
+                Official Student Verified
+              </h3>
             </div>
           </div>
 
-          {/* Right Column: Verified ID Card Image Display */}
-          <div className="lg:col-span-6 bg-white rounded-md border border-gray-200/90 p-4 sm:p-6 shadow-sm space-y-3">
-            <div className="border-b border-gray-100 pb-2.5 flex items-center justify-between">
-              <h3 className="text-xs font-extrabold text-gray-900 uppercase tracking-wider flex items-center gap-2">
-                <FileText className="w-4 h-4 text-brand-600" />
-                Verified ID Card Document
-              </h3>
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                Front Side
+          <div className="bg-gray-50 border border-gray-200/80 rounded-md p-4 space-y-3">
+            <div>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                Student Name
+              </span>
+              <span className="text-sm font-bold text-gray-900 flex items-center gap-1.5 mt-0.5">
+                <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                {studentName || 'LPU Student'}
               </span>
             </div>
 
-            {displayedCardImage ? (
-              <div className="relative rounded-md overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center p-2 min-h-[220px]">
-                <img
-                  src={displayedCardImage}
-                  alt="Verified Student ID"
-                  className="max-h-72 w-full object-contain rounded"
-                />
-                <div className="absolute bottom-3 right-3 bg-emerald-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded shadow-md flex items-center gap-1.5">
-                  <BadgeCheck className="w-3.5 h-3.5" />
-                  Verified Student ID
-                </div>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-gray-200 rounded-md min-h-[220px] flex flex-col items-center justify-center p-6 text-center bg-gray-50/50">
-                <BadgeCheck className="w-8 h-8 text-emerald-600 mb-2" />
-                <p className="text-xs font-bold text-gray-700">Official Student ID on File</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">Registration: {registeredRegNo}</p>
+            <div className="pt-2 border-t border-gray-200/60">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                Registration Number
+              </span>
+              <span className="text-sm font-mono font-bold text-gray-900 flex items-center gap-1.5 mt-0.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                {registeredRegNo}
+              </span>
+            </div>
+
+            {profile?.id_card_data?.program && (
+              <div className="pt-2 border-t border-gray-200/60">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                  Program / Degree
+                </span>
+                <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5 mt-0.5">
+                  <GraduationCap className="w-3.5 h-3.5 text-brand-600 flex-shrink-0" />
+                  {profile.id_card_data.program}
+                </span>
               </div>
             )}
+
+            {profile?.id_card_data?.validity && (
+              <div className="pt-2 border-t border-gray-200/60">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                  Valid Upto
+                </span>
+                <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5 mt-0.5">
+                  <Calendar className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                  {profile.id_card_data.validity}
+                </span>
+              </div>
+            )}
+
+            {profile?.id_card_data?.bloodGroup && (
+              <div className="pt-2 border-t border-gray-200/60">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                  Blood Group
+                </span>
+                <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5 mt-0.5">
+                  <Activity className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                  {profile.id_card_data.bloodGroup}
+                </span>
+              </div>
+            )}
+
+            <div className="pt-2 border-t border-gray-200/60">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                Marketplace Privileges
+              </span>
+              <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                Your profile displays the Golden Verified Badge on all product listings, offers, and chat messages.
+              </p>
+            </div>
           </div>
+
+          {/* Verified Selfie Photo (placed in verification card instead of re-upload button) */}
+          {profile?.profile_photo && (
+            <div className="pt-2">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">
+                Verified Selfie Photo
+              </span>
+              <div className="flex items-center gap-3.5 p-3 rounded-md bg-gray-50 border border-gray-200/80">
+                <img
+                  src={profile.profile_photo}
+                  alt="Verified Live Selfie"
+                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-md object-cover border-2 border-emerald-500 shadow-xs flex-shrink-0"
+                />
+                <div className="min-w-0">
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    Live Selfie Verified
+                  </span>
+                  <p className="text-xs font-bold text-gray-900 mt-1 truncate">
+                    {studentName || 'Student'}
+                  </p>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    Face identity authenticated with student credentials
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );

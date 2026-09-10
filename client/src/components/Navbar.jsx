@@ -197,8 +197,8 @@ export default function Navbar() {
                   className="h-8 w-8 sm:h-9 sm:w-9 object-cover rounded-lg shadow-2xs shrink-0"
                 />
                 <div className="flex items-baseline">
-                  <span className="text-lg sm:text-xl font-bold tracking-tight text-gray-950 font-display">LP</span>
-                  <span className="text-lg sm:text-xl font-bold tracking-tight text-brand-500 font-display">Xchange</span>
+                  <span className="text-lg sm:text-xl font-bold tracking-tight text-gray-950 font-display">Campus</span>
+                  <span className="text-lg sm:text-xl font-bold tracking-tight text-brand-500 font-display">XChange</span>
                 </div>
               </Link>
 
@@ -292,8 +292,16 @@ export default function Navbar() {
                         onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                         className="flex items-center gap-2 p-1.5 pl-2 pr-2.5 rounded-full hover:bg-gray-100 transition-colors text-left"
                       >
-                        <div className="w-7 h-7 rounded-full bg-gray-900 text-white font-semibold text-xs flex items-center justify-center">
-                          {getUserInitials()}
+                        <div className="w-7 h-7 rounded-full bg-gray-900 text-white font-semibold text-xs flex items-center justify-center overflow-hidden">
+                          {userProfile?.profile_photo ? (
+                            <img
+                              src={userProfile.profile_photo}
+                              alt={displayName}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            getUserInitials()
+                          )}
                         </div>
                         <span className="text-xs font-semibold text-gray-800 max-w-[100px] truncate">
                           {displayName}

@@ -12,7 +12,6 @@ import {
   ArrowRight,
   ArrowLeft
 } from 'lucide-react';
-import { compressImageToDataUrl } from '../../../utils/compressImage';
 
 export default function RegisterStepIdCard({
   usernameValue,
@@ -51,25 +50,15 @@ export default function RegisterStepIdCard({
           <input
             type="file"
             accept="image/*"
-            onChange={async (e) => {
+            onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) {
-                try {
-                  const compressed = await compressImageToDataUrl(file, {
-                    maxWidth: 1000,
-                    maxHeight: 700,
-                    quality: 0.75,
-                  });
-                  setIdFrontImage(compressed);
+                const reader = new FileReader();
+                reader.onload = () => {
+                  setIdFrontImage(reader.result);
                   setIsIdVerified(false);
-                } catch {
-                  const reader = new FileReader();
-                  reader.onload = () => {
-                    setIdFrontImage(reader.result);
-                    setIsIdVerified(false);
-                  };
-                  reader.readAsDataURL(file);
-                }
+                };
+                reader.readAsDataURL(file);
               }
             }}
             className="hidden"

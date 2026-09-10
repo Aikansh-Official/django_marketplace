@@ -101,10 +101,18 @@ export default function PersonalInfoTab({ profile, onProfileUpdated, onUpgradeCl
             {/* Avatar & Name Row */}
             <div className="flex flex-col sm:flex-row sm:items-end gap-3.5 sm:gap-6">
               {/* Large Avatar */}
-              <div className="-mt-12 sm:-mt-18 w-24 h-24 sm:w-32 sm:h-32 rounded-md bg-white p-1.5 sm:p-2 shadow-xl ring-4 ring-white flex-shrink-0 relative z-10">
-                <div className="w-full h-full rounded-md bg-gradient-to-tr from-brand-500 to-brand-400 text-white flex items-center justify-center text-3xl sm:text-5xl font-black shadow-inner">
-                  {firstLetter}
-                </div>
+              <div className="-mt-12 sm:-mt-18 w-24 h-24 sm:w-32 sm:h-32 rounded-md bg-white p-1.5 sm:p-2 shadow-xl ring-4 ring-white flex-shrink-0 relative z-10 overflow-hidden">
+                {profile?.profile_photo ? (
+                  <img
+                    src={profile.profile_photo}
+                    alt={fullName}
+                    className="w-full h-full object-cover rounded-md shadow-inner"
+                  />
+                ) : (
+                  <div className="w-full h-full rounded-md bg-gradient-to-tr from-brand-500 to-brand-400 text-white flex items-center justify-center text-3xl sm:text-5xl font-black shadow-inner">
+                    {firstLetter}
+                  </div>
+                )}
               </div>
 
               {/* Name, Badges & Reg No - Generous top spacing from banner */}
