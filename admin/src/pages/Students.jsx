@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
@@ -8,6 +9,60 @@ import {
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
+// Clean OCR metadata formatters
+const formatOcrKey = (key) => {
+  const map = {
+    batch: 'Batch / Year',
+    care_of: 'Care Of / Guardian',
+    careof: 'Care Of / Guardian',
+    roll_no: 'Roll Number',
+    rollno: 'Roll Number',
+    reg_no: 'Registration No',
+    regno: 'Registration No',
+    program: 'Program / Degree',
+    valid_upto: 'Valid Upto',
+    validupto: 'Valid Upto',
+    father_name: "Father's Name",
+    name: 'Name on ID',
+    blood_group: 'Blood Group',
+    dob: 'Date of Birth',
+    address: 'Address'
+  };
+  const clean = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (map[clean]) return map[clean];
+  return key
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/_/g, ' ')
+    .replace(/^\w/, (c) => c.toUpperCase())
+    .trim();
+};
+
+const formatOcrValue = (val) => {
+  if (
+    val === null ||
+    val === undefined ||
+    val === '' ||
+    String(val).trim().toLowerCase() === 'null' ||
+    String(val).trim().toLowerCase() === 'none'
+  ) {
+    return <span className="text-gray-400 font-mono text-[11px] italic">Not detected</span>;
+  }
+  return <span className="font-bold text-gray-800 font-mono">{String(val)}</span>;
+};
+
+const getOcrEntries = (data) => {
+  if (!data || typeof data !== 'object') return [];
+  return Object.entries(data).filter(([k]) => !k.startsWith('_'));
+};
+
+const hasValidOcrFields = (entries) => {
+  return entries.some(([, val]) => {
+    if (val === null || val === undefined) return false;
+    const s = String(val).trim().toLowerCase();
+    return s !== '' && s !== 'null' && s !== 'none' && s !== 'undefined';
+  });
+};
 
 export default function Students() {
   const [students, setStudents] = useState([]);
@@ -46,6 +101,19 @@ export default function Students() {
   useEffect(() => {
     fetchStudents();
   }, []);
+
+  // Keyboard shortcut: close modals on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (lightboxImage) setLightboxImage(null);
+        else if (selectedStudent) setSelectedStudent(null);
+        else if (editingStudent) setEditingStudent(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxImage, selectedStudent, editingStudent]);
 
   // Quick action: Ban / Unban user
   const handleToggleBan = async (user) => {
@@ -556,167 +624,235 @@ export default function Students() {
       {/* ========================================================================= */}
       {/* MODAL 1: STUDENT PROFILE & PHYSICAL ID CARD INSPECTION MODAL */}
       {/* ========================================================================= */}
-      {selectedStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-gray-200 animate-in fade-in zoom-in-95 duration-150">
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 sticky top-0 z-10">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 bg-brand-500 text-white rounded-full flex items-center justify-center font-black text-base shadow-sm">
+      {selectedStudent && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-ink-950/75 backdrop-blur-sm animate-fade-in">
+          {/* Backdrop Click Dismiss */}
+          <div className="fixed inset-0 -z-10" onClick={() => setSelectedStudent(null)} />
+
+          {/* Modal Container */}
+          <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header - Pinned Top */}
+            <div className="shrink-0 px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-white">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="h-11 w-11 shrink-0 bg-gradient-to-tr from-brand-600 to-brand-500 text-white rounded-full flex items-center justify-center font-black text-base shadow-sm ring-2 ring-brand-100">
                   {selectedStudent.full_name ? selectedStudent.full_name[0].toUpperCase() : selectedStudent.username[0].toUpperCase()}
                 </div>
-                <div>
-                  <h3 className="text-base font-black text-gray-900 leading-tight">
+                <div className="min-w-0">
+                  <h3 className="text-lg font-black text-gray-900 leading-tight truncate">
                     {selectedStudent.full_name || selectedStudent.username}
                   </h3>
-                  <p className="text-xs text-gray-500">
-                    Registration No: <span className="font-mono font-bold text-gray-700">@{selectedStudent.username}</span>
+                  <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5">
+                    Registration No:
+                    <span className="font-mono font-bold text-gray-800 bg-gray-100 px-2 py-0.5 rounded text-xs">
+                      @{selectedStudent.username}
+                    </span>
                   </p>
                 </div>
               </div>
 
               <button
                 onClick={() => setSelectedStudent(null)}
-                className="text-gray-400 hover:text-gray-700 p-1.5 rounded-full hover:bg-gray-200 transition-colors"
+                className="text-gray-400 hover:text-gray-700 p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                title="Close dialog (Esc)"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-6 space-y-6">
-              {/* Account Quick Status Cards */}
+            {/* Modal Body - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 overscroll-contain">
+              {/* Account Quick Status Badges */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Role</span>
-                  <span className="text-xs font-black text-gray-900 mt-1 block">
+                <div className="p-3 bg-white rounded-xl border border-gray-200 shadow-2xs">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Role</span>
+                  <span className="text-xs font-black text-gray-900 mt-1 flex items-center gap-1.5">
+                    {selectedStudent.role === 'SELLER' ? (
+                      <Store className="w-3.5 h-3.5 text-purple-600" />
+                    ) : (
+                      <ShoppingCart className="w-3.5 h-3.5 text-blue-600" />
+                    )}
                     {selectedStudent.role || 'BUYER'}
                   </span>
                 </div>
-                <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">ID Status</span>
-                  <span className={`text-xs font-black mt-1 block ${selectedStudent.is_id_verified ? 'text-green-700' : 'text-amber-700'}`}>
-                    {selectedStudent.is_id_verified ? 'Verified Physical ID' : 'Pending / Not Verified'}
+
+                <div className="p-3 bg-white rounded-xl border border-gray-200 shadow-2xs">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">ID Verification</span>
+                  <span className={`text-xs font-black mt-1 flex items-center gap-1.5 ${selectedStudent.is_id_verified ? 'text-emerald-700' : 'text-amber-700'}`}>
+                    {selectedStudent.is_id_verified ? (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        Verified ID
+                      </>
+                    ) : (
+                      <>
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                        Unverified
+                      </>
+                    )}
                   </span>
                 </div>
-                <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Trust Score</span>
-                  <span className="text-xs font-black text-brand-600 mt-1 block flex items-center gap-1">
-                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> {selectedStudent.trust_score} / 100
+
+                <div className="p-3 bg-white rounded-xl border border-gray-200 shadow-2xs">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Trust Score</span>
+                  <span className="text-xs font-black text-brand-600 mt-1 flex items-center gap-1">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    <span className="text-gray-900">{selectedStudent.trust_score}</span>
+                    <span className="text-gray-400 font-normal">/ 100</span>
                   </span>
                 </div>
-                <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Account</span>
-                  <span className={`text-xs font-black mt-1 block ${selectedStudent.is_active !== false ? 'text-emerald-700' : 'text-red-700'}`}>
-                    {selectedStudent.is_active !== false ? 'Active Account' : 'Suspended / Banned'}
+
+                <div className="p-3 bg-white rounded-xl border border-gray-200 shadow-2xs">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Account Status</span>
+                  <span className={`text-xs font-black mt-1 flex items-center gap-1.5 ${selectedStudent.is_active !== false ? 'text-emerald-700' : 'text-red-700'}`}>
+                    <span className={`w-2 h-2 rounded-full ${selectedStudent.is_active !== false ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                    {selectedStudent.is_active !== false ? 'Active' : 'Suspended'}
                   </span>
                 </div>
               </div>
 
               {/* Student Identification & Face Verification Section */}
-              <div className="border border-gray-200 rounded-lg p-5 bg-gradient-to-br from-white to-gray-50">
-                <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-200">
+              <div className="border border-gray-200 rounded-xl p-5 bg-gradient-to-br from-white to-gray-50/70">
+                <div className="flex items-center justify-between mb-4 pb-2.5 border-b border-gray-200">
                   <h4 className="text-sm font-black text-gray-900 uppercase tracking-wide flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-brand-600" />
                     Identity & ID Card Verification
                   </h4>
-                  <span className="text-xs font-bold text-gray-500">
-                    Comparison: Physical ID Card vs Liveness Selfie
+                  <span className="text-xs font-semibold text-gray-500 hidden sm:inline">
+                    Physical ID Card vs Face Liveness Selfie
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Left: Physical Student ID Card */}
                   <div className="flex flex-col">
-                    <span className="text-xs font-bold text-gray-700 mb-2 flex items-center justify-between">
-                      <span>Physical Student ID Card:</span>
+                    <div className="text-xs font-bold text-gray-700 mb-2 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-brand-600" />
+                        Physical Student ID Card:
+                      </span>
                       {selectedStudent.id_card_image && (
                         <button
                           onClick={() => setLightboxImage(selectedStudent.id_card_image)}
-                          className="text-[11px] font-bold text-brand-600 hover:underline flex items-center gap-1"
+                          className="text-[11px] font-bold text-brand-600 hover:text-brand-700 hover:underline flex items-center gap-1"
                         >
                           <Maximize2 className="w-3 h-3" /> Full View
                         </button>
                       )}
-                    </span>
+                    </div>
 
                     {selectedStudent.id_card_image ? (
-                      <div className="relative group rounded-md overflow-hidden border border-gray-300 bg-gray-100 aspect-[16/10] flex items-center justify-center">
+                      <div
+                        onClick={() => setLightboxImage(selectedStudent.id_card_image)}
+                        className="relative group rounded-xl overflow-hidden border border-gray-200 bg-slate-900/5 h-64 sm:h-72 flex items-center justify-center p-2 shadow-inner cursor-zoom-in"
+                      >
                         <img
                           src={selectedStudent.id_card_image}
                           alt="Physical Student ID"
-                          className="w-full h-full object-contain"
+                          className="max-h-full max-w-full object-contain drop-shadow-sm transition-transform duration-200 group-hover:scale-[1.02]"
                         />
-                        <button
-                          onClick={() => setLightboxImage(selectedStudent.id_card_image)}
-                          className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1.5"
-                        >
-                          <Maximize2 className="w-4 h-4" /> Click to Zoom
-                        </button>
+                        <div className="absolute top-2.5 right-2.5">
+                          <span className="px-2.5 py-1 bg-black/70 hover:bg-black text-white text-[11px] font-bold rounded-lg backdrop-blur-md flex items-center gap-1.5 shadow-md transition-all pointer-events-none">
+                            <Maximize2 className="w-3 h-3" /> Full View
+                          </span>
+                        </div>
                       </div>
                     ) : (
-                      <div className="rounded-md border-2 border-dashed border-gray-300 p-8 text-center bg-gray-50 aspect-[16/10] flex flex-col items-center justify-center text-gray-400">
-                        <ShieldAlert className="w-8 h-8 mb-2 opacity-50" />
-                        <p className="text-xs font-medium">No Student ID Card uploaded</p>
-                        <p className="text-[10px] text-gray-400 mt-1">Student registered as a Buyer without ID</p>
+                      <div className="rounded-xl border-2 border-dashed border-gray-200 p-8 text-center bg-gray-50 h-64 sm:h-72 flex flex-col items-center justify-center text-gray-400">
+                        <ShieldAlert className="w-10 h-10 mb-2.5 text-gray-300" />
+                        <p className="text-xs font-bold text-gray-600">No Student ID Card Uploaded</p>
+                        <p className="text-[11px] text-gray-400 mt-1 max-w-[220px]">
+                          Student registered as a Buyer without physical ID verification.
+                        </p>
                       </div>
                     )}
 
                     {/* Extracted OCR Data */}
-                    {selectedStudent.id_card_data && Object.keys(selectedStudent.id_card_data).length > 0 && (
-                      <div className="mt-3 p-3 bg-white border border-gray-200 rounded-md text-xs space-y-1">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
-                          Extracted ID OCR Metadata:
-                        </span>
-                        {Object.entries(selectedStudent.id_card_data).map(([k, v]) => (
-                          <div key={k} className="flex justify-between py-0.5 border-b border-gray-50 last:border-0">
-                            <span className="text-gray-500 font-medium capitalize">{k.replace(/_/g, ' ')}:</span>
-                            <span className="font-bold text-gray-800">{String(v)}</span>
+                    {selectedStudent.id_card_data && (() => {
+                      const entries = getOcrEntries(selectedStudent.id_card_data);
+                      if (entries.length === 0) return null;
+                      if (!hasValidOcrFields(entries)) {
+                        return (
+                          <div className="mt-3 p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-xs">
+                            <div className="flex items-center gap-2 font-bold text-amber-900 mb-1">
+                              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                              <span>OCR Auto-Scan: No Clear Fields Detected</span>
+                            </div>
+                            <p className="text-[11px] text-amber-800 leading-relaxed">
+                              Automated text extraction could not parse clear text fields from this card. Please inspect the card image manually above.
+                            </p>
                           </div>
-                        ))}
-                      </div>
-                    )}
+                        );
+                      }
+                      return (
+                        <div className="mt-3 p-3.5 bg-white border border-gray-200 rounded-xl text-xs space-y-1.5 shadow-2xs">
+                          <div className="flex items-center justify-between pb-1.5 border-b border-gray-100 mb-1">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                              Extracted ID OCR Metadata
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                              Auto-Extracted
+                            </span>
+                          </div>
+                          {entries.map(([k, v]) => (
+                            <div key={k} className="flex justify-between items-center py-1 border-b border-gray-50 last:border-0">
+                              <span className="text-gray-500 font-medium">{formatOcrKey(k)}:</span>
+                              <div>{formatOcrValue(v)}</div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Right: Liveness Face Selfie */}
                   <div className="flex flex-col">
-                    <span className="text-xs font-bold text-gray-700 mb-2 flex items-center justify-between">
-                      <span>Face Liveness Selfie Photo:</span>
+                    <div className="text-xs font-bold text-gray-700 mb-2 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Eye className="w-3.5 h-3.5 text-brand-600" />
+                        Face Liveness Selfie Photo:
+                      </span>
                       {selectedStudent.profile_photo && (
                         <button
                           onClick={() => setLightboxImage(selectedStudent.profile_photo)}
-                          className="text-[11px] font-bold text-brand-600 hover:underline flex items-center gap-1"
+                          className="text-[11px] font-bold text-brand-600 hover:text-brand-700 hover:underline flex items-center gap-1"
                         >
                           <Maximize2 className="w-3 h-3" /> Full View
                         </button>
                       )}
-                    </span>
+                    </div>
 
                     {selectedStudent.profile_photo ? (
-                      <div className="relative group rounded-md overflow-hidden border border-gray-300 bg-gray-100 aspect-[16/10] flex items-center justify-center">
+                      <div
+                        onClick={() => setLightboxImage(selectedStudent.profile_photo)}
+                        className="relative group rounded-xl overflow-hidden border border-gray-200 bg-slate-900/5 h-64 sm:h-72 flex items-center justify-center p-2 shadow-inner cursor-zoom-in"
+                      >
                         <img
                           src={selectedStudent.profile_photo}
                           alt="Face Selfie"
-                          className="w-full h-full object-contain"
+                          className="max-h-full max-w-full object-contain drop-shadow-sm transition-transform duration-200 group-hover:scale-[1.02]"
                         />
-                        <button
-                          onClick={() => setLightboxImage(selectedStudent.profile_photo)}
-                          className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1.5"
-                        >
-                          <Maximize2 className="w-4 h-4" /> Click to Zoom
-                        </button>
+                        <div className="absolute top-2.5 right-2.5">
+                          <span className="px-2.5 py-1 bg-black/70 hover:bg-black text-white text-[11px] font-bold rounded-lg backdrop-blur-md flex items-center gap-1.5 shadow-md transition-all pointer-events-none">
+                            <Maximize2 className="w-3 h-3" /> Full View
+                          </span>
+                        </div>
                       </div>
                     ) : (
-                      <div className="rounded-md border-2 border-dashed border-gray-300 p-8 text-center bg-gray-50 aspect-[16/10] flex flex-col items-center justify-center text-gray-400">
-                        <p className="text-xs font-medium">No live selfie uploaded</p>
+                      <div className="rounded-xl border-2 border-dashed border-gray-200 p-8 text-center bg-gray-50 h-64 sm:h-72 flex flex-col items-center justify-center text-gray-400">
+                        <Eye className="w-10 h-10 mb-2.5 text-gray-300" />
+                        <p className="text-xs font-bold text-gray-600">No Live Selfie Uploaded</p>
+                        <p className="text-[11px] text-gray-400 mt-1">Student has not taken a face verification selfie.</p>
                       </div>
                     )}
 
-                    {/* Metadata & Verification Note */}
-                    <div className="mt-3 p-3 bg-blue-50/60 border border-blue-100 rounded-md text-xs text-blue-900">
-                      <p className="font-bold mb-1">Administrative Verification Note:</p>
+                    {/* Verification Guidance Box */}
+                    <div className="mt-3 p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-xl text-xs text-blue-950">
+                      <div className="flex items-center gap-2 font-bold text-blue-900 mb-1">
+                        <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+                        <span>Administrative Verification Checklist</span>
+                      </div>
                       <p className="text-[11px] text-blue-800 leading-relaxed">
-                        Verify that the name, registration number, and photo on the student ID card correspond with the student profile and campus records.
+                        Verify that the face in the selfie photo matches the ID card photo, and confirm that the student name and registration number match their campus account records.
                       </p>
                     </div>
                   </div>
@@ -724,118 +860,122 @@ export default function Students() {
               </div>
 
               {/* General Profile Information Details Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-gray-200 pt-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-gray-200 pt-4">
+                <div className="p-3 bg-gray-50/80 rounded-xl border border-gray-100">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Full Name</span>
                   <p className="text-xs font-bold text-gray-800 mt-0.5">{selectedStudent.full_name || 'Not provided'}</p>
                 </div>
-                <div>
+                <div className="p-3 bg-gray-50/80 rounded-xl border border-gray-100">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Official Email</span>
-                  <p className="text-xs font-bold text-gray-800 mt-0.5 flex items-center gap-1">
-                    <Mail className="w-3.5 h-3.5 text-gray-400" /> {selectedStudent.email}
+                  <p className="text-xs font-bold text-gray-800 mt-0.5 flex items-center gap-1.5 truncate">
+                    <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                    <span className="truncate">{selectedStudent.email}</span>
                   </p>
                 </div>
-                <div>
+                <div className="p-3 bg-gray-50/80 rounded-xl border border-gray-100">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Phone Number</span>
-                  <p className="text-xs font-bold text-gray-800 mt-0.5 flex items-center gap-1 font-mono">
-                    <Phone className="w-3.5 h-3.5 text-gray-400" /> {selectedStudent.phone_number || 'Not provided'}
+                  <p className="text-xs font-bold text-gray-800 mt-0.5 flex items-center gap-1.5 font-mono">
+                    <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                    <span>{selectedStudent.phone_number || 'Not provided'}</span>
                   </p>
                 </div>
-                <div>
+                <div className="p-3 bg-gray-50/80 rounded-xl border border-gray-100">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">College Domain</span>
                   <p className="text-xs font-bold text-gray-800 mt-0.5">{selectedStudent.college_domain || 'General'}</p>
                 </div>
-                <div>
+                <div className="p-3 bg-gray-50/80 rounded-xl border border-gray-100">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Joined Date</span>
-                  <p className="text-xs font-bold text-gray-800 mt-0.5 flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                    {new Date(selectedStudent.date_joined).toLocaleDateString()}
+                  <p className="text-xs font-bold text-gray-800 mt-0.5 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                    <span>{new Date(selectedStudent.date_joined).toLocaleDateString()}</span>
                   </p>
                 </div>
-                <div>
+                <div className="p-3 bg-gray-50/80 rounded-xl border border-gray-100">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Completed Trades</span>
                   <p className="text-xs font-bold text-gray-800 mt-0.5">
                     {selectedStudent.completed_trades_count || 0} Peer Deals
                   </p>
                 </div>
               </div>
+            </div>
 
-              {/* Administrative Action Toolbar inside Modal */}
-              <div className="border-t border-gray-200 pt-4 flex flex-wrap items-center justify-between gap-3 bg-gray-50 p-4 rounded-md">
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* Toggle ID Verification */}
-                  <button
-                    onClick={() => handleToggleIdVerification(selectedStudent)}
-                    disabled={actionLoading}
-                    className={`px-3 py-2 rounded text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm ${
-                      selectedStudent.is_id_verified
-                        ? 'bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300'
-                        : 'bg-green-600 text-white hover:bg-green-700'
-                    }`}
-                  >
-                    <ShieldCheck className="w-4 h-4" />
-                    {selectedStudent.is_id_verified ? 'Revoke ID Verification' : 'Approve Student ID'}
-                  </button>
+            {/* Modal Footer - Pinned Toolbar */}
+            <div className="shrink-0 px-6 py-4 border-t border-gray-200 bg-gray-50/90 backdrop-blur-sm flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Toggle ID Verification */}
+                <button
+                  onClick={() => handleToggleIdVerification(selectedStudent)}
+                  disabled={actionLoading}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm ${
+                    selectedStudent.is_id_verified
+                      ? 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300'
+                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  }`}
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  {selectedStudent.is_id_verified ? 'Revoke ID Verification' : 'Approve Student ID'}
+                </button>
 
-                  {/* Toggle Role */}
-                  <button
-                    onClick={() => handleToggleRole(selectedStudent)}
-                    disabled={actionLoading}
-                    className="px-3 py-2 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 rounded text-xs font-bold flex items-center gap-1.5 transition-all"
-                  >
-                    <Store className="w-4 h-4" />
-                    {selectedStudent.role === 'SELLER' || selectedStudent.is_id_verified
-                      ? 'Demote to Buyer'
-                      : 'Promote to Seller'}
-                  </button>
+                {/* Toggle Role */}
+                <button
+                  onClick={() => handleToggleRole(selectedStudent)}
+                  disabled={actionLoading}
+                  className="px-3.5 py-2 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all"
+                >
+                  <Store className="w-4 h-4" />
+                  {selectedStudent.role === 'SELLER' || selectedStudent.is_id_verified
+                    ? 'Demote to Buyer'
+                    : 'Promote to Seller'}
+                </button>
 
-                  {/* Toggle Ban */}
-                  <button
-                    onClick={() => handleToggleBan(selectedStudent)}
-                    disabled={actionLoading}
-                    className={`px-3 py-2 rounded text-xs font-bold flex items-center gap-1.5 transition-all border ${
-                      selectedStudent.is_active !== false
-                        ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
-                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                    }`}
-                  >
-                    <Ban className="w-4 h-4" />
-                    {selectedStudent.is_active !== false ? 'Ban / Suspend Account' : 'Reactivate Account'}
-                  </button>
-                </div>
+                {/* Toggle Ban */}
+                <button
+                  onClick={() => handleToggleBan(selectedStudent)}
+                  disabled={actionLoading}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border ${
+                    selectedStudent.is_active !== false
+                      ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  }`}
+                >
+                  <Ban className="w-4 h-4" />
+                  {selectedStudent.is_active !== false ? 'Ban Account' : 'Reactivate'}
+                </button>
+              </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      const studentToEdit = selectedStudent;
-                      setSelectedStudent(null);
-                      handleStartEdit(studentToEdit);
-                    }}
-                    className="px-3 py-2 bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 rounded text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" /> Edit Details
-                  </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const studentToEdit = selectedStudent;
+                    setSelectedStudent(null);
+                    handleStartEdit(studentToEdit);
+                  }}
+                  className="px-3.5 py-2 bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs"
+                >
+                  <Edit2 className="w-3.5 h-3.5" /> Edit Details
+                </button>
 
-                  <button
-                    onClick={() => handleDeleteUser(selectedStudent.id)}
-                    disabled={actionLoading}
-                    className="px-3 py-2 bg-red-600 text-white hover:bg-red-700 rounded text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" /> Delete Account
-                  </button>
-                </div>
+                <button
+                  onClick={() => handleDeleteUser(selectedStudent.id)}
+                  disabled={actionLoading}
+                  className="px-3.5 py-2 bg-red-600 text-white hover:bg-red-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                </button>
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ========================================================================= */}
       {/* MODAL 2: EDIT STUDENT DETAILS FORM */}
       {/* ========================================================================= */}
-      {editingStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden border border-gray-200 animate-in fade-in zoom-in-95 duration-150">
+      {editingStudent && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink-950/75 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="fixed inset-0 -z-10" onClick={() => setEditingStudent(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-200 animate-in fade-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
               <div>
                 <h3 className="text-base font-black text-gray-900">Edit Student Information</h3>
@@ -844,6 +984,7 @@ export default function Students() {
               <button
                 onClick={() => setEditingStudent(null)}
                 className="text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-100"
+                title="Close (Esc)"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -857,7 +998,7 @@ export default function Students() {
                   required
                   value={editFormData.full_name}
                   onChange={(e) => setEditFormData({ ...editFormData, full_name: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                 />
               </div>
 
@@ -869,7 +1010,7 @@ export default function Students() {
                     required
                     value={editFormData.email}
                     onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                   />
                 </div>
 
@@ -879,7 +1020,7 @@ export default function Students() {
                     type="text"
                     value={editFormData.phone_number}
                     onChange={(e) => setEditFormData({ ...editFormData, phone_number: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                     placeholder="10-digit mobile"
                   />
                 </div>
@@ -891,7 +1032,7 @@ export default function Students() {
                   <select
                     value={editFormData.role}
                     onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                   >
                     <option value="BUYER">BUYER</option>
                     <option value="SELLER">SELLER</option>
@@ -906,7 +1047,7 @@ export default function Students() {
                     max="100"
                     value={editFormData.trust_score}
                     onChange={(e) => setEditFormData({ ...editFormData, trust_score: parseInt(e.target.value) || 0 })}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -947,14 +1088,14 @@ export default function Students() {
                 <button
                   type="button"
                   onClick={() => setEditingStudent(null)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded font-bold transition-colors"
+                  className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-bold transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded font-bold flex items-center gap-1.5 transition-colors shadow-sm disabled:opacity-50"
+                  className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-bold flex items-center gap-1.5 transition-colors shadow-sm disabled:opacity-50"
                 >
                   {actionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                   Save Changes
@@ -962,31 +1103,34 @@ export default function Students() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ========================================================================= */}
       {/* MODAL 3: LIGHTBOX FOR FULL-RESOLUTION IMAGE ZOOM */}
       {/* ========================================================================= */}
-      {lightboxImage && (
+      {lightboxImage && createPortal(
         <div
           onClick={() => setLightboxImage(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 cursor-zoom-out"
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-4 sm:p-6 backdrop-blur-md cursor-zoom-out animate-fade-in"
         >
-          <div className="relative max-w-5xl max-h-[90vh]">
+          <div className="relative max-w-5xl max-h-[90vh] flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>
             <img
               src={lightboxImage}
               alt="Expanded Preview"
-              className="max-w-full max-h-[90vh] object-contain rounded-md shadow-2xl"
+              className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl ring-1 ring-white/20"
             />
             <button
               onClick={() => setLightboxImage(null)}
-              className="absolute top-3 right-3 bg-black/60 text-white p-2 rounded-full hover:bg-black/80 transition-colors"
+              className="absolute top-3 right-3 bg-black/70 hover:bg-black text-white p-2.5 rounded-full transition-colors shadow-lg border border-white/20"
+              title="Close (Esc)"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

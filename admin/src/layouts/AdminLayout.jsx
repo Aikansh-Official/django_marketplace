@@ -169,7 +169,7 @@ export default function AdminLayout({ setAuth }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto p-8 relative z-10">
+        <main className="flex-1 overflow-auto p-8 relative">
           <Outlet />
         </main>
       </div>
