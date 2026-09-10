@@ -18,7 +18,7 @@ from .serializers import (
     ListingSerializer, ListingCreateUpdateSerializer, CategorySerializer,
     AdminCategorySerializer, OfferSerializer, ListingReportSerializer,
     ListingReportCreateSerializer, PlatformSettingSerializer, NotificationSerializer,
-    HandoverSessionSerializer
+    HandoverSessionSerializer, AdminDealSerializer
 )
 from .cloudinary_upload import upload_image_to_cloudinary
 
@@ -1185,4 +1185,174 @@ class CancelDealView(APIView):
             'success': True,
             'message': 'Deal cancelled and listing restored to Active.'
         })
+
+
+class AdminDealListView(generics.ListAPIView):
+    """
+    Administrator endpoint to monitor all campus deals and offers.
+    Supports filtering by status (ALL, PENDING, ACCEPTED, COMPLETED, CANCELLED, REJECTED)
+    and searching by buyer, seller, or listing title.
+    """
+    serializer_class = AdminDealSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+    def get_queryset(self):
+        queryset = Offer.objects.select_related(
+            'listing', 'listing__seller', 'listing__category', 'buyer'
+        ).prefetch_related(
+            'listing__images', 'handover_sessions'
+        ).order_by('-created_at')
+
+        status_param = self.request.query_params.get('status', 'ALL').strip().upper()
+        if status_param and status_param != 'ALL':
+            queryset = queryset.filter(status=status_param)
+
+        search = self.request.query_params.get('search', '').strip()
+        if search:
+            queryset = queryset.filter(
+                Q(listing__title__icontains=search) |
+                Q(buyer__username__icontains=search) |
+                Q(buyer__full_name__icontains=search) |
+                Q(buyer__email__icontains=search) |
+                Q(listing__seller__username__icontains=search) |
+                Q(listing__seller__full_name__icontains=search) |
+                Q(listing__seller__email__icontains=search)
+            )
+
+        return queryset
+
+
+class AdminDealActionView(APIView):
+    """
+    Administrator intervention endpoint for stalled deals or disputes:
+    - FORCE_CANCEL: Cancels offer, restores listing to ACTIVE, cancels pending handover session,
+                    and sends official in-app notifications to both students.
+    - FORCE_COMPLETE: Force completes deal, marks listing SOLD, verifies handover session,
+                      awards trust points, and sends completion notifications.
+    """
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request, pk):
+        action = request.data.get('action', '').strip().upper()
+        reason = request.data.get('reason', '').strip()
+
+        try:
+            offer = Offer.objects.select_related(
+                'listing', 'listing__seller', 'buyer'
+            ).prefetch_related('handover_sessions').get(pk=pk)
+        except Offer.DoesNotExist:
+            return Response({'error': 'Deal / Offer not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        listing = offer.listing
+        buyer = offer.buyer
+        seller = listing.seller
+
+        if action == 'FORCE_CANCEL':
+            if offer.status == 'CANCELLED':
+                return Response({'error': 'This deal is already cancelled.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            with transaction.atomic():
+                # 1. Invalidate any active handover sessions
+                HandoverSession.objects.filter(offer=offer, status='ACTIVE').update(status='CANCELLED')
+
+                # 2. Mark offer CANCELLED
+                offer.status = 'CANCELLED'
+                offer.save(update_fields=['status', 'updated_at'])
+
+                # 3. Restore listing to ACTIVE if it was reserved/pending
+                if listing.status in ['PENDING', 'ACTIVE']:
+                    listing.status = 'ACTIVE'
+                    listing.save(update_fields=['status', 'updated_at'])
+
+                # 4. Notify both parties
+                reason_msg = f" Reason: {reason}" if reason else ""
+                Notification.objects.create(
+                    recipient=buyer,
+                    sender=request.user,
+                    notification_type='DEAL_CANCELLED',
+                    title=f"Campus Deal Cancelled by Admin: '{listing.title}'",
+                    message=f"Campus Administration cancelled deal #{offer.id} for '{listing.title}'.{reason_msg}",
+                    listing=listing
+                )
+                Notification.objects.create(
+                    recipient=seller,
+                    sender=request.user,
+                    notification_type='DEAL_CANCELLED',
+                    title=f"Campus Deal Cancelled by Admin: '{listing.title}'",
+                    message=f"Campus Administration cancelled deal #{offer.id} for '{listing.title}'. The listing has been restored to Active marketplace.{reason_msg}",
+                    listing=listing
+                )
+
+            serializer = AdminDealSerializer(offer)
+            return Response({
+                'success': True,
+                'message': f"Deal #{offer.id} cancelled successfully and listing restored to Active.",
+                'deal': serializer.data
+            })
+
+        elif action == 'FORCE_COMPLETE':
+            if offer.status == 'COMPLETED':
+                return Response({'error': 'This deal is already marked as completed.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            with transaction.atomic():
+                # 1. Update latest or active HandoverSession
+                active_session = offer.handover_sessions.filter(status='ACTIVE').first()
+                if not active_session:
+                    active_session = offer.handover_sessions.order_by('-created_at').first()
+
+                now = timezone.now()
+                if active_session:
+                    active_session.status = 'USED'
+                    active_session.completed_at = now
+                    active_session.save(update_fields=['status', 'completed_at'])
+
+                # Invalidate any other active sessions
+                HandoverSession.objects.filter(offer=offer, status='ACTIVE').exclude(pk=getattr(active_session, 'pk', None)).update(status='EXPIRED')
+
+                # 2. Mark offer as COMPLETED
+                offer.status = 'COMPLETED'
+                offer.save(update_fields=['status', 'updated_at'])
+
+                # 3. Mark listing as SOLD
+                listing.status = 'SOLD'
+                listing.save(update_fields=['status', 'updated_at'])
+
+                # 4. Award trust points
+                try:
+                    buyer.trust_score = buyer.calculate_trust_score()
+                    buyer.save(update_fields=['trust_score'])
+                    seller.trust_score = seller.calculate_trust_score()
+                    seller.save(update_fields=['trust_score'])
+                except Exception:
+                    pass
+
+                # 5. Notify both parties
+                reason_msg = f" Note: {reason}" if reason else ""
+                Notification.objects.create(
+                    recipient=seller,
+                    sender=request.user,
+                    notification_type='ITEM_SOLD',
+                    title=f"Deal Verified & Completed: '{listing.title}' 🎉",
+                    message=f"Campus Administration manually verified and completed handover for '{listing.title}'. Item is marked as SOLD.{reason_msg}",
+                    listing=listing
+                )
+                Notification.objects.create(
+                    recipient=buyer,
+                    sender=request.user,
+                    notification_type='ITEM_SOLD',
+                    title=f"Purchase Verified & Completed: '{listing.title}' 🎉",
+                    message=f"Campus Administration verified handover for '{listing.title}'. The transaction is marked as COMPLETED.{reason_msg}",
+                    listing=listing
+                )
+
+            serializer = AdminDealSerializer(offer)
+            return Response({
+                'success': True,
+                'message': f"Deal #{offer.id} manually verified and completed. Listing marked as SOLD.",
+                'deal': serializer.data
+            })
+
+        else:
+            return Response({'error': f"Unknown action '{action}'. Allowed actions: FORCE_CANCEL, FORCE_COMPLETE."}, status=status.HTTP_400_BAD_REQUEST)
+
 

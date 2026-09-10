@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
+from django.conf import settings
 from .models import Listing, Category, Offer
 
 User = get_user_model()
@@ -9,6 +10,9 @@ User = get_user_model()
 class MarketplaceSecurityTests(TestCase):
     def setUp(self):
         self.client = APIClient()
+        security_key = getattr(settings, 'DATA_SECURITY_KEY', '')
+        if security_key:
+            self.client.credentials(HTTP_X_APP_SECURITY_KEY=security_key)
         self.seller = User.objects.create_user(
             username='11111111',
             email='seller@lpu.in',
@@ -90,6 +94,9 @@ class MarketplaceSecurityTests(TestCase):
 class MarketplaceHandoverTests(TestCase):
     def setUp(self):
         self.client = APIClient()
+        security_key = getattr(settings, 'DATA_SECURITY_KEY', '')
+        if security_key:
+            self.client.credentials(HTTP_X_APP_SECURITY_KEY=security_key)
         self.seller = User.objects.create_user(
             username='12345678',
             email='rahul@lpu.in',
@@ -103,6 +110,11 @@ class MarketplaceHandoverTests(TestCase):
             password='Password123!',
             full_name='Aman Verma',
             phone_number='9876543219'
+        )
+        self.admin = User.objects.create_superuser(
+            username='99999991',
+            email='handoveradmin@lpu.in',
+            password='AdminPassword123!'
         )
         self.category = Category.objects.create(name='Phones', slug='phones')
         self.listing = Listing.objects.create(
@@ -182,4 +194,37 @@ class MarketplaceHandoverTests(TestCase):
         self.assertEqual(self.listing.status, 'ACTIVE')
         offer = Offer.objects.get(pk=offer_id)
         self.assertEqual(offer.status, 'CANCELLED')
+
+    def test_admin_deals_permissions_and_actions(self):
+        # 1. Buyer creates offer
+        self.client.force_authenticate(user=self.buyer)
+        offer_res = self.client.post(f'/api/marketplace/listings/{self.listing.id}/offer/', {'message': 'Deal test', 'offer_amount': 750})
+        offer_id = offer_res.data['id']
+
+        # Seller accepts
+        self.client.force_authenticate(user=self.seller)
+        self.client.patch(f'/api/marketplace/offers/{offer_id}/respond/', {'action': 'ACCEPT'})
+
+        # Regular user cannot access admin deals
+        self.client.force_authenticate(user=self.buyer)
+        res = self.client.get('/api/marketplace/admin/deals/')
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Admin can access admin deals
+        self.client.force_authenticate(user=self.admin)
+        res = self.client.get('/api/marketplace/admin/deals/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(any(d['id'] == offer_id for d in res.data))
+
+        # Admin force completes deal
+        complete_res = self.client.post(f'/api/marketplace/admin/deals/{offer_id}/action/', {
+            'action': 'FORCE_COMPLETE',
+            'reason': 'Manual verification by admin'
+        })
+        self.assertEqual(complete_res.status_code, status.HTTP_200_OK)
+        self.listing.refresh_from_db()
+        self.assertEqual(self.listing.status, 'SOLD')
+        offer = Offer.objects.get(pk=offer_id)
+        self.assertEqual(offer.status, 'COMPLETED')
+
 

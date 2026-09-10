@@ -403,3 +403,73 @@ class PlatformSettingSerializer(serializers.ModelSerializer):
     class Meta:
         model = PlatformSetting
         fields = ['key', 'value', 'updated_at']
+
+
+class AdminDealSerializer(serializers.ModelSerializer):
+    listing_id = serializers.IntegerField(source='listing.id', read_only=True)
+    listing_title = serializers.CharField(source='listing.title', read_only=True)
+    listing_price = serializers.DecimalField(source='listing.price', max_digits=10, decimal_places=2, read_only=True)
+    listing_status = serializers.CharField(source='listing.status', read_only=True)
+    listing_condition = serializers.CharField(source='listing.condition', read_only=True)
+    listing_location = serializers.CharField(source='listing.location', read_only=True)
+    listing_category = serializers.CharField(source='listing.category.name', read_only=True, default='General')
+    listing_image = serializers.SerializerMethodField()
+
+    buyer_id = serializers.IntegerField(source='buyer.id', read_only=True)
+    buyer_username = serializers.CharField(source='buyer.username', read_only=True)
+    buyer_full_name = serializers.CharField(source='buyer.full_name', read_only=True, default='')
+    buyer_email = serializers.CharField(source='buyer.email', read_only=True)
+    buyer_phone = serializers.CharField(source='buyer.phone_number', read_only=True, default='')
+    buyer_trust_score = serializers.IntegerField(source='buyer.trust_score', read_only=True, default=0)
+    buyer_is_verified = serializers.BooleanField(source='buyer.is_id_verified', read_only=True, default=False)
+    buyer_is_active = serializers.BooleanField(source='buyer.is_active', read_only=True, default=True)
+
+    seller_id = serializers.IntegerField(source='listing.seller.id', read_only=True)
+    seller_username = serializers.CharField(source='listing.seller.username', read_only=True)
+    seller_full_name = serializers.CharField(source='listing.seller.full_name', read_only=True, default='')
+    seller_email = serializers.CharField(source='listing.seller.email', read_only=True)
+    seller_phone = serializers.SerializerMethodField()
+    seller_trust_score = serializers.IntegerField(source='listing.seller.trust_score', read_only=True, default=0)
+    seller_is_verified = serializers.BooleanField(source='listing.seller.is_id_verified', read_only=True, default=False)
+    seller_is_active = serializers.BooleanField(source='listing.seller.is_active', read_only=True, default=True)
+
+    active_handover = serializers.SerializerMethodField()
+    latest_handover = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Offer
+        fields = [
+            'id', 'offer_amount', 'buyer_message', 'status', 'created_at', 'updated_at',
+            'listing_id', 'listing_title', 'listing_price', 'listing_status', 'listing_condition',
+            'listing_location', 'listing_category', 'listing_image',
+            'buyer_id', 'buyer_username', 'buyer_full_name', 'buyer_email', 'buyer_phone',
+            'buyer_trust_score', 'buyer_is_verified', 'buyer_is_active',
+            'seller_id', 'seller_username', 'seller_full_name', 'seller_email', 'seller_phone',
+            'seller_trust_score', 'seller_is_verified', 'seller_is_active',
+            'active_handover', 'latest_handover'
+        ]
+        read_only_fields = fields
+
+    def get_listing_image(self, obj):
+        if obj.listing:
+            img = obj.listing.images.filter(is_primary=True).first() or obj.listing.images.first()
+            return img.image_url if img else None
+        return None
+
+    def get_seller_phone(self, obj):
+        if not obj.listing:
+            return ''
+        return obj.listing.contact_phone or getattr(obj.listing.seller, 'phone_number', '') or ''
+
+    def get_active_handover(self, obj):
+        session = obj.handover_sessions.filter(status='ACTIVE', expires_at__gt=timezone.now()).first()
+        if session:
+            return HandoverSessionSerializer(session).data
+        return None
+
+    def get_latest_handover(self, obj):
+        session = obj.handover_sessions.order_by('-created_at').first()
+        if session:
+            return HandoverSessionSerializer(session).data
+        return None
+

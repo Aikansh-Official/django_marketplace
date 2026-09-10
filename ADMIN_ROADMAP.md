@@ -118,29 +118,46 @@
 ---
 
 ## ═══════════════════════════════════════════════════════
-## 📋 PHASE 4: Offers, QR Handovers & Deal Disputes
+## 🟢 PHASE 4: Offers, QR Handovers & Deal Disputes
 ## ═══════════════════════════════════════════════════════
-- **Status**: 📋 **PENDING**
-- **Target Pages**: `admin/src/pages/Deals.jsx` (New Page)
+- **Status**: ✅ **COMPLETED & VERIFIED**
+- **Primary Pages**: `admin/src/pages/Deals.jsx`
 
 ### 4.1 Global Deal & Offer Monitor
-- **Centralized Table of All Deals**: Filter by `PENDING`, `ACCEPTED`, `HANDOVER_PENDING`, `COMPLETED`, `CANCELLED`.
-- **Deal Inspector**: See buyer, seller, agreed price, original price, listing details, and message timeline.
-- **Handover QR Session Live Tracker**:
-  - Inspect active QR codes generated for physical handovers.
-  - Expiry countdown timer, verification OTP display, and meetup location status.
+- **Centralized Campus Deals Table**: Filter by `ALL`, `ACCEPTED` (In Handover), `COMPLETED`, `CANCELLED`, `PENDING` (Negotiation), `REJECTED`. Real-time search across listing title, campus location, buyer/seller usernames, names, emails, and 6-digit OTP codes.
+- **Financial & Volume Overview**: Real-time aggregate metric cards displaying Total Deals, Active Handovers, Completed Exchanges, Cancelled/Disputed Deals, and Total Verified Trade Volume (₹ GMV).
+- **Deal Inspector Modal**:
+  - **Listing Overview**: High-res product thumbnail, asking price vs agreed price, discount amount, condition, meetup location.
+  - **Buyer & Seller Comparison Profile Cards**: Student usernames, full names, ID verification status badges, college emails, phone numbers with direct call/email triggers, and interactive Trust Score progress indicators (0-100).
+  - **Buyer Negotiation Notes**: View original purchase notes and offer messages.
+- **Handover QR & OTP Session Live Tracker**:
+  - Displays live session status (`ACTIVE`, `USED`, `EXPIRED`, `CANCELLED`, or `NO_QR_GENERATED`).
+  - High-visibility monospaced 6-digit verification PIN code with 1-click clipboard copy.
+  - Expiry countdown timer, remaining seconds calculation, and one-time UUID token identifier.
 
 ### 4.2 Deal Dispute & Emergency Intervention
-- **Force Cancel Stalled Deals**: If a buyer or seller ghosts after agreement, admin can cancel the deal and automatically restore the listing to `ACTIVE`.
-- **Force Complete Transaction**: In cases where students completed the physical exchange but connectivity failed during QR scan, admin can manually verify and mark transaction `COMPLETED`.
-- **Export Deal Records**: Download transaction logs (CSV/Excel) for university reporting.
+- **Force Cancel Stalled Deals**:
+  - One-click administrative cancellation (`POST /api/marketplace/admin/deals/<id>/action/` with `FORCE_CANCEL`).
+  - Automatically unlocks and restores the listing back to `ACTIVE` in the campus marketplace.
+  - Voids and invalidates any active `HandoverSession` tokens.
+  - Dispatches official in-app notifications with admin-provided cancellation reason to both student accounts.
+- **Force Complete Transaction**:
+  - Administrative override (`FORCE_COMPLETE`) for situations where physical handover took place but mobile app connectivity or camera scanning failed on campus.
+  - Atomically marks the listing as `SOLD`, the offer as `COMPLETED`, and the handover session as `USED`.
+  - Recalculates and awards +5 Peer Trade Trust Score points to both buyer and seller.
+  - Dispatches official transaction completion and purchase receipt notifications to both parties.
+- **Export Deal Records (CSV)**:
+  - 1-click automated CSV exporter generating `campusxchange_deals_<date>.csv` with comprehensive columns: Deal ID, Date, Listing Title, Listing Price, Agreed Price, Status, Buyer Reg No, Buyer Name, Buyer Email, Seller Reg No, Seller Name, Seller Email, Handover Status, Handover PIN, and Meetup Location.
+- **Backend Endpoints**:
+  - `GET /api/marketplace/admin/deals/` (Filter by `status`, search by query).
+  - `POST /api/marketplace/admin/deals/<pk>/action/` (Intervention with `FORCE_CANCEL` and `FORCE_COMPLETE`).
 
 ---
 
 ## ═══════════════════════════════════════════════════════
 ## 📋 PHASE 5: Broadcast Notifications & Direct Messaging
 ## ═══════════════════════════════════════════════════════
-- **Status**: 📋 **PENDING**
+- **Status**: ⏳ **UP NEXT**
 - **Target Pages**: `admin/src/pages/Notifications.jsx` (New Page)
 
 ### 5.1 Campus Broadcast Announcements

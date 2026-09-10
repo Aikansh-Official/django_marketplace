@@ -9,7 +9,8 @@ from .views import (
     NotificationListView, MarkNotificationReadView, MarkAllNotificationsReadView,
     DeleteNotificationView, ClearAllNotificationsView,
     GenerateHandoverQRView, VerifyHandoverView, ConfirmHandoverView, CancelDealView,
-    AdminDashboardStatsView, AdminListingDetailView
+    AdminDashboardStatsView, AdminListingDetailView,
+    AdminDealListView, AdminDealActionView
 )
 
 urlpatterns = [
@@ -40,6 +41,8 @@ urlpatterns = [
     path('admin/dashboard-stats/', AdminDashboardStatsView.as_view(), name='admin-dashboard-stats'),
     path('admin/reports/', AdminListingReportListView.as_view(), name='admin-report-list'),
     path('admin/reports/<int:pk>/', AdminListingReportUpdateView.as_view(), name='admin-report-update'),
+    path('admin/deals/', AdminDealListView.as_view(), name='admin-deal-list'),
+    path('admin/deals/<int:pk>/action/', AdminDealActionView.as_view(), name='admin-deal-action'),
     path('admin/banned-words/', AdminBannedWordsView.as_view(), name='admin-banned-words'),
     path('admin/settings/', AdminPlatformSettingsView.as_view(), name='admin-settings'),
     path('upload-image/', UploadImageView.as_view(), name='upload-image'),
