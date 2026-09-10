@@ -27,6 +27,41 @@ class CategorySerializer(serializers.ModelSerializer):
             return obj.annotated_listings_count
         return obj.listings.filter(status='ACTIVE').count()
 
+
+class AdminCategorySerializer(serializers.ModelSerializer):
+    listings_count = serializers.SerializerMethodField()
+    total_listings_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'slug', 'icon', 'listings_count', 'total_listings_count']
+        extra_kwargs = {
+            'slug': {'required': False}
+        }
+
+    def get_listings_count(self, obj):
+        if hasattr(obj, 'annotated_listings_count'):
+            return obj.annotated_listings_count
+        return obj.listings.filter(status='ACTIVE').count()
+
+    def get_total_listings_count(self, obj):
+        if hasattr(obj, 'annotated_total_listings'):
+            return obj.annotated_total_listings
+        return obj.listings.count()
+
+    def create(self, validated_data):
+        from django.utils.text import slugify
+        if not validated_data.get('slug'):
+            base_slug = slugify(validated_data.get('name', 'category'))
+            slug = base_slug
+            counter = 1
+            while Category.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            validated_data['slug'] = slug
+        return super().create(validated_data)
+
+
 class ListingImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ListingImage

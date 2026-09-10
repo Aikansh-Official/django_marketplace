@@ -6,6 +6,7 @@ import AdminLayout from './layouts/AdminLayout';
 import Dashboard from './pages/Dashboard';
 import Students from './pages/Students';
 import Listings from './pages/Listings';
+import Categories from './pages/Categories';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
@@ -70,6 +71,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="students" element={<Students />} />
           <Route path="listings" element={<Listings />} />
+          <Route path="categories" element={<Categories />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />
         </Route>

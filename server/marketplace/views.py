@@ -16,8 +16,9 @@ from .models import (
 )
 from .serializers import (
     ListingSerializer, ListingCreateUpdateSerializer, CategorySerializer,
-    OfferSerializer, ListingReportSerializer, ListingReportCreateSerializer,
-    PlatformSettingSerializer, NotificationSerializer, HandoverSessionSerializer
+    AdminCategorySerializer, OfferSerializer, ListingReportSerializer,
+    ListingReportCreateSerializer, PlatformSettingSerializer, NotificationSerializer,
+    HandoverSessionSerializer
 )
 from .cloudinary_upload import upload_image_to_cloudinary
 
@@ -44,6 +45,86 @@ class CategoryListView(generics.ListAPIView):
         return Category.objects.annotate(
             annotated_listings_count=Count('listings', filter=Q(listings__status='ACTIVE'))
         ).order_by('name')
+
+
+class AdminCategoryListCreateView(generics.ListCreateAPIView):
+    serializer_class = AdminCategorySerializer
+    permission_classes = [permissions.IsAdminUser]
+
+    def get_queryset(self):
+        from django.db.models import Count, Q
+        return Category.objects.annotate(
+            annotated_listings_count=Count('listings', filter=Q(listings__status='ACTIVE')),
+            annotated_total_listings=Count('listings')
+        ).order_by('name')
+
+    def perform_create(self, serializer):
+        from django.core.cache import cache
+        serializer.save()
+        try:
+            cache.clear()
+        except Exception:
+            pass
+
+
+class AdminCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = AdminCategorySerializer
+    permission_classes = [permissions.IsAdminUser]
+    queryset = Category.objects.all()
+
+    def perform_update(self, serializer):
+        from django.core.cache import cache
+        serializer.save()
+        try:
+            cache.clear()
+        except Exception:
+            pass
+
+    def destroy(self, request, *args, **kwargs):
+        from django.core.cache import cache
+        from django.shortcuts import get_object_or_404
+        instance = self.get_object()
+        listing_count = instance.listings.count()
+
+        reassign_to = request.data.get('reassign_to') or request.query_params.get('reassign_to')
+        force = request.data.get('force') or request.query_params.get('force') in ('true', '1')
+
+        if listing_count > 0:
+            if reassign_to:
+                target_cat = get_object_or_404(Category, pk=reassign_to)
+                if target_cat.id == instance.id:
+                    return Response({'error': 'Cannot reassign listings to the category being deleted.'}, status=status.HTTP_400_BAD_REQUEST)
+                instance.listings.all().update(category=target_cat)
+                instance.delete()
+                try:
+                    cache.clear()
+                except Exception:
+                    pass
+                return Response({
+                    'message': f'Category deleted and {listing_count} listings reassigned to {target_cat.name}.'
+                }, status=status.HTTP_200_OK)
+            elif force:
+                instance.listings.all().update(category=None)
+                instance.delete()
+                try:
+                    cache.clear()
+                except Exception:
+                    pass
+                return Response({
+                    'message': f'Category deleted. {listing_count} listings are now uncategorized.'
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'error': f'Category contains {listing_count} listings. Please choose an alternative category to reassign them to or force delete.',
+                    'listings_count': listing_count
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        instance.delete()
+        try:
+            cache.clear()
+        except Exception:
+            pass
+        return Response({'message': 'Category deleted successfully.'}, status=status.HTTP_200_OK)
 
 
 class ListingListCreateView(generics.ListCreateAPIView):
@@ -618,6 +699,11 @@ class AdminPlatformSettingsView(APIView):
         'maintenance_mode': 'false',
         'allow_registrations': 'true',
         'allowed_domains': '',
+        'announcement_enabled': 'false',
+        'announcement_text': '',
+        'announcement_type': 'INFO',
+        'announcement_link': '',
+        'announcement_dismissible': 'true',
     }
 
     def get(self, request):
@@ -627,13 +713,45 @@ class AdminPlatformSettingsView(APIView):
         return Response(settings_map)
 
     def post(self, request):
+        from django.core.cache import cache
         data = request.data
         for key, value in data.items():
             PlatformSetting.objects.update_or_create(
                 key=key,
                 defaults={'value': str(value)}
             )
+        try:
+            cache.delete('public_announcement_data')
+        except Exception:
+            pass
         return Response({'message': 'Settings updated successfully', 'settings': request.data})
+
+
+class PublicAnnouncementView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        from django.core.cache import cache
+        cached_data = cache.get('public_announcement_data')
+        if cached_data is not None:
+            return Response(cached_data)
+
+        settings_map = dict(AdminPlatformSettingsView.DEFAULT_SETTINGS)
+        for s in PlatformSetting.objects.filter(key__startswith='announcement_'):
+            settings_map[s.key] = s.value
+
+        payload = {
+            'enabled': str(settings_map.get('announcement_enabled', '')).lower() in ('true', '1'),
+            'text': settings_map.get('announcement_text', ''),
+            'type': settings_map.get('announcement_type', 'INFO').upper(),
+            'link': settings_map.get('announcement_link', ''),
+            'dismissible': str(settings_map.get('announcement_dismissible', '')).lower() not in ('false', '0'),
+        }
+        try:
+            cache.set('public_announcement_data', payload, 60)
+        except Exception:
+            pass
+        return Response(payload)
 
 
 class GenerateHandoverQRView(APIView):

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import AnnouncementBanner from './components/AnnouncementBanner';
 import Footer from './components/Footer';
 import Home from './pages/Home';
 
@@ -33,6 +34,7 @@ function App() {
           <div className="flex-1 flex flex-col relative z-10">
             <Navbar />
           <main className="flex-grow pt-16">
+            <AnnouncementBanner />
             <Routes>
               <Route path="/" element={<Home />} />
 

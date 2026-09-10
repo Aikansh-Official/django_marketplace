@@ -2,6 +2,7 @@ from django.urls import path
 from .views import (
     ListingListCreateView, ListingDetailView, MyListingsView,
     ToggleListingStatusView, AdminListingList, CategoryListView,
+    AdminCategoryListCreateView, AdminCategoryDetailView, PublicAnnouncementView,
     UploadImageView, MyOffersView, CreateOfferView,
     ListingReportCreateView, AdminListingReportListView, AdminListingReportUpdateView,
     AdminPlatformSettingsView, ListingOffersView, RespondOfferView,
@@ -30,7 +31,10 @@ urlpatterns = [
     path('my-listings/', MyListingsView.as_view(), name='my-listings'),
     path('my-offers/', MyOffersView.as_view(), name='my-offers'),
     path('categories/', CategoryListView.as_view(), name='category-list'),
+    path('announcement/', PublicAnnouncementView.as_view(), name='public-announcement'),
     path('reports/', ListingReportCreateView.as_view(), name='create-report'),
+    path('admin/categories/', AdminCategoryListCreateView.as_view(), name='admin-category-list-create'),
+    path('admin/categories/<int:pk>/', AdminCategoryDetailView.as_view(), name='admin-category-detail'),
     path('admin/listings/', AdminListingList.as_view(), name='admin-listing-list'),
     path('admin/listings/<int:pk>/', AdminListingDetailView.as_view(), name='admin-listing-detail'),
     path('admin/dashboard-stats/', AdminDashboardStatsView.as_view(), name='admin-dashboard-stats'),

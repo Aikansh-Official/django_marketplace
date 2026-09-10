@@ -9,7 +9,16 @@ import {
   PenTool,
   Trophy,
   Package,
-  Layers
+  Layers,
+  Headphones,
+  Watch,
+  Camera,
+  Gamepad2,
+  Coffee,
+  Sparkles,
+  Music,
+  Briefcase,
+  Glasses
 } from 'lucide-react';
 
 const iconMap = {
@@ -23,6 +32,15 @@ const iconMap = {
   Trophy,
   Package,
   Layers,
+  Headphones,
+  Watch,
+  Camera,
+  Gamepad2,
+  Coffee,
+  Sparkles,
+  Music,
+  Briefcase,
+  Glasses,
   // slug fallbacks
   'books-notes': BookOpen,
   'laptops-computers': Laptop,
@@ -32,6 +50,8 @@ const iconMap = {
   'fashion-lifestyle': Shirt,
   'stationery-lab-gear': PenTool,
   'sports-fitness': Trophy,
+  'gaming-consoles': Gamepad2,
+  'audio-gadgets': Headphones,
   'others': Package,
 };
 
