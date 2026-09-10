@@ -1533,4 +1533,221 @@ class UrgentNotificationView(APIView):
         return Response({'urgent': None})
 
 
+class AdminAnalyticsView(APIView):
+    """
+    Consolidated Business Intelligence & Analytics Engine for CampusXChange Admins.
+    Provides KPIs, dual-metric time-series (GMV turnover & deal count),
+    student acquisition curve, category breakdown, sell vs donation ratio,
+    campus location hotspots, price benchmarks, and top sellers leaderboard.
+    """
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        from django.db.models import Count, Sum, Avg, Min, Max, Q
+        from datetime import timedelta
+
+        timeframe = request.query_params.get('timeframe', '30d').lower()
+        now = timezone.now()
+
+        if timeframe == '7d':
+            days_count = 7
+            start_date = now - timedelta(days=7)
+        elif timeframe == '90d':
+            days_count = 90
+            start_date = now - timedelta(days=90)
+        elif timeframe == 'all':
+            days_count = 365
+            start_date = None
+        else:
+            timeframe = '30d'
+            days_count = 30
+            start_date = now - timedelta(days=30)
+
+        # 1. High-Level Global & Timeframe KPIs
+        all_completed_offers = Offer.objects.filter(status='COMPLETED')
+        total_all_time_gmv = all_completed_offers.aggregate(total=Sum('offer_amount'))['total'] or 0
+        total_all_time_deals = all_completed_offers.count()
+
+        tf_completed_offers = all_completed_offers
+        tf_new_students = User.objects.filter(is_staff=False, is_superuser=False)
+        tf_listings = Listing.objects.all()
+
+        if start_date:
+            tf_completed_offers = tf_completed_offers.filter(created_at__gte=start_date)
+            tf_new_students = tf_new_students.filter(date_joined__gte=start_date)
+            tf_listings = tf_listings.filter(created_at__gte=start_date)
+
+        tf_gmv = tf_completed_offers.aggregate(total=Sum('offer_amount'))['total'] or 0
+        tf_deals = tf_completed_offers.count()
+        avg_deal_value = round(float(tf_gmv) / tf_deals, 2) if tf_deals > 0 else (
+            round(float(total_all_time_gmv) / total_all_time_deals, 2) if total_all_time_deals > 0 else 0
+        )
+
+        total_students_count = User.objects.filter(is_staff=False, is_superuser=False).count()
+        verified_students_count = User.objects.filter(is_staff=False, is_superuser=False, is_verified_student=True).count()
+        verification_rate = round((verified_students_count / total_students_count * 100), 1) if total_students_count > 0 else 0
+
+        active_listings_count = Listing.objects.filter(status='ACTIVE').count()
+        total_listings_count = Listing.objects.count()
+        sold_listings_count = Listing.objects.filter(status='SOLD').count()
+
+        # 2. Daily Time Series Generation (for line, bar & area charts)
+        series_days = []
+        cur_date = (now - timedelta(days=days_count - 1)).date()
+        end_date = now.date()
+        while cur_date <= end_date:
+            series_days.append(cur_date)
+            cur_date += timedelta(days=1)
+
+        deals_by_date = {}
+        for row in (all_completed_offers.filter(created_at__date__gte=series_days[0])
+                    .values('created_at__date')
+                    .annotate(count=Count('id'), total_val=Sum('offer_amount'))):
+            deals_by_date[row['created_at__date']] = {
+                'deals': row['count'],
+                'turnover': float(row['total_val'] or 0)
+            }
+
+        signups_by_date = {}
+        for row in (User.objects.filter(is_staff=False, is_superuser=False, date_joined__date__gte=series_days[0])
+                    .values('date_joined__date')
+                    .annotate(count=Count('id'))):
+            signups_by_date[row['date_joined__date']] = row['count']
+
+        timeline_data = []
+        for d in series_days:
+            deal_info = deals_by_date.get(d, {'deals': 0, 'turnover': 0})
+            signup_count = signups_by_date.get(d, 0)
+            timeline_data.append({
+                'date': d.strftime('%Y-%m-%d'),
+                'label': d.strftime('%d %b'),
+                'deals': deal_info['deals'],
+                'turnover': deal_info['turnover'],
+                'signups': signup_count
+            })
+
+        # 3. Category Breakdown
+        categories_qs = Category.objects.annotate(
+            listing_count=Count('listings', distinct=True),
+            active_count=Count('listings', filter=Q(listings__status='ACTIVE'), distinct=True),
+            sold_count=Count('listings', filter=Q(listings__status='SOLD'), distinct=True),
+            avg_price=Avg('listings__price')
+        )
+        total_cat_listings = sum(c.listing_count for c in categories_qs) or 1
+        category_breakdown = []
+        for cat in categories_qs:
+            share = round((cat.listing_count / total_cat_listings) * 100, 1)
+            category_breakdown.append({
+                'id': cat.id,
+                'name': cat.name,
+                'slug': cat.slug,
+                'icon': cat.icon or '',
+                'listing_count': cat.listing_count,
+                'active_count': cat.active_count,
+                'sold_count': cat.sold_count,
+                'share_percentage': share,
+                'avg_price': round(float(cat.avg_price or 0), 2)
+            })
+        category_breakdown.sort(key=lambda x: x['listing_count'], reverse=True)
+
+        # 4. Sell vs Donation Distribution
+        sell_count = Listing.objects.filter(transaction_type='SELL').count()
+        donate_count = Listing.objects.filter(transaction_type='DONATE').count()
+        total_types = (sell_count + donate_count) or 1
+        sell_vs_donation = {
+            'sell_count': sell_count,
+            'donate_count': donate_count,
+            'sell_percentage': round((sell_count / total_types) * 100, 1),
+            'donate_percentage': round((donate_count / total_types) * 100, 1),
+            'total_listings': total_listings_count
+        }
+
+        # 5. Campus Location Hotspots
+        hotspots_raw = Listing.objects.exclude(location__isnull=True).exclude(location__exact='').values('location').annotate(
+            total=Count('id'),
+            sold=Count('id', filter=Q(status='SOLD'))
+        ).order_by('-total')[:8]
+
+        total_location_items = sum(h['total'] for h in hotspots_raw) or 1
+        campus_hotspots = []
+        for h in hotspots_raw:
+            campus_hotspots.append({
+                'location': h['location'],
+                'total_listings': h['total'],
+                'sold_listings': h['sold'],
+                'share_percentage': round((h['total'] / total_location_items) * 100, 1)
+            })
+
+        # 6. Top Sellers Leaderboard (Ranked Top 10)
+        top_sellers_qs = User.objects.filter(is_staff=False, is_superuser=False).annotate(
+            total_listings=Count('listings', distinct=True),
+            sold_listings=Count('listings', filter=Q(listings__status='SOLD'), distinct=True),
+            completed_deals=Count('listings__offers', filter=Q(listings__offers__status='COMPLETED'), distinct=True)
+        ).order_by('-completed_deals', '-trust_score', '-sold_listings')[:10]
+
+        top_sellers = []
+        for rank, seller in enumerate(top_sellers_qs, 1):
+            photo_url = None
+            if hasattr(seller, 'profile_picture_url') and seller.profile_picture_url:
+                photo_url = seller.profile_picture_url
+            elif hasattr(seller, 'profile_photo') and seller.profile_photo and seller.profile_photo.startswith('http'):
+                photo_url = seller.profile_photo
+
+            top_sellers.append({
+                'rank': rank,
+                'id': seller.id,
+                'username': seller.username,
+                'full_name': seller.full_name or seller.username,
+                'email': seller.email,
+                'profile_photo': photo_url,
+                'trust_score': seller.trust_score,
+                'is_verified_student': seller.is_verified_student,
+                'is_id_verified': seller.is_id_verified,
+                'total_listings': seller.total_listings,
+                'sold_listings': seller.sold_listings,
+                'completed_deals': seller.completed_deals
+            })
+
+        # 7. Category Price Benchmarks
+        price_benchmarks = []
+        for cat in categories_qs:
+            priced_listings = Listing.objects.filter(category=cat, price__gt=0)
+            if priced_listings.exists():
+                stats = priced_listings.aggregate(
+                    min_p=Min('price'),
+                    max_p=Max('price'),
+                    avg_p=Avg('price')
+                )
+                price_benchmarks.append({
+                    'category_name': cat.name,
+                    'min_price': float(stats['min_p'] or 0),
+                    'max_price': float(stats['max_p'] or 0),
+                    'avg_price': round(float(stats['avg_p'] or 0), 2)
+                })
+
+        return Response({
+            'timeframe': timeframe,
+            'kpis': {
+                'total_gmv': float(total_all_time_gmv),
+                'timeframe_gmv': float(tf_gmv),
+                'total_completed_deals': total_all_time_deals,
+                'timeframe_completed_deals': tf_deals,
+                'avg_deal_value': avg_deal_value,
+                'total_students': total_students_count,
+                'verified_students': verified_students_count,
+                'verification_rate': verification_rate,
+                'active_listings': active_listings_count,
+                'total_listings': total_listings_count,
+                'sold_listings': sold_listings_count,
+                'new_students_timeframe': tf_new_students.count(),
+            },
+            'timeline': timeline_data,
+            'category_breakdown': category_breakdown,
+            'sell_vs_donation': sell_vs_donation,
+            'campus_hotspots': campus_hotspots,
+            'top_sellers': top_sellers,
+            'price_benchmarks': price_benchmarks
+        })
+
+
 

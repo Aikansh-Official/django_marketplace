@@ -12,7 +12,7 @@ from .views import (
     AdminDashboardStatsView, AdminListingDetailView,
     AdminDealListView, AdminDealActionView,
     AdminBroadcastNotificationView, AdminDirectNotificationView, AdminNotificationStatsView,
-    UrgentNotificationView
+    UrgentNotificationView, AdminAnalyticsView
 )
 
 urlpatterns = [
@@ -49,6 +49,7 @@ urlpatterns = [
     path('admin/broadcasts/', AdminBroadcastNotificationView.as_view(), name='admin-broadcasts'),
     path('admin/direct-notice/', AdminDirectNotificationView.as_view(), name='admin-direct-notice'),
     path('admin/notifications/stats/', AdminNotificationStatsView.as_view(), name='admin-notification-stats'),
+    path('admin/analytics/', AdminAnalyticsView.as_view(), name='admin-analytics'),
     path('admin/banned-words/', AdminBannedWordsView.as_view(), name='admin-banned-words'),
     path('admin/settings/', AdminPlatformSettingsView.as_view(), name='admin-settings'),
     path('upload-image/', UploadImageView.as_view(), name='upload-image'),

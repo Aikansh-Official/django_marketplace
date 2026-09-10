@@ -274,5 +274,61 @@ class MarketplaceHandoverTests(TestCase):
         self.assertEqual(notifs_res.status_code, status.HTTP_200_OK)
         self.assertTrue(any(n['title'] == 'ID Verification Request' for n in notifs_res.data))
 
+    def test_admin_analytics_endpoint(self):
+        # 1. Non-admin student access forbidden
+        self.client.force_authenticate(user=self.buyer)
+        res_forbidden = self.client.get('/api/marketplace/admin/analytics/')
+        self.assertEqual(res_forbidden.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 2. Admin access granted
+        self.client.force_authenticate(user=self.admin)
+        res = self.client.get('/api/marketplace/admin/analytics/?timeframe=30d')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        data = res.data
+        self.assertEqual(data['timeframe'], '30d')
+
+        # Check KPIs
+        self.assertIn('kpis', data)
+        kpis = data['kpis']
+        self.assertIn('total_gmv', kpis)
+        self.assertIn('total_completed_deals', kpis)
+        self.assertIn('avg_deal_value', kpis)
+        self.assertIn('total_students', kpis)
+        self.assertIn('verified_students', kpis)
+        self.assertIn('active_listings', kpis)
+
+        # Check Timeline
+        self.assertIn('timeline', data)
+        self.assertIsInstance(data['timeline'], list)
+        self.assertGreater(len(data['timeline']), 0)
+        point = data['timeline'][-1]
+        self.assertIn('date', point)
+        self.assertIn('deals', point)
+        self.assertIn('turnover', point)
+        self.assertIn('signups', point)
+
+        # Check Category Breakdown
+        self.assertIn('category_breakdown', data)
+        self.assertIsInstance(data['category_breakdown'], list)
+
+        # Check Sell vs Donation
+        self.assertIn('sell_vs_donation', data)
+        self.assertIn('sell_count', data['sell_vs_donation'])
+        self.assertIn('donate_count', data['sell_vs_donation'])
+
+        # Check Top Sellers
+        self.assertIn('top_sellers', data)
+        self.assertIsInstance(data['top_sellers'], list)
+
+        # Check Campus Hotspots
+        self.assertIn('campus_hotspots', data)
+
+        # 3. Test different timeframes
+        for tf in ['7d', '90d', 'all']:
+            tf_res = self.client.get(f'/api/marketplace/admin/analytics/?timeframe={tf}')
+            self.assertEqual(tf_res.status_code, status.HTTP_200_OK)
+            self.assertEqual(tf_res.data['timeframe'], tf)
+
 
 

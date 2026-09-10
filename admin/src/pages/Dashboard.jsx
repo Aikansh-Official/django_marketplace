@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { Users, ShoppingBag, CheckCircle, AlertTriangle, Tag, MapPin, ArrowRight } from 'lucide-react';
+import { Users, ShoppingBag, CheckCircle, AlertTriangle, Tag, MapPin, ArrowRight, TrendingUp } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -138,6 +138,30 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Analytics & Business Intelligence Quick Jump Banner */}
+      <div className="bg-gradient-to-r from-ink-900 via-brand-950 to-ink-900 text-white p-5 rounded-md shadow-md border border-brand-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-md bg-brand-600/30 border border-brand-500/40 text-brand-400 flex items-center justify-center flex-shrink-0">
+            <TrendingUp className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-sm font-black text-white flex items-center gap-2">
+              Advanced Campus Analytics & Seller Leaderboards
+            </h3>
+            <p className="text-xs text-gray-300 mt-0.5">
+              Inspect interactive turnover curves (₹ GMV), student acquisition trends, campus location hotspots & top sellers hall of fame.
+            </p>
+          </div>
+        </div>
+        <Link
+          to="/analytics"
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-md text-xs font-bold shadow-md transition-all whitespace-nowrap self-start sm:self-center"
+        >
+          <span>Open Full Analytics</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+
       {/* Two Column Layout: Recent Listings & Recent Students */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Listings */}
@@ -193,13 +217,12 @@ export default function Dashboard() {
                       <span className="text-xs font-black text-gray-900 block">
                         {listing.transaction_type === 'DONATE' ? 'Free' : `₹${listing.price}`}
                       </span>
-                      <span className={`inline-block mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        listing.status === 'ACTIVE'
+                      <span className={`inline-block mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${listing.status === 'ACTIVE'
                           ? 'bg-green-100 text-green-800'
                           : listing.status === 'SOLD'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}>
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
                         {listing.status}
                       </span>
                     </div>

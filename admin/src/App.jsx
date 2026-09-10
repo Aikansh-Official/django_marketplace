@@ -10,6 +10,7 @@ import Categories from './pages/Categories';
 import Reports from './pages/Reports';
 import Deals from './pages/Deals';
 import Notifications from './pages/Notifications';
+import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 
@@ -71,6 +72,7 @@ function App() {
           }
         >
           <Route index element={<Dashboard />} />
+          <Route path="analytics" element={<Analytics />} />
           <Route path="students" element={<Students />} />
           <Route path="listings" element={<Listings />} />
           <Route path="deals" element={<Deals />} />
