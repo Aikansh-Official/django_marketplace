@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.utils import timezone
 from .models import (
-    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession, BroadcastLog
+    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession, BroadcastLog, AdminAuditLog
 )
 from .cloudinary_upload import (
     upload_base64_to_cloudinary, is_base64_image, is_url
@@ -492,4 +492,23 @@ class AdminDealSerializer(serializers.ModelSerializer):
         if session:
             return HandoverSessionSerializer(session).data
         return None
+
+
+class AdminAuditLogSerializer(serializers.ModelSerializer):
+    admin_name = serializers.SerializerMethodField()
+    action_display = serializers.CharField(source='get_action_display', read_only=True)
+
+    class Meta:
+        model = AdminAuditLog
+        fields = [
+            'id', 'admin_user', 'admin_username', 'admin_name',
+            'action', 'action_display', 'target_type', 'target_id',
+            'target_repr', 'details', 'ip_address', 'user_agent', 'created_at'
+        ]
+        read_only_fields = fields
+
+    def get_admin_name(self, obj):
+        if obj.admin_user:
+            return obj.admin_user.full_name or obj.admin_user.username
+        return obj.admin_username
 

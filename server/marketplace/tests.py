@@ -330,5 +330,53 @@ class MarketplaceHandoverTests(TestCase):
             self.assertEqual(tf_res.status_code, status.HTTP_200_OK)
             self.assertEqual(tf_res.data['timeframe'], tf)
 
+    def test_admin_audit_logs_and_system_health(self):
+        """Phase 7: Verify Admin Audit Logging and System Health Diagnostics."""
+        # 1. Non-admin forbidden
+        self.client.force_authenticate(user=self.buyer)
+        audit_res_forbidden = self.client.get('/api/marketplace/admin/audit-logs/')
+        self.assertEqual(audit_res_forbidden.status_code, status.HTTP_403_FORBIDDEN)
+        health_res_forbidden = self.client.get('/api/marketplace/admin/system-health/')
+        self.assertEqual(health_res_forbidden.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 2. Admin performs an action (Update Settings)
+        self.client.force_authenticate(user=self.admin)
+        settings_res = self.client.post('/api/marketplace/admin/settings/', {
+            'maintenance_mode': 'false',
+            'announcement_enabled': 'true',
+            'announcement_text': 'System Health Check Test'
+        })
+        self.assertEqual(settings_res.status_code, status.HTTP_200_OK)
+
+        # 3. Verify audit log was recorded
+        audit_res = self.client.get('/api/marketplace/admin/audit-logs/')
+        self.assertEqual(audit_res.status_code, status.HTTP_200_OK)
+        audit_data = audit_res.data
+        self.assertIn('logs', audit_data)
+        self.assertIn('total_count', audit_data)
+        self.assertIn('count_24h', audit_data)
+        self.assertGreaterEqual(audit_data['total_count'], 1)
+
+        # Ensure the setting update action is present
+        latest_log = audit_data['logs'][0]
+        self.assertEqual(latest_log['action'], 'SETTINGS_UPDATE')
+        self.assertEqual(latest_log['admin_username'], self.admin.username)
+        self.assertEqual(latest_log['target_type'], 'SETTING')
+
+        # 4. Verify System Health diagnostics
+        health_res = self.client.get('/api/marketplace/admin/system-health/')
+        self.assertEqual(health_res.status_code, status.HTTP_200_OK)
+        health_data = health_res.data
+
+        self.assertIn(health_data['status'], ['HEALTHY', 'DEGRADED', 'CRITICAL'])
+        self.assertIn('database', health_data)
+        self.assertTrue(health_data['database']['healthy'])
+        self.assertGreaterEqual(health_data['database']['latency_ms'], 0)
+        self.assertIn('cache', health_data)
+        self.assertTrue(health_data['cache']['healthy'])
+        self.assertIn('security', health_data)
+        self.assertIn('environment', health_data)
+        self.assertIn('metrics', health_data)
+
 
 

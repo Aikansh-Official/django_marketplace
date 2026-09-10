@@ -11,6 +11,8 @@ import Reports from './pages/Reports';
 import Deals from './pages/Deals';
 import Notifications from './pages/Notifications';
 import Analytics from './pages/Analytics';
+import AuditLogs from './pages/AuditLogs';
+import SystemHealth from './pages/SystemHealth';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 
@@ -79,6 +81,8 @@ function App() {
           <Route path="categories" element={<Categories />} />
           <Route path="reports" element={<Reports />} />
           <Route path="notifications" element={<Notifications />} />
+          <Route path="audit-logs" element={<AuditLogs />} />
+          <Route path="system-health" element={<SystemHealth />} />
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>

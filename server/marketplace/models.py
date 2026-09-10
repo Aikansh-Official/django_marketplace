@@ -233,3 +233,45 @@ class PlatformSetting(models.Model):
 
     def __str__(self):
         return f"{self.key}: {self.value[:30]}"
+
+
+class AdminAuditLog(models.Model):
+    ACTION_CHOICES = (
+        ('USER_BAN', 'User Banned / Suspended'),
+        ('USER_UNBAN', 'User Reactivated'),
+        ('USER_VERIFY', 'Student ID Verified'),
+        ('USER_REVOKE_VERIFY', 'Student ID Verification Revoked'),
+        ('USER_UPDATE', 'Student Profile Modified'),
+        ('LISTING_DELETE', 'Listing Deleted'),
+        ('LISTING_HIDE', 'Listing Hidden'),
+        ('LISTING_ACTIVATE', 'Listing Activated'),
+        ('LISTING_UPDATE', 'Listing Details Modified'),
+        ('DEAL_FORCE_CANCEL', 'Deal Force-Cancelled'),
+        ('DEAL_FORCE_COMPLETE', 'Deal Force-Completed'),
+        ('CATEGORY_CREATE', 'Category Created'),
+        ('CATEGORY_UPDATE', 'Category Updated'),
+        ('CATEGORY_DELETE', 'Category Deleted'),
+        ('BROADCAST_SENT', 'Campus Broadcast Dispatched'),
+        ('DIRECT_NOTICE_SENT', 'Direct Student Notice Dispatched'),
+        ('REPORT_RESOLVED', 'Report Resolved / Action Taken'),
+        ('BANNED_WORDS_UPDATE', 'Banned Words Blacklist Updated'),
+        ('SETTINGS_UPDATE', 'Platform Settings Updated'),
+        ('SECURITY_ALERT', 'Security Incident / Alert'),
+    )
+
+    admin_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='audit_logs')
+    admin_username = models.CharField(max_length=150, help_text="Cached admin username")
+    action = models.CharField(max_length=30, choices=ACTION_CHOICES, db_index=True)
+    target_type = models.CharField(max_length=50, blank=True, default='')
+    target_id = models.CharField(max_length=100, blank=True, default='')
+    target_repr = models.CharField(max_length=255, blank=True, default='')
+    details = models.JSONField(default=dict, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=255, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.created_at.strftime('%Y-%m-%d %H:%M')}] {self.admin_username} -> {self.action} ({self.target_repr})"

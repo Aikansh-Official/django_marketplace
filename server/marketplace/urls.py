@@ -12,7 +12,8 @@ from .views import (
     AdminDashboardStatsView, AdminListingDetailView,
     AdminDealListView, AdminDealActionView,
     AdminBroadcastNotificationView, AdminDirectNotificationView, AdminNotificationStatsView,
-    UrgentNotificationView, AdminAnalyticsView
+    UrgentNotificationView, AdminAnalyticsView,
+    AdminAuditLogListView, AdminSystemHealthView
 )
 
 urlpatterns = [
@@ -50,6 +51,8 @@ urlpatterns = [
     path('admin/direct-notice/', AdminDirectNotificationView.as_view(), name='admin-direct-notice'),
     path('admin/notifications/stats/', AdminNotificationStatsView.as_view(), name='admin-notification-stats'),
     path('admin/analytics/', AdminAnalyticsView.as_view(), name='admin-analytics'),
+    path('admin/audit-logs/', AdminAuditLogListView.as_view(), name='admin-audit-logs'),
+    path('admin/system-health/', AdminSystemHealthView.as_view(), name='admin-system-health'),
     path('admin/banned-words/', AdminBannedWordsView.as_view(), name='admin-banned-words'),
     path('admin/settings/', AdminPlatformSettingsView.as_view(), name='admin-settings'),
     path('upload-image/', UploadImageView.as_view(), name='upload-image'),

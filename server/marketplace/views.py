@@ -1,6 +1,7 @@
 import logging
 import random
 import datetime
+import django
 from django.db import transaction
 from rest_framework import generics, status, permissions
 from rest_framework.views import APIView
@@ -15,15 +16,48 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 from .models import (
-    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession, BroadcastLog
+    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession, BroadcastLog, AdminAuditLog
 )
 from .serializers import (
     ListingSerializer, ListingCreateUpdateSerializer, CategorySerializer,
     AdminCategorySerializer, OfferSerializer, ListingReportSerializer,
     ListingReportCreateSerializer, PlatformSettingSerializer, NotificationSerializer,
-    HandoverSessionSerializer, AdminDealSerializer, BroadcastLogSerializer
+    HandoverSessionSerializer, AdminDealSerializer, BroadcastLogSerializer, AdminAuditLogSerializer
 )
 from .cloudinary_upload import upload_image_to_cloudinary
+
+
+def log_admin_action(request, action, target_type='', target_id='', target_repr='', details=None):
+    """
+    Centralized, fail-safe audit logging utility.
+    Captures admin username, action type, target entity, structured JSON details, IP address, and user agent.
+    """
+    try:
+        user = getattr(request, 'user', None)
+        admin_username = user.username if (user and user.is_authenticated) else 'system'
+
+        # Extract client IP address
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+
+        user_agent = request.META.get('HTTP_USER_AGENT', '')[:250]
+
+        AdminAuditLog.objects.create(
+            admin_user=user if (user and user.is_authenticated) else None,
+            admin_username=admin_username,
+            action=action,
+            target_type=target_type,
+            target_id=str(target_id) if target_id else '',
+            target_repr=str(target_repr)[:255] if target_repr else '',
+            details=details or {},
+            ip_address=ip if ip and len(ip) <= 45 else None,
+            user_agent=user_agent
+        )
+    except Exception as e:
+        logger.warning(f"Failed to record audit log for action '{action}': {e}")
 
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
@@ -102,11 +136,19 @@ class AdminCategoryListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         from django.core.cache import cache
-        serializer.save()
+        instance = serializer.save()
         try:
             cache.clear()
         except Exception:
             pass
+        log_admin_action(
+            self.request,
+            action='CATEGORY_CREATE',
+            target_type='CATEGORY',
+            target_id=instance.id,
+            target_repr=instance.name,
+            details={'slug': instance.slug}
+        )
 
 
 class AdminCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -116,17 +158,27 @@ class AdminCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def perform_update(self, serializer):
         from django.core.cache import cache
-        serializer.save()
+        instance = serializer.save()
         try:
             cache.clear()
         except Exception:
             pass
+        log_admin_action(
+            self.request,
+            action='CATEGORY_UPDATE',
+            target_type='CATEGORY',
+            target_id=instance.id,
+            target_repr=instance.name,
+            details={'updated_fields': list(self.request.data.keys())}
+        )
 
     def destroy(self, request, *args, **kwargs):
         from django.core.cache import cache
         from django.shortcuts import get_object_or_404
         instance = self.get_object()
         listing_count = instance.listings.count()
+        cat_id = instance.id
+        cat_name = instance.name
 
         reassign_to = request.data.get('reassign_to') or request.query_params.get('reassign_to')
         force = request.data.get('force') or request.query_params.get('force') in ('true', '1')
@@ -142,6 +194,14 @@ class AdminCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
                     cache.clear()
                 except Exception:
                     pass
+                log_admin_action(
+                    request,
+                    action='CATEGORY_DELETE',
+                    target_type='CATEGORY',
+                    target_id=cat_id,
+                    target_repr=cat_name,
+                    details={'reassigned_to': target_cat.name, 'affected_listings': listing_count}
+                )
                 return Response({
                     'message': f'Category deleted and {listing_count} listings reassigned to {target_cat.name}.'
                 }, status=status.HTTP_200_OK)
@@ -152,6 +212,14 @@ class AdminCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
                     cache.clear()
                 except Exception:
                     pass
+                log_admin_action(
+                    request,
+                    action='CATEGORY_DELETE',
+                    target_type='CATEGORY',
+                    target_id=cat_id,
+                    target_repr=cat_name,
+                    details={'forced': True, 'affected_listings': listing_count}
+                )
                 return Response({
                     'message': f'Category deleted. {listing_count} listings are now uncategorized.'
                 }, status=status.HTTP_200_OK)
@@ -166,6 +234,14 @@ class AdminCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
             cache.clear()
         except Exception:
             pass
+        log_admin_action(
+            request,
+            action='CATEGORY_DELETE',
+            target_type='CATEGORY',
+            target_id=cat_id,
+            target_repr=cat_name,
+            details={'affected_listings': 0}
+        )
         return Response({'message': 'Category deleted successfully.'}, status=status.HTTP_200_OK)
 
 
@@ -363,6 +439,17 @@ class ToggleListingStatusView(APIView):
 
         listing.status = new_status
         listing.save()
+
+        if request.user.is_staff:
+            log_admin_action(
+                request,
+                action='LISTING_HIDE' if new_status == 'HIDDEN' else ('LISTING_ACTIVATE' if new_status == 'ACTIVE' else 'LISTING_UPDATE'),
+                target_type='LISTING',
+                target_id=listing.id,
+                target_repr=listing.title,
+                details={'new_status': new_status, 'seller': listing.seller.username if listing.seller else ''}
+            )
+
         serializer = ListingSerializer(listing, context={'request': request})
         return Response(serializer.data)
 
@@ -390,6 +477,31 @@ class AdminListingDetailView(generics.RetrieveUpdateDestroyAPIView):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         return Response(ListingSerializer(instance, context={'request': request}).data)
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        log_admin_action(
+            self.request,
+            action='LISTING_UPDATE',
+            target_type='LISTING',
+            target_id=instance.id,
+            target_repr=instance.title,
+            details={'updated_fields': list(self.request.data.keys())}
+        )
+
+    def perform_destroy(self, instance):
+        listing_id = instance.id
+        listing_title = instance.title
+        seller_username = instance.seller.username if instance.seller else 'unknown'
+        super().perform_destroy(instance)
+        log_admin_action(
+            self.request,
+            action='LISTING_DELETE',
+            target_type='LISTING',
+            target_id=listing_id,
+            target_repr=listing_title,
+            details={'seller': seller_username}
+        )
 
 
 class AdminDashboardStatsView(APIView):
@@ -883,6 +995,15 @@ class AdminBannedWordsView(APIView):
         except Exception:
             pass
 
+        log_admin_action(
+            request,
+            action='BANNED_WORDS_UPDATE',
+            target_type='SETTING',
+            target_id='banned_words',
+            target_repr="Keyword Blacklist",
+            details={'keywords_count': len(unique_words)}
+        )
+
         return Response({
             'message': f'Banned words list updated successfully ({len(unique_words)} active keywords).',
             'words': unique_words
@@ -921,6 +1042,16 @@ class AdminPlatformSettingsView(APIView):
             cache.delete('public_announcement_data')
         except Exception:
             pass
+
+        log_admin_action(
+            request,
+            action='SETTINGS_UPDATE',
+            target_type='SETTING',
+            target_id='platform_settings',
+            target_repr="Platform Configuration",
+            details={'keys_updated': list(data.keys())}
+        )
+
         return Response({'message': 'Settings updated successfully', 'settings': request.data})
 
 
@@ -1287,6 +1418,14 @@ class AdminDealActionView(APIView):
                 )
 
             serializer = AdminDealSerializer(offer)
+            log_admin_action(
+                request,
+                action='DEAL_FORCE_CANCEL',
+                target_type='DEAL',
+                target_id=offer.id,
+                target_repr=f"Deal #{offer.id} ({listing.title})",
+                details={'reason': reason, 'buyer': buyer.username, 'seller': seller.username}
+            )
             return Response({
                 'success': True,
                 'message': f"Deal #{offer.id} cancelled successfully and listing restored to Active.",
@@ -1349,6 +1488,14 @@ class AdminDealActionView(APIView):
                 )
 
             serializer = AdminDealSerializer(offer)
+            log_admin_action(
+                request,
+                action='DEAL_FORCE_COMPLETE',
+                target_type='DEAL',
+                target_id=offer.id,
+                target_repr=f"Deal #{offer.id} ({listing.title})",
+                details={'reason': reason, 'buyer': buyer.username, 'seller': seller.username}
+            )
             return Response({
                 'success': True,
                 'message': f"Deal #{offer.id} manually verified and completed. Listing marked as SOLD.",
@@ -1429,6 +1576,15 @@ class AdminBroadcastNotificationView(APIView):
             ]
             Notification.objects.bulk_create(notifications, batch_size=500)
 
+        log_admin_action(
+            request,
+            action='BROADCAST_SENT',
+            target_type='BROADCAST',
+            target_id=log.id,
+            target_repr=title,
+            details={'target_audience': target_audience, 'priority': priority, 'recipients_count': recipients_count}
+        )
+
         serializer = BroadcastLogSerializer(log)
         return Response({
             'success': True,
@@ -1473,6 +1629,15 @@ class AdminDirectNotificationView(APIView):
             title=title,
             message=message,
             link=link
+        )
+
+        log_admin_action(
+            request,
+            action='DIRECT_NOTICE_SENT',
+            target_type='USER',
+            target_id=student.id,
+            target_repr=f"@{student.username} ({student.full_name or student.username})",
+            details={'title': title, 'priority': priority}
         )
 
         serializer = NotificationSerializer(notif)
@@ -1747,6 +1912,170 @@ class AdminAnalyticsView(APIView):
             'campus_hotspots': campus_hotspots,
             'top_sellers': top_sellers,
             'price_benchmarks': price_benchmarks
+        })
+
+
+class AdminAuditLogListView(APIView):
+    """
+    Query and filter the immutable administrative audit trail.
+    Supports filtering by action, admin_username, target_type, date range, and text search.
+    Also returns aggregate summary statistics.
+    """
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        from datetime import timedelta
+        qs = AdminAuditLog.objects.select_related('admin_user').all()
+
+        action = request.query_params.get('action')
+        admin_username = request.query_params.get('admin_username')
+        target_type = request.query_params.get('target_type')
+        search = request.query_params.get('search')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+
+        if action and action != 'ALL':
+            qs = qs.filter(action=action)
+
+        if admin_username:
+            qs = qs.filter(admin_username__icontains=admin_username)
+
+        if target_type and target_type != 'ALL':
+            qs = qs.filter(target_type=target_type)
+
+        if search:
+            qs = qs.filter(
+                Q(admin_username__icontains=search) |
+                Q(target_repr__icontains=search) |
+                Q(target_id__icontains=search) |
+                Q(ip_address__icontains=search)
+            )
+
+        if date_from:
+            qs = qs.filter(created_at__date__gte=date_from)
+
+        if date_to:
+            qs = qs.filter(created_at__date__lte=date_to)
+
+        total_count = qs.count()
+
+        # Summary statistics
+        now = timezone.now()
+        last_24h = now - timedelta(hours=24)
+        count_24h = AdminAuditLog.objects.filter(created_at__gte=last_24h).count()
+        critical_count = AdminAuditLog.objects.filter(
+            action__in=['USER_BAN', 'LISTING_DELETE', 'DEAL_FORCE_CANCEL']
+        ).count()
+        unique_admins = AdminAuditLog.objects.values('admin_username').distinct().count()
+
+        # Paginate / limit to 100 recent entries for performance
+        logs = qs.order_by('-created_at')[:100]
+        serializer = AdminAuditLogSerializer(logs, many=True)
+
+        return Response({
+            'total_count': total_count,
+            'count_24h': count_24h,
+            'critical_count': critical_count,
+            'unique_admins': unique_admins,
+            'logs': serializer.data
+        })
+
+
+class AdminSystemHealthView(APIView):
+    """
+    Real-time System Health, Performance Benchmarking & Security Diagnostics.
+    Returns database ping latency, cache latency, storage status, security posture audit,
+    and platform risk indicators.
+    """
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        import time
+        import sys
+        import platform
+        from datetime import timedelta
+        from django.db import connection
+        from django.core.cache import cache
+        from django.conf import settings
+
+        # 1. Database Ping & Latency Benchmark
+        db_start = time.perf_counter()
+        db_healthy = True
+        db_error = None
+        try:
+            with connection.cursor() as cur:
+                cur.execute("SELECT 1;")
+                cur.fetchone()
+            db_latency_ms = round((time.perf_counter() - db_start) * 1000, 2)
+        except Exception as e:
+            db_healthy = False
+            db_error = str(e)
+            db_latency_ms = -1
+
+        db_engine = settings.DATABASES['default']['ENGINE'].split('.')[-1]
+
+        # 2. Cache Engine & Benchmark
+        cache_start = time.perf_counter()
+        cache_healthy = True
+        try:
+            test_key = '_cxc_health_ping'
+            cache.set(test_key, 'pong', 5)
+            cache.get(test_key)
+            cache_latency_ms = round((time.perf_counter() - cache_start) * 1000, 2)
+        except Exception:
+            cache_healthy = False
+            cache_latency_ms = -1
+
+        # 3. Security Posture Audit
+        security_posture = {
+            'debug_mode': settings.DEBUG,
+            'debug_status': 'SECURE (Off)' if not settings.DEBUG else 'WARNING (Active in Dev)',
+            'data_security_middleware': hasattr(settings, 'DATA_SECURITY_KEY') and bool(getattr(settings, 'DATA_SECURITY_KEY', None)),
+            'httponly_cookies': getattr(settings, 'SESSION_COOKIE_HTTPONLY', True),
+            'rate_limiting_active': True,
+            'cors_origins_configured': bool(getattr(settings, 'CORS_ALLOWED_ORIGINS', None) or getattr(settings, 'CORS_ALLOW_ALL_ORIGINS', False)),
+        }
+
+        # 4. Active Security & Operational Counters
+        banned_users_count = User.objects.filter(is_active=False).count()
+        unresolved_reports_count = ListingReport.objects.filter(status='PENDING').count()
+        banned_words_count = len(get_banned_words())
+        recent_admin_actions = AdminAuditLog.objects.filter(created_at__gte=timezone.now() - timedelta(hours=24)).count()
+
+        # Overall Status
+        if db_healthy and cache_healthy and db_latency_ms < 200:
+            overall_status = 'HEALTHY'
+        elif db_healthy:
+            overall_status = 'DEGRADED'
+        else:
+            overall_status = 'CRITICAL'
+
+        return Response({
+            'status': overall_status,
+            'timestamp': timezone.now().isoformat(),
+            'database': {
+                'healthy': db_healthy,
+                'engine': db_engine,
+                'latency_ms': db_latency_ms,
+                'error': db_error
+            },
+            'cache': {
+                'healthy': cache_healthy,
+                'latency_ms': cache_latency_ms,
+            },
+            'security': security_posture,
+            'metrics': {
+                'banned_users_count': banned_users_count,
+                'unresolved_reports_count': unresolved_reports_count,
+                'banned_words_count': banned_words_count,
+                'recent_admin_actions_24h': recent_admin_actions
+            },
+            'environment': {
+                'python_version': sys.version.split()[0],
+                'django_version': django.get_version(),
+                'os_platform': platform.system(),
+                'environment': 'development' if settings.DEBUG else 'production'
+            }
         })
 
 

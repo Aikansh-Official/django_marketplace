@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingCart, FolderTree, AlertTriangle, Settings, LogOut, Clock, Handshake, Bell, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingCart, FolderTree, AlertTriangle, Settings, LogOut, Clock, Handshake, Bell, TrendingUp, ShieldAlert, Activity } from 'lucide-react';
 import logoImg from '../assets/CampusXChange_Logo.jpeg';
 
 export default function AdminLayout({ setAuth }) {
@@ -39,6 +39,8 @@ export default function AdminLayout({ setAuth }) {
     { name: 'Categories', path: '/categories', icon: FolderTree },
     { name: 'Reports', path: '/reports', icon: AlertTriangle },
     { name: 'Notifications', path: '/notifications', icon: Bell },
+    { name: 'Audit Logs', path: '/audit-logs', icon: ShieldAlert },
+    { name: 'System Health', path: '/system-health', icon: Activity },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 

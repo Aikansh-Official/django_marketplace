@@ -252,7 +252,49 @@ class UserAdminDetailView(generics.RetrieveUpdateDestroyAPIView):
             except Exception:
                 pass
 
+        # Determine specific audit action type
+        if 'is_active' in request.data and request.data['is_active'] is False:
+            action_type = 'USER_BAN'
+        elif 'is_active' in request.data and request.data['is_active'] is True:
+            action_type = 'USER_UNBAN'
+        elif 'is_id_verified' in request.data and request.data['is_id_verified'] is True:
+            action_type = 'USER_VERIFY'
+        elif 'is_id_verified' in request.data and request.data['is_id_verified'] is False:
+            action_type = 'USER_REVOKE_VERIFY'
+        else:
+            action_type = 'USER_UPDATE'
+
+        try:
+            from marketplace.views import log_admin_action
+            log_admin_action(
+                request,
+                action=action_type,
+                target_type='USER',
+                target_id=instance.id,
+                target_repr=f"@{instance.username} ({instance.full_name or instance.username})",
+                details={k: v for k, v in request.data.items() if k not in ['id_card_image', 'profile_photo']}
+            )
+        except Exception:
+            pass
+
         return Response(UserAdminDetailSerializer(instance).data)
+
+    def perform_destroy(self, instance):
+        user_id = instance.id
+        user_repr = f"@{instance.username} ({instance.full_name or instance.username})"
+        super().perform_destroy(instance)
+        try:
+            from marketplace.views import log_admin_action
+            log_admin_action(
+                self.request,
+                action='USER_DELETE',
+                target_type='USER',
+                target_id=user_id,
+                target_repr=user_repr,
+                details={}
+            )
+        except Exception:
+            pass
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
     # This view fetches and updates the currently logged-in user's profile
