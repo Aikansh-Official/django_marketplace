@@ -356,17 +356,41 @@ class NotificationSerializer(serializers.ModelSerializer):
 class ListingReportSerializer(serializers.ModelSerializer):
     reporter_username = serializers.CharField(source='reporter.username', read_only=True)
     reporter_email = serializers.CharField(source='reporter.email', read_only=True)
-    listing_title = serializers.CharField(source='listing.title', read_only=True)
-    listing_seller = serializers.CharField(source='listing.seller.username', read_only=True)
+    reporter_full_name = serializers.CharField(source='reporter.full_name', read_only=True, default='')
+
+    listing_title = serializers.CharField(source='listing.title', read_only=True, default='')
+    listing_price = serializers.DecimalField(source='listing.price', max_digits=10, decimal_places=2, read_only=True, default=0)
+    listing_status = serializers.CharField(source='listing.status', read_only=True, default='')
+    listing_condition = serializers.CharField(source='listing.condition', read_only=True, default='')
+    listing_location = serializers.CharField(source='listing.location', read_only=True, default='')
+    listing_description = serializers.CharField(source='listing.description', read_only=True, default='')
+    listing_image_url = serializers.SerializerMethodField()
+
+    seller_id = serializers.IntegerField(source='listing.seller.id', read_only=True, default=None)
+    seller_username = serializers.CharField(source='listing.seller.username', read_only=True, default='')
+    seller_full_name = serializers.CharField(source='listing.seller.full_name', read_only=True, default='')
+    seller_email = serializers.CharField(source='listing.seller.email', read_only=True, default='')
+    seller_phone = serializers.CharField(source='listing.seller.phone_number', read_only=True, default='')
+    seller_trust_score = serializers.IntegerField(source='listing.seller.trust_score', read_only=True, default=0)
+    seller_is_active = serializers.BooleanField(source='listing.seller.is_active', read_only=True, default=True)
 
     class Meta:
         model = ListingReport
         fields = [
-            'id', 'reporter', 'reporter_username', 'reporter_email',
-            'listing', 'listing_title', 'listing_seller',
+            'id', 'reporter', 'reporter_username', 'reporter_email', 'reporter_full_name',
+            'listing', 'listing_title', 'listing_price', 'listing_status', 'listing_condition',
+            'listing_location', 'listing_description', 'listing_image_url',
+            'seller_id', 'seller_username', 'seller_full_name', 'seller_email',
+            'seller_phone', 'seller_trust_score', 'seller_is_active',
             'reason', 'details', 'status', 'created_at', 'resolved_at'
         ]
         read_only_fields = ['reporter', 'created_at', 'resolved_at']
+
+    def get_listing_image_url(self, obj):
+        if obj.listing:
+            img = obj.listing.images.filter(is_primary=True).first() or obj.listing.images.first()
+            return img.image_url if img else None
+        return None
 
 
 class ListingReportCreateSerializer(serializers.ModelSerializer):

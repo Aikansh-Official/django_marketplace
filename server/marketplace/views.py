@@ -32,6 +32,45 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
         return obj.seller == request.user
 
 
+DEFAULT_BANNED_WORDS = [
+    'vape', 'weed', 'alcohol', 'beer', 'vodka', 'whiskey', 'drugs', 'ganja',
+    'cigarette', 'weapon', 'gun', 'knife', 'porn', 'escort', 'sex', 'cheat',
+    'exam paper', 'leaked paper', 'proxy attendance', 'counterfeit', 'fake id',
+    'duplicate certificate'
+]
+
+def get_banned_words():
+    from django.core.cache import cache
+    cached = cache.get('cxc_banned_words_list')
+    if cached is not None:
+        return cached
+
+    setting = PlatformSetting.objects.filter(key='banned_words').first()
+    if setting and setting.value:
+        words = [w.strip().lower() for w in setting.value.split(',') if w.strip()]
+    else:
+        words = list(DEFAULT_BANNED_WORDS)
+
+    cache.set('cxc_banned_words_list', words, 300)
+    return words
+
+def check_text_for_banned_words(text):
+    if not text:
+        return []
+    import re
+    text_lower = text.lower()
+    banned_words = get_banned_words()
+    matched = []
+    for word in banned_words:
+        if ' ' in word:
+            if word in text_lower:
+                matched.append(word)
+        else:
+            if re.search(rf'\b{re.escape(word)}\b', text_lower):
+                matched.append(word)
+    return matched
+
+
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 
@@ -208,7 +247,18 @@ class ListingListCreateView(generics.ListCreateAPIView):
         return super().post(request, *args, **kwargs)
 
     def perform_create(self, serializer):
-        serializer.save(seller=self.request.user)
+        listing = serializer.save(seller=self.request.user)
+        matched = check_text_for_banned_words(f"{listing.title} {listing.description}")
+        if matched:
+            listing.status = 'HIDDEN'
+            listing.save(update_fields=['status'])
+            ListingReport.objects.create(
+                reporter=self.request.user,
+                listing=listing,
+                reason="Automated Content Policy Flag",
+                details=f"System auto-flagged prohibited keyword(s): {', '.join(matched)}. Item has been automatically hidden from public view.",
+                status='PENDING'
+            )
 
 
 class ListingDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -232,6 +282,20 @@ class ListingDetailView(generics.RetrieveUpdateDestroyAPIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         return super().update(request, *args, **kwargs)
+
+    def perform_update(self, serializer):
+        listing = serializer.save()
+        matched = check_text_for_banned_words(f"{listing.title} {listing.description}")
+        if matched:
+            listing.status = 'HIDDEN'
+            listing.save(update_fields=['status'])
+            ListingReport.objects.create(
+                reporter=self.request.user,
+                listing=listing,
+                reason="Automated Content Policy Flag",
+                details=f"System auto-flagged prohibited keyword(s): {', '.join(matched)}. Item has been automatically hidden from public view.",
+                status='PENDING'
+            )
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -674,22 +738,152 @@ class AdminListingReportUpdateView(APIView):
 
     def patch(self, request, pk):
         try:
-            report = ListingReport.objects.get(pk=pk)
+            report = ListingReport.objects.select_related('listing', 'listing__seller', 'reporter').get(pk=pk)
         except ListingReport.DoesNotExist:
             return Response({'error': 'Report not found'}, status=status.HTTP_404_NOT_FOUND)
 
+        action = request.data.get('action')  # 'DISMISS', 'RESOLVE', 'WARN_SELLER', 'HIDE_LISTING', 'DELETE_LISTING', 'BAN_SELLER'
         new_status = request.data.get('status')
-        if new_status in ['RESOLVED', 'DISMISSED', 'PENDING']:
+        custom_note = request.data.get('admin_note', '').strip()
+
+        # Action: WARN_SELLER
+        if action == 'WARN_SELLER':
+            if report.listing and report.listing.seller:
+                warn_msg = request.data.get('warning_message') or (
+                    f"CampusXChange Moderation Notice: Your listing '{report.listing.title}' received a community violation report "
+                    f"for: '{report.reason}'. Please review university guidelines to keep your selling privileges active."
+                )
+                Notification.objects.create(
+                    recipient=report.listing.seller,
+                    notification_type='GENERAL',
+                    title='⚠️ Official Moderation Warning',
+                    message=warn_msg,
+                    listing=report.listing
+                )
+            report.status = 'RESOLVED'
+            report.resolved_at = timezone.now()
+            report.save()
+            return Response({
+                'message': 'Official warning dispatched to student seller and report marked as resolved.',
+                'report': ListingReportSerializer(report).data
+            })
+
+        # Action: HIDE_LISTING
+        if action == 'HIDE_LISTING':
+            if report.listing:
+                report.listing.status = 'HIDDEN'
+                report.listing.save(update_fields=['status'])
+                if report.listing.seller:
+                    Notification.objects.create(
+                        recipient=report.listing.seller,
+                        notification_type='GENERAL',
+                        title='Listing Taken Down (Hidden)',
+                        message=f"Your listing '{report.listing.title}' has been temporarily hidden by administrators following a moderation review.",
+                        listing=report.listing
+                    )
+            report.status = 'RESOLVED'
+            report.resolved_at = timezone.now()
+            report.save()
+            return Response({
+                'message': 'Listing hidden from marketplace and report marked as resolved.',
+                'report': ListingReportSerializer(report).data
+            })
+
+        # Action: BAN_SELLER
+        if action == 'BAN_SELLER':
+            if report.listing and report.listing.seller:
+                seller = report.listing.seller
+                seller.is_active = False
+                seller.save(update_fields=['is_active'])
+                # Hide all active listings from this banned seller
+                Listing.objects.filter(seller=seller, status='ACTIVE').update(status='HIDDEN')
+                report.status = 'RESOLVED'
+                report.resolved_at = timezone.now()
+                report.save()
+                return Response({
+                    'message': f'Seller @{seller.username} has been suspended/banned and their listings taken down.',
+                    'report': ListingReportSerializer(report).data
+                })
+            return Response({'error': 'No seller associated with this report.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Action: DELETE_LISTING
+        if action == 'DELETE_LISTING' or request.data.get('delete_listing'):
+            if report.listing:
+                seller = report.listing.seller
+                title = report.listing.title
+                report.listing.delete()
+                if seller:
+                    Notification.objects.create(
+                        recipient=seller,
+                        notification_type='GENERAL',
+                        title='Listing Removed by Moderation',
+                        message=f"Your listing '{title}' was removed by campus administrators due to policy violations."
+                    )
+            report.status = 'RESOLVED'
+            report.resolved_at = timezone.now()
+            report.save()
+            return Response({
+                'message': 'Listing permanently removed and report marked as resolved.',
+                'report': ListingReportSerializer(report).data
+            })
+
+        # Action: DISMISS
+        if action == 'DISMISS' or new_status == 'DISMISSED':
+            report.status = 'DISMISSED'
+            report.resolved_at = timezone.now()
+            report.save()
+            return Response({
+                'message': 'Report dismissed (no violation found).',
+                'report': ListingReportSerializer(report).data
+            })
+
+        # Standard Status Update
+        if new_status in ['RESOLVED', 'PENDING']:
             report.status = new_status
             if new_status == 'RESOLVED':
                 report.resolved_at = timezone.now()
             report.save()
+            return Response({
+                'message': f'Report marked as {new_status}.',
+                'report': ListingReportSerializer(report).data
+            })
 
-            if request.data.get('delete_listing') and report.listing:
-                report.listing.delete()
+        return Response({'error': 'Invalid moderation action or status.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response(ListingReportSerializer(report).data)
-        return Response({'error': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
+
+class AdminBannedWordsView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        words = get_banned_words()
+        return Response({'words': words})
+
+    def post(self, request):
+        from django.core.cache import cache
+        raw_words = request.data.get('words', [])
+        if isinstance(raw_words, str):
+            words = [w.strip().lower() for w in raw_words.split(',') if w.strip()]
+        elif isinstance(raw_words, list):
+            words = [str(w).strip().lower() for w in raw_words if str(w).strip()]
+        else:
+            words = list(DEFAULT_BANNED_WORDS)
+
+        # De-duplicate while preserving sorted order
+        unique_words = sorted(list(set(words)))
+
+        PlatformSetting.objects.update_or_create(
+            key='banned_words',
+            defaults={'value': ','.join(unique_words)}
+        )
+        try:
+            cache.delete('cxc_banned_words_list')
+        except Exception:
+            pass
+
+        return Response({
+            'message': f'Banned words list updated successfully ({len(unique_words)} active keywords).',
+            'words': unique_words
+        })
 
 
 class AdminPlatformSettingsView(APIView):

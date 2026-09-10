@@ -10,8 +10,8 @@
 |:-------:|:-----------|:------:|:-----------------|
 | **Phase 1** | **Core User & Listing Controls** | ✅ **COMPLETED** | Ban/Unban, ID Card Inspection Lightbox, Role Switch, Listing Editor, Latency Optimization |
 | **Phase 2** | **Category Management & Campus Notice Banner** | ✅ **COMPLETED** | Add/Edit/Delete Categories, Icon picker, Listings safeguard, Live Announcement Banner |
-| **Phase 3** | **Content Moderation & Reports Resolution** | ⏳ **UP NEXT** | Banned Words auto-flag, Flagged Queue, Warn/Ban user from report, Dismiss/Action modal |
-| **Phase 4** | **Offers, QR Handovers & Deal Disputes** | 📋 **PENDING** | View all live offers, Handover QR session monitor, Force cancel/complete deals |
+| **Phase 3** | **Content Moderation & Reports Resolution** | ✅ **COMPLETED** | Banned Words auto-flag, Moderation Queue, Warn/Ban seller, Dismiss/Resolve |
+| **Phase 4** | **Offers, QR Handovers & Deal Disputes** | ⏳ **UP NEXT** | View all live offers, Handover QR session monitor, Force cancel/complete deals |
 | **Phase 5** | **Broadcast Notifications & Direct Messaging** | 📋 **PENDING** | Send broadcast alerts to all students, Direct admin notice to individual user, Templates |
 | **Phase 6** | **Advanced Analytics & Leaderboards** | 📋 **PENDING** | Visual charts (deals over time, category pie, user growth), Top Sellers, Location Heatmap |
 | **Phase 7** | **Platform Security & Admin Audit Logs** | 📋 **PENDING** | Immutable admin action logs (who banned/edited what), Login history, Error log viewer |
@@ -55,7 +55,7 @@
 ## ═══════════════════════════════════════════════════════
 ## 🟢 PHASE 2: Category Management & Campus Notice Banner
 ## ═══════════════════════════════════════════════════════
-- **Status**: ✅ **COMPLETED & VERIFIED**
+- **Status**: ✅ **COMPLETED & PUSHED TO GITHUB** (`Commit: 24194bd`)
 - **Primary Pages**: `admin/src/pages/Categories.jsx`, `admin/src/pages/Settings.jsx`, `client/src/components/AnnouncementBanner.jsx`
 
 ### 2.1 Category Management System
@@ -87,24 +87,33 @@
 ---
 
 ## ═══════════════════════════════════════════════════════
-## 📋 PHASE 3: Content Moderation & Reports Resolution
+## 🟢 PHASE 3: Content Moderation & Reports Resolution
 ## ═══════════════════════════════════════════════════════
-- **Status**: 📋 **PENDING**
-- **Target Pages**: `admin/src/pages/Reports.jsx`, `admin/src/pages/Moderation.jsx`
+- **Status**: ✅ **COMPLETED & VERIFIED**
+- **Primary Pages**: `admin/src/pages/Reports.jsx`
 
 ### 3.1 Advanced Reports Resolution Suite
-- **Complete Report Context**: View report reason, reporter student details, reported item/user, timestamps, and attached evidence.
-- **One-Click Action Toolbar**:
-  - `Dismiss Report` (Mark as invalid / no violation).
-  - `Issue Warning to Seller` (Sends formal admin warning to the seller's account).
-  - `Take Down Listing` (Sets status to `HIDDEN` or deletes listing).
-  - `Ban Reported User` (One-click instant suspension from the report modal).
-- **Resolution Notes**: Admin can record internal resolution notes for audit tracking.
+- **Interactive Moderation Queue**: Real-time counters for Pending Review, Resolved Violations, Dismissed Reports, and Total Filed. Search across listings, violation reasons, sellers, and reporters.
+- **Deep Inspection Modal**:
+  - **Reported Item Preview**: High-res listing image, title, price, category, condition, campus location, description snippet, and current listing status.
+  - **Violation Context**: Highlighted report reason, student's detailed comments, reporter username and email.
+  - **Seller Profile Card**: Seller username, email, trust score badge (0-100), and account status (`Active` vs `Suspended/Banned`).
+- **Action Toolbar**:
+  - ⚠️ **Warn Seller**: Compose custom or standard official warning notice dispatched directly to the student's in-app notification center.
+  - 👁️ **Hide Listing**: Instant takedown setting listing status to `HIDDEN` and alerting the seller.
+  - 🗑️ **Delete Listing**: Permanently deletes listing from marketplace with automated seller notice.
+  - 🚫 **Ban Seller Account**: 1-click account suspension (`is_active=False`) and bulk hide of all listings belonging to that seller.
+  - ✕ **Dismiss Report**: Mark invalid/false reports as `DISMISSED`.
+  - ✓ **Mark Resolved**: Close investigation as resolved.
 
-### 3.2 Banned Words & Auto-Flagging Engine
-- **Prohibited Keywords Dictionary**: Admin can configure restricted words (e.g. alcohol, vape, weapons, assignment fraud, abusive terms).
-- **Auto-Flagging on Listing Creation**: If a listing title or description matches restricted keywords, status is set to `FLAGGED_REVIEW` instead of public `ACTIVE`.
-- **Flagged Queue Page**: Dedicated view for moderators to inspect flagged listings, approve them to public, or reject and penalize the seller.
+### 3.2 Prohibited Keywords & Auto-Flagging Engine
+- **Prohibited Words Dictionary**: Database-backed keywords in `PlatformSetting` (e.g. vape, alcohol, weapons, weed, exam paper, cheat, fake id).
+- **Automated Screening on Listing Post & Edit**: Every new listing and update is screened against the blacklist. Matching listings are automatically hidden (`status='HIDDEN'`) and an auto-flagged report is filed in the moderation queue.
+- **Banned Keywords Management Tab**: Interactive chip cloud, add/remove keyword form, and an interactive **Live Keyword Screening Tester** to test sample texts in real-time.
+- **Backend Endpoints**:
+  - `GET /api/marketplace/admin/reports/` (Enriched with listing photos, price, seller trust score, and active status).
+  - `PATCH /api/marketplace/admin/reports/<id>/` (Processes `action`: `WARN_SELLER`, `HIDE_LISTING`, `DELETE_LISTING`, `BAN_SELLER`, `DISMISS`, `RESOLVE`).
+  - `GET /api/marketplace/admin/banned-words/` & `POST /api/marketplace/admin/banned-words/` (Manages active keyword blacklist).
 
 ---
 

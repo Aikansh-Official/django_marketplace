@@ -5,7 +5,7 @@ from .views import (
     AdminCategoryListCreateView, AdminCategoryDetailView, PublicAnnouncementView,
     UploadImageView, MyOffersView, CreateOfferView,
     ListingReportCreateView, AdminListingReportListView, AdminListingReportUpdateView,
-    AdminPlatformSettingsView, ListingOffersView, RespondOfferView,
+    AdminBannedWordsView, AdminPlatformSettingsView, ListingOffersView, RespondOfferView,
     NotificationListView, MarkNotificationReadView, MarkAllNotificationsReadView,
     DeleteNotificationView, ClearAllNotificationsView,
     GenerateHandoverQRView, VerifyHandoverView, ConfirmHandoverView, CancelDealView,
@@ -40,6 +40,7 @@ urlpatterns = [
     path('admin/dashboard-stats/', AdminDashboardStatsView.as_view(), name='admin-dashboard-stats'),
     path('admin/reports/', AdminListingReportListView.as_view(), name='admin-report-list'),
     path('admin/reports/<int:pk>/', AdminListingReportUpdateView.as_view(), name='admin-report-update'),
+    path('admin/banned-words/', AdminBannedWordsView.as_view(), name='admin-banned-words'),
     path('admin/settings/', AdminPlatformSettingsView.as_view(), name='admin-settings'),
     path('upload-image/', UploadImageView.as_view(), name='upload-image'),
 ]
