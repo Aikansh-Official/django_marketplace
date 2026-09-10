@@ -542,7 +542,7 @@ export default function Deals() {
       {/* ========================================================================= */}
       {selectedDeal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-2xl border border-gray-200 max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-lg shadow-2xl border border-gray-200 max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50/75">
               <div className="flex items-center gap-3">
@@ -573,7 +573,7 @@ export default function Deals() {
             {/* Modal Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* Item Card + Financial Summary */}
-              <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 rounded-lg bg-white overflow-hidden shrink-0 border border-gray-200 flex items-center justify-center shadow-xs">
                     {selectedDeal.listing_image ? (
@@ -630,7 +630,7 @@ export default function Deals() {
               {/* Buyer and Seller Comparison Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Buyer Card */}
-                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs space-y-3">
+                <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-xs space-y-3">
                   <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 flex items-center gap-1.5">
                       <User className="w-3.5 h-3.5" />
@@ -682,7 +682,7 @@ export default function Deals() {
                 </div>
 
                 {/* Seller Card */}
-                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs space-y-3">
+                <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-xs space-y-3">
                   <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600 flex items-center gap-1.5">
                       <User className="w-3.5 h-3.5" />
@@ -735,7 +735,7 @@ export default function Deals() {
               </div>
 
               {/* Live Handover Session Inspector */}
-              <div className="bg-gray-900 text-white p-5 rounded-xl border border-gray-800 space-y-4">
+              <div className="bg-gray-900 text-white p-5 rounded-lg border border-gray-800 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Key className="w-4 h-4 text-amber-400" />
@@ -871,7 +871,7 @@ export default function Deals() {
 
                 {/* Force Cancel Confirmation Panel */}
                 {showCancelPrompt && (
-                  <div className="bg-red-50/75 p-4 rounded-xl border border-red-200 mt-3 space-y-3 animate-in fade-in duration-150">
+                  <div className="bg-red-50/75 p-4 rounded-lg border border-red-200 mt-3 space-y-3 animate-in fade-in duration-150">
                     <div className="flex items-center gap-2 text-red-800 font-bold text-xs">
                       <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
                       <span>Are you sure you want to force cancel this campus deal?</span>
@@ -912,7 +912,7 @@ export default function Deals() {
 
                 {/* Force Complete Confirmation Panel */}
                 {showCompletePrompt && (
-                  <div className="bg-emerald-50/75 p-4 rounded-xl border border-emerald-200 mt-3 space-y-3 animate-in fade-in duration-150">
+                  <div className="bg-emerald-50/75 p-4 rounded-lg border border-emerald-200 mt-3 space-y-3 animate-in fade-in duration-150">
                     <div className="flex items-center gap-2 text-emerald-800 font-bold text-xs">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span>Manually Verify & Complete Handover</span>

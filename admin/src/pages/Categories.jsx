@@ -336,7 +336,7 @@ export default function Categories() {
               <div>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600 group-hover:scale-105 transition-transform shadow-xs">
+                    <div className="w-11 h-11 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600 group-hover:scale-105 transition-transform shadow-xs">
                       <DynamicCategoryIcon name={cat.icon} className="w-5 h-5" />
                     </div>
                     <div>

@@ -485,7 +485,7 @@ export default function Team() {
       {/* MODAL 1: APPOINT / PROMOTE STAFF */}
       {promoteModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-950/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-xl shadow-2xl border border-gray-200 max-w-lg w-full overflow-hidden">
+          <div className="bg-white rounded-lg shadow-2xl border border-gray-200 max-w-lg w-full overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-brand-600" />
@@ -587,7 +587,7 @@ export default function Team() {
       {/* MODAL 2: MANAGE / EDIT ROLE / REVOKE */}
       {editModalOpen && selectedStaff && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-950/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-xl shadow-2xl border border-gray-200 max-w-md w-full overflow-hidden">
+          <div className="bg-white rounded-lg shadow-2xl border border-gray-200 max-w-md w-full overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Shield className="w-5 h-5 text-brand-600" />

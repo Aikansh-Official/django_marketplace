@@ -630,7 +630,7 @@ export default function Students() {
           <div className="fixed inset-0 -z-10" onClick={() => setSelectedStudent(null)} />
 
           {/* Modal Container */}
-          <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             {/* Modal Header - Pinned Top */}
             <div className="shrink-0 px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-white">
               <div className="flex items-center gap-3.5 min-w-0">
@@ -652,7 +652,7 @@ export default function Students() {
 
               <button
                 onClick={() => setSelectedStudent(null)}
-                className="text-gray-400 hover:text-gray-700 p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                className="text-gray-400 hover:text-gray-700 p-2 rounded-md hover:bg-gray-100 transition-colors"
                 title="Close dialog (Esc)"
               >
                 <X className="h-5 w-5" />
@@ -663,7 +663,7 @@ export default function Students() {
             <div className="flex-1 overflow-y-auto p-6 space-y-6 overscroll-contain">
               {/* Account Quick Status Badges */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3 bg-white rounded-xl border border-gray-200 shadow-2xs">
+                <div className="p-3 bg-white rounded-md border border-gray-200 shadow-2xs">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Role</span>
                   <span className="text-xs font-black text-gray-900 mt-1 flex items-center gap-1.5">
                     {selectedStudent.role === 'SELLER' ? (
@@ -675,7 +675,7 @@ export default function Students() {
                   </span>
                 </div>
 
-                <div className="p-3 bg-white rounded-xl border border-gray-200 shadow-2xs">
+                <div className="p-3 bg-white rounded-md border border-gray-200 shadow-2xs">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">ID Verification</span>
                   <span className={`text-xs font-black mt-1 flex items-center gap-1.5 ${selectedStudent.is_id_verified ? 'text-emerald-700' : 'text-amber-700'}`}>
                     {selectedStudent.is_id_verified ? (
@@ -692,7 +692,7 @@ export default function Students() {
                   </span>
                 </div>
 
-                <div className="p-3 bg-white rounded-xl border border-gray-200 shadow-2xs">
+                <div className="p-3 bg-white rounded-md border border-gray-200 shadow-2xs">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Trust Score</span>
                   <span className="text-xs font-black text-brand-600 mt-1 flex items-center gap-1">
                     <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
@@ -701,7 +701,7 @@ export default function Students() {
                   </span>
                 </div>
 
-                <div className="p-3 bg-white rounded-xl border border-gray-200 shadow-2xs">
+                <div className="p-3 bg-white rounded-md border border-gray-200 shadow-2xs">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Account Status</span>
                   <span className={`text-xs font-black mt-1 flex items-center gap-1.5 ${selectedStudent.is_active !== false ? 'text-emerald-700' : 'text-red-700'}`}>
                     <span className={`w-2 h-2 rounded-full ${selectedStudent.is_active !== false ? 'bg-emerald-500' : 'bg-red-500'}`} />
@@ -711,7 +711,7 @@ export default function Students() {
               </div>
 
               {/* Student Identification & Face Verification Section */}
-              <div className="border border-gray-200 rounded-xl p-5 bg-gradient-to-br from-white to-gray-50/70">
+              <div className="border border-gray-200 rounded-lg p-5 bg-gradient-to-br from-white to-gray-50/70">
                 <div className="flex items-center justify-between mb-4 pb-2.5 border-b border-gray-200">
                   <h4 className="text-sm font-black text-gray-900 uppercase tracking-wide flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-brand-600" />
@@ -743,7 +743,7 @@ export default function Students() {
                     {selectedStudent.id_card_image ? (
                       <div
                         onClick={() => setLightboxImage(selectedStudent.id_card_image)}
-                        className="relative group rounded-xl overflow-hidden border border-gray-200 bg-slate-900/5 h-64 sm:h-72 flex items-center justify-center p-2 shadow-inner cursor-zoom-in"
+                        className="relative group rounded-md overflow-hidden border border-gray-200 bg-slate-900/5 h-64 sm:h-72 flex items-center justify-center p-2 shadow-inner cursor-zoom-in"
                       >
                         <img
                           src={selectedStudent.id_card_image}
@@ -751,13 +751,13 @@ export default function Students() {
                           className="max-h-full max-w-full object-contain drop-shadow-sm transition-transform duration-200 group-hover:scale-[1.02]"
                         />
                         <div className="absolute top-2.5 right-2.5">
-                          <span className="px-2.5 py-1 bg-black/70 hover:bg-black text-white text-[11px] font-bold rounded-lg backdrop-blur-md flex items-center gap-1.5 shadow-md transition-all pointer-events-none">
+                          <span className="px-2.5 py-1 bg-black/70 hover:bg-black text-white text-[11px] font-bold rounded-md backdrop-blur-md flex items-center gap-1.5 shadow-md transition-all pointer-events-none">
                             <Maximize2 className="w-3 h-3" /> Full View
                           </span>
                         </div>
                       </div>
                     ) : (
-                      <div className="rounded-xl border-2 border-dashed border-gray-200 p-8 text-center bg-gray-50 h-64 sm:h-72 flex flex-col items-center justify-center text-gray-400">
+                      <div className="rounded-md border-2 border-dashed border-gray-200 p-8 text-center bg-gray-50 h-64 sm:h-72 flex flex-col items-center justify-center text-gray-400">
                         <ShieldAlert className="w-10 h-10 mb-2.5 text-gray-300" />
                         <p className="text-xs font-bold text-gray-600">No Student ID Card Uploaded</p>
                         <p className="text-[11px] text-gray-400 mt-1 max-w-[220px]">
@@ -772,7 +772,7 @@ export default function Students() {
                       if (entries.length === 0) return null;
                       if (!hasValidOcrFields(entries)) {
                         return (
-                          <div className="mt-3 p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-xs">
+                          <div className="mt-3 p-3 bg-amber-50/80 border border-amber-200 rounded-md text-xs">
                             <div className="flex items-center gap-2 font-bold text-amber-900 mb-1">
                               <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                               <span>OCR Auto-Scan: No Clear Fields Detected</span>
@@ -784,12 +784,12 @@ export default function Students() {
                         );
                       }
                       return (
-                        <div className="mt-3 p-3.5 bg-white border border-gray-200 rounded-xl text-xs space-y-1.5 shadow-2xs">
+                        <div className="mt-3 p-3.5 bg-white border border-gray-200 rounded-md text-xs space-y-1.5 shadow-2xs">
                           <div className="flex items-center justify-between pb-1.5 border-b border-gray-100 mb-1">
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                               Extracted ID OCR Metadata
                             </span>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
                               Auto-Extracted
                             </span>
                           </div>
@@ -824,7 +824,7 @@ export default function Students() {
                     {selectedStudent.profile_photo ? (
                       <div
                         onClick={() => setLightboxImage(selectedStudent.profile_photo)}
-                        className="relative group rounded-xl overflow-hidden border border-gray-200 bg-slate-900/5 h-64 sm:h-72 flex items-center justify-center p-2 shadow-inner cursor-zoom-in"
+                        className="relative group rounded-md overflow-hidden border border-gray-200 bg-slate-900/5 h-64 sm:h-72 flex items-center justify-center p-2 shadow-inner cursor-zoom-in"
                       >
                         <img
                           src={selectedStudent.profile_photo}
@@ -832,13 +832,13 @@ export default function Students() {
                           className="max-h-full max-w-full object-contain drop-shadow-sm transition-transform duration-200 group-hover:scale-[1.02]"
                         />
                         <div className="absolute top-2.5 right-2.5">
-                          <span className="px-2.5 py-1 bg-black/70 hover:bg-black text-white text-[11px] font-bold rounded-lg backdrop-blur-md flex items-center gap-1.5 shadow-md transition-all pointer-events-none">
+                          <span className="px-2.5 py-1 bg-black/70 hover:bg-black text-white text-[11px] font-bold rounded-md backdrop-blur-md flex items-center gap-1.5 shadow-md transition-all pointer-events-none">
                             <Maximize2 className="w-3 h-3" /> Full View
                           </span>
                         </div>
                       </div>
                     ) : (
-                      <div className="rounded-xl border-2 border-dashed border-gray-200 p-8 text-center bg-gray-50 h-64 sm:h-72 flex flex-col items-center justify-center text-gray-400">
+                      <div className="rounded-md border-2 border-dashed border-gray-200 p-8 text-center bg-gray-50 h-64 sm:h-72 flex flex-col items-center justify-center text-gray-400">
                         <Eye className="w-10 h-10 mb-2.5 text-gray-300" />
                         <p className="text-xs font-bold text-gray-600">No Live Selfie Uploaded</p>
                         <p className="text-[11px] text-gray-400 mt-1">Student has not taken a face verification selfie.</p>
@@ -846,7 +846,7 @@ export default function Students() {
                     )}
 
                     {/* Verification Guidance Box */}
-                    <div className="mt-3 p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-xl text-xs text-blue-950">
+                    <div className="mt-3 p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-md text-xs text-blue-950">
                       <div className="flex items-center gap-2 font-bold text-blue-900 mb-1">
                         <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
                         <span>Administrative Verification Checklist</span>
@@ -861,36 +861,36 @@ export default function Students() {
 
               {/* General Profile Information Details Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-gray-200 pt-4">
-                <div className="p-3 bg-gray-50/80 rounded-xl border border-gray-100">
+                <div className="p-3 bg-gray-50/80 rounded-md border border-gray-100">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Full Name</span>
                   <p className="text-xs font-bold text-gray-800 mt-0.5">{selectedStudent.full_name || 'Not provided'}</p>
                 </div>
-                <div className="p-3 bg-gray-50/80 rounded-xl border border-gray-100">
+                <div className="p-3 bg-gray-50/80 rounded-md border border-gray-100">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Official Email</span>
                   <p className="text-xs font-bold text-gray-800 mt-0.5 flex items-center gap-1.5 truncate">
                     <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                     <span className="truncate">{selectedStudent.email}</span>
                   </p>
                 </div>
-                <div className="p-3 bg-gray-50/80 rounded-xl border border-gray-100">
+                <div className="p-3 bg-gray-50/80 rounded-md border border-gray-100">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Phone Number</span>
                   <p className="text-xs font-bold text-gray-800 mt-0.5 flex items-center gap-1.5 font-mono">
                     <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                     <span>{selectedStudent.phone_number || 'Not provided'}</span>
                   </p>
                 </div>
-                <div className="p-3 bg-gray-50/80 rounded-xl border border-gray-100">
+                <div className="p-3 bg-gray-50/80 rounded-md border border-gray-100">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">College Domain</span>
                   <p className="text-xs font-bold text-gray-800 mt-0.5">{selectedStudent.college_domain || 'General'}</p>
                 </div>
-                <div className="p-3 bg-gray-50/80 rounded-xl border border-gray-100">
+                <div className="p-3 bg-gray-50/80 rounded-md border border-gray-100">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Joined Date</span>
                   <p className="text-xs font-bold text-gray-800 mt-0.5 flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                     <span>{new Date(selectedStudent.date_joined).toLocaleDateString()}</span>
                   </p>
                 </div>
-                <div className="p-3 bg-gray-50/80 rounded-xl border border-gray-100">
+                <div className="p-3 bg-gray-50/80 rounded-md border border-gray-100">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Completed Trades</span>
                   <p className="text-xs font-bold text-gray-800 mt-0.5">
                     {selectedStudent.completed_trades_count || 0} Peer Deals
@@ -906,7 +906,7 @@ export default function Students() {
                 <button
                   onClick={() => handleToggleIdVerification(selectedStudent)}
                   disabled={actionLoading}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm ${
+                  className={`px-3.5 py-2 rounded-md text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm ${
                     selectedStudent.is_id_verified
                       ? 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300'
                       : 'bg-emerald-600 text-white hover:bg-emerald-700'
@@ -920,7 +920,7 @@ export default function Students() {
                 <button
                   onClick={() => handleToggleRole(selectedStudent)}
                   disabled={actionLoading}
-                  className="px-3.5 py-2 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all"
+                  className="px-3.5 py-2 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 rounded-md text-xs font-bold flex items-center gap-1.5 transition-all"
                 >
                   <Store className="w-4 h-4" />
                   {selectedStudent.role === 'SELLER' || selectedStudent.is_id_verified
@@ -932,7 +932,7 @@ export default function Students() {
                 <button
                   onClick={() => handleToggleBan(selectedStudent)}
                   disabled={actionLoading}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border ${
+                  className={`px-3.5 py-2 rounded-md text-xs font-bold flex items-center gap-1.5 transition-all border ${
                     selectedStudent.is_active !== false
                       ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
                       : 'bg-emerald-600 text-white hover:bg-emerald-700'
@@ -950,7 +950,7 @@ export default function Students() {
                     setSelectedStudent(null);
                     handleStartEdit(studentToEdit);
                   }}
-                  className="px-3.5 py-2 bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs"
+                  className="px-3.5 py-2 bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 rounded-md text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs"
                 >
                   <Edit2 className="w-3.5 h-3.5" /> Edit Details
                 </button>
@@ -958,7 +958,7 @@ export default function Students() {
                 <button
                   onClick={() => handleDeleteUser(selectedStudent.id)}
                   disabled={actionLoading}
-                  className="px-3.5 py-2 bg-red-600 text-white hover:bg-red-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+                  className="px-3.5 py-2 bg-red-600 text-white hover:bg-red-700 rounded-md text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Delete
                 </button>
@@ -975,7 +975,7 @@ export default function Students() {
       {editingStudent && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink-950/75 backdrop-blur-sm p-4 animate-fade-in">
           <div className="fixed inset-0 -z-10" onClick={() => setEditingStudent(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-200 animate-in fade-in zoom-in-95 duration-150">
+          <div className="relative bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden border border-gray-200 animate-in fade-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
               <div>
                 <h3 className="text-base font-black text-gray-900">Edit Student Information</h3>
@@ -998,7 +998,7 @@ export default function Students() {
                   required
                   value={editFormData.full_name}
                   onChange={(e) => setEditFormData({ ...editFormData, full_name: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                 />
               </div>
 
@@ -1010,7 +1010,7 @@ export default function Students() {
                     required
                     value={editFormData.email}
                     onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                   />
                 </div>
 
@@ -1020,7 +1020,7 @@ export default function Students() {
                     type="text"
                     value={editFormData.phone_number}
                     onChange={(e) => setEditFormData({ ...editFormData, phone_number: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                     placeholder="10-digit mobile"
                   />
                 </div>
@@ -1032,7 +1032,7 @@ export default function Students() {
                   <select
                     value={editFormData.role}
                     onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                   >
                     <option value="BUYER">BUYER</option>
                     <option value="SELLER">SELLER</option>
@@ -1047,7 +1047,7 @@ export default function Students() {
                     max="100"
                     value={editFormData.trust_score}
                     onChange={(e) => setEditFormData({ ...editFormData, trust_score: parseInt(e.target.value) || 0 })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -1088,14 +1088,14 @@ export default function Students() {
                 <button
                   type="button"
                   onClick={() => setEditingStudent(null)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-bold transition-colors"
+                  className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded font-bold transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-bold flex items-center gap-1.5 transition-colors shadow-sm disabled:opacity-50"
+                  className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded font-bold flex items-center gap-1.5 transition-colors shadow-sm disabled:opacity-50"
                 >
                   {actionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                   Save Changes
@@ -1119,7 +1119,7 @@ export default function Students() {
             <img
               src={lightboxImage}
               alt="Expanded Preview"
-              className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl ring-1 ring-white/20"
+              className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl ring-1 ring-white/20"
             />
             <button
               onClick={() => setLightboxImage(null)}

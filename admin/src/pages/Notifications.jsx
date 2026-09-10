@@ -581,7 +581,7 @@ export default function Notifications() {
                       <ShieldAlert className="w-3 h-3" />
                       2. Critical Student Popup Modal Preview:
                     </span>
-                    <div className="bg-white rounded-xl border-2 border-red-500 shadow-lg overflow-hidden">
+                    <div className="bg-white rounded-lg border-2 border-red-500 shadow-lg overflow-hidden">
                       <div className="bg-red-600 px-4 py-2 text-white flex items-center justify-between text-xs font-bold">
                         <span>CRITICAL CAMPUS NOTICE</span>
                         <span className="text-[10px] bg-red-800 px-1.5 py-0.2 rounded">POPUP</span>
@@ -953,7 +953,7 @@ export default function Notifications() {
       {/* Confirmation Modal Before Campus Broadcast */}
       {confirmModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-xl shadow-2xl border border-gray-200 max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-lg shadow-2xl border border-gray-200 max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center gap-3 text-indigo-600">
               <div className="p-2 bg-indigo-50 rounded-lg">
                 <Megaphone className="w-6 h-6" />
