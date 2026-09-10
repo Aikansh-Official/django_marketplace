@@ -37,34 +37,7 @@ export default function Dashboard() {
           }
         }
       } catch (error) {
-        console.warn("Fast dashboard stats failed, falling back to multi-endpoint fetch", error);
-        try {
-          const [usersRes, listingsRes, reportsRes] = await Promise.allSettled([
-            axios.get(`${API_BASE}/auth/users/`),
-            axios.get(`${API_BASE}/marketplace/admin/listings/`),
-            axios.get(`${API_BASE}/marketplace/admin/reports/`)
-          ]);
-
-          if (isMounted) {
-            const rawUsers = usersRes.status === 'fulfilled' ? usersRes.value.data : [];
-            const rawListings = listingsRes.status === 'fulfilled' ? listingsRes.value.data : [];
-            const rawReports = reportsRes.status === 'fulfilled' ? reportsRes.value.data : [];
-
-            const studentsOnly = rawUsers.filter((u) => !u.is_staff && !u.is_superuser);
-            setStats({
-              total_students: studentsOnly.length,
-              verified_students: studentsOnly.filter((u) => u.is_verified_student).length,
-              active_listings: rawListings.filter((l) => l.status === 'ACTIVE').length,
-              total_listings: rawListings.length,
-              completed_deals: rawListings.filter((l) => l.status === 'SOLD').length,
-              pending_reports: rawReports.filter((r) => r.status === 'PENDING').length
-            });
-            setRecentListings(rawListings.slice(0, 5));
-            setRecentStudents(studentsOnly.slice(0, 5));
-          }
-        } catch (fallbackError) {
-          console.error("Fallback fetch also failed", fallbackError);
-        }
+        console.warn("Failed to fetch dashboard stats", error);
       } finally {
         if (isMounted) {
           setLoading(false);

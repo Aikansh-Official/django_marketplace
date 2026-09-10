@@ -119,18 +119,19 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 class UserListSerializer(serializers.ModelSerializer):
     trust_score = serializers.SerializerMethodField()
     completed_trades_count = serializers.SerializerMethodField()
+    has_id_card = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = (
             'id', 'username', 'email', 'full_name', 'phone_number', 'role',
-            'is_verified_student', 'is_id_verified', 'id_card_image', 'id_card_data',
+            'is_active', 'is_verified_student', 'is_id_verified', 'has_id_card',
             'college_domain', 'trust_score', 'completed_trades_count', 'profile_photo',
             'date_joined', 'is_staff', 'is_superuser'
         )
         read_only_fields = (
-            'id', 'username', 'email', 'role', 'is_verified_student',
-            'is_id_verified', 'id_card_image', 'id_card_data', 'college_domain',
+            'id', 'username', 'email', 'role', 'is_active', 'is_verified_student',
+            'is_id_verified', 'has_id_card', 'college_domain',
             'trust_score', 'completed_trades_count', 'date_joined',
             'is_staff', 'is_superuser'
         )
@@ -142,4 +143,59 @@ class UserListSerializer(serializers.ModelSerializer):
         if hasattr(obj, 'annotated_completed_trades'):
             return obj.annotated_completed_trades
         return getattr(obj, '_completed_trades_count', 0)
+
+    def get_has_id_card(self, obj):
+        return bool(getattr(obj, 'id_card_image', None))
+
+
+class UserAdminDetailSerializer(serializers.ModelSerializer):
+    """Full detail serializer with physical ID card image and OCR data for a single student."""
+    trust_score = serializers.SerializerMethodField()
+    completed_trades_count = serializers.SerializerMethodField()
+    has_id_card = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            'id', 'username', 'email', 'full_name', 'phone_number', 'role',
+            'is_active', 'is_verified_student', 'is_id_verified', 'has_id_card',
+            'id_card_image', 'id_card_data',
+            'college_domain', 'trust_score', 'completed_trades_count', 'profile_photo',
+            'date_joined', 'is_staff', 'is_superuser'
+        )
+        read_only_fields = (
+            'id', 'username', 'email', 'role', 'is_active', 'is_verified_student',
+            'is_id_verified', 'has_id_card', 'college_domain',
+            'trust_score', 'completed_trades_count', 'date_joined',
+            'is_staff', 'is_superuser'
+        )
+
+    def get_trust_score(self, obj):
+        return getattr(obj, 'trust_score', 0) or 0
+
+    def get_completed_trades_count(self, obj):
+        if hasattr(obj, 'annotated_completed_trades'):
+            return obj.annotated_completed_trades
+        return getattr(obj, '_completed_trades_count', 0)
+
+    def get_has_id_card(self, obj):
+        return bool(getattr(obj, 'id_card_image', None))
+
+
+class UserDashboardSummarySerializer(serializers.ModelSerializer):
+    """Ultra lightweight serializer for dashboard recent students preview."""
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'full_name', 'email', 'is_verified_student', 'trust_score', 'profile_photo')
+
+
+class AdminUserUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            'id', 'username', 'email', 'full_name', 'phone_number', 'role',
+            'is_active', 'is_verified_student', 'is_id_verified', 'trust_score',
+            'id_card_image', 'id_card_data', 'profile_photo'
+        )
+        read_only_fields = ('id', 'username')
 

@@ -8,7 +8,11 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 import random
 from .models import OTPVerification
-from .serializers import UserRegistrationSerializer, UserListSerializer, SendOTPSerializer, VerifyOTPSerializer
+from .serializers import (
+    UserRegistrationSerializer, UserListSerializer, SendOTPSerializer,
+    VerifyOTPSerializer, AdminUserUpdateSerializer, UserAdminDetailSerializer,
+    UserDashboardSummarySerializer
+)
 
 logger = logging.getLogger(__name__)
 
@@ -218,16 +222,37 @@ class VerifyOTPView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class UserListView(generics.ListAPIView):
-    # This view is for the admin dashboard to fetch all users
-    queryset = User.objects.all().order_by('-date_joined')
+    # This view is for the admin dashboard to fetch all users (deferred heavy image data for speed)
+    queryset = User.objects.all().defer('id_card_image', 'id_card_data').order_by('-date_joined')
     permission_classes = (IsAdminUser,)
     serializer_class = UserListSerializer
 
 class UserAdminDetailView(generics.RetrieveUpdateDestroyAPIView):
-    # This view is for the admin dashboard to manage/delete a specific user
+    # This view is for the admin dashboard to inspect/manage/delete a specific user with full ID card
     queryset = User.objects.all()
     permission_classes = (IsAdminUser,)
-    serializer_class = UserListSerializer
+
+    def get_serializer_class(self):
+        if self.request.method in ['PUT', 'PATCH']:
+            return AdminUserUpdateSerializer
+        return UserAdminDetailSerializer
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', True)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        # If ID verification or student verification changed and trust_score wasn't explicitly provided, recalculate
+        if 'trust_score' not in request.data and ('is_id_verified' in request.data or 'is_verified_student' in request.data):
+            try:
+                instance.trust_score = instance.calculate_trust_score()
+                instance.save(update_fields=['trust_score'])
+            except Exception:
+                pass
+
+        return Response(UserAdminDetailSerializer(instance).data)
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
     # This view fetches and updates the currently logged-in user's profile

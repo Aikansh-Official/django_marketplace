@@ -111,7 +111,7 @@ elif SUPABASE_DB_URL:
     DATABASES = {
         'default': dj_database_url.parse(
             SUPABASE_DB_URL,
-            conn_max_age=600,
+            conn_max_age=0 if DEBUG else 60,
             conn_health_checks=True,
         )
     }
@@ -265,6 +265,7 @@ from corsheaders.defaults import default_headers
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-app-security-key',
 ]
+CORS_PREFLIGHT_MAX_AGE = 86400
 
 # Cloudinary Configuration
 CLOUDINARY_CLOUD_NAME = os.environ.get('CLOUDINARY_CLOUD_NAME', '')

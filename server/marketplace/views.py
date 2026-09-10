@@ -193,8 +193,8 @@ class ToggleListingStatusView(APIView):
         except Listing.DoesNotExist:
             return Response({'error': 'Listing not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Only the owner can toggle status
-        if listing.seller != request.user:
+        # Only the owner or staff can toggle status
+        if listing.seller != request.user and not request.user.is_staff:
             return Response({'error': 'You are not the owner of this listing.'}, status=status.HTTP_403_FORBIDDEN)
 
         # Do not allow modifying a deal that has already been verified and SOLD
@@ -225,6 +225,25 @@ class AdminListingList(generics.ListAPIView):
     permission_classes = [permissions.IsAdminUser]
 
 
+class AdminListingDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Admin view to retrieve, update any field, or delete any listing."""
+    queryset = Listing.objects.all().select_related('seller', 'category').prefetch_related('images')
+    permission_classes = [permissions.IsAdminUser]
+
+    def get_serializer_class(self):
+        if self.request.method in ['PUT', 'PATCH']:
+            return ListingCreateUpdateSerializer
+        return ListingSerializer
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', True)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(ListingSerializer(instance, context={'request': request}).data)
+
+
 class AdminDashboardStatsView(APIView):
     """
     Consolidated single-roundtrip dashboard stats endpoint.
@@ -241,7 +260,7 @@ class AdminDashboardStatsView(APIView):
 
         from django.db import connection
         from django.contrib.auth import get_user_model
-        from users.serializers import UserListSerializer
+        from users.serializers import UserDashboardSummarySerializer
         User = get_user_model()
 
         # Run single SQL query to get all counts in ONE network round-trip to Supabase
@@ -259,12 +278,14 @@ class AdminDashboardStatsView(APIView):
 
         total_students, verified_students, active_listings, total_listings, completed_deals, pending_reports = row
 
-        # Fetch only the top 5 recent listings and students (avoiding downloading whole database)
+        # Fetch only the top 5 recent listings and students with minimal fields
         recent_listings_qs = Listing.objects.select_related('seller', 'category').prefetch_related('images').order_by('-created_at')[:5]
-        recent_students_qs = User.objects.filter(is_staff=False, is_superuser=False).defer('id_card_image').order_by('-date_joined')[:5]
+        recent_students_qs = User.objects.filter(is_staff=False, is_superuser=False).only(
+            'id', 'username', 'full_name', 'email', 'is_verified_student', 'trust_score', 'profile_photo'
+        ).order_by('-date_joined')[:5]
 
         recent_listings = ListingSerializer(recent_listings_qs, many=True, context={'request': request}).data
-        recent_students = UserListSerializer(recent_students_qs, many=True).data
+        recent_students = UserDashboardSummarySerializer(recent_students_qs, many=True).data
 
         payload = {
             'stats': {
@@ -278,7 +299,7 @@ class AdminDashboardStatsView(APIView):
             'recent_listings': recent_listings,
             'recent_students': recent_students
         }
-        cache.set(cache_key, payload, 30)
+        cache.set(cache_key, payload, 60)
         return Response(payload)
 
 
