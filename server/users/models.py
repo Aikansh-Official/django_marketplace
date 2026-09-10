@@ -16,11 +16,31 @@ class CustomUser(AbstractUser):
     profile_picture_url = models.URLField(max_length=500, blank=True, null=True)
     profile_photo = models.TextField(blank=True, null=True, help_text="Base64 selfie image used as profile photo")
     phone_number = models.CharField(max_length=15, blank=True, null=True, unique=True)
+    
     ROLE_CHOICES = (
         ('BUYER', 'Buyer'),
         ('SELLER', 'Seller'),
     )
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='BUYER', help_text="User role: BUYER or SELLER")
+
+    ADMIN_ROLE_CHOICES = (
+        ('SUPER_ADMIN', 'Super Admin'),
+        ('MODERATOR', 'Content Moderator'),
+        ('ID_VERIFIER', 'Student ID Verifier'),
+    )
+    admin_role = models.CharField(
+        max_length=20,
+        choices=ADMIN_ROLE_CHOICES,
+        default='MODERATOR',
+        blank=True,
+        help_text="Role for staff administration (SUPER_ADMIN, MODERATOR, ID_VERIFIER)"
+    )
+
+    @property
+    def effective_admin_role(self):
+        if self.is_superuser:
+            return 'SUPER_ADMIN'
+        return self.admin_role or 'MODERATOR'
 
     def calculate_trust_score(self):
         score = 0
@@ -36,7 +56,7 @@ class CustomUser(AbstractUser):
         if self.profile_photo:
             score += 3
 
-        # 3. Successful Peer Trades (+5 Points per completed trade)
+        # 4. Successful Peer Trades (+5 Points per completed trade)
         try:
             from marketplace.models import Offer
             trades_count = Offer.objects.filter(
@@ -58,6 +78,7 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return f"{self.full_name or self.username} ({self.college_domain if self.college_domain else 'Unverified'})"
+
 
 class OTPVerification(models.Model):
     email = models.EmailField(unique=True)

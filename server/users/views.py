@@ -11,7 +11,7 @@ from .models import OTPVerification
 from .serializers import (
     UserRegistrationSerializer, UserListSerializer, SendOTPSerializer,
     VerifyOTPSerializer, AdminUserUpdateSerializer, UserAdminDetailSerializer,
-    UserDashboardSummarySerializer
+    UserDashboardSummarySerializer, StaffUserSerializer
 )
 
 logger = logging.getLogger(__name__)
@@ -406,15 +406,17 @@ class AuthStatusView(APIView):
     def get(self, request):
         if request.user and request.user.is_authenticated:
             user_data = UserListSerializer(request.user).data
+            admin_role = request.user.effective_admin_role if (request.user.is_staff or request.user.is_superuser) else None
             return Response({
                 "isAuthenticated": True,
                 "is_staff": request.user.is_staff,
                 "is_superuser": request.user.is_superuser,
                 "role": getattr(request.user, 'role', 'BUYER'),
+                "admin_role": admin_role,
                 "username": request.user.username,
                 "user": user_data
             })
-        return Response({"isAuthenticated": False, "user": None, "role": None})
+        return Response({"isAuthenticated": False, "user": None, "role": None, "admin_role": None})
 
 class CompleteIdVerificationView(APIView):
     permission_classes = (IsAuthenticated,)
@@ -573,6 +575,140 @@ class UpgradeToSellerView(APIView):
             "message": "Congratulations! Your account has been upgraded to Verified Seller.",
             "user": UserListSerializer(user).data
         }, status=status.HTTP_200_OK)
+
+
+class AdminStaffListView(APIView):
+    permission_classes = (IsAdminUser,)
+
+    def get(self, request):
+        from django.db.models import Q
+        staff_users = User.objects.filter(Q(is_staff=True) | Q(is_superuser=True)).order_by('-is_superuser', 'username')
+        serializer = StaffUserSerializer(staff_users, many=True)
+
+        total = staff_users.count()
+        super_admins = sum(1 for u in staff_users if u.effective_admin_role == 'SUPER_ADMIN')
+        moderators = sum(1 for u in staff_users if u.effective_admin_role == 'MODERATOR')
+        id_verifiers = sum(1 for u in staff_users if u.effective_admin_role == 'ID_VERIFIER')
+
+        return Response({
+            'staff': serializer.data,
+            'stats': {
+                'total_staff': total,
+                'super_admins': super_admins,
+                'moderators': moderators,
+                'id_verifiers': id_verifiers,
+            }
+        })
+
+    def post(self, request):
+        if not (request.user.is_superuser or request.user.effective_admin_role == 'SUPER_ADMIN'):
+            return Response({'error': 'Only Super Administrators can appoint or promote staff members.'}, status=status.HTTP_403_FORBIDDEN)
+
+        user_id = request.data.get('user_id')
+        username = str(request.data.get('username', '')).strip()
+        target_role = request.data.get('admin_role', 'MODERATOR')
+
+        if target_role not in ['SUPER_ADMIN', 'MODERATOR', 'ID_VERIFIER']:
+            return Response({'error': 'Invalid admin role specified.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        target_user = None
+        if user_id:
+            target_user = User.objects.filter(pk=user_id).first()
+        elif username:
+            target_user = User.objects.filter(username__iexact=username).first()
+
+        if not target_user:
+            return Response({'error': 'Target student user not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        target_user.is_staff = True
+        target_user.admin_role = target_role
+        target_user.save(update_fields=['is_staff', 'admin_role'])
+
+        try:
+            from marketplace.views import log_admin_action
+            log_admin_action(
+                request,
+                action='STAFF_PROMOTE',
+                target_type='USER',
+                target_id=target_user.id,
+                target_repr=f"@{target_user.username} ({target_user.full_name or target_user.username})",
+                details={'assigned_role': target_role}
+            )
+        except Exception:
+            pass
+
+        return Response({
+            'message': f"Successfully promoted @{target_user.username} to {target_role}.",
+            'staff': StaffUserSerializer(target_user).data
+        }, status=status.HTTP_201_CREATED)
+
+
+class AdminStaffDetailView(APIView):
+    permission_classes = (IsAdminUser,)
+
+    def patch(self, request, pk):
+        if not (request.user.is_superuser or request.user.effective_admin_role == 'SUPER_ADMIN'):
+            return Response({'error': 'Only Super Administrators can modify staff roles.'}, status=status.HTTP_403_FORBIDDEN)
+
+        target_user = User.objects.filter(pk=pk).first()
+        if not target_user:
+            return Response({'error': 'Staff member not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        new_role = request.data.get('admin_role')
+        if new_role not in ['SUPER_ADMIN', 'MODERATOR', 'ID_VERIFIER']:
+            return Response({'error': 'Invalid admin role.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        old_role = target_user.effective_admin_role
+        target_user.admin_role = new_role
+        target_user.save(update_fields=['admin_role'])
+
+        try:
+            from marketplace.views import log_admin_action
+            log_admin_action(
+                request,
+                action='STAFF_ROLE_CHANGE',
+                target_type='USER',
+                target_id=target_user.id,
+                target_repr=f"@{target_user.username} ({target_user.full_name or target_user.username})",
+                details={'old_role': old_role, 'new_role': new_role}
+            )
+        except Exception:
+            pass
+
+        return Response({
+            'message': f"Updated @{target_user.username}'s role to {new_role}.",
+            'staff': StaffUserSerializer(target_user).data
+        })
+
+    def delete(self, request, pk):
+        if not (request.user.is_superuser or request.user.effective_admin_role == 'SUPER_ADMIN'):
+            return Response({'error': 'Only Super Administrators can revoke staff access.'}, status=status.HTTP_403_FORBIDDEN)
+
+        target_user = User.objects.filter(pk=pk).first()
+        if not target_user:
+            return Response({'error': 'Staff member not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if target_user.id == request.user.id:
+            return Response({'error': 'You cannot revoke your own staff privileges.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        previous_role = target_user.effective_admin_role
+        target_user.is_staff = False
+        target_user.save(update_fields=['is_staff'])
+
+        try:
+            from marketplace.views import log_admin_action
+            log_admin_action(
+                request,
+                action='STAFF_REVOKE',
+                target_type='USER',
+                target_id=target_user.id,
+                target_repr=f"@{target_user.username} ({target_user.full_name or target_user.username})",
+                details={'previous_role': previous_role}
+            )
+        except Exception:
+            pass
+
+        return Response({'message': f"Revoked staff privileges for @{target_user.username}."})
 
 
 

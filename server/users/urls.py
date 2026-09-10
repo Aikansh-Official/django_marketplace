@@ -4,7 +4,8 @@ from .views import (
     CheckPhoneView, CheckEmailView, CheckAvailabilityView,
     CustomTokenObtainPairView, CustomTokenRefreshView, LogoutView,
     SendOTPView, VerifyOTPView, UserAdminDetailView, AuthStatusView,
-    CompleteIdVerificationView, UpgradeToSellerView
+    CompleteIdVerificationView, UpgradeToSellerView,
+    AdminStaffListView, AdminStaffDetailView
 )
 
 urlpatterns = [
@@ -16,6 +17,8 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(), name='auth_logout'),
     path('users/', UserListView.as_view(), name='user_list'),
     path('users/<int:pk>/', UserAdminDetailView.as_view(), name='user_admin_detail'),
+    path('staff/', AdminStaffListView.as_view(), name='admin_staff_list'),
+    path('staff/<int:pk>/', AdminStaffDetailView.as_view(), name='admin_staff_detail'),
     path('profile/', UserProfileView.as_view(), name='user_profile'),
     path('verify-id/', CompleteIdVerificationView.as_view(), name='verify_id'),
     path('upgrade-to-seller/', UpgradeToSellerView.as_view(), name='upgrade_to_seller'),

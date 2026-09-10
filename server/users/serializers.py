@@ -127,13 +127,13 @@ class UserListSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'full_name', 'phone_number', 'role',
             'is_active', 'is_verified_student', 'is_id_verified', 'has_id_card',
             'college_domain', 'trust_score', 'completed_trades_count', 'profile_photo',
-            'date_joined', 'is_staff', 'is_superuser'
+            'date_joined', 'is_staff', 'is_superuser', 'admin_role'
         )
         read_only_fields = (
             'id', 'username', 'email', 'role', 'is_active', 'is_verified_student',
             'is_id_verified', 'has_id_card', 'college_domain',
             'trust_score', 'completed_trades_count', 'date_joined',
-            'is_staff', 'is_superuser'
+            'is_staff', 'is_superuser', 'admin_role'
         )
 
     def get_trust_score(self, obj):
@@ -161,13 +161,13 @@ class UserAdminDetailSerializer(serializers.ModelSerializer):
             'is_active', 'is_verified_student', 'is_id_verified', 'has_id_card',
             'id_card_image', 'id_card_data',
             'college_domain', 'trust_score', 'completed_trades_count', 'profile_photo',
-            'date_joined', 'is_staff', 'is_superuser'
+            'date_joined', 'is_staff', 'is_superuser', 'admin_role'
         )
         read_only_fields = (
             'id', 'username', 'email', 'role', 'is_active', 'is_verified_student',
             'is_id_verified', 'has_id_card', 'college_domain',
             'trust_score', 'completed_trades_count', 'date_joined',
-            'is_staff', 'is_superuser'
+            'is_staff', 'is_superuser', 'admin_role'
         )
 
     def get_trust_score(self, obj):
@@ -195,7 +195,19 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'username', 'email', 'full_name', 'phone_number', 'role',
             'is_active', 'is_verified_student', 'is_id_verified', 'trust_score',
-            'id_card_image', 'id_card_data', 'profile_photo'
+            'id_card_image', 'id_card_data', 'profile_photo', 'admin_role'
         )
         read_only_fields = ('id', 'username')
+
+
+class StaffUserSerializer(serializers.ModelSerializer):
+    effective_role = serializers.CharField(source='effective_admin_role', read_only=True)
+
+    class Meta:
+        model = User
+        fields = (
+            'id', 'username', 'email', 'full_name', 'phone_number',
+            'admin_role', 'effective_role', 'is_staff', 'is_superuser',
+            'is_active', 'date_joined', 'last_login', 'profile_photo'
+        )
 

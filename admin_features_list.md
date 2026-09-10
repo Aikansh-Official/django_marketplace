@@ -15,7 +15,7 @@
 | **Phase 5** | **Broadcast Notifications & Direct Messaging** | ✅ **COMPLETED** | Send broadcast alerts to all students, Direct admin notice to individual user, Templates |
 | **Phase 6** | **Advanced Analytics & Leaderboards** | ✅ **COMPLETED** | Visual charts (deals over time, category pie, user growth), Top Sellers, Location Heatmap |
 | **Phase 7** | **Platform Security & Admin Audit Logs** | ✅ **COMPLETED** | Immutable admin action logs (who banned/edited what), Live DB/cache latency meter, Security posture checks |
-| **Phase 8** | **Extended Platform Settings & RBAC** | ⏳ **UP NEXT** | Max listings limit, Min trust score to sell, QR expiry config, Multi-admin roles, Dark mode |
+| **Phase 8** | **Extended Platform Settings & RBAC** | ✅ **COMPLETED** | Max listings limit, Min trust score to sell, QR expiry config, Multi-admin roles, Staff Team, Ctrl+K Palette |
 
 ---
 
@@ -256,26 +256,51 @@
 ---
 
 ## ═══════════════════════════════════════════════════════
-## 📋 PHASE 8: Extended Platform Settings & Admin RBAC
+## 🟢 PHASE 8: Extended Platform Settings & Admin RBAC
 ## ═══════════════════════════════════════════════════════
-- **Status**: ⏳ **UP NEXT**
-- **Target Pages**: `admin/src/pages/Settings.jsx`, `admin/src/pages/Team.jsx`
+- **Status**: ✅ **COMPLETED & VERIFIED**
+- **Primary Pages**: `admin/src/pages/Settings.jsx`, `admin/src/pages/Team.jsx`, `admin/src/components/CommandPalette.jsx`
+- **Backend Endpoints**:
+  - `GET /api/auth/staff/`, `POST /api/auth/staff/`
+  - `PATCH /api/auth/staff/<id>/`, `DELETE /api/auth/staff/<id>/`
+  - `GET /api/marketplace/admin/settings/`, `POST /api/marketplace/admin/settings/`
 
 ### 8.1 Marketplace Operational Constraints
-- **Max Active Listings Limit**: Set maximum simultaneous listings allowed per student (prevents spamming).
-- **Minimum Trust Score to Sell**: Prevent new unverified accounts with 0 trust from listing high-value items.
-- **Handover Expiry Config**: Set QR validity duration (15m, 30m, 1 hour).
-- **OTP Limits**: Set maximum daily OTP resend requests and lockout windows.
+- **Maximum Active Listings Limit (`max_active_listings_per_student`)**:
+  - Enforced server-side in `ListingListCreateView.post`.
+  - Rejects submissions with HTTP 400 when a student attempts to exceed the active catalog limit.
+- **Minimum Trust Score to Sell (`min_trust_score_to_sell`)**:
+  - Protects the campus marketplace from unverified zero-trust sellers. Rejects listing attempts with HTTP 403.
+- **Handover QR & PIN Expiry Duration (`handover_qr_expiry_minutes`)**:
+  - Configurable expiration window (10, 15, 30, 45, 60 mins) used during `GenerateHandoverQRView.post`.
+- **Maintenance Mode with Custom Broadcast (`maintenance_mode` & `maintenance_message`)**:
+  - Freezes non-staff student write actions with an HTTP 503 response while granting full bypass access to staff.
+- **Daily OTP Resend Limits (`otp_daily_limit`)**:
+  - Protects student accounts and campus email delivery infrastructure against spamming.
 
-### 8.2 Role-Based Access Control (RBAC) & Experience
-- **Admin Roles**:
-  - `Super Admin`: Unrestricted system access, settings, user bans, and database exports.
-  - `Moderator`: Manage listings, review flagged items, and resolve reports.
-  - `ID Verifier`: Dedicated access to examine student ID cards and approve verifications.
-- **UI Enhancements**:
-  - Dark Mode / Light Mode theme toggle.
-  - `Ctrl + K` Global Command Palette (Jump directly to any student, listing, or setting in 1 keystroke).
-  - Fully mobile-responsive admin dashboard layout.
+### 8.2 Role-Based Access Control (RBAC) & Staff Team Console (`admin/src/pages/Team.jsx`)
+- **Three-Tier Administrative Hierarchy**:
+  - 👑 **Super Admin (`SUPER_ADMIN`)**: Unrestricted system authority, platform settings, staff administration, user deletion/bans, deal interventions, database exports.
+  - 🛡️ **Content Moderator (`MODERATOR`)**: Catalog moderation, listing edits/takedowns, category management, student reports, banned keyword blacklist, deal dispute interventions.
+  - 🪪 **Student ID Verifier (`ID_VERIFIER`)**: Student supervision, physical ID card inspection lightbox, verification drive approvals/revocations, and audit logs.
+- **Staff Team Directory Console (`/team`)**:
+  - Top metric counters: Total Staff, Super Admins, Content Moderators, ID Verifiers.
+  - Searchable directory with real-time role filtering chips.
+  - **Appoint / Promote Staff Modal**: Student lookup by registration number or email, role assignment selector, student profile preview, and instant promotion.
+  - **Manage Staff Role Modal**: Role modification and safe staff privilege revocation with self-demotion prevention safeguards.
+  - Automated logging of `STAFF_PROMOTE`, `STAFF_ROLE_CHANGE`, and `STAFF_REVOKE` actions in `AdminAuditLog`.
+
+### 8.3 Global Command Palette & Upgraded Multi-Tab Settings
+- **`Ctrl + K` / `Cmd + K` Global Command Palette (`admin/src/components/CommandPalette.jsx`)**:
+  - Universal keyboard shortcut overlay accessible across the entire admin panel.
+  - Fuzzy-search instant jump to all 12 administrative destinations.
+  - Quick action shortcuts: "Compose Campus Broadcast", "Review Unresolved Reports", "Run Live System Diagnostics", "Export Audit Logs CSV", "Appoint Staff Member", "Inspect Active Handovers".
+  - Arrow key navigation, enter to select, escape to close.
+- **Multi-Tabbed Configuration Console (`admin/src/pages/Settings.jsx`)**:
+  - **Tab 1 — Operational Constraints**: Active listing caps, trust score requirements, QR expiry window, daily OTP limits.
+  - **Tab 2 — Campus Announcement Banner**: Live interactive preview, severity level selector, target link, dismissible toggle.
+  - **Tab 3 — Platform Access & Security**: Maintenance mode toggle, custom message editor, student registration toggle, whitelisted college email domains.
+  - **Tab 4 — Staff Team & Roles**: Overview with direct deep-link to the full Team Management console.
 
 ---
 

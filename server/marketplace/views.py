@@ -314,6 +314,15 @@ class ListingListCreateView(generics.ListCreateAPIView):
 
     def post(self, request, *args, **kwargs):
         user = request.user
+
+        # 1. Maintenance Mode Enforcement
+        setting_maint = PlatformSetting.objects.filter(key='maintenance_mode').first()
+        if setting_maint and setting_maint.value.lower() in ('true', '1') and not (user.is_staff or user.is_superuser):
+            msg_setting = PlatformSetting.objects.filter(key='maintenance_message').first()
+            msg = msg_setting.value if msg_setting else 'CampusXChange is currently undergoing scheduled maintenance. Please check back shortly.'
+            return Response({'error': msg, 'maintenance_mode': True}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        # 2. Seller Verification Check
         is_seller = getattr(user, 'role', 'BUYER') == 'SELLER' or getattr(user, 'is_id_verified', False) or user.is_staff or user.is_superuser
         if not is_seller:
             return Response(
@@ -323,6 +332,29 @@ class ListingListCreateView(generics.ListCreateAPIView):
                 },
                 status=status.HTTP_403_FORBIDDEN
             )
+
+        # 3. Minimum Trust Score Constraint
+        setting_min_score = PlatformSetting.objects.filter(key='min_trust_score_to_sell').first()
+        min_score = int(setting_min_score.value) if (setting_min_score and setting_min_score.value.isdigit()) else 0
+        if min_score > 0 and getattr(user, 'trust_score', 0) < min_score and not (user.is_staff or user.is_superuser):
+            return Response({
+                'error': f'A minimum trust score of {min_score} is required to post listings on CampusXChange. Your current trust score is {getattr(user, "trust_score", 0)}.',
+                'current_trust_score': getattr(user, 'trust_score', 0),
+                'min_required': min_score
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        # 4. Maximum Active Listings Limit
+        setting_max = PlatformSetting.objects.filter(key='max_active_listings_per_student').first()
+        max_limit = int(setting_max.value) if (setting_max and setting_max.value.isdigit()) else 10
+        if max_limit > 0 and not (user.is_staff or user.is_superuser):
+            active_count = Listing.objects.filter(seller=user, status='ACTIVE').count()
+            if active_count >= max_limit:
+                return Response({
+                    'error': f'You have reached your maximum active listings limit of {max_limit}. Please complete or close existing listings before posting a new item.',
+                    'active_count': active_count,
+                    'max_limit': max_limit
+                }, status=status.HTTP_400_BAD_REQUEST)
+
         return super().post(request, *args, **kwargs)
 
     def perform_create(self, serializer):
@@ -1015,8 +1047,13 @@ class AdminPlatformSettingsView(APIView):
 
     DEFAULT_SETTINGS = {
         'maintenance_mode': 'false',
+        'maintenance_message': 'CampusXChange is currently undergoing scheduled campus maintenance. Please check back shortly.',
         'allow_registrations': 'true',
         'allowed_domains': '',
+        'max_active_listings_per_student': '10',
+        'min_trust_score_to_sell': '0',
+        'handover_qr_expiry_minutes': '30',
+        'otp_daily_limit': '5',
         'announcement_enabled': 'false',
         'announcement_text': '',
         'announcement_type': 'INFO',
@@ -1031,6 +1068,9 @@ class AdminPlatformSettingsView(APIView):
         return Response(settings_map)
 
     def post(self, request):
+        if not (request.user.is_superuser or request.user.effective_admin_role == 'SUPER_ADMIN'):
+            return Response({'error': 'Only Super Administrators can modify platform settings.'}, status=status.HTTP_403_FORBIDDEN)
+
         from django.core.cache import cache
         data = request.data
         for key, value in data.items():
@@ -1104,9 +1144,11 @@ class GenerateHandoverQRView(APIView):
         # Invalidate any prior active sessions for this offer
         HandoverSession.objects.filter(offer=offer, status='ACTIVE').update(status='EXPIRED')
 
-        # Generate a unique 6-digit pin and 5-min TTL
+        # Generate a unique 6-digit pin and configurable TTL
         pin_code = f"{random.randint(100000, 999999)}"
-        expires_at = timezone.now() + datetime.timedelta(minutes=5)
+        setting_expiry = PlatformSetting.objects.filter(key='handover_qr_expiry_minutes').first()
+        expiry_minutes = int(setting_expiry.value) if (setting_expiry and setting_expiry.value.isdigit()) else 30
+        expires_at = timezone.now() + datetime.timedelta(minutes=expiry_minutes)
 
         session = HandoverSession.objects.create(
             offer=offer,

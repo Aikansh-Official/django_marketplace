@@ -256,6 +256,9 @@ class AdminAuditLog(models.Model):
         ('REPORT_RESOLVED', 'Report Resolved / Action Taken'),
         ('BANNED_WORDS_UPDATE', 'Banned Words Blacklist Updated'),
         ('SETTINGS_UPDATE', 'Platform Settings Updated'),
+        ('STAFF_PROMOTE', 'Staff Admin Appointed / Promoted'),
+        ('STAFF_ROLE_CHANGE', 'Staff Admin Role Updated'),
+        ('STAFF_REVOKE', 'Staff Admin Privileges Revoked'),
         ('SECURITY_ALERT', 'Security Incident / Alert'),
     )
 

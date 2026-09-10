@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
 from django.conf import settings
-from .models import Listing, Category, Offer
+from .models import Listing, Category, Offer, PlatformSetting, HandoverSession, AdminAuditLog
 
 User = get_user_model()
 
@@ -377,6 +377,124 @@ class MarketplaceHandoverTests(TestCase):
         self.assertIn('security', health_data)
         self.assertIn('environment', health_data)
         self.assertIn('metrics', health_data)
+
+    def test_phase_8_operational_constraints_and_staff_rbac(self):
+        """Phase 8: Test Operational Constraints, Staff RBAC, and Handover Expiry Configuration."""
+        # 1. Non-admin cannot view or modify staff
+        self.client.force_authenticate(user=self.buyer)
+        staff_forbidden = self.client.get('/api/auth/staff/')
+        self.assertEqual(staff_forbidden.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 2. Super Admin can view staff list
+        self.client.force_authenticate(user=self.admin)
+        staff_res = self.client.get('/api/auth/staff/')
+        self.assertEqual(staff_res.status_code, status.HTTP_200_OK)
+        self.assertIn('staff', staff_res.data)
+        self.assertIn('stats', staff_res.data)
+
+        # 3. Super Admin promotes buyer to staff with ID_VERIFIER role
+        promote_res = self.client.post('/api/auth/staff/', {
+            'user_id': self.buyer.id,
+            'admin_role': 'ID_VERIFIER'
+        })
+        self.assertEqual(promote_res.status_code, status.HTTP_201_CREATED)
+        self.buyer.refresh_from_db()
+        self.assertTrue(self.buyer.is_staff)
+        self.assertEqual(self.buyer.admin_role, 'ID_VERIFIER')
+
+        # 4. Super Admin updates buyer's staff role to MODERATOR
+        role_update_res = self.client.patch(f'/api/auth/staff/{self.buyer.id}/', {
+            'admin_role': 'MODERATOR'
+        })
+        self.assertEqual(role_update_res.status_code, status.HTTP_200_OK)
+        self.buyer.refresh_from_db()
+        self.assertEqual(self.buyer.admin_role, 'MODERATOR')
+
+        # 5. Moderator cannot modify platform settings (RBAC check)
+        self.client.force_authenticate(user=self.buyer)
+        settings_fail = self.client.post('/api/marketplace/admin/settings/', {'maintenance_mode': 'true'})
+        self.assertEqual(settings_fail.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 6. Super Admin revokes staff access
+        self.client.force_authenticate(user=self.admin)
+        revoke_res = self.client.delete(f'/api/auth/staff/{self.buyer.id}/')
+        self.assertEqual(revoke_res.status_code, status.HTTP_200_OK)
+        self.buyer.refresh_from_db()
+        self.assertFalse(self.buyer.is_staff)
+
+        # 7. Self-revocation prevention
+        self_revoke = self.client.delete(f'/api/auth/staff/{self.admin.id}/')
+        self.assertEqual(self_revoke.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 8. Operational Constraints: Max Active Listings
+        self.seller.role = 'SELLER'
+        self.seller.is_id_verified = True
+        self.seller.save(update_fields=['role', 'is_id_verified'])
+
+        PlatformSetting.objects.update_or_create(
+            key='max_active_listings_per_student',
+            defaults={'value': '1'}
+        )
+        self.client.force_authenticate(user=self.seller)
+        # self.seller already has self.listing with status='ACTIVE'
+        post_res = self.client.post('/api/marketplace/listings/', {
+            'title': 'Second Active Listing',
+            'description': 'Attempting to exceed max limit of 1 active listing.',
+            'price': '500.00',
+            'category': self.category.id,
+            'condition': 'GOOD',
+            'location': 'BH-1'
+        })
+        self.assertEqual(post_res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('maximum active listings limit', post_res.data.get('error', ''))
+
+        # 9. Operational Constraints: Minimum Trust Score
+        PlatformSetting.objects.update_or_create(
+            key='max_active_listings_per_student',
+            defaults={'value': '10'}
+        )
+        PlatformSetting.objects.update_or_create(
+            key='min_trust_score_to_sell',
+            defaults={'value': '80'}
+        )
+        self.seller.trust_score = 10
+        self.seller.save(update_fields=['trust_score'])
+        post_res2 = self.client.post('/api/marketplace/listings/', {
+            'title': 'High Trust Needed Item',
+            'description': 'This item requires 80 trust score.',
+            'price': '300.00',
+            'category': self.category.id,
+            'condition': 'GOOD',
+            'location': 'BH-1'
+        })
+        self.assertEqual(post_res2.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertIn('minimum trust score of 80', post_res2.data.get('error', ''))
+
+        # 10. Operational Constraints: Maintenance Mode
+        PlatformSetting.objects.update_or_create(
+            key='min_trust_score_to_sell',
+            defaults={'value': '0'}
+        )
+        PlatformSetting.objects.update_or_create(
+            key='maintenance_mode',
+            defaults={'value': 'true'}
+        )
+        post_res3 = self.client.post('/api/marketplace/listings/', {
+            'title': 'During Maintenance Item',
+            'description': 'Item during maintenance.',
+            'price': '100.00',
+            'category': self.category.id,
+            'condition': 'GOOD',
+            'location': 'BH-1'
+        })
+        self.assertEqual(post_res3.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertTrue(post_res3.data.get('maintenance_mode'))
+
+        # Reset maintenance mode for cleanliness
+        PlatformSetting.objects.update_or_create(
+            key='maintenance_mode',
+            defaults={'value': 'false'}
+        )
 
 
 

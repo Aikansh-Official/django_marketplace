@@ -3,38 +3,61 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
   Save, Loader2, CheckCircle2, Megaphone, Info, AlertTriangle,
-  AlertCircle, Sparkles, X, ExternalLink, ShieldCheck
+  AlertCircle, Sparkles, X, ExternalLink, ShieldCheck, Sliders,
+  Lock, Clock, Users, ArrowRight, ShieldAlert, Key, Zap
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export default function Settings() {
+  const [activeTab, setActiveTab] = useState('CONSTRAINTS'); // CONSTRAINTS | ANNOUNCEMENT | SECURITY | TEAM
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Settings State
   const [settings, setSettings] = useState({
-    maintenance_mode: false,
-    allow_registrations: true,
-    allowed_domains: '',
+    // Constraints
+    max_active_listings_per_student: 10,
+    min_trust_score_to_sell: 0,
+    handover_qr_expiry_minutes: 30,
+    otp_daily_limit: 5,
+
+    // Announcement
     announcement_enabled: false,
     announcement_text: '',
     announcement_type: 'INFO',
     announcement_link: '',
     announcement_dismissible: true,
+
+    // Security & Operations
+    maintenance_mode: false,
+    maintenance_message: 'CampusXChange is currently undergoing scheduled campus maintenance. Please check back shortly.',
+    allow_registrations: true,
+    allowed_domains: '',
   });
 
   useEffect(() => {
     const fetchSettings = async () => {
       try {
         const res = await axios.get(`${API_BASE}/marketplace/admin/settings/`);
+        const data = res.data;
         setSettings({
-          maintenance_mode: res.data.maintenance_mode === 'true' || res.data.maintenance_mode === true,
-          allow_registrations: res.data.allow_registrations !== 'false' && res.data.allow_registrations !== false,
-          allowed_domains: res.data.allowed_domains || '',
-          announcement_enabled: res.data.announcement_enabled === 'true' || res.data.announcement_enabled === true,
-          announcement_text: res.data.announcement_text || '',
-          announcement_type: (res.data.announcement_type || 'INFO').toUpperCase(),
-          announcement_link: res.data.announcement_link || '',
-          announcement_dismissible: res.data.announcement_dismissible !== 'false' && res.data.announcement_dismissible !== false,
+          max_active_listings_per_student: parseInt(data.max_active_listings_per_student) || 10,
+          min_trust_score_to_sell: parseInt(data.min_trust_score_to_sell) || 0,
+          handover_qr_expiry_minutes: parseInt(data.handover_qr_expiry_minutes) || 30,
+          otp_daily_limit: parseInt(data.otp_daily_limit) || 5,
+
+          announcement_enabled: data.announcement_enabled === 'true' || data.announcement_enabled === true,
+          announcement_text: data.announcement_text || '',
+          announcement_type: (data.announcement_type || 'INFO').toUpperCase(),
+          announcement_link: data.announcement_link || '',
+          announcement_dismissible: data.announcement_dismissible !== 'false' && data.announcement_dismissible !== false,
+
+          maintenance_mode: data.maintenance_mode === 'true' || data.maintenance_mode === true,
+          maintenance_message: data.maintenance_message || 'CampusXChange is currently undergoing scheduled campus maintenance. Please check back shortly.',
+          allow_registrations: data.allow_registrations !== 'false' && data.allow_registrations !== false,
+          allowed_domains: data.allowed_domains || '',
         });
       } catch (err) {
         console.error('Failed to load settings', err);
@@ -51,25 +74,33 @@ export default function Settings() {
     setSaving(true);
     try {
       await axios.post(`${API_BASE}/marketplace/admin/settings/`, {
-        maintenance_mode: settings.maintenance_mode ? 'true' : 'false',
-        allow_registrations: settings.allow_registrations ? 'true' : 'false',
-        allowed_domains: settings.allowed_domains,
+        max_active_listings_per_student: String(settings.max_active_listings_per_student),
+        min_trust_score_to_sell: String(settings.min_trust_score_to_sell),
+        handover_qr_expiry_minutes: String(settings.handover_qr_expiry_minutes),
+        otp_daily_limit: String(settings.otp_daily_limit),
+
         announcement_enabled: settings.announcement_enabled ? 'true' : 'false',
         announcement_text: settings.announcement_text,
         announcement_type: settings.announcement_type,
         announcement_link: settings.announcement_link,
         announcement_dismissible: settings.announcement_dismissible ? 'true' : 'false',
+
+        maintenance_mode: settings.maintenance_mode ? 'true' : 'false',
+        maintenance_message: settings.maintenance_message,
+        allow_registrations: settings.allow_registrations ? 'true' : 'false',
+        allowed_domains: settings.allowed_domains,
       });
-      toast.success('Platform settings & announcement saved successfully!');
+      toast.success('Platform configuration saved successfully!');
     } catch (err) {
       console.error('Failed to save settings', err);
-      toast.error('Failed to update platform settings.');
+      const errMsg = err.response?.data?.error || 'Failed to update platform settings.';
+      toast.error(errMsg);
     } finally {
       setSaving(false);
     }
   };
 
-  // Type styling details for live preview
+  // Banner preview styling
   const getTypeBadge = (type) => {
     switch (type) {
       case 'WARNING':
@@ -105,59 +136,195 @@ export default function Settings() {
   };
 
   const previewStyle = getTypeBadge(settings.announcement_type);
-  const PreviewIcon = previewStyle.icon;
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      {/* Page Header */}
+    <div className="space-y-6 max-w-5xl">
+      {/* Header Bar */}
       <div className="bg-white/80 backdrop-blur-md p-6 rounded-lg border border-gray-200 shadow-sm">
-        <h1 className="text-xl font-black text-gray-900 tracking-tight">Platform Configuration</h1>
+        <h1 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2.5">
+          <Sliders className="w-6 h-6 text-brand-600" />
+          Platform Configuration & Operational Controls
+        </h1>
         <p className="text-xs text-gray-500 mt-1">
-          Manage platform availability, student domain whitelists, and broadcast campus-wide announcement banners.
+          Configure marketplace operational constraints, campus broadcast notices, security rules, and staff roles.
         </p>
       </div>
 
+      {/* Navigation Tabs */}
+      <div className="flex border-b border-gray-200 bg-white rounded-t-lg px-4 gap-2 shadow-sm">
+        {[
+          { id: 'CONSTRAINTS', label: 'Operational Constraints', icon: Sliders },
+          { id: 'ANNOUNCEMENT', label: 'Campus Announcement Banner', icon: Megaphone },
+          { id: 'SECURITY', label: 'Platform Access & Security', icon: Lock },
+          { id: 'TEAM', label: 'Staff Team & Roles', icon: Users },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-3 text-xs font-bold border-b-2 transition-all ${
+                isActive
+                  ? 'border-brand-600 text-brand-600 bg-brand-50/50'
+                  : 'border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {loading ? (
-        <div className="bg-white p-12 rounded-lg border border-gray-200 text-center">
+        <div className="bg-white p-16 rounded-b-lg border border-gray-200 text-center">
           <Loader2 className="w-8 h-8 text-brand-600 animate-spin mx-auto mb-2" />
-          <p className="text-xs text-gray-500">Loading settings...</p>
+          <p className="text-xs text-gray-500">Loading system settings...</p>
         </div>
       ) : (
         <form onSubmit={handleSave} className="space-y-6">
-          {/* SECTION 1: GLOBAL CAMPUS ANNOUNCEMENT BANNER */}
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/80 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-brand-50 rounded-lg text-brand-600 border border-brand-100">
-                  <Megaphone className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-black text-gray-900 uppercase tracking-wider">
-                    Campus Announcement & Emergency Notice Banner
-                  </h2>
+          {/* TAB 1: OPERATIONAL CONSTRAINTS */}
+          {activeTab === 'CONSTRAINTS' && (
+            <div className="bg-white rounded-b-lg border border-gray-200 shadow-sm p-6 space-y-6 text-xs animate-fade-in">
+              <div className="border-b border-gray-100 pb-4">
+                <h3 className="font-black text-gray-900 text-sm flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-brand-600" />
+                  Marketplace Trading Constraints & Rules
+                </h3>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  Set guardrails on listings, peer trading requirements, and time-sensitive transaction sessions.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {/* Max Active Listings */}
+                <div className="p-4 bg-gray-50/80 rounded-lg border border-gray-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-gray-900">Max Active Listings per Student</label>
+                    <span className="font-mono px-2 py-0.5 rounded bg-brand-50 text-brand-700 font-black border border-brand-200">
+                      {settings.max_active_listings_per_student} items
+                    </span>
+                  </div>
                   <p className="text-[11px] text-gray-500">
+                    Maximum simultaneous active listings allowed per student account. Prevents catalog spamming.
+                  </p>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={settings.max_active_listings_per_student}
+                    onChange={(e) =>
+                      setSettings({ ...settings, max_active_listings_per_student: parseInt(e.target.value) || 1 })
+                    }
+                    className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-gray-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  />
+                </div>
+
+                {/* Min Trust Score to Sell */}
+                <div className="p-4 bg-gray-50/80 rounded-lg border border-gray-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-gray-900">Minimum Trust Score to Sell</label>
+                    <span className="font-mono px-2 py-0.5 rounded bg-amber-50 text-amber-700 font-black border border-amber-200">
+                      {settings.min_trust_score_to_sell}/100
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-500">
+                    Threshold score required to list items for sale. Set to 0 to permit any verified student seller.
+                  </p>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={settings.min_trust_score_to_sell}
+                    onChange={(e) =>
+                      setSettings({ ...settings, min_trust_score_to_sell: parseInt(e.target.value) || 0 })
+                    }
+                    className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-gray-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  />
+                </div>
+
+                {/* Handover QR Expiry */}
+                <div className="p-4 bg-gray-50/80 rounded-lg border border-gray-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-gray-900">Handover QR & PIN Expiry</label>
+                    <span className="font-mono px-2 py-0.5 rounded bg-sky-50 text-sky-700 font-black border border-sky-200">
+                      {settings.handover_qr_expiry_minutes} mins
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-500">
+                    Validity window for seller-generated QR codes and 6-digit confirmation PINs.
+                  </p>
+                  <select
+                    value={settings.handover_qr_expiry_minutes}
+                    onChange={(e) =>
+                      setSettings({ ...settings, handover_qr_expiry_minutes: parseInt(e.target.value) || 30 })
+                    }
+                    className="w-full border border-gray-300 rounded px-3 py-2 bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  >
+                    <option value="10">10 Minutes (Tight window)</option>
+                    <option value="15">15 Minutes</option>
+                    <option value="30">30 Minutes (Recommended)</option>
+                    <option value="45">45 Minutes</option>
+                    <option value="60">60 Minutes (Maximum)</option>
+                  </select>
+                </div>
+
+                {/* Daily OTP Limit */}
+                <div className="p-4 bg-gray-50/80 rounded-lg border border-gray-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-gray-900">Daily OTP Resend Limit</label>
+                    <span className="font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-black border border-emerald-200">
+                      {settings.otp_daily_limit} attempts
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-500">
+                    Maximum email OTP dispatch requests allowed per address in a 24-hour window.
+                  </p>
+                  <input
+                    type="number"
+                    min="3"
+                    max="15"
+                    value={settings.otp_daily_limit}
+                    onChange={(e) =>
+                      setSettings({ ...settings, otp_daily_limit: parseInt(e.target.value) || 5 })
+                    }
+                    className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-gray-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: ANNOUNCEMENT BANNER */}
+          {activeTab === 'ANNOUNCEMENT' && (
+            <div className="bg-white rounded-b-lg border border-gray-200 shadow-sm p-6 space-y-5 text-xs animate-fade-in">
+              <div className="border-b border-gray-100 pb-4 flex items-center justify-between">
+                <div>
+                  <h3 className="font-black text-gray-900 text-sm flex items-center gap-2">
+                    <Megaphone className="w-4 h-4 text-brand-600" />
+                    Campus Announcement & Emergency Notice Banner
+                  </h3>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
                     Broadcast sticky emergency alerts or important announcements across the top of the student marketplace.
                   </p>
                 </div>
+
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                    settings.announcement_enabled
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : 'bg-gray-100 text-gray-500 border-gray-200'
+                  }`}
+                >
+                  {settings.announcement_enabled ? '● Broadcast Active' : '○ Inactive'}
+                </span>
               </div>
 
-              {/* Active Pill */}
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                  settings.announcement_enabled
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    : 'bg-gray-100 text-gray-500 border-gray-200'
-                }`}
-              >
-                {settings.announcement_enabled ? '● Broadcast Active' : '○ Inactive'}
-              </span>
-            </div>
-
-            <div className="p-6 space-y-5 text-xs">
-              {/* Enable Toggle */}
+              {/* Publish Toggle */}
               <div className="flex items-center justify-between p-4 bg-gray-50/80 rounded-lg border border-gray-200">
                 <div>
-                  <h3 className="font-bold text-gray-900 text-xs">Publish Announcement Banner</h3>
+                  <h4 className="font-bold text-gray-900 text-xs">Publish Announcement Banner</h4>
                   <p className="text-[11px] text-gray-500 mt-0.5">
                     When active, this banner appears immediately for every student browsing CampusXChange.
                   </p>
@@ -173,7 +340,7 @@ export default function Settings() {
                 </label>
               </div>
 
-              {/* Type and Dismissible */}
+              {/* Type and Link */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-bold text-gray-700 mb-1">Banner Type / Severity</label>
@@ -184,8 +351,8 @@ export default function Settings() {
                   >
                     <option value="INFO">Blue — Official Information / General Notice</option>
                     <option value="WARNING">Amber — Caution / Handover Safety Advisory</option>
-                    <option value="ALERT">Red — Urgent Security Alert / System Maintenance Notice</option>
-                    <option value="PROMO">Green — Campus Fest / Special Discount Offer</option>
+                    <option value="ALERT">Red — Urgent Security Alert / Maintenance Notice</option>
+                    <option value="PROMO">Green — Campus Fest / Goodwill Exchange Drive</option>
                   </select>
                 </div>
 
@@ -201,20 +368,20 @@ export default function Settings() {
                 </div>
               </div>
 
-              {/* Message Text */}
+              {/* Message */}
               <div>
                 <label className="block font-bold text-gray-700 mb-1">Announcement Message *</label>
                 <textarea
                   rows={2}
                   required={settings.announcement_enabled}
-                  placeholder="e.g. 📢 Campus Advisory: Please conduct all physical item handovers inside well-lit campus zones (Uni-Mall / Central Library). Never share OTP before inspecting the item."
+                  placeholder="e.g. 📢 Campus Advisory: Please conduct all physical item handovers inside well-lit campus zones..."
                   value={settings.announcement_text}
                   onChange={(e) => setSettings({ ...settings, announcement_text: e.target.value })}
                   className="w-full border border-gray-300 rounded p-3 focus:ring-2 focus:ring-brand-500 focus:outline-none leading-relaxed"
                 />
               </div>
 
-              {/* Dismissible Checkbox */}
+              {/* Dismissible */}
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -223,11 +390,11 @@ export default function Settings() {
                   className="rounded text-brand-600 focus:ring-brand-500 h-4 w-4"
                 />
                 <span className="font-semibold text-gray-700">
-                  Allow students to dismiss (close) the banner for their browsing session
+                  Allow students to dismiss (close) the banner for their current browser session
                 </span>
               </label>
 
-              {/* Real-time Interactive Live Preview */}
+              {/* Live Preview */}
               <div className="pt-3 border-t border-gray-100">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-2">
                   Live Student Browser Preview:
@@ -259,46 +426,58 @@ export default function Settings() {
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* SECTION 2: PLATFORM OPERATIONS & DOMAINS */}
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/80 flex items-center gap-2.5">
-              <div className="p-2 bg-brand-50 rounded-lg text-brand-600 border border-brand-100">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-sm font-black text-gray-900 uppercase tracking-wider">
-                  Platform Operations & Access Controls
-                </h2>
-                <p className="text-[11px] text-gray-500">
-                  Control maintenance mode and student registration email domains.
+          {/* TAB 3: PLATFORM ACCESS & SECURITY */}
+          {activeTab === 'SECURITY' && (
+            <div className="bg-white rounded-b-lg border border-gray-200 shadow-sm p-6 space-y-6 text-xs animate-fade-in">
+              <div className="border-b border-gray-100 pb-4">
+                <h3 className="font-black text-gray-900 text-sm flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-brand-600" />
+                  Platform Availability & Onboarding Security
+                </h3>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  Control campus maintenance mode, onboarding throttles, and authorized domain whitelists.
                 </p>
               </div>
-            </div>
 
-            <div className="p-6 space-y-5 text-xs">
-              <div className="flex items-center justify-between p-3.5 bg-gray-50/80 rounded-lg border border-gray-200">
-                <div>
-                  <h3 className="font-bold text-gray-900 text-xs">Maintenance Mode</h3>
-                  <p className="text-[11px] text-gray-500 mt-0.5">
-                    Temporarily disable marketplace browsing for scheduled upgrades.
-                  </p>
+              {/* Maintenance Mode */}
+              <div className="p-4 bg-gray-50/80 rounded-lg border border-gray-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-bold text-gray-900 text-xs">Campus Maintenance Mode</h4>
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      Temporarily freeze student write actions (postings, negotiations) during scheduled updates.
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.maintenance_mode}
+                      onChange={(e) => setSettings({ ...settings, maintenance_mode: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+                  </label>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.maintenance_mode}
-                    onChange={(e) => setSettings({ ...settings, maintenance_mode: e.target.checked })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
-                </label>
+
+                {settings.maintenance_mode && (
+                  <div className="pt-2 border-t border-gray-200">
+                    <label className="block font-bold text-gray-700 mb-1">Maintenance Advisory Message</label>
+                    <textarea
+                      rows={2}
+                      value={settings.maintenance_message}
+                      onChange={(e) => setSettings({ ...settings, maintenance_message: e.target.value })}
+                      className="w-full border border-gray-300 rounded p-2.5 bg-white text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    />
+                  </div>
+                )}
               </div>
 
-              <div className="flex items-center justify-between p-3.5 bg-gray-50/80 rounded-lg border border-gray-200">
+              {/* Allow Registrations */}
+              <div className="flex items-center justify-between p-4 bg-gray-50/80 rounded-lg border border-gray-200">
                 <div>
-                  <h3 className="font-bold text-gray-900 text-xs">Allow Student Sign-ups</h3>
+                  <h4 className="font-bold text-gray-900 text-xs">Permit Student Sign-ups</h4>
                   <p className="text-[11px] text-gray-500 mt-0.5">
                     Toggle to permit new campus registrations or temporarily pause onboarding.
                   </p>
@@ -314,26 +493,51 @@ export default function Settings() {
                 </label>
               </div>
 
-              <div>
-                <label className="block font-bold text-gray-700 mb-1">Whitelisted Email Domains</label>
-                <p className="text-[11px] text-gray-500 mb-2">
-                  Comma-separated domains (e.g. <span className="font-mono">lpu.in, alumnus.lpu.in</span>). Leave blank to accept any valid student domain.
+              {/* Allowed Domains */}
+              <div className="p-4 bg-gray-50/80 rounded-lg border border-gray-200 space-y-2">
+                <label className="block font-bold text-gray-700">Whitelisted College Email Domains</label>
+                <p className="text-[11px] text-gray-500">
+                  Comma-separated domains (e.g. <span className="font-mono font-bold">lpu.in, alumni.lpu.in</span>). Leave blank to accept all valid domains.
                 </p>
                 <input
                   type="text"
                   value={settings.allowed_domains}
                   onChange={(e) => setSettings({ ...settings, allowed_domains: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-gray-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                  placeholder="lpu.in, mylpu.in"
+                  className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-gray-800 bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  placeholder="lpu.in, thapar.edu"
                 />
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Form Submit Bar */}
+          {/* TAB 4: TEAM & RBAC LINK */}
+          {activeTab === 'TEAM' && (
+            <div className="bg-white rounded-b-lg border border-gray-200 shadow-sm p-8 space-y-6 text-xs animate-fade-in text-center">
+              <div className="max-w-md mx-auto space-y-3">
+                <div className="w-12 h-12 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center mx-auto">
+                  <Users className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-black text-gray-900">Staff Team & Role-Based Access Control</h3>
+                <p className="text-xs text-gray-500">
+                  Manage appointed administrators, promote verified student users to Content Moderators or ID Verifiers, and supervise operational authority.
+                </p>
+                <div className="pt-2">
+                  <Link
+                    to="/team"
+                    className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-6 py-2.5 rounded-lg font-bold text-xs transition-all shadow-sm shadow-brand-600/20"
+                  >
+                    <span>Open Staff Team Directory</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Submit Action Bar */}
           <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex items-center justify-between">
             <p className="text-[11px] text-gray-500">
-              All changes are updated immediately across client apps and API caches.
+              Settings update immediately across student client apps, database checks, and API caches.
             </p>
             <button
               type="submit"
