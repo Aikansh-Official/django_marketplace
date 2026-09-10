@@ -8,6 +8,7 @@ import OrdersSellsTab from '../components/profile/OrdersSellsTab';
 import IdVerificationTab from '../components/profile/IdVerificationTab';
 import SavedItemsTab from '../components/profile/SavedItemsTab';
 import LogoutModal from '../components/profile/LogoutModal';
+import UpgradeToSellerModal from '../components/profile/UpgradeToSellerModal';
 import { getSavedCount } from '../utils/savedStore';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -32,6 +33,9 @@ export default function Profile() {
 
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+
+  const isSeller = profile?.role === 'SELLER' || profile?.is_id_verified;
 
   // Sync tab with URL query parameter
   useEffect(() => {
@@ -45,6 +49,15 @@ export default function Profile() {
       setActiveTab(tabFromUrl);
     }
   }, [searchParams, navigate]);
+
+  // If a buyer lands on id-verification, redirect to personal-info and open upgrade modal
+  useEffect(() => {
+    if (profile && !isSeller && activeTab === 'id-verification') {
+      setActiveTab('personal-info');
+      setSearchParams({ tab: 'personal-info' });
+      setIsUpgradeModalOpen(true);
+    }
+  }, [profile, isSeller, activeTab, setSearchParams]);
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
@@ -112,8 +125,8 @@ export default function Profile() {
       <div className="lg:hidden flex items-center gap-2 overflow-x-auto pb-2 mb-4 scrollbar-none touch-pan-x -mx-1 px-1">
         {[
           { id: 'personal-info', label: 'Personal Info' },
-          { id: 'orders-sells', label: `Manage Orders (${listingsCount})` },
-          { id: 'id-verification', label: 'ID Verification' },
+          { id: 'orders-sells', label: isSeller ? `Manage Orders (${listingsCount})` : 'My Orders & Trades' },
+          ...(isSeller ? [{ id: 'id-verification', label: 'ID Verification' }] : []),
           { id: 'saved-items', label: `Saved (${savedCount})` }
         ].map((tab) => (
           <button
@@ -140,19 +153,28 @@ export default function Profile() {
           listingsCount={listingsCount}
           savedCount={savedCount}
           onLogoutClick={() => setIsLogoutModalOpen(true)}
+          onUpgradeClick={() => setIsUpgradeModalOpen(true)}
         />
 
         {/* Right Active Tab Content */}
         <div className="flex-1 w-full min-w-0">
           {activeTab === 'personal-info' && (
-            <PersonalInfoTab profile={profile} onProfileUpdated={fetchProfile} />
+            <PersonalInfoTab
+              profile={profile}
+              onProfileUpdated={fetchProfile}
+              onUpgradeClick={() => setIsUpgradeModalOpen(true)}
+            />
           )}
 
           {activeTab === 'orders-sells' && (
-            <OrdersSellsTab onListingsCountChange={setListingsCount} />
+            <OrdersSellsTab
+              profile={profile}
+              isSeller={isSeller}
+              onListingsCountChange={setListingsCount}
+            />
           )}
 
-          {activeTab === 'id-verification' && (
+          {activeTab === 'id-verification' && isSeller && (
             <IdVerificationTab profile={profile} onProfileUpdated={fetchProfile} />
           )}
 
@@ -161,6 +183,17 @@ export default function Profile() {
           )}
         </div>
       </div>
+
+      {/* Upgrade to Seller Modal */}
+      <UpgradeToSellerModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        profile={profile}
+        onUpgradeSuccess={() => {
+          fetchProfile();
+          setIsUpgradeModalOpen(false);
+        }}
+      />
 
       {/* Logout Confirmation Modal */}
       <LogoutModal

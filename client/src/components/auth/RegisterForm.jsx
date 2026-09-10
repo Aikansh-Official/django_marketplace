@@ -5,7 +5,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import Tesseract from 'tesseract.js';
-import { checkImageAuthenticity, extractLpuCardDetails } from '../../utils/idCardVerification';
+import { extractLpuCardDetails, checkImageAuthenticity } from '../../utils/idCardVerification';
 import { registerSchema } from './authSchemas';
 import RegisterStepper from './RegisterStepper';
 import RegisterStepDetails from './steps/RegisterStepDetails';
@@ -16,9 +16,31 @@ import RegisterStepPassword from './steps/RegisterStepPassword';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
+const baseZodResolver = zodResolver(registerSchema);
+
+// Step-aware resolver: when specific fields are triggered, only report errors for those fields
+const customResolver = async (values, context, options) => {
+  const result = await baseZodResolver(values, context, options);
+  if (options?.names && options.names.length > 0) {
+    const filteredErrors = {};
+    for (const name of options.names) {
+      if (result.errors?.[name]) {
+        filteredErrors[name] = result.errors[name];
+      }
+    }
+    return {
+      values: result.values,
+      errors: filteredErrors,
+    };
+  }
+  return result;
+};
+
 export default function RegisterForm({
   step,
   setStep,
+  selectedRole: propSelectedRole,
+  setSelectedRole: propSetSelectedRole,
   idFrontImage,
   setIdFrontImage,
   isScanning,
@@ -39,11 +61,27 @@ export default function RegisterForm({
   onSuccess
 }) {
   const { register, handleSubmit, watch, setError, clearErrors, trigger, formState: { errors } } = useForm({
-    resolver: zodResolver(registerSchema),
+    resolver: customResolver,
     mode: 'onBlur',
+    defaultValues: {
+      full_name: '',
+      username: '',
+      phone_number: '',
+      email: '',
+      otp: '',
+      password: '',
+      password_confirm: '',
+    },
   });
 
-  const [selectedRole, setSelectedRole] = useState('BUYER'); // 'BUYER' or 'SELLER'
+  // Clear errors when switching steps so no premature validation errors linger
+  useEffect(() => {
+    clearErrors();
+  }, [step, clearErrors]);
+
+  const [internalRole, setInternalRole] = useState('BUYER');
+  const selectedRole = propSelectedRole !== undefined ? propSelectedRole : internalRole;
+  const setSelectedRole = propSetSelectedRole || setInternalRole;
   const [isLoading, setIsLoading] = useState(false);
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState('idle');
@@ -67,7 +105,8 @@ export default function RegisterForm({
 
   // Live registration number availability check
   useEffect(() => {
-    if (!usernameValue || usernameValue.length < 3) {
+    const trimmed = usernameValue ? String(usernameValue).trim() : '';
+    if (!trimmed || trimmed.length < 3) {
       setUsernameStatus('idle');
       return;
     }
@@ -75,26 +114,28 @@ export default function RegisterForm({
     const checkAvailability = async () => {
       setUsernameStatus('checking');
       try {
-        const response = await axios.get(`${API_BASE}/auth/check-username/?username=${usernameValue}`);
+        const response = await axios.get(`${API_BASE}/auth/check-username/?username=${encodeURIComponent(trimmed)}`);
         if (response.data.available) {
           setUsernameStatus('available');
           clearErrors("username");
         } else {
           setUsernameStatus('taken');
-          setError("username", { type: "manual", message: "This registration number is already registered" });
+          setError("username", { type: "manual", message: response.data.message || "This registration number is already registered" });
         }
       } catch (error) {
+        console.error("Username check error:", error);
         setUsernameStatus('idle');
       }
     };
 
-    const debounceTimer = setTimeout(() => { checkAvailability(); }, 400);
+    const debounceTimer = setTimeout(() => { checkAvailability(); }, 300);
     return () => clearTimeout(debounceTimer);
   }, [usernameValue, setError, clearErrors]);
 
   // Live phone number availability check
   useEffect(() => {
-    if (!phoneValue || phoneValue.length < 10) {
+    const trimmed = phoneValue ? String(phoneValue).trim() : '';
+    if (!trimmed || trimmed.length < 10) {
       setPhoneStatus('idle');
       return;
     }
@@ -102,26 +143,28 @@ export default function RegisterForm({
     const checkPhoneAvailability = async () => {
       setPhoneStatus('checking');
       try {
-        const response = await axios.get(`${API_BASE}/auth/check-phone/?phone=${phoneValue}`);
+        const response = await axios.get(`${API_BASE}/auth/check-phone/?phone=${encodeURIComponent(trimmed)}`);
         if (response.data.available) {
           setPhoneStatus('available');
           clearErrors("phone_number");
         } else {
           setPhoneStatus('taken');
-          setError("phone_number", { type: "manual", message: "This phone number is already registered" });
+          setError("phone_number", { type: "manual", message: response.data.message || "This phone number is already registered" });
         }
       } catch (error) {
+        console.error("Phone check error:", error);
         setPhoneStatus('idle');
       }
     };
 
-    const debounceTimer = setTimeout(() => { checkPhoneAvailability(); }, 400);
+    const debounceTimer = setTimeout(() => { checkPhoneAvailability(); }, 300);
     return () => clearTimeout(debounceTimer);
   }, [phoneValue, setError, clearErrors]);
 
   // Live email availability check
   useEffect(() => {
-    if (!emailValue || !emailValue.includes('@') || !emailValue.includes('.')) {
+    const trimmed = emailValue ? String(emailValue).trim() : '';
+    if (!trimmed || !trimmed.includes('@') || !trimmed.includes('.')) {
       setEmailStatus('idle');
       return;
     }
@@ -129,35 +172,80 @@ export default function RegisterForm({
     const checkEmailAvailability = async () => {
       setEmailStatus('checking');
       try {
-        const response = await axios.get(`${API_BASE}/auth/check-email/?email=${encodeURIComponent(emailValue.trim())}`);
+        const response = await axios.get(`${API_BASE}/auth/check-email/?email=${encodeURIComponent(trimmed)}`);
         if (response.data.available) {
           setEmailStatus('available');
           clearErrors("email");
         } else {
           setEmailStatus('taken');
-          setError("email", { type: "manual", message: "This email address is already registered" });
+          setError("email", { type: "manual", message: response.data.message || "This email address is already registered" });
         }
       } catch (error) {
+        console.error("Email check error:", error);
         setEmailStatus('idle');
       }
     };
 
-    const debounceTimer = setTimeout(() => { checkEmailAvailability(); }, 400);
+    const debounceTimer = setTimeout(() => { checkEmailAvailability(); }, 300);
     return () => clearTimeout(debounceTimer);
   }, [emailValue, setError, clearErrors]);
 
-  // Handle Step 1 proceed
+  // Handle Step 1 proceed with strict server-side uniqueness check
   const handleProceedFromDetails = async () => {
     const isValid = await trigger(['full_name', 'username', 'phone_number', 'email']);
-    if (
-      !isValid ||
-      usernameStatus === 'taken' ||
-      usernameStatus === 'checking' ||
-      phoneStatus === 'taken' ||
-      phoneStatus === 'checking' ||
-      emailStatus === 'taken' ||
-      emailStatus === 'checking'
-    ) return;
+    if (!isValid) return;
+
+    if (usernameStatus === 'taken' || phoneStatus === 'taken' || emailStatus === 'taken') {
+      toast.error('Please fix the duplicate or already registered fields before continuing.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Pre-flight check against database before advancing to Step 2
+      const res = await axios.post(`${API_BASE}/auth/check-availability/`, {
+        username: usernameValue ? String(usernameValue).trim() : '',
+        phone: phoneValue ? String(phoneValue).trim() : '',
+        email: emailValue ? String(emailValue).trim() : '',
+      });
+
+      if (!res.data.available) {
+        const errs = res.data.errors || {};
+        let hasError = false;
+
+        if (errs.username) {
+          setUsernameStatus('taken');
+          setError('username', { type: 'manual', message: errs.username });
+          toast.error(errs.username);
+          hasError = true;
+        }
+        if (errs.phone_number) {
+          setPhoneStatus('taken');
+          setError('phone_number', { type: 'manual', message: errs.phone_number });
+          toast.error(errs.phone_number);
+          hasError = true;
+        }
+        if (errs.email) {
+          setEmailStatus('taken');
+          setError('email', { type: 'manual', message: errs.email });
+          toast.error(errs.email);
+          hasError = true;
+        }
+
+        if (hasError) {
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      setUsernameStatus('available');
+      setPhoneStatus('available');
+      setEmailStatus('available');
+    } catch (err) {
+      console.error('Availability check failed:', err);
+    } finally {
+      setIsLoading(false);
+    }
 
     if (setStudentInfo) {
       setStudentInfo({
@@ -359,12 +447,27 @@ export default function RegisterForm({
     setIsLoading(false);
   };
 
+  // Handle form submission safely across multi-step flow
+  const handleFormSubmit = (e) => {
+    const finalStep = selectedRole === 'BUYER' ? 3 : 5;
+    if (step !== finalStep) {
+      e.preventDefault();
+      if (step === 1) {
+        handleProceedFromDetails();
+      } else if ((selectedRole === 'BUYER' && step === 2) || (selectedRole === 'SELLER' && step === 4)) {
+        handleVerifyOTP();
+      }
+      return;
+    }
+    handleSubmit(onSubmit)(e);
+  };
+
   return (
     <div className="w-full max-w-sm sm:max-w-md mx-auto">
       {/* Top Multi-Step Progress Indicator */}
       <RegisterStepper step={step} role={selectedRole} />
 
-      <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+      <form className="space-y-4" onSubmit={handleFormSubmit}>
         {/* STEP 1: BASIC STUDENT DETAILS */}
         {step === 1 && (
           <RegisterStepDetails
@@ -373,6 +476,7 @@ export default function RegisterForm({
             usernameStatus={usernameStatus}
             phoneStatus={phoneStatus}
             emailStatus={emailStatus}
+            isLoading={isLoading}
             onProceed={handleProceedFromDetails}
             role={selectedRole}
             onRoleChange={(newRole) => {
@@ -422,6 +526,7 @@ export default function RegisterForm({
             onVerifyOtp={handleVerifyOTP}
             onResendOtp={() => handleProceedToOtp(selectedRole === 'BUYER' ? 2 : 4)}
             onBack={() => setStep(selectedRole === 'BUYER' ? 1 : 3)}
+            role={selectedRole}
           />
         )}
 

@@ -27,15 +27,23 @@ import HandoverScannerModal from '../handover/HandoverScannerModal';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-export default function OrdersSellsTab({ onListingsCountChange }) {
-  const [subTab, setSubTab] = useState('selling'); // 'selling' | 'orders'
+export default function OrdersSellsTab({ onListingsCountChange, profile, isSeller: isSellerProp }) {
+  const isSeller = isSellerProp ?? (profile?.role === 'SELLER' || profile?.is_id_verified);
+  const [subTab, setSubTab] = useState(isSeller ? 'selling' : 'orders'); // 'selling' | 'orders'
   const [listings, setListings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [deleteModalId, setDeleteModalId] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+
+  // Sync subTab if isSeller changes
+  useEffect(() => {
+    if (!isSeller) {
+      setSubTab('orders');
+    }
+  }, [isSeller]);
 
   // Handover state
   const [showQRModal, setShowQRModal] = useState(false);
@@ -71,7 +79,7 @@ export default function OrdersSellsTab({ onListingsCountChange }) {
       await axios.post(`${API_BASE}/marketplace/offers/${offerId}/cancel/`);
       toast.success('Deal cancelled. Listing restored to Active.');
       fetchMyOffers();
-      fetchMyListings();
+      if (isSeller) fetchMyListings();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to cancel deal.');
     }
@@ -81,7 +89,7 @@ export default function OrdersSellsTab({ onListingsCountChange }) {
     setShowQRModal(false);
     setShowScannerModal(false);
     fetchMyOffers();
-    fetchMyListings();
+    if (isSeller) fetchMyListings();
   };
 
   const fetchMyOffers = async () => {
@@ -97,7 +105,7 @@ export default function OrdersSellsTab({ onListingsCountChange }) {
   };
 
   const fetchMyListings = async () => {
-
+    if (!isSeller) return;
     setLoading(true);
     try {
       const url =
@@ -118,16 +126,18 @@ export default function OrdersSellsTab({ onListingsCountChange }) {
   };
 
   useEffect(() => {
-    if (subTab === 'selling') {
+    if (!isSeller) {
+      fetchMyOffers();
+    } else if (subTab === 'selling') {
       fetchMyListings();
     } else if (subTab === 'orders') {
       fetchMyOffers();
     }
-  }, [statusFilter, subTab]);
+  }, [statusFilter, subTab, isSeller]);
 
   useEffect(() => {
     const handleDealDone = () => {
-      fetchMyListings();
+      if (isSeller) fetchMyListings();
       fetchMyOffers();
     };
 
@@ -222,47 +232,68 @@ export default function OrdersSellsTab({ onListingsCountChange }) {
 
   return (
     <div className="space-y-6">
-      {/* Sub-tabs Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 pb-4">
-        <div className="flex items-center gap-2 bg-gray-100/80 p-1 rounded-md w-fit">
-          <button
-            type="button"
-            onClick={() => setSubTab('selling')}
-            className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${
-              subTab === 'selling'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <Package className="w-4 h-4 text-brand-500" />
-            My Sell Listings ({totalListings})
-          </button>
-          <button
-            type="button"
-            onClick={() => setSubTab('orders')}
-            className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${
-              subTab === 'orders'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <ShoppingBag className="w-4 h-4 text-emerald-600" />
-            My Orders & Trades ({orders.length})
-          </button>
+      {/* Header */}
+      {isSeller ? (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 pb-4">
+          <div className="flex items-center gap-2 bg-gray-100/80 p-1 rounded-md w-fit">
+            <button
+              type="button"
+              onClick={() => setSubTab('selling')}
+              className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${
+                subTab === 'selling'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Package className="w-4 h-4 text-brand-500" />
+              My Sell Listings ({totalListings})
+            </button>
+            <button
+              type="button"
+              onClick={() => setSubTab('orders')}
+              className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${
+                subTab === 'orders'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <ShoppingBag className="w-4 h-4 text-emerald-600" />
+              My Orders & Trades ({orders.length})
+            </button>
+          </div>
+
+          {subTab === 'selling' && (
+            <Link
+              to="/sell"
+              className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold py-2.5 px-4 rounded-md transition-all shadow-sm hover:shadow-md self-start sm:self-auto"
+            >
+              <Plus className="w-4 h-4" />
+              Post New Listing
+            </Link>
+          )}
         </div>
+      ) : (
+        <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-md border border-emerald-200 shadow-2xs">
+              <ShoppingBag className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-extrabold text-gray-900 tracking-tight">
+                My Orders & Campus Deals
+              </h2>
+              <p className="text-xs text-gray-500">
+                Track your item purchase offers, meetup status, and order history
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-gray-700 bg-gray-100 px-3 py-1 rounded-full border border-gray-200">
+            {orders.length} {orders.length === 1 ? 'Offer' : 'Offers'}
+          </span>
+        </div>
+      )}
 
-        {subTab === 'selling' && (
-          <Link
-            to="/sell"
-            className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold py-2.5 px-4 rounded-md transition-all shadow-sm hover:shadow-md self-start sm:self-auto"
-          >
-            <Plus className="w-4 h-4" />
-            Post New Listing
-          </Link>
-        )}
-      </div>
-
-      {subTab === 'selling' ? (
+      {isSeller && subTab === 'selling' ? (
         <>
           {/* Metrics Row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">

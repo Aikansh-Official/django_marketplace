@@ -1,11 +1,15 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { LogOut, AlertTriangle } from 'lucide-react';
 
 export default function LogoutModal({ isOpen, onClose, onConfirm, loggingOut }) {
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
+  return createPortal(
+    <div 
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn"
+      onClick={onClose}
+    >
       <div 
         className="bg-white rounded-md max-w-md w-full p-6 shadow-2xl border border-gray-100 transform transition-all"
         onClick={(e) => e.stopPropagation()}
@@ -45,6 +49,7 @@ export default function LogoutModal({ isOpen, onClose, onConfirm, loggingOut }) 
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -244,13 +244,27 @@ export default function Notifications() {
             </button>
           )}
 
-          <Link
-            to="/my-listings"
-            className="bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2.5 px-5 rounded-md transition-all shadow-md hover:shadow-lg text-xs flex items-center justify-center gap-2 self-start sm:self-auto"
-          >
-            <Package className="w-4 h-4" />
-            My Listings
-          </Link>
+          {(() => {
+            const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+            const isSeller = currentUser.role === 'SELLER' || currentUser.is_id_verified;
+            return isSeller ? (
+              <Link
+                to="/my-listings"
+                className="bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2.5 px-5 rounded-md transition-all shadow-md hover:shadow-lg text-xs flex items-center justify-center gap-2 self-start sm:self-auto"
+              >
+                <Package className="w-4 h-4" />
+                My Listings
+              </Link>
+            ) : (
+              <Link
+                to="/profile?tab=orders-sells"
+                className="bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2.5 px-5 rounded-md transition-all shadow-md hover:shadow-lg text-xs flex items-center justify-center gap-2 self-start sm:self-auto"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                My Orders & Trades
+              </Link>
+            );
+          })()}
         </div>
       </div>
 

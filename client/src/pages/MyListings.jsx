@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -24,8 +24,27 @@ import CategoryIcon from '../components/CategoryIcon';
 import UniversalLoader from '../components/common/UniversalLoader';
 
 export default function MyListings() {
+  const navigate = useNavigate();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkRole = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/auth/profile/`);
+        if (res.data && res.data.role !== 'SELLER' && !res.data.is_id_verified) {
+          toast('Buyers do not have seller listings. Redirecting to your Orders...', { icon: 'ℹ️' });
+          navigate('/profile?tab=orders-sells', { replace: true });
+        }
+      } catch (err) {
+        const localUser = JSON.parse(localStorage.getItem('user') || '{}');
+        if (localUser.role && localUser.role !== 'SELLER' && !localUser.is_id_verified) {
+          navigate('/profile?tab=orders-sells', { replace: true });
+        }
+      }
+    };
+    checkRole();
+  }, [navigate]);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [deleteModalId, setDeleteModalId] = useState(null);
   const [deleting, setDeleting] = useState(false);

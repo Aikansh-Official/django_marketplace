@@ -12,6 +12,7 @@ import logoImg from '../../assets/CampusXChange_Logo.jpeg';
 
 export default function AuthLeftPanel({
   mode,
+  role = 'BUYER',
   registerStep,
   isIdVerified,
   idFrontImage,
@@ -29,8 +30,8 @@ export default function AuthLeftPanel({
 }) {
   return (
     <div className="hidden md:flex md:w-5/12 relative flex-col justify-center overflow-hidden">
-      {mode === 'login' || registerStep === 1 || (!isIdVerified && registerStep !== 2) ? (
-        /* CLEAN, SIMPLE & PROMINENT BRANDING FOR LOGIN & REGISTER STEP 1 (AND STEPS 3/4 IF ID NOT VERIFIED) */
+      {mode === 'login' || role === 'BUYER' || registerStep === 1 || (!isIdVerified && registerStep !== 2) ? (
+        /* CLEAN, SIMPLE & PROMINENT BRANDING FOR LOGIN, BUYERS & REGISTER STEP 1 (AND SELLER STEPS 3/4/5 IF ID NOT VERIFIED) */
         <div className="h-full w-full bg-gradient-to-br from-brand-500 to-brand-600 p-8 sm:p-10 flex flex-col justify-center items-center text-center text-white">
           <div className="flex flex-col items-center">
             <div className="w-20 h-20 rounded-md bg-white p-1.5 shadow-md mb-4 flex items-center justify-center">
@@ -48,12 +49,16 @@ export default function AuthLeftPanel({
 
             <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-md bg-white/15 text-white text-xs font-semibold border border-white/25 shadow-xs">
               <ShieldCheck className="w-4 h-4 text-white" />
-              <span>100% Student Verified Platform</span>
+              <span>
+                {mode === 'register' && role === 'BUYER'
+                  ? 'Instant Student Buyer Access'
+                  : '100% Student Verified Platform'}
+              </span>
             </div>
           </div>
         </div>
-      ) : registerStep === 2 ? (
-        /* REGISTER STEP 2: Dedicated ID Card Upload Dropzone & Live Scanner Viewport */
+      ) : (role === 'SELLER' && registerStep === 2) ? (
+        /* REGISTER STEP 2 (SELLER ONLY): Dedicated ID Card Upload Dropzone & Live Scanner Viewport */
         <div className="h-full w-full bg-gray-50 border-r border-gray-200 p-6 flex flex-col justify-between overflow-y-auto">
           <div>
             <div className="flex items-center justify-between border-b border-gray-200 pb-3 mb-4">

@@ -25,6 +25,7 @@ import {
   SlidersHorizontal
 } from 'lucide-react';
 import CategoryIcon from '../components/CategoryIcon';
+import UpgradeToSellerModal from '../components/profile/UpgradeToSellerModal';
 
 const CONDITIONS = [
   { value: 'NEW', label: 'Brand New', desc: 'Unopened / with original tags' },
@@ -47,6 +48,7 @@ export default function CreateListing() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   // Form State
   const [title, setTitle] = useState('');
@@ -274,11 +276,11 @@ export default function CreateListing() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
-              onClick={() => navigate('/profile?tab=id-verification')}
+              onClick={() => setIsUpgradeModalOpen(true)}
               className="w-full sm:w-auto bg-brand-500 hover:bg-brand-600 text-white font-bold py-3.5 px-8 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
             >
               <ShieldCheck className="w-5 h-5" />
-              <span>Verify Student ID Now</span>
+              <span>Verify Student ID & Start Selling</span>
             </button>
             <button
               onClick={() => navigate('/')}
@@ -287,6 +289,16 @@ export default function CreateListing() {
               Back to Marketplace
             </button>
           </div>
+
+          <UpgradeToSellerModal
+            isOpen={isUpgradeModalOpen}
+            onClose={() => setIsUpgradeModalOpen(false)}
+            profile={userProfile}
+            onUpgradeSuccess={(upgradedUser) => {
+              setUserProfile(upgradedUser);
+              setIsUpgradeModalOpen(false);
+            }}
+          />
         </div>
       </div>
     );

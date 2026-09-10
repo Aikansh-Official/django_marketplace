@@ -9,7 +9,8 @@ import {
   Bell,
   Heart,
   ChevronDown,
-  Search
+  Search,
+  ShoppingBag
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
@@ -320,18 +321,31 @@ export default function Navbar() {
 
                           <Link
                             to="/profile"
+                            onClick={() => setIsProfileMenuOpen(false)}
                             className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
                           >
                             <User className="w-3.5 h-3.5 text-gray-400" />
                             Profile
                           </Link>
-                          <Link
-                            to="/my-listings"
-                            className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
-                          >
-                            <Package className="w-3.5 h-3.5 text-gray-400" />
-                            My Listings
-                          </Link>
+                          {userProfile.role === 'SELLER' || userProfile.is_id_verified ? (
+                            <Link
+                              to="/my-listings"
+                              onClick={() => setIsProfileMenuOpen(false)}
+                              className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <Package className="w-3.5 h-3.5 text-gray-400" />
+                              My Listings
+                            </Link>
+                          ) : (
+                            <Link
+                              to="/profile?tab=orders-sells"
+                              onClick={() => setIsProfileMenuOpen(false)}
+                              className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <ShoppingBag className="w-3.5 h-3.5 text-gray-400" />
+                              My Orders & Trades
+                            </Link>
+                          )}
                           <button
                             type="button"
                             onClick={() => {
@@ -496,13 +510,23 @@ export default function Navbar() {
                   Explore Marketplace
                 </Link>
                 {userProfile && (
-                  <Link
-                    to="/my-listings"
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center min-h-[44px] px-3 rounded-md hover:bg-gray-100/70 hover:text-brand-600 transition-colors font-semibold"
-                  >
-                    My Listings
-                  </Link>
+                  userProfile.role === 'SELLER' || userProfile.is_id_verified ? (
+                    <Link
+                      to="/my-listings"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center min-h-[44px] px-3 rounded-md hover:bg-gray-100/70 hover:text-brand-600 transition-colors font-semibold"
+                    >
+                      My Listings
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/profile?tab=orders-sells"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center min-h-[44px] px-3 rounded-md hover:bg-gray-100/70 hover:text-brand-600 transition-colors font-semibold"
+                    >
+                      My Orders & Trades
+                    </Link>
+                  )
                 )}
                 {userProfile && (
                   <Link

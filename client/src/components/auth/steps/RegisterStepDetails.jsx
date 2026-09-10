@@ -18,6 +18,7 @@ export default function RegisterStepDetails({
   usernameStatus,
   phoneStatus = 'idle',
   emailStatus = 'idle',
+  isLoading = false,
   onProceed,
   role = 'BUYER',
   onRoleChange
@@ -181,14 +182,24 @@ export default function RegisterStepDetails({
         type="button"
         onClick={onProceed}
         disabled={
+          isLoading ||
           usernameStatus === 'checking' || usernameStatus === 'taken' ||
           phoneStatus === 'checking' || phoneStatus === 'taken' ||
           emailStatus === 'checking' || emailStatus === 'taken'
         }
-        className="w-full bg-brand-500 hover:bg-brand-600 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg mt-5 disabled:opacity-70 text-sm flex items-center justify-center gap-2 cursor-pointer"
+        className="w-full bg-brand-500 hover:bg-brand-600 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg mt-5 disabled:opacity-60 text-sm flex items-center justify-center gap-2 cursor-pointer"
       >
-        <span>{role === 'BUYER' ? 'Continue to Email Verification' : 'Proceed to Step 2: ID Verification'}</span>
-        <ArrowRight className="w-4 h-4" />
+        {isLoading ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Verifying Availability...</span>
+          </>
+        ) : (
+          <>
+            <span>{role === 'BUYER' ? 'Continue to Email Verification' : 'Proceed to Step 2: ID Verification'}</span>
+            <ArrowRight className="w-4 h-4" />
+          </>
+        )}
       </button>
     </div>
   );

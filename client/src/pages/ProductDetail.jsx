@@ -26,7 +26,6 @@ import {
   Send,
   UserCheck,
   Flag,
-  HandCoins,
   ShoppingBag,
   X,
   QrCode,
@@ -35,7 +34,6 @@ import {
   BadgeCheck,
   Mail
 } from 'lucide-react';
-import CategoryIcon from '../components/CategoryIcon';
 import { toggleSavedItem, isItemSaved } from '../utils/savedStore';
 import HandoverQRModal from '../components/handover/HandoverQRModal';
 import HandoverScannerModal from '../components/handover/HandoverScannerModal';

@@ -238,6 +238,7 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
 class CheckUsernameView(APIView):
+    authentication_classes = []
     permission_classes = (AllowAny,)
 
     def get(self, request):
@@ -245,10 +246,15 @@ class CheckUsernameView(APIView):
         if not username:
             return Response({"error": "Username parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
         
+        username = str(username).strip()
         exists = User.objects.filter(username__iexact=username).exists()
-        return Response({"available": not exists})
+        return Response({
+            "available": not exists,
+            "message": "Available" if not exists else "This registration number is already registered."
+        })
 
 class CheckPhoneView(APIView):
+    authentication_classes = []
     permission_classes = (AllowAny,)
 
     def get(self, request):
@@ -256,11 +262,22 @@ class CheckPhoneView(APIView):
         if not phone:
             return Response({"error": "Phone parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
         
-        phone = str(phone).strip()
-        exists = User.objects.filter(phone_number=phone).exists()
-        return Response({"available": not exists})
+        phone = str(phone).strip().replace(' ', '').replace('-', '')
+        raw_10 = phone[-10:] if len(phone) >= 10 else phone
+        from django.db.models import Q
+        exists = User.objects.filter(
+            Q(phone_number=phone) |
+            Q(phone_number=raw_10) |
+            Q(phone_number=f"+91{raw_10}") |
+            Q(phone_number=f"91{raw_10}")
+        ).exists()
+        return Response({
+            "available": not exists,
+            "message": "Available" if not exists else "This phone number is already registered."
+        })
 
 class CheckEmailView(APIView):
+    authentication_classes = []
     permission_classes = (AllowAny,)
 
     def get(self, request):
@@ -270,7 +287,51 @@ class CheckEmailView(APIView):
         
         email = str(email).strip().lower()
         exists = User.objects.filter(email__iexact=email).exists()
-        return Response({"available": not exists})
+        return Response({
+            "available": not exists,
+            "message": "Available" if not exists else "This email address is already registered."
+        })
+
+class CheckAvailabilityView(APIView):
+    authentication_classes = []
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+        return self._check(request.query_params)
+
+    def post(self, request):
+        return self._check(request.data)
+
+    def _check(self, data):
+        username = str(data.get('username', '')).strip()
+        phone = str(data.get('phone', data.get('phone_number', ''))).strip().replace(' ', '').replace('-', '')
+        email = str(data.get('email', '')).strip().lower()
+
+        errors = {}
+
+        if username:
+            if User.objects.filter(username__iexact=username).exists():
+                errors['username'] = "This registration number is already registered."
+
+        if phone:
+            raw_10 = phone[-10:] if len(phone) >= 10 else phone
+            from django.db.models import Q
+            if User.objects.filter(
+                Q(phone_number=phone) |
+                Q(phone_number=raw_10) |
+                Q(phone_number=f"+91{raw_10}") |
+                Q(phone_number=f"91{raw_10}")
+            ).exists():
+                errors['phone_number'] = "This phone number is already registered."
+
+        if email:
+            if User.objects.filter(email__iexact=email).exists():
+                errors['email'] = "This email address is already registered."
+
+        return Response({
+            "available": len(errors) == 0,
+            "errors": errors
+        })
 
 class AuthStatusView(APIView):
     permission_classes = (AllowAny,)
@@ -321,6 +382,9 @@ class CompleteIdVerificationView(APIView):
         id_card_data = request.data.get('id_card_data', None)
         if id_card_data and isinstance(id_card_data, dict):
             user.id_card_data = id_card_data
+        profile_photo = request.data.get('profile_photo', None)
+        if profile_photo and isinstance(profile_photo, str) and len(profile_photo) > 100:
+            user.profile_photo = profile_photo
         user.trust_score = user.calculate_trust_score()
         user.save()
 
@@ -342,5 +406,106 @@ class CompleteIdVerificationView(APIView):
             "message": "ID verification reset successfully. Role returned to Buyer.",
             "user": UserListSerializer(user).data
         }, status=status.HTTP_200_OK)
+
+
+class UpgradeToSellerView(APIView):
+    """
+    Dedicated endpoint for a Buyer to upgrade to a Verified Seller.
+    Requires:
+      - reg_no (must match user.username)
+      - id_card_image (base64 image of physical student ID)
+      - profile_photo (base64 selfie photo)
+      - id_card_data (extracted OCR metadata, optional)
+      - otp (6-digit OTP sent to user's registered email)
+    """
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        user = request.user
+        reg_no = str(request.data.get('reg_no', '')).strip() or user.username
+        id_card_image = request.data.get('id_card_image', None)
+        id_card_data = request.data.get('id_card_data', {})
+        profile_photo = request.data.get('profile_photo', None)
+        otp = str(request.data.get('otp', '')).strip()
+
+        # 1. Match registration number against account
+        if str(user.username).strip() != str(reg_no).strip():
+            return Response(
+                {"error": f"Registration number mismatch. Your account is registered as '{user.username}', but '{reg_no}' was submitted."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 2. Check physical student ID card image
+        if not id_card_image or not isinstance(id_card_image, str) or len(id_card_image) < 100:
+            return Response(
+                {"error": "A valid student ID card photo is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 3. Check selfie verification photo
+        if not profile_photo or not isinstance(profile_photo, str) or len(profile_photo) < 100:
+            return Response(
+                {"error": "A clear selfie photo is required to verify identity against your student ID card."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 4. Check email verification code
+        if not otp or len(otp) != 6:
+            return Response(
+                {"error": "Please enter the 6-digit verification code sent to your email."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            record = OTPVerification.objects.get(email=user.email)
+
+            if record.is_locked():
+                return Response(
+                    {"error": "Too many failed OTP attempts. Please request a new code."},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS
+                )
+
+            if not record.is_valid():
+                return Response(
+                    {"error": "Verification code has expired. Please request a new code."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            from server.crypto import decrypt_data
+            stored_otp = decrypt_data(record.otp)
+
+            if stored_otp != otp:
+                record.attempts += 1
+                record.save(update_fields=['attempts'])
+                remaining = max(0, record.MAX_ATTEMPTS - record.attempts)
+                return Response(
+                    {"error": f"Invalid verification code. {remaining} attempt(s) remaining."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            record.is_verified = True
+            record.save()
+        except OTPVerification.DoesNotExist:
+            return Response(
+                {"error": "No verification code was sent to this email. Please request a code first."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 5. Successfully upgrade Buyer to Verified Seller
+        user.is_id_verified = True
+        user.role = 'SELLER'
+        user.id_card_image = id_card_image
+        if id_card_data and isinstance(id_card_data, dict):
+            user.id_card_data = id_card_data
+        user.profile_photo = profile_photo
+        user.trust_score = user.calculate_trust_score()
+        user.save()
+
+        logger.info(f"User {user.username} successfully upgraded from BUYER to SELLER via UpgradeToSellerView.")
+        return Response({
+            "message": "Congratulations! Your account has been upgraded to Verified Seller.",
+            "user": UserListSerializer(user).data
+        }, status=status.HTTP_200_OK)
+
 
 

@@ -9,7 +9,9 @@ import {
   ChevronRight,
   ShieldAlert,
   Star,
-  BadgeCheck
+  BadgeCheck,
+  Store,
+  ShoppingBag
 } from 'lucide-react';
 
 export default function ProfileSidebar({
@@ -19,8 +21,11 @@ export default function ProfileSidebar({
   listingsCount = 0,
   savedCount = 0,
   unreadCount = 0,
-  onLogoutClick
+  onLogoutClick,
+  onUpgradeClick
 }) {
+  const isSeller = profile?.role === 'SELLER' || profile?.is_id_verified;
+
   const tabs = [
     {
       id: 'personal-info',
@@ -31,19 +36,19 @@ export default function ProfileSidebar({
     },
     {
       id: 'orders-sells',
-      label: 'Manage Orders & Sells',
-      icon: Package,
-      badge: listingsCount > 0 ? listingsCount : null,
-      description: 'Listings, trades & inquiries'
+      label: isSeller ? 'Manage Orders & Sells' : 'My Orders & Trades',
+      icon: isSeller ? Package : ShoppingBag,
+      badge: isSeller && listingsCount > 0 ? listingsCount : null,
+      description: isSeller ? 'Listings, trades & inquiries' : 'Purchases, inquiries & trades'
     },
-    {
+    ...(isSeller ? [{
       id: 'id-verification',
       label: 'ID Card Verification',
       icon: ShieldCheck,
       badge: profile?.is_id_verified ? 'Verified' : null,
       badgeColor: 'bg-emerald-100 text-emerald-800',
       description: 'LPU Student ID verification'
-    },
+    }] : []),
     {
       id: 'saved-items',
       label: 'Saved Items',
@@ -189,6 +194,32 @@ export default function ProfileSidebar({
           <span className="text-[11px] text-red-400 group-hover:text-red-600 font-medium">Sign out</span>
         </button>
       </nav>
+
+      {/* Upgrade to Seller CTA for Buyers */}
+      {!isSeller && (
+        <div className="bg-gradient-to-br from-brand-50 via-orange-50 to-amber-50/50 border border-brand-200/90 rounded-md p-4 shadow-sm space-y-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-md bg-brand-500 text-white flex items-center justify-center shadow-xs flex-shrink-0">
+              <Store className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="text-xs font-black text-gray-900">Want to Sell Items?</h4>
+              <p className="text-[10px] text-gray-600 font-medium">Verify ID & become a seller</p>
+            </div>
+          </div>
+          <p className="text-[11px] text-gray-600 leading-snug">
+            Upgrade your buyer account in 3 quick steps to list books, cycles, and essentials.
+          </p>
+          <button
+            type="button"
+            onClick={onUpgradeClick}
+            className="w-full bg-brand-500 hover:bg-brand-600 active:scale-[0.99] text-white text-xs font-bold py-2.5 px-3 rounded-md transition-all shadow-xs hover:shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>Upgrade to Seller</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

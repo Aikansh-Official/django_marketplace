@@ -8,7 +8,8 @@ export default function RegisterStepOtp({
   isLoading,
   onVerifyOtp,
   onResendOtp,
-  onBack
+  onBack,
+  role = 'BUYER'
 }) {
   return (
     <div className="space-y-4">
@@ -61,7 +62,7 @@ export default function RegisterStepOtp({
           className="text-gray-500 hover:text-gray-700 font-semibold flex items-center gap-1 cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          Back to ID Card
+          {role === 'BUYER' ? 'Back to Details' : 'Back to Selfie'}
         </button>
         <button
           type="button"

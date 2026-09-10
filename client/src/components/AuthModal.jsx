@@ -11,6 +11,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
 
   // Shared register verification state across left panel and right form
   const [registerStep, setRegisterStep] = useState(1);
+  const [selectedRole, setSelectedRole] = useState('BUYER');
   const [idFrontImage, setIdFrontImage] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
@@ -28,6 +29,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
     if (isOpen) {
       setMode(initialMode);
       setRegisterStep(1);
+      setSelectedRole('BUYER');
       setIdFrontImage(null);
       setIsIdVerified(false);
       setExtractedCardData(null);
@@ -98,6 +100,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
           {/* LEFT SIDE: Branding, Live Scanner & Verified ID Preview */}
           <AuthLeftPanel
             mode={mode}
+            role={selectedRole}
             registerStep={registerStep}
             isIdVerified={isIdVerified}
             idFrontImage={idFrontImage}
@@ -138,6 +141,8 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
                 <RegisterForm
                   step={registerStep}
                   setStep={setRegisterStep}
+                  selectedRole={selectedRole}
+                  setSelectedRole={setSelectedRole}
                   idFrontImage={idFrontImage}
                   setIdFrontImage={setIdFrontImage}
                   isScanning={isScanning}
