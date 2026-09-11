@@ -262,6 +262,15 @@ if _extra_csrf:
 else:
     CSRF_TRUSTED_ORIGINS = _DEFAULT_FRONTEND_ORIGINS
 
+if DEBUG:
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        r"^http://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.\d+\.\d+\.\d+)(:\d+)?$",
+    ]
+    CSRF_TRUSTED_ORIGINS = CSRF_TRUSTED_ORIGINS + [
+        "http://10.119.170.28:5173",
+        "http://10.119.170.28:5174",
+    ]
+
 from corsheaders.defaults import default_headers
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-app-security-key',

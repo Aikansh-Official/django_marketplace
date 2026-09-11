@@ -237,7 +237,13 @@ export default function CreateListing() {
     }
   };
 
-  const isSeller = userProfile?.is_id_verified || userProfile?.role === 'SELLER' || userProfile?.is_staff || userProfile?.is_superuser;
+  const isSeller = Boolean(
+    userProfile && (
+      userProfile.is_staff ||
+      userProfile.is_superuser ||
+      (userProfile.role === 'SELLER' && userProfile.is_id_verified)
+    )
+  );
 
   // Gate check: If user is a Buyer without verified ID, prompt them to verify
   if (userProfile && !isSeller) {

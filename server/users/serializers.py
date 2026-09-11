@@ -121,6 +121,7 @@ class UserListSerializer(serializers.ModelSerializer):
     trust_score = serializers.SerializerMethodField()
     completed_trades_count = serializers.SerializerMethodField()
     has_id_card = serializers.SerializerMethodField()
+    profile_photo = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model = User

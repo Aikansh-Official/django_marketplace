@@ -304,6 +304,14 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         return self.request.user
 
+    def perform_update(self, serializer):
+        user = serializer.save()
+        try:
+            user.trust_score = user.calculate_trust_score()
+            user.save(update_fields=['trust_score'])
+        except Exception as e:
+            logger.warning(f"Error recalculating trust score for {user.username}: {e}")
+
 class CheckUsernameView(APIView):
     authentication_classes = []
     permission_classes = (AllowAny,)

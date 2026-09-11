@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { extractLpuCardDetails } from '../../utils/idCardVerification';
 import { compressImageToDataUrl } from '../../utils/compressImage';
+import UpdateSelfieModal from './UpdateSelfieModal';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -314,7 +315,7 @@ export function validateLpuIdCard(rawText, targetReg, studentName) {
   };
 }
 
-export default function IdVerificationTab({ profile, onProfileUpdated }) {
+export default function IdVerificationTab({ profile, onProfileUpdated, onOpenSelfieModal }) {
   // Purge any old global localStorage artifact so verification status is strictly read from the user DB model
   useEffect(() => {
     localStorage.removeItem('campusxchange_id_verification');
@@ -326,6 +327,9 @@ export default function IdVerificationTab({ profile, onProfileUpdated }) {
   const isVerified = Boolean(profile?.is_id_verified);
 
   const [isEditing, setIsEditing] = useState(false);
+  const [internalSelfieModalOpen, setInternalSelfieModalOpen] = useState(false);
+  const handleOpenSelfie = onOpenSelfieModal || (() => setInternalSelfieModalOpen(true));
+
   const [idFrontImage, setIdFrontImage] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
@@ -600,34 +604,93 @@ export default function IdVerificationTab({ profile, onProfileUpdated }) {
             </div>
           </div>
 
-          {/* Verified Selfie Photo (placed in verification card instead of re-upload button) */}
-          {profile?.profile_photo && (
+          {/* Verified Selfie Photo (with Retake/Upload Option) */}
+          {profile?.profile_photo ? (
+            <div className="pt-2">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                  Verified Selfie Photo
+                </span>
+                <button
+                  type="button"
+                  onClick={handleOpenSelfie}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-700 hover:underline cursor-pointer"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  Retake Selfie
+                </button>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 p-3 rounded-md bg-gray-50 border border-gray-200/80">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <img
+                    src={profile.profile_photo}
+                    alt="Verified Live Selfie"
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-md object-cover border-2 border-emerald-500 shadow-xs flex-shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      Live Selfie Verified
+                    </span>
+                    <p className="text-xs font-bold text-gray-900 mt-1 truncate">
+                      {studentName || 'Student'}
+                    </p>
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      Face identity authenticated with student credentials
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleOpenSelfie}
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-brand-50 text-brand-600 hover:text-brand-700 border border-gray-200 hover:border-brand-200 rounded-md text-xs font-bold transition-all shadow-2xs cursor-pointer flex-shrink-0"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  Retake Selfie
+                </button>
+              </div>
+            </div>
+          ) : (
             <div className="pt-2">
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">
                 Verified Selfie Photo
               </span>
-              <div className="flex items-center gap-3.5 p-3 rounded-md bg-gray-50 border border-gray-200/80">
-                <img
-                  src={profile.profile_photo}
-                  alt="Verified Live Selfie"
-                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-md object-cover border-2 border-emerald-500 shadow-xs flex-shrink-0"
-                />
-                <div className="min-w-0">
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                    Live Selfie Verified
-                  </span>
-                  <p className="text-xs font-bold text-gray-900 mt-1 truncate">
-                    {studentName || 'Student'}
-                  </p>
-                  <p className="text-[11px] text-gray-500 mt-0.5">
-                    Face identity authenticated with student credentials
-                  </p>
+              <div className="flex items-center justify-between gap-3.5 p-3.5 rounded-md bg-amber-50/60 border border-amber-200/80">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-11 h-11 rounded-md bg-amber-100 border border-amber-200 text-amber-600 flex items-center justify-center flex-shrink-0">
+                    <Camera className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-gray-900 block">
+                      No Live Selfie Attached
+                    </span>
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      Take a live selfie to verify your face identity and earn +3 trust points.
+                    </p>
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={handleOpenSelfie}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-md text-xs font-bold transition-all shadow-xs cursor-pointer flex-shrink-0"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  Take Selfie
+                </button>
               </div>
             </div>
           )}
         </div>
+
+        {/* Update Selfie Modal Fallback */}
+        {!onOpenSelfieModal && (
+          <UpdateSelfieModal
+            isOpen={internalSelfieModalOpen}
+            onClose={() => setInternalSelfieModalOpen(false)}
+            profile={profile}
+            onProfileUpdated={onProfileUpdated}
+          />
+        )}
       </div>
     );
   }

@@ -58,6 +58,22 @@ class MarketplaceSecurityTests(TestCase):
         res = self.client.get('/api/marketplace/admin/listings/')
         self.assertEqual(res.status_code, status.HTTP_200_OK)
 
+    def test_buyer_cannot_create_listing(self):
+        self.buyer.role = 'BUYER'
+        self.buyer.save(update_fields=['role'])
+        self.client.force_authenticate(user=self.buyer)
+        res = self.client.post('/api/marketplace/listings/', {
+            'title': 'Unauthorized Buyer Listing',
+            'description': 'Buyer should not be able to sell.',
+            'price': '100.00',
+            'category': self.category.id,
+            'condition': 'GOOD',
+            'location': 'BH-1'
+        })
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        msg = res.data.get('error') or res.data.get('detail') or ''
+        self.assertIn('Buyers are not', msg)
+
     def test_admin_reports_forbidden_for_anonymous(self):
         res = self.client.get('/api/marketplace/admin/reports/')
         self.assertIn(res.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])

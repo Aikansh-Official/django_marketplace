@@ -11,7 +11,8 @@ import {
   Star,
   BadgeCheck,
   Store,
-  ShoppingBag
+  ShoppingBag,
+  Camera
 } from 'lucide-react';
 
 export default function ProfileSidebar({
@@ -22,7 +23,8 @@ export default function ProfileSidebar({
   savedCount = 0,
   unreadCount = 0,
   onLogoutClick,
-  onUpgradeClick
+  onUpgradeClick,
+  onOpenSelfieModal
 }) {
   const isSeller = profile?.role === 'SELLER' || profile?.is_id_verified;
 
@@ -75,16 +77,28 @@ export default function ProfileSidebar({
       <div className="bg-white rounded-md border border-gray-200/90 p-4 sm:p-5 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            {/* Avatar with guaranteed valid size */}
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-md bg-gradient-to-tr from-brand-500 to-brand-400 text-white flex items-center justify-center font-black text-lg sm:text-xl shadow-xs flex-shrink-0 overflow-hidden">
-              {profile?.profile_photo ? (
-                <img
-                  src={profile.profile_photo}
-                  alt={displayName}
-                  className="w-full h-full object-cover rounded-md"
-                />
-              ) : (
-                firstLetter
+            {/* Avatar with guaranteed valid size and selfie camera trigger */}
+            <div className="relative group flex-shrink-0">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-md bg-gradient-to-tr from-brand-500 to-brand-400 text-white flex items-center justify-center font-black text-lg sm:text-xl shadow-xs overflow-hidden">
+                {profile?.profile_photo ? (
+                  <img
+                    src={profile.profile_photo}
+                    alt={displayName}
+                    className="w-full h-full object-cover rounded-md"
+                  />
+                ) : (
+                  firstLetter
+                )}
+              </div>
+              {onOpenSelfieModal && (
+                <button
+                  type="button"
+                  onClick={onOpenSelfieModal}
+                  title="Retake Selfie Photo"
+                  className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-brand-500 hover:bg-brand-600 text-white flex items-center justify-center shadow-xs border border-white cursor-pointer transition-transform hover:scale-110"
+                >
+                  <Camera className="w-2.5 h-2.5" />
+                </button>
               )}
             </div>
 

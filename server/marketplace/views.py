@@ -71,6 +71,23 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
         return obj.seller == request.user
 
 
+class IsVerifiedSeller(permissions.BasePermission):
+    """
+    Permission check: Only active, verified Sellers (or staff/superusers) can perform seller actions.
+    Explicitly denies Buyers.
+    """
+    message = "Buyers are not permitted to sell items. Please complete Student ID verification to become a Verified Seller."
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        if request.user.is_staff or request.user.is_superuser:
+            return True
+        user_role = getattr(request.user, 'role', 'BUYER')
+        is_id_verified = getattr(request.user, 'is_id_verified', False)
+        return user_role == 'SELLER' and is_id_verified
+
+
 DEFAULT_BANNED_WORDS = [
     'vape', 'weed', 'alcohol', 'beer', 'vodka', 'whiskey', 'drugs', 'ganja',
     'cigarette', 'weapon', 'gun', 'knife', 'porn', 'escort', 'sex', 'cheat',
@@ -250,7 +267,7 @@ class AdminCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
 class ListingListCreateView(generics.ListCreateAPIView):
     def get_permissions(self):
         if self.request.method == 'POST':
-            return [permissions.IsAuthenticated()]
+            return [permissions.IsAuthenticated(), IsVerifiedSeller()]
         return [permissions.AllowAny()]
 
     def get_serializer_class(self):
@@ -324,13 +341,17 @@ class ListingListCreateView(generics.ListCreateAPIView):
             msg = msg_setting.value if msg_setting else 'CampusXChange is currently undergoing scheduled maintenance. Please check back shortly.'
             return Response({'error': msg, 'maintenance_mode': True}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-        # 2. Seller Verification Check
-        is_seller = getattr(user, 'role', 'BUYER') == 'SELLER' or getattr(user, 'is_id_verified', False) or user.is_staff or user.is_superuser
-        if not is_seller:
+        # 2. Strict Seller Verification Check (Forbid Buyers)
+        user_role = getattr(user, 'role', 'BUYER')
+        is_seller = (user_role == 'SELLER' and getattr(user, 'is_id_verified', False)) or user.is_staff or user.is_superuser
+        if not is_seller or user_role == 'BUYER':
             return Response(
                 {
-                    'error': 'Only verified Sellers can post items for sale. Please complete your Student ID verification to become a Seller.',
-                    'requires_id_verification': True
+                    'error': 'Buyers are not allowed to post items for sale. Only verified Sellers can sell items. Please complete Student ID verification to become a Seller.',
+                    'role': user_role,
+                    'can_sell': False,
+                    'requires_seller_upgrade': True,
+                    'requires_id_verification': not getattr(user, 'is_id_verified', False)
                 },
                 status=status.HTTP_403_FORBIDDEN
             )
@@ -380,7 +401,7 @@ class ListingDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_permissions(self):
         if self.request.method in permissions.SAFE_METHODS:
             return [permissions.AllowAny()]
-        return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
+        return [permissions.IsAuthenticated(), IsVerifiedSeller(), IsOwnerOrReadOnly()]
 
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
@@ -443,7 +464,7 @@ class MyListingsView(generics.ListAPIView):
 
 
 class ToggleListingStatusView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerifiedSeller]
 
     def patch(self, request, pk):
         try:
@@ -603,7 +624,7 @@ class UploadImageView(APIView):
     Accepts multipart/form-data with an 'image' field.
     Returns the Cloudinary secure URL.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerifiedSeller]
     parser_classes = [MultiPartParser, FormParser]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = 'image_upload'

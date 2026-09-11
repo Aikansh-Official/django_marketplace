@@ -9,6 +9,7 @@ import IdVerificationTab from '../components/profile/IdVerificationTab';
 import SavedItemsTab from '../components/profile/SavedItemsTab';
 import LogoutModal from '../components/profile/LogoutModal';
 import UpgradeToSellerModal from '../components/profile/UpgradeToSellerModal';
+import UpdateSelfieModal from '../components/profile/UpdateSelfieModal';
 import { getSavedCount } from '../utils/savedStore';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -34,6 +35,7 @@ export default function Profile() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [isSelfieModalOpen, setIsSelfieModalOpen] = useState(false);
 
   const isSeller = profile?.role === 'SELLER' || profile?.is_id_verified;
 
@@ -154,6 +156,7 @@ export default function Profile() {
           savedCount={savedCount}
           onLogoutClick={() => setIsLogoutModalOpen(true)}
           onUpgradeClick={() => setIsUpgradeModalOpen(true)}
+          onOpenSelfieModal={() => setIsSelfieModalOpen(true)}
         />
 
         {/* Right Active Tab Content */}
@@ -163,6 +166,7 @@ export default function Profile() {
               profile={profile}
               onProfileUpdated={fetchProfile}
               onUpgradeClick={() => setIsUpgradeModalOpen(true)}
+              onOpenSelfieModal={() => setIsSelfieModalOpen(true)}
             />
           )}
 
@@ -175,7 +179,11 @@ export default function Profile() {
           )}
 
           {activeTab === 'id-verification' && isSeller && (
-            <IdVerificationTab profile={profile} onProfileUpdated={fetchProfile} />
+            <IdVerificationTab
+              profile={profile}
+              onProfileUpdated={fetchProfile}
+              onOpenSelfieModal={() => setIsSelfieModalOpen(true)}
+            />
           )}
 
           {activeTab === 'saved-items' && (
@@ -193,6 +201,14 @@ export default function Profile() {
           fetchProfile();
           setIsUpgradeModalOpen(false);
         }}
+      />
+
+      {/* Update Selfie Modal */}
+      <UpdateSelfieModal
+        isOpen={isSelfieModalOpen}
+        onClose={() => setIsSelfieModalOpen(false)}
+        profile={profile}
+        onProfileUpdated={fetchProfile}
       />
 
       {/* Logout Confirmation Modal */}

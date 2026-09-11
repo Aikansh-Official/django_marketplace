@@ -23,7 +23,14 @@ import { getSavedCount } from '../utils/savedStore';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [userProfile, setUserProfile] = useState(null);
+  const [userProfile, setUserProfile] = useState(() => {
+    try {
+      const stored = localStorage.getItem('user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
   const [unreadCount, setUnreadCount] = useState(0);
   const [savedCount, setSavedCount] = useState(() => getSavedCount());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -109,6 +116,10 @@ export default function Navbar() {
       }
     };
     fetchProfile();
+    window.addEventListener('auth-changed', fetchProfile);
+    return () => {
+      window.removeEventListener('auth-changed', fetchProfile);
+    };
   }, []);
 
   // Fetch notifications
@@ -217,6 +228,15 @@ export default function Navbar() {
   };
 
   const displayName = userProfile?.full_name || userProfile?.first_name || userProfile?.username || 'Student';
+  const isSeller = Boolean(
+    userProfile && (
+      userProfile.role === 'SELLER' ||
+      userProfile.is_id_verified ||
+      userProfile.is_staff ||
+      userProfile.is_superuser
+    )
+  );
+  const isBuyer = Boolean(userProfile && !isSeller);
 
   return (
     <>
@@ -431,7 +451,7 @@ export default function Navbar() {
                           <div className="px-3 py-2 border-b border-gray-100">
                             <div className="flex items-center justify-between gap-1">
                               <p className="font-semibold text-gray-900 truncate">{displayName}</p>
-                              {userProfile.role === 'SELLER' || userProfile.is_id_verified ? (
+                              {isSeller ? (
                                 <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full shrink-0">
                                   Verified Seller
                                 </span>
@@ -452,7 +472,7 @@ export default function Navbar() {
                             <User className="w-3.5 h-3.5 text-gray-400" />
                             Profile
                           </Link>
-                          {userProfile.role === 'SELLER' || userProfile.is_id_verified ? (
+                          {isSeller ? (
                             <Link
                               to="/my-listings"
                               onClick={() => setIsProfileMenuOpen(false)}
@@ -525,14 +545,16 @@ export default function Navbar() {
                   </div>
                 )}
 
-                {/* Clean Sell Button */}
-                <Link
-                  to="/sell"
-                  className="bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold py-1.5 px-3.5 rounded-md transition-colors flex items-center gap-1.5 shadow-2xs"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Sell Item</span>
-                </Link>
+                {/* Clean Sell Button - Hidden for buyers */}
+                {!isBuyer && (
+                  <Link
+                    to="/sell"
+                    className="bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold py-1.5 px-3.5 rounded-md transition-colors flex items-center gap-1.5 shadow-2xs"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Sell Item</span>
+                  </Link>
+                )}
               </div>
 
               {/* Mobile Actions */}
@@ -558,13 +580,15 @@ export default function Navbar() {
                   <Heart className={`w-5 h-5 ${savedCount > 0 ? 'fill-brand-500 text-brand-500' : 'text-gray-500'}`} />
                 </button>
 
-                <Link
-                  to="/sell"
-                  className="bg-brand-500 text-white text-xs font-semibold py-1.5 px-2.5 rounded-md flex items-center gap-1 shadow-2xs"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Sell</span>
-                </Link>
+                {!isBuyer && (
+                  <Link
+                    to="/sell"
+                    className="bg-brand-500 text-white text-xs font-semibold py-1.5 px-2.5 rounded-md flex items-center gap-1 shadow-2xs"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Sell</span>
+                  </Link>
+                )}
 
                 <button
                   onClick={() => {
@@ -635,7 +659,7 @@ export default function Navbar() {
                   Explore Marketplace
                 </Link>
                 {userProfile && (
-                  userProfile.role === 'SELLER' || userProfile.is_id_verified ? (
+                  isSeller ? (
                     <Link
                       to="/my-listings"
                       onClick={() => setIsOpen(false)}
