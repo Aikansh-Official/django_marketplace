@@ -32,8 +32,11 @@ export default function Navbar() {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [suggestions, setSuggestions] = useState({ listings: [], categories: [] });
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const profileMenuRef = useRef(null);
+  const searchContainerRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -51,6 +54,39 @@ export default function Navbar() {
     const params = new URLSearchParams(location.search);
     setSearchTerm(params.get('search') || '');
   }, [location.search]);
+
+  // Debounced search autocomplete suggestions
+  useEffect(() => {
+    const q = searchTerm.trim();
+    if (q.length < 2) {
+      setSuggestions({ listings: [], categories: [] });
+      setShowSuggestions(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/marketplace/search-suggestions/?q=${encodeURIComponent(q)}`);
+        setSuggestions(res.data);
+        setShowSuggestions(Boolean(res.data?.listings?.length || res.data?.categories?.length));
+      } catch {
+        // ignore
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Fetch user profile status
   useEffect(() => {
@@ -218,8 +254,12 @@ export default function Navbar() {
 
             {/* Center: Search Bar (Main Navbar Search) - Responsive width on tablets */}
             <form
-              onSubmit={handleSearchSubmit}
-              className="flex-1 max-w-xs md:max-w-md lg:max-w-xl hidden sm:flex items-center"
+              ref={searchContainerRef}
+              onSubmit={(e) => {
+                setShowSuggestions(false);
+                handleSearchSubmit(e);
+              }}
+              className="flex-1 max-w-xs md:max-w-md lg:max-w-xl hidden sm:flex items-center relative"
             >
               <div className="relative w-full flex items-center group">
                 <div className="absolute left-3.5 pointer-events-none text-gray-400 group-focus-within:text-brand-500 transition-colors">
@@ -228,6 +268,11 @@ export default function Navbar() {
                 <input
                   type="text"
                   value={searchTerm}
+                  onFocus={() => {
+                    if (suggestions.listings.length > 0 || suggestions.categories.length > 0) {
+                      setShowSuggestions(true);
+                    }
+                  }}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search textbooks, calculators, notes, essentials..."
                   className="w-full pl-10 pr-20 md:pr-24 py-2 text-xs sm:text-sm bg-gray-50/90 hover:bg-gray-100/70 focus:bg-white border border-gray-200 hover:border-gray-300 focus:border-brand-500 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-500/20 text-gray-800 placeholder-gray-400 transition-all font-medium shadow-2xs"
@@ -235,7 +280,10 @@ export default function Navbar() {
                 {searchTerm && (
                   <button
                     type="button"
-                    onClick={handleClearSearch}
+                    onClick={() => {
+                      handleClearSearch();
+                      setShowSuggestions(false);
+                    }}
                     className="absolute right-16 md:right-20 text-gray-400 hover:text-gray-600 p-1 rounded-full transition-colors"
                     title="Clear search"
                   >
@@ -244,11 +292,80 @@ export default function Navbar() {
                 )}
                 <button
                   type="submit"
-                  className="absolute right-1.5 bg-brand-500 hover:bg-brand-600 active:scale-95 text-white text-xs font-semibold px-2.5 md:px-3 py-1.5 rounded-full transition-all flex items-center gap-1 shadow-2xs"
+                  className="absolute right-1.5 bg-brand-500 hover:bg-brand-600 active:scale-95 text-white text-xs font-semibold px-2.5 md:px-3 py-1.5 rounded-full transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
                 >
                   <span>Search</span>
                 </button>
               </div>
+
+              {/* Autocomplete Dropdown */}
+              {showSuggestions && (suggestions.listings.length > 0 || suggestions.categories.length > 0) && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-md border border-gray-200 shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                  {/* Category suggestions */}
+                  {suggestions.categories.length > 0 && (
+                    <div className="p-2.5 border-b border-gray-100 bg-gray-50/70">
+                      <div className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400 mb-1.5 px-1">
+                        Matching Categories
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {suggestions.categories.map((cat) => (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => {
+                              setShowSuggestions(false);
+                              navigate(`/?category=${encodeURIComponent(cat.slug)}`);
+                            }}
+                            className="inline-flex items-center gap-1 bg-white hover:bg-brand-50 border border-gray-200 hover:border-brand-300 text-gray-700 hover:text-brand-700 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors cursor-pointer"
+                          >
+                            <span>{cat.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Listing suggestions */}
+                  {suggestions.listings.length > 0 && (
+                    <div className="p-1.5 space-y-0.5 max-h-72 overflow-y-auto">
+                      <div className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400 py-1 px-2.5">
+                        Matching Items
+                      </div>
+                      {suggestions.listings.map((item) => (
+                        <Link
+                          key={item.id}
+                          to={`/listing/${item.id}`}
+                          onClick={() => setShowSuggestions(false)}
+                          className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50 transition-colors group"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-9 h-9 rounded bg-gray-100 overflow-hidden shrink-0 border border-gray-200 flex items-center justify-center">
+                              {item.image ? (
+                                <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                              ) : (
+                                <Package className="w-4 h-4 text-gray-400" />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-xs font-bold text-gray-800 group-hover:text-brand-600 truncate max-w-[260px]">
+                                {item.title}
+                              </div>
+                              <div className="text-[11px] text-gray-400 flex items-center gap-1.5">
+                                <span>{item.category || 'Item'}</span>
+                                <span>•</span>
+                                <span>{item.location}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <span className="text-xs font-black text-brand-600 shrink-0 ml-2">
+                            {item.transaction_type === 'DONATE' ? 'Free' : `Rs ${item.price}`}
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </form>
 
             {/* Right: Actions */}

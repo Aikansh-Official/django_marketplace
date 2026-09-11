@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.utils import timezone
 from .models import (
-    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession, BroadcastLog, AdminAuditLog
+    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession, BroadcastLog, AdminAuditLog, Review, ChatMessage
 )
 from .cloudinary_upload import (
     upload_base64_to_cloudinary, is_base64_image, is_url
@@ -315,7 +315,7 @@ class OfferSerializer(serializers.ModelSerializer):
         model = Offer
         fields = [
             'id', 'listing', 'listing_title', 'listing_price', 'listing_image',
-            'offer_amount', 'buyer_message', 'status', 'created_at',
+            'offer_amount', 'counter_amount', 'seller_note', 'buyer_message', 'status', 'created_at',
             'buyer', 'buyer_name', 'buyer_reg', 'buyer_trust_score',
             'seller_id', 'seller_name', 'seller_reg', 'seller_phone', 'seller_whatsapp',
             'meetup_location', 'active_handover'
@@ -511,4 +511,67 @@ class AdminAuditLogSerializer(serializers.ModelSerializer):
         if obj.admin_user:
             return obj.admin_user.full_name or obj.admin_user.username
         return obj.admin_username
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    reviewer_name = serializers.SerializerMethodField()
+    listing_title = serializers.CharField(source='listing.title', read_only=True)
+    deal_id = serializers.IntegerField(source='deal.id', read_only=True)
+
+    class Meta:
+        model = Review
+        fields = [
+            'id', 'deal', 'deal_id', 'listing', 'listing_title',
+            'reviewer', 'reviewer_name', 'reviewed_user',
+            'rating', 'comment', 'quick_tags', 'created_at'
+        ]
+        read_only_fields = ['id', 'reviewer', 'reviewed_user', 'listing', 'created_at']
+
+    def get_reviewer_name(self, obj):
+        name = (getattr(obj.reviewer, 'full_name', '') or getattr(obj.reviewer, 'first_name', '')).strip()
+        if not name:
+            return "Campus Trader"
+        parts = name.split()
+        if len(parts) >= 2:
+            return f"{parts[0]} {parts[1][0]}."
+        return parts[0]
+
+
+class ChatMessageSerializer(serializers.ModelSerializer):
+    sender_name = serializers.SerializerMethodField()
+    recipient_name = serializers.SerializerMethodField()
+    is_mine = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ChatMessage
+        fields = [
+            'id', 'listing', 'sender', 'sender_name',
+            'recipient', 'recipient_name', 'message',
+            'is_read', 'created_at', 'is_mine'
+        ]
+        read_only_fields = ['id', 'sender', 'recipient', 'is_read', 'created_at']
+
+    def get_sender_name(self, obj):
+        name = (getattr(obj.sender, 'full_name', '') or getattr(obj.sender, 'first_name', '')).strip()
+        if not name:
+            return f"Student #{obj.sender_id}"
+        parts = name.split()
+        if len(parts) >= 2:
+            return f"{parts[0]} {parts[1][0]}."
+        return parts[0]
+
+    def get_recipient_name(self, obj):
+        name = (getattr(obj.recipient, 'full_name', '') or getattr(obj.recipient, 'first_name', '')).strip()
+        if not name:
+            return f"Student #{obj.recipient_id}"
+        parts = name.split()
+        if len(parts) >= 2:
+            return f"{parts[0]} {parts[1][0]}."
+        return parts[0]
+
+    def get_is_mine(self, obj):
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated:
+            return obj.sender_id == request.user.id
+        return False
 

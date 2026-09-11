@@ -16,14 +16,16 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 from .models import (
-    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession, BroadcastLog, AdminAuditLog
+    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession, BroadcastLog, AdminAuditLog, Review, ChatMessage
 )
 from .serializers import (
     ListingSerializer, ListingCreateUpdateSerializer, CategorySerializer,
     AdminCategorySerializer, OfferSerializer, ListingReportSerializer,
     ListingReportCreateSerializer, PlatformSettingSerializer, NotificationSerializer,
-    HandoverSessionSerializer, AdminDealSerializer, BroadcastLogSerializer, AdminAuditLogSerializer
+    HandoverSessionSerializer, AdminDealSerializer, BroadcastLogSerializer, AdminAuditLogSerializer,
+    ReviewSerializer, ChatMessageSerializer
 )
+from users.serializers import PublicSellerProfileSerializer
 from .cloudinary_upload import upload_image_to_cloudinary
 
 
@@ -687,8 +689,19 @@ class CreateOfferView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Direct price logic: locked to listed price (or 0 for donate)
-        offer_amount = listing.price if listing.transaction_type != 'DONATE' else 0
+        # Price logic: negotiable items allow custom proposed amount
+        custom_amount = request.data.get('offer_amount')
+        if listing.transaction_type == 'DONATE':
+            offer_amount = 0
+        elif listing.is_negotiable and custom_amount is not None and str(custom_amount).strip() != '':
+            try:
+                offer_amount = float(custom_amount)
+                if offer_amount <= 0:
+                    raise ValueError()
+            except (ValueError, TypeError):
+                return Response({'error': 'Please enter a valid positive offer amount.'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            offer_amount = listing.price
         buyer_message = request.data.get('message', '').strip()
 
         # Prevent duplicate pending requests from same buyer
@@ -760,8 +773,8 @@ class RespondOfferView(APIView):
             return Response({'error': 'Only the seller can respond to purchase requests.'}, status=status.HTTP_403_FORBIDDEN)
 
         action = request.data.get('action')
-        if action not in ['ACCEPT', 'REJECT']:
-            return Response({'error': 'Action must be ACCEPT or REJECT.'}, status=status.HTTP_400_BAD_REQUEST)
+        if action not in ['ACCEPT', 'REJECT', 'COUNTER']:
+            return Response({'error': 'Action must be ACCEPT, REJECT, or COUNTER.'}, status=status.HTTP_400_BAD_REQUEST)
 
         seller_display = getattr(request.user, 'full_name', '') or request.user.username
 
@@ -810,8 +823,391 @@ class RespondOfferView(APIView):
                 listing=listing
             )
 
+        elif action == 'COUNTER':
+            counter_amount = request.data.get('counter_amount')
+            seller_note = request.data.get('seller_note', '').strip()
+            if not counter_amount:
+                return Response({'error': 'Counter-offer amount is required.'}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                counter_amount = float(counter_amount)
+                if counter_amount <= 0:
+                    raise ValueError()
+            except (ValueError, TypeError):
+                return Response({'error': 'Please enter a valid positive counter amount.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            offer.counter_amount = counter_amount
+            offer.seller_note = seller_note
+            offer.status = 'COUNTERED'
+            offer.save()
+
+            Notification.objects.create(
+                recipient=offer.buyer,
+                sender=request.user,
+                notification_type='OFFER_COUNTERED',
+                title=f"Counter-Offer: Rs {counter_amount} for '{listing.title}'",
+                message=f"{seller_display} proposed a counter price of Rs {counter_amount} for '{listing.title}'.{f' Note: \"{seller_note}\"' if seller_note else ''}",
+                listing=listing
+            )
+
         serializer = OfferSerializer(offer)
         return Response(serializer.data)
+
+
+class BuyerCounterRespondView(APIView):
+    """Buyer accepts or rejects the seller's counter-offer."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            offer = Offer.objects.select_related('listing', 'listing__seller', 'buyer').get(pk=pk)
+        except Offer.DoesNotExist:
+            return Response({'error': 'Offer not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if offer.buyer != request.user:
+            return Response({'error': 'Only the buyer who made this request can respond.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if offer.status != 'COUNTERED':
+            return Response({'error': f'Offer is currently in {offer.status} state, not COUNTERED.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        action = request.data.get('action')
+        if action not in ['ACCEPT', 'REJECT']:
+            return Response({'error': 'Action must be ACCEPT or REJECT.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        buyer_display = getattr(request.user, 'full_name', '') or request.user.username
+        listing = offer.listing
+
+        if action == 'ACCEPT':
+            offer.offer_amount = offer.counter_amount
+            offer.status = 'ACCEPTED'
+            offer.save()
+
+            listing.status = 'PENDING'
+            listing.save()
+
+            # Notify seller
+            Notification.objects.create(
+                recipient=listing.seller,
+                sender=request.user,
+                notification_type='REQUEST_ACCEPTED',
+                title=f"Counter-Offer Accepted for '{listing.title}'!",
+                message=f"{buyer_display} accepted your counter-offer of Rs {offer.offer_amount}. Meet on campus to finalize handover.",
+                listing=listing
+            )
+
+            # Decline other pending requests for this listing
+            other_offers = Offer.objects.filter(listing=listing, status='PENDING').exclude(pk=offer.pk)
+            for oth in other_offers:
+                oth.status = 'REJECTED'
+                oth.save()
+        else:
+            offer.status = 'REJECTED'
+            offer.save()
+
+            Notification.objects.create(
+                recipient=listing.seller,
+                sender=request.user,
+                notification_type='REQUEST_REJECTED',
+                title=f"Counter-Offer Declined for '{listing.title}'",
+                message=f"{buyer_display} declined your counter-offer for '{listing.title}'.",
+                listing=listing
+            )
+
+        return Response(OfferSerializer(offer).data)
+
+
+class ReviewCreateView(APIView):
+    """Submit a peer review for a completed transaction."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        deal_id = request.data.get('deal_id')
+        rating = request.data.get('rating')
+        comment = request.data.get('comment', '').strip()
+        quick_tags = request.data.get('quick_tags', [])
+
+        if not deal_id or not rating:
+            return Response({'error': 'Deal ID and rating are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            rating = int(rating)
+            if rating < 1 or rating > 5:
+                raise ValueError()
+        except (ValueError, TypeError):
+            return Response({'error': 'Rating must be an integer between 1 and 5.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            deal = Offer.objects.select_related('listing', 'listing__seller', 'buyer').get(pk=deal_id)
+        except Offer.DoesNotExist:
+            return Response({'error': 'Deal not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if deal.status != 'COMPLETED':
+            return Response({'error': 'Reviews can only be submitted for completed transactions.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if request.user not in (deal.buyer, deal.listing.seller):
+            return Response({'error': 'You can only review deals you participated in.'}, status=status.HTTP_403_FORBIDDEN)
+
+        reviewed_user = deal.listing.seller if request.user == deal.buyer else deal.buyer
+
+        if Review.objects.filter(deal=deal, reviewer=request.user).exists():
+            return Response({'error': 'You have already submitted a review for this deal.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        review = Review.objects.create(
+            deal=deal,
+            listing=deal.listing,
+            reviewer=request.user,
+            reviewed_user=reviewed_user,
+            rating=rating,
+            comment=comment,
+            quick_tags=quick_tags if isinstance(quick_tags, list) else []
+        )
+
+        # Recalculate recipient's trust score
+        reviewed_user.trust_score = reviewed_user.calculate_trust_score()
+        reviewed_user.save(update_fields=['trust_score'])
+
+        # Notify reviewed user
+        reviewer_display = getattr(request.user, 'full_name', '') or request.user.username
+        Notification.objects.create(
+            recipient=reviewed_user,
+            sender=request.user,
+            notification_type='NEW_REVIEW',
+            title=f"New {rating}★ Review from {reviewer_display}",
+            message=f'{reviewer_display} left a review for "{deal.listing.title}": "{comment or "Great trade!"}"',
+            listing=deal.listing
+        )
+
+        return Response(ReviewSerializer(review).data, status=status.HTTP_201_CREATED)
+
+
+class SellerReviewsListView(generics.ListAPIView):
+    """List reviews received by a seller (DPDP compliant: masked reviewer display)."""
+    serializer_class = ReviewSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        seller_id = self.kwargs['pk']
+        return Review.objects.filter(reviewed_user_id=seller_id).select_related('reviewer', 'listing').order_by('-created_at')
+
+
+class PublicSellerProfileView(APIView):
+    """
+    DPDP Act (2023) Compliant Public Seller Profile View.
+    Returns sanitized student trader profile + active listings without exposing PII.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            seller = User.objects.get(pk=pk, is_active=True)
+        except User.DoesNotExist:
+            return Response({'error': 'Seller not found or account is deactivated.'}, status=status.HTTP_404_NOT_FOUND)
+
+        profile_data = PublicSellerProfileSerializer(seller).data
+
+        # Active listings by this seller
+        active_listings = Listing.objects.filter(
+            seller=seller,
+            status='ACTIVE'
+        ).select_related('category').prefetch_related('images').order_by('-created_at')
+
+        listings_data = ListingSerializer(active_listings, many=True, context={'request': request}).data
+
+        # DPDP Act (2023) Compliance: Sanitize any nested seller PII in listing objects
+        sanitized_seller_stub = {
+            'id': profile_data['id'],
+            'display_name': profile_data['display_name'],
+            'is_verified_student': profile_data.get('is_verified_student', False),
+            'trust_score': profile_data.get('trust_score', 0)
+        }
+        for item in listings_data:
+            item['seller'] = sanitized_seller_stub
+            item.pop('contact_phone', None)
+            item.pop('contact_whatsapp', None)
+
+        # Recent reviews for this seller
+        recent_reviews = Review.objects.filter(reviewed_user=seller).select_related('reviewer', 'listing').order_by('-created_at')[:6]
+        reviews_data = ReviewSerializer(recent_reviews, many=True).data
+
+        return Response({
+            'seller': profile_data,
+            'listings': listings_data,
+            'active_listings_count': active_listings.count(),
+            'recent_reviews': reviews_data
+        })
+
+
+class ChatMessageListCreateView(APIView):
+    """
+    Real-time student in-app chat thread between buyer and seller.
+    Login-gated & listing-scoped for student safety and privacy.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, listing_id, peer_id):
+        try:
+            listing = Listing.objects.get(pk=listing_id)
+            peer = User.objects.get(pk=peer_id, is_active=True)
+        except (Listing.DoesNotExist, User.DoesNotExist):
+            return Response({'error': 'Listing or peer user not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        messages = ChatMessage.objects.filter(
+            listing=listing
+        ).filter(
+            (Q(sender=request.user) & Q(recipient=peer)) |
+            (Q(sender=peer) & Q(recipient=request.user))
+        ).select_related('sender', 'recipient').order_by('created_at')
+
+        # Mark unread incoming messages as read
+        ChatMessage.objects.filter(
+            listing=listing,
+            sender=peer,
+            recipient=request.user,
+            is_read=False
+        ).update(is_read=True)
+
+        serializer = ChatMessageSerializer(messages, many=True, context={'request': request})
+        primary_img = listing.images.filter(is_primary=True).first() or listing.images.first()
+
+        peer_name = (getattr(peer, 'full_name', '') or getattr(peer, 'first_name', '') or peer.username).strip()
+        parts = peer_name.split()
+        masked_peer_name = f"{parts[0]} {parts[1][0]}." if len(parts) >= 2 else parts[0]
+
+        return Response({
+            'listing': {
+                'id': listing.id,
+                'title': listing.title,
+                'price': str(listing.price),
+                'transaction_type': listing.transaction_type,
+                'image': primary_img.image_url if primary_img else None,
+                'seller_id': listing.seller_id
+            },
+            'peer': {
+                'id': peer.id,
+                'name': masked_peer_name,
+                'is_verified': getattr(peer, 'is_id_verified', False)
+            },
+            'messages': serializer.data
+        })
+
+    def post(self, request, listing_id, peer_id):
+        try:
+            listing = Listing.objects.get(pk=listing_id)
+            peer = User.objects.get(pk=peer_id, is_active=True)
+        except (Listing.DoesNotExist, User.DoesNotExist):
+            return Response({'error': 'Listing or peer user not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        message_text = request.data.get('message', '').strip()
+        if not message_text:
+            return Response({'error': 'Message cannot be empty.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if request.user == peer:
+            return Response({'error': 'Cannot send messages to yourself.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        msg = ChatMessage.objects.create(
+            listing=listing,
+            sender=request.user,
+            recipient=peer,
+            message=message_text,
+            is_read=False
+        )
+
+        sender_name = getattr(request.user, 'full_name', '') or request.user.username
+        parts = sender_name.strip().split()
+        masked_sender = f"{parts[0]} {parts[1][0]}." if len(parts) >= 2 else parts[0]
+
+        Notification.objects.create(
+            recipient=peer,
+            sender=request.user,
+            notification_type='NEW_CHAT_MESSAGE',
+            title=f"Message from {masked_sender}",
+            message=f'Re: "{listing.title}" — {message_text[:80]}',
+            listing=listing
+        )
+
+        return Response(ChatMessageSerializer(msg, context={'request': request}).data, status=status.HTTP_201_CREATED)
+
+
+class UserConversationsView(APIView):
+    """Lists all active chat threads for current student."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        recent_msgs = ChatMessage.objects.filter(
+            Q(sender=user) | Q(recipient=user)
+        ).select_related('listing', 'sender', 'recipient').order_by('-created_at')
+
+        # Group by (listing_id, peer_id)
+        seen = set()
+        conversations = []
+        for msg in recent_msgs:
+            peer = msg.recipient if msg.sender_id == user.id else msg.sender
+            key = (msg.listing_id, peer.id)
+            if key not in seen:
+                seen.add(key)
+                primary_img = msg.listing.images.filter(is_primary=True).first() or msg.listing.images.first()
+                unread_count = ChatMessage.objects.filter(
+                    listing=msg.listing,
+                    sender=peer,
+                    recipient=user,
+                    is_read=False
+                ).count()
+                peer_name = (getattr(peer, 'full_name', '') or getattr(peer, 'first_name', '') or peer.username).strip()
+                parts = peer_name.split()
+                masked_peer = f"{parts[0]} {parts[1][0]}." if len(parts) >= 2 else parts[0]
+
+                conversations.append({
+                    'listing_id': msg.listing_id,
+                    'listing_title': msg.listing.title,
+                    'listing_price': str(msg.listing.price),
+                    'listing_image': primary_img.image_url if primary_img else None,
+                    'peer_id': peer.id,
+                    'peer_name': masked_peer,
+                    'last_message': msg.message,
+                    'last_message_time': msg.created_at,
+                    'unread_count': unread_count
+                })
+
+        return Response(conversations)
+
+
+class SearchSuggestionsView(APIView):
+    """Real-time autocomplete search suggestions dropdown."""
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        query = request.query_params.get('q', '').strip()
+        if not query or len(query) < 2:
+            return Response({'listings': [], 'categories': []})
+
+        matched_listings = Listing.objects.filter(
+            status='ACTIVE'
+        ).filter(
+            Q(title__icontains=query) | Q(description__icontains=query) | Q(location__icontains=query)
+        ).select_related('category').prefetch_related('images')[:5]
+
+        listings_data = []
+        for item in matched_listings:
+            img = item.images.filter(is_primary=True).first() or item.images.first()
+            listings_data.append({
+                'id': item.id,
+                'title': item.title,
+                'price': str(item.price),
+                'transaction_type': item.transaction_type,
+                'category': item.category.name if item.category else None,
+                'location': item.location,
+                'image': img.image_url if img else None
+            })
+
+        matched_cats = Category.objects.filter(
+            Q(name__icontains=query) | Q(slug__icontains=query)
+        )[:4]
+        categories_data = [{'id': c.id, 'name': c.name, 'slug': c.slug, 'icon': c.icon} for c in matched_cats]
+
+        return Response({
+            'listings': listings_data,
+            'categories': categories_data
+        })
 
 
 class NotificationListView(generics.ListAPIView):

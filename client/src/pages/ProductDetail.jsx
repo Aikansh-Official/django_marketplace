@@ -32,12 +32,17 @@ import {
   Camera,
   Lock,
   BadgeCheck,
-  Mail
+  Mail,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Maximize2
 } from 'lucide-react';
 import { toggleSavedItem, isItemSaved } from '../utils/savedStore';
 import HandoverQRModal from '../components/handover/HandoverQRModal';
 import HandoverScannerModal from '../components/handover/HandoverScannerModal';
 import UniversalLoader from '../components/common/UniversalLoader';
+import ChatDrawer from '../components/chat/ChatDrawer';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -58,9 +63,25 @@ export default function ProductDetail() {
   // Purchase request state
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [buyerMessage, setBuyerMessage] = useState('');
+  const [offerAmount, setOfferAmount] = useState('');
   const [submittingBuyRequest, setSubmittingBuyRequest] = useState(false);
   const [listingOffers, setListingOffers] = useState([]);
   const [userOffer, setUserOffer] = useState(null);
+
+  // In-App Chat state
+  const [showChatDrawer, setShowChatDrawer] = useState(false);
+
+  // Image Magnifier / Lightbox state
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [lightboxZoom, setLightboxZoom] = useState(1);
+
+  // Counter-Offer state
+  const [showCounterModal, setShowCounterModal] = useState(false);
+  const [selectedOfferForCounter, setSelectedOfferForCounter] = useState(null);
+  const [counterAmount, setCounterAmount] = useState('');
+  const [sellerNote, setSellerNote] = useState('');
+  const [submittingCounter, setSubmittingCounter] = useState(false);
+  const [respondingToCounter, setRespondingToCounter] = useState(false);
 
   // Handover QR & Scanner state
   const [showQRModal, setShowQRModal] = useState(false);
@@ -84,7 +105,17 @@ export default function ProductDetail() {
       triggerLogin();
       return;
     }
+    setOfferAmount(listing?.price || '');
     setShowBuyModal(true);
+  };
+
+  const handleOpenChat = () => {
+    if (!isAuthenticated) {
+      toast('Please log in to chat with the seller.', { icon: '🔒' });
+      triggerLogin();
+      return;
+    }
+    setShowChatDrawer(true);
   };
 
   const handleOpenReportModal = () => {
@@ -275,6 +306,55 @@ export default function ProductDetail() {
     }
   };
 
+  const handleOpenCounterModal = (off) => {
+    setSelectedOfferForCounter(off);
+    setCounterAmount(off.offer_amount || listing?.price || '');
+    setSellerNote('');
+    setShowCounterModal(true);
+  };
+
+  const handleSubmitCounter = async (e) => {
+    e.preventDefault();
+    if (!counterAmount || parseFloat(counterAmount) <= 0) {
+      toast.error('Please enter a valid counter price.');
+      return;
+    }
+    setSubmittingCounter(true);
+    try {
+      await axios.patch(`${API_BASE}/marketplace/offers/${selectedOfferForCounter.id}/respond/`, {
+        action: 'COUNTER',
+        counter_amount: counterAmount,
+        seller_note: sellerNote
+      });
+      toast.success(`Counter-offer of Rs ${counterAmount} sent to buyer!`, { icon: '🤝' });
+      setShowCounterModal(false);
+      fetchListingOffers();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to submit counter-offer.');
+    } finally {
+      setSubmittingCounter(false);
+    }
+  };
+
+  const handleBuyerCounterRespond = async (action) => {
+    if (!userOffer) return;
+    setRespondingToCounter(true);
+    try {
+      const res = await axios.post(`${API_BASE}/marketplace/offers/${userOffer.id}/counter-respond/`, { action });
+      setUserOffer(res.data);
+      if (action === 'ACCEPT') {
+        toast.success(`Counter-offer accepted! Listing is now reserved for you.`, { icon: '🎉' });
+        setListing((prev) => ({ ...prev, status: 'PENDING' }));
+      } else {
+        toast('Counter-offer declined.', { icon: 'ℹ️' });
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to respond to counter-offer.');
+    } finally {
+      setRespondingToCounter(false);
+    }
+  };
+
   const handleCancelDeal = async (offerId) => {
     if (!window.confirm('Are you sure you want to cancel this campus deal? The listing will become Active again for other students.')) {
       return;
@@ -366,9 +446,13 @@ export default function ProductDetail() {
     e.preventDefault();
     setSubmittingBuyRequest(true);
     try {
-      const res = await axios.post(`${API_BASE}/marketplace/listings/${id}/offer/`, {
+      const payload = {
         message: buyerMessage
-      });
+      };
+      if (listing.is_negotiable && offerAmount && listing.transaction_type !== 'DONATE') {
+        payload.offer_amount = offerAmount;
+      }
+      const res = await axios.post(`${API_BASE}/marketplace/listings/${id}/offer/`, payload);
       toast.success('Purchase request sent to the seller!', { icon: '🎉' });
       setShowBuyModal(false);
       setBuyerMessage('');
@@ -730,6 +814,16 @@ export default function ProductDetail() {
                               <Check className="w-3 h-3" />
                               Accept
                             </button>
+                            {listing.is_negotiable && listing.transaction_type !== 'DONATE' && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenCounterModal(off)}
+                                className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-2.5 py-1 rounded-md text-xs transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
+                                title="Propose a counter price"
+                              >
+                                Counter
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => handleRespondOffer(off.id, 'REJECT')}
@@ -738,6 +832,10 @@ export default function ProductDetail() {
                               Decline
                             </button>
                           </>
+                        ) : off.status === 'COUNTERED' ? (
+                          <span className="text-amber-700 font-bold flex items-center gap-1 text-[11px] bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                            Countered: Rs {off.counter_amount}
+                          </span>
                         ) : off.status === 'ACCEPTED' ? (
                           <div className="flex items-center gap-1.5">
                             <button
@@ -775,6 +873,47 @@ export default function ProductDetail() {
             )}
           </div>
 
+        </div>
+      )}
+
+      {/* Buyer Counter-Offer Alert Banner */}
+      {userOffer?.status === 'COUNTERED' && (
+        <div className="bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-300 rounded-md p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm animate-in fade-in">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200">
+              <AlertCircle className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="text-sm font-extrabold text-amber-950">
+                🤝 Seller Proposed a Counter-Offer of Rs {userOffer.counter_amount}
+              </h4>
+              {userOffer.seller_note && (
+                <p className="text-xs text-amber-800 mt-0.5 italic">"{userOffer.seller_note}"</p>
+              )}
+              <p className="text-[11px] text-amber-700 mt-0.5">
+                Accept this counter-price to immediately reserve the listing for campus handover.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => handleBuyerCounterRespond('ACCEPT')}
+              disabled={respondingToCounter}
+              className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs px-4 py-2.5 rounded-md shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <Check className="w-4 h-4" />
+              Accept Rs {userOffer.counter_amount}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleBuyerCounterRespond('REJECT')}
+              disabled={respondingToCounter}
+              className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold text-xs px-3 py-2.5 rounded-md transition-colors cursor-pointer"
+            >
+              Decline
+            </button>
+          </div>
         </div>
       )}
 
@@ -837,15 +976,26 @@ export default function ProductDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: Image Gallery & Description */}
         <div className="lg:col-span-8 space-y-6">
-          {/* Hero Image Container */}
+          {/* Hero Image Container with Click-to-Zoom Magnifier */}
           <div className="bg-white border border-gray-200 rounded-md overflow-hidden shadow-sm">
-            <div className="relative h-64 sm:h-80 md:h-96 lg:h-[420px] w-full bg-gray-100 flex items-center justify-center group">
+            <div
+              onClick={() => currentImage && setIsLightboxOpen(true)}
+              className="relative h-64 sm:h-80 md:h-96 lg:h-[420px] w-full bg-gray-100 flex items-center justify-center group cursor-zoom-in"
+              title="Click to view full-resolution & zoom inspection"
+            >
               {currentImage ? (
-                <img
-                  src={currentImage}
-                  alt={listing.title}
-                  className="max-h-full max-w-full object-contain p-2"
-                />
+                <>
+                  <img
+                    src={currentImage}
+                    alt={listing.title}
+                    className="max-h-full max-w-full object-contain p-2 group-hover:scale-102 transition-transform duration-300"
+                  />
+                  {/* Floating Magnifier Badge */}
+                  <div className="absolute bottom-3 right-3 bg-black/60 hover:bg-black/80 backdrop-blur-xs text-white text-[11px] font-bold px-2.5 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shadow-sm">
+                    <Maximize2 className="w-3.5 h-3.5" />
+                    <span>Click to Zoom & Inspect</span>
+                  </div>
+                </>
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-100">
                   <Package className="w-16 h-16 mb-3 opacity-30" />
@@ -1088,9 +1238,8 @@ export default function ProductDetail() {
 
                     {/* In-App Direct Message */}
                     <button
-                      onClick={() => {
-                        toast.success('In-App Chat initiated! Connecting with seller...');
-                      }}
+                      type="button"
+                      onClick={handleOpenChat}
                       className="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <Send className="w-4 h-4" />
@@ -1263,6 +1412,15 @@ export default function ProductDetail() {
                 </button>
               )}
             </div>
+
+            {/* Link to DPDP-Compliant Public Seller Profile */}
+            <Link
+              to={`/seller/${listing.seller?.id}`}
+              className="w-full mt-2 inline-flex items-center justify-center gap-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 hover:text-brand-600 py-2.5 px-3 rounded-md text-xs font-bold border border-gray-200 transition-colors shadow-2xs"
+            >
+              <UserCheck className="w-3.5 h-3.5 text-brand-500" />
+              <span>View Verified Public Profile →</span>
+            </Link>
           </div>
         </div>
       </div>
@@ -1387,6 +1545,25 @@ export default function ProductDetail() {
                   <span className="font-semibold text-gray-800">{listing.location}</span>
                 </div>
               </div>
+
+              {/* Custom Proposed Price for Negotiable Items */}
+              {listing.is_negotiable && listing.transaction_type !== 'DONATE' && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1 flex items-center justify-between">
+                    <span>Your Proposed Price (Rs)</span>
+                    <span className="text-[11px] text-brand-600 font-semibold lowercase first-letter:uppercase">Item is negotiable</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={offerAmount}
+                    onChange={(e) => setOfferAmount(e.target.value)}
+                    placeholder={`Direct price: ${listing.price}`}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
@@ -1568,6 +1745,183 @@ export default function ProductDetail() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Seller Counter-Offer Modal */}
+      {showCounterModal && selectedOfferForCounter && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-gray-200 rounded-md max-w-sm w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b pb-3">
+              <h3 className="font-extrabold text-gray-900 text-base flex items-center gap-2">
+                <Tag className="w-4 h-4 text-amber-500" />
+                Propose Counter-Offer
+              </h3>
+              <button
+                onClick={() => setShowCounterModal(false)}
+                className="text-gray-400 hover:text-gray-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitCounter} className="space-y-4">
+              <div className="bg-gray-50 p-3 rounded-md border border-gray-100 text-xs space-y-1">
+                <div>Buyer Offer: <strong>Rs {selectedOfferForCounter.offer_amount}</strong></div>
+                <div>Listed Price: <strong>Rs {listing.price}</strong></div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                  Counter Amount (Rs)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  required
+                  value={counterAmount}
+                  onChange={(e) => setCounterAmount(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  placeholder="e.g. 1500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                  Note for Buyer (Optional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={sellerNote}
+                  onChange={(e) => setSellerNote(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none resize-none"
+                  placeholder="e.g. Can do Rs 1500 including accessories."
+                />
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowCounterModal(false)}
+                  className="flex-1 bg-white border border-gray-300 text-gray-700 py-2.5 rounded-md font-bold text-xs hover:bg-gray-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingCounter}
+                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-md font-bold text-xs disabled:opacity-50 transition-colors shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  {submittingCounter ? 'Sending...' : 'Send Counter'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* High-Resolution Image Lightbox Modal with Zoom Inspection */}
+      {isLightboxOpen && currentImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col justify-between p-4 sm:p-6 animate-in fade-in duration-200"
+          onClick={() => setIsLightboxOpen(false)}
+        >
+          {/* Lightbox Controls Bar */}
+          <div
+            className="flex items-center justify-between text-white pb-3 border-b border-white/10 shrink-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-white/80 truncate max-w-xs sm:max-w-md">
+                {listing.title} ({activeImageIndex + 1} / {images.length || 1})
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setLightboxZoom((prev) => Math.min(3, prev + 0.25))}
+                className="p-1.5 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors"
+                title="Zoom In"
+              >
+                <ZoomIn className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setLightboxZoom((prev) => Math.max(0.75, prev - 0.25))}
+                className="p-1.5 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors"
+                title="Zoom Out"
+              >
+                <ZoomOut className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setLightboxZoom(1)}
+                className="p-1.5 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors text-xs font-bold"
+                title="Reset Zoom"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsLightboxOpen(false)}
+                className="p-1.5 rounded-md bg-white/20 hover:bg-red-600 text-white transition-colors ml-2"
+                title="Close Lightbox"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Centered High-Res Zoomable Image */}
+          <div
+            className="flex-1 flex items-center justify-center overflow-hidden my-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={currentImage}
+              alt={listing.title}
+              style={{ transform: `scale(${lightboxZoom})`, transition: 'transform 0.2s ease-out' }}
+              className="max-h-[75vh] max-w-[90vw] object-contain select-none cursor-grab active:cursor-grabbing"
+            />
+          </div>
+
+          {/* Thumbnail strip & Image Switcher */}
+          {images.length > 1 && (
+            <div
+              className="flex items-center justify-center gap-2 overflow-x-auto py-2 shrink-0"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {images.map((img, idx) => (
+                <button
+                  key={img.id || idx}
+                  type="button"
+                  onClick={() => {
+                    setActiveImageIndex(idx);
+                    setLightboxZoom(1);
+                  }}
+                  className={`w-12 h-12 rounded overflow-hidden border-2 transition-all ${
+                    activeImageIndex === idx ? 'border-brand-500 scale-105' : 'border-white/20 opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <img src={img.image_url} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* In-App Student Chat Drawer */}
+      {showChatDrawer && (
+        <ChatDrawer
+          listingId={listing.id}
+          peerId={listing.seller?.id}
+          peerName={listing.seller?.full_name || listing.seller?.username}
+          listingTitle={listing.title}
+          listingPrice={listing.price}
+          listingImage={currentImage}
+          onClose={() => setShowChatDrawer(false)}
+        />
       )}
     </div>
   );

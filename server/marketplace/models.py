@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 User = settings.AUTH_USER_MODEL
 
@@ -89,6 +90,8 @@ class Offer(models.Model):
     buyer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='offers_made')
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='offers')
     offer_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    counter_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    seller_note = models.TextField(blank=True, default='')
     buyer_message = models.TextField(blank=True, default='')
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='PENDING')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -141,6 +144,9 @@ class Notification(models.Model):
         ('DEAL_CANCELLED', 'Deal Cancelled'),
         ('BROADCAST', 'Campus Broadcast Announcement'),
         ('DIRECT_WARNING', 'Official Direct Notice / Warning'),
+        ('OFFER_COUNTERED', 'Price Counter-Offer Received'),
+        ('NEW_REVIEW', 'New Peer Review Received'),
+        ('NEW_CHAT_MESSAGE', 'New In-App Message'),
         ('GENERAL', 'General Alert'),
     )
     PRIORITIES = (
@@ -278,3 +284,39 @@ class AdminAuditLog(models.Model):
 
     def __str__(self):
         return f"[{self.created_at.strftime('%Y-%m-%d %H:%M')}] {self.admin_username} -> {self.action} ({self.target_repr})"
+
+
+class Review(models.Model):
+    deal = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name='reviews')
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='reviews')
+    reviewer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews_given')
+    reviewed_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews_received')
+    rating = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Rating from 1 to 5 stars"
+    )
+    comment = models.TextField(blank=True, default='')
+    quick_tags = models.JSONField(default=list, blank=True, help_text="List of quick tags like 'Smooth Handover', 'Polite', etc.")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = ('deal', 'reviewer')
+
+    def __str__(self):
+        return f"Review by #{self.reviewer_id} for #{self.reviewed_user_id} ({self.rating}★)"
+
+
+class ChatMessage(models.Model):
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='chat_messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_chat_messages')
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_chat_messages')
+    message = models.TextField()
+    is_read = models.BooleanField(default=False, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Msg from #{self.sender_id} to #{self.recipient_id} on Listing #{self.listing_id}"

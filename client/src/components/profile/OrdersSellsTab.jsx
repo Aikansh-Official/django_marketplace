@@ -20,10 +20,12 @@ import {
   TrendingUp,
   Tag,
   QrCode,
-  Camera
+  Camera,
+  Star
 } from 'lucide-react';
 import HandoverQRModal from '../handover/HandoverQRModal';
 import HandoverScannerModal from '../handover/HandoverScannerModal';
+import ReviewModal from '../reviews/ReviewModal';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -50,6 +52,11 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
   const [activeOfferForQR, setActiveOfferForQR] = useState(null);
   const [showScannerModal, setShowScannerModal] = useState(false);
   const [selectedOrderForScanner, setSelectedOrderForScanner] = useState(null);
+
+  // Review modal state
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewTargetDeal, setReviewTargetDeal] = useState(null);
+  const [respondingToCounter, setRespondingToCounter] = useState(false);
 
   const handleOpenQRForListing = async (listingId) => {
     try {
@@ -82,6 +89,19 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
       if (isSeller) fetchMyListings();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to cancel deal.');
+    }
+  };
+
+  const handleBuyerCounterRespond = async (offerId, action) => {
+    setRespondingToCounter(true);
+    try {
+      await axios.post(`${API_BASE}/marketplace/offers/${offerId}/counter-respond/`, { action });
+      toast.success(action === 'ACCEPT' ? 'Counter-offer accepted! Deal is now reserved.' : 'Counter-offer declined.');
+      fetchMyOffers();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to respond to counter-offer.');
+    } finally {
+      setRespondingToCounter(false);
     }
   };
 
@@ -630,6 +650,26 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
                     </div>
 
                     <div className="flex items-center gap-2 flex-shrink-0">
+                      {ord.status === 'COUNTERED' && (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleBuyerCounterRespond(ord.id, 'ACCEPT')}
+                            disabled={respondingToCounter}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-1.5 rounded-md shadow-2xs transition-all cursor-pointer"
+                            title="Accept proposed counter-offer"
+                          >
+                            Accept Rs {ord.counter_amount}
+                          </button>
+                          <button
+                            onClick={() => handleBuyerCounterRespond(ord.id, 'REJECT')}
+                            disabled={respondingToCounter}
+                            className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold text-xs px-2 py-1.5 rounded-md transition-all cursor-pointer"
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      )}
+
                       {ord.status === 'ACCEPTED' && (
                         <>
                           <button
@@ -650,6 +690,24 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
                             Cancel
                           </button>
                         </>
+                      )}
+
+                      {ord.status === 'COMPLETED' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReviewTargetDeal({
+                              id: ord.id,
+                              listingTitle: ord.listing_title,
+                              peerName: ord.seller_name || `@${ord.seller_reg}`
+                            });
+                            setShowReviewModal(true);
+                          }}
+                          className="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-xs px-3 py-2 rounded-md shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                          <span>Review Seller</span>
+                        </button>
                       )}
 
                       <Link
@@ -721,6 +779,22 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
           defaultOfferId={selectedOrderForScanner?.id}
           onClose={() => setShowScannerModal(false)}
           onSuccess={handleHandoverSuccess}
+        />
+      )}
+
+      {/* Review Modal */}
+      {showReviewModal && reviewTargetDeal && (
+        <ReviewModal
+          dealId={reviewTargetDeal.id}
+          listingTitle={reviewTargetDeal.listingTitle}
+          reviewedUserName={reviewTargetDeal.peerName}
+          onClose={() => {
+            setShowReviewModal(false);
+            setReviewTargetDeal(null);
+          }}
+          onSuccess={() => {
+            fetchMyOffers();
+          }}
         />
       )}
     </div>

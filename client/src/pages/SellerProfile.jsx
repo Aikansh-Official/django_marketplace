@@ -1,0 +1,400 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import axios from 'axios';
+import toast from 'react-hot-toast';
+import {
+  ShieldCheck,
+  Star,
+  Package,
+  MapPin,
+  Calendar,
+  CheckCircle2,
+  AlertCircle,
+  MessageCircle,
+  ArrowLeft,
+  ShoppingBag,
+  Eye,
+  Tag,
+  Lock,
+  Sparkles
+} from 'lucide-react';
+import UniversalLoader from '../components/common/UniversalLoader';
+import ChatDrawer from '../components/chat/ChatDrawer';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
+export default function SellerProfile() {
+  const { id } = useParams();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('listings'); // 'listings' | 'reviews'
+
+  // Chat Drawer State
+  const [chatListing, setChatListing] = useState(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      setLoading(true);
+      try {
+        const res = await axios.get(`${API_BASE}/marketplace/seller/${id}/`);
+        setData(res.data);
+        setError(null);
+      } catch (err) {
+        setError(err.response?.data?.error || 'Unable to load seller profile.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) fetchProfile();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <UniversalLoader text="Loading Campus Trader Profile..." />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-20 text-center">
+        <div className="bg-white border border-gray-200 rounded-md p-8 shadow-sm">
+          <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+          <h2 className="text-lg font-bold text-gray-900 mb-1">Profile Unavailable</h2>
+          <p className="text-xs text-gray-500 mb-6">{error || 'This campus member profile could not be found.'}</p>
+          <Link
+            to="/"
+            className="bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-5 rounded-md text-xs inline-block shadow-sm"
+          >
+            Back to Marketplace
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const { seller, listings, recent_reviews } = data;
+
+  const getTrustScoreBadge = (score) => {
+    if (score >= 80) return { label: 'Top Trusted Trader', color: 'bg-emerald-50 text-emerald-700 border-emerald-300' };
+    if (score >= 50) return { label: 'Verified Campus Trader', color: 'bg-brand-50 text-brand-700 border-brand-300' };
+    return { label: 'New Campus Trader', color: 'bg-gray-50 text-gray-700 border-gray-300' };
+  };
+
+  const trustBadge = getTrustScoreBadge(seller.trust_score);
+
+  return (
+    <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+      {/* Top Breadcrumb Navigation */}
+      <div className="flex items-center justify-between">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-gray-900 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Marketplace</span>
+        </Link>
+      </div>
+
+      {/* DPDP Act 2023 Compliance Notice Banner */}
+      <div className="bg-emerald-50/80 border border-emerald-200 rounded-md p-3.5 sm:p-4 flex items-start gap-3 text-xs text-emerald-900 shadow-2xs">
+        <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+        <div className="space-y-0.5">
+          <h4 className="font-extrabold text-emerald-950 flex items-center gap-1.5">
+            🔒 Student Privacy & DPDP Act 2023 Protection
+          </h4>
+          <p className="text-emerald-800 text-[11px] leading-relaxed">
+            CampusXChange strictly adheres to the <strong>Digital Personal Data Protection Act, 2023</strong>. Student registration numbers, private mobile numbers, personal college emails, and physical ID cards are confidential and never exposed publicly. All campus trade is safe and reputation-verified.
+          </p>
+        </div>
+      </div>
+
+      {/* Seller Header Profile Card */}
+      <div className="bg-white border border-gray-200 rounded-md p-5 sm:p-7 shadow-sm">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          {/* Avatar & Core Identity */}
+          <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+            <div className="relative shrink-0">
+              <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-gradient-to-tr from-brand-500 to-orange-400 text-white flex items-center justify-center font-black text-2xl shadow-md border-4 border-white overflow-hidden">
+                {seller.profile_photo ? (
+                  <img src={seller.profile_photo} alt={seller.display_name} className="w-full h-full object-cover" />
+                ) : (
+                  seller.display_name.slice(0, 2).toUpperCase()
+                )}
+              </div>
+              {seller.is_id_verified && (
+                <div
+                  className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-1 rounded-full border-2 border-white shadow-xs"
+                  title="Physical Student ID Card Verified"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+              )}
+            </div>
+
+            <div className="min-w-0 space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight truncate">
+                  {seller.display_name}
+                </h1>
+                <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border ${trustBadge.color}`}>
+                  {trustBadge.label}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                <span className="flex items-center gap-1 font-semibold text-gray-700">
+                  <ShieldCheck className="w-3.5 h-3.5 text-brand-600" />
+                  Verified @{seller.college_domain || 'lpu.in'} Student
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                  {seller.member_since}
+                </span>
+              </div>
+
+              {/* Rating Star Badge */}
+              <div className="flex items-center gap-2 pt-0.5">
+                <div className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-900 px-2.5 py-0.5 rounded-md text-xs font-black">
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                  <span>{seller.avg_rating ? `${seller.avg_rating} / 5.0` : 'New Trader'}</span>
+                </div>
+                <span className="text-xs text-gray-400">
+                  ({seller.reviews_count} {seller.reviews_count === 1 ? 'review' : 'reviews'})
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Metrics Strip */}
+          <div className="flex items-center gap-3 sm:gap-4 w-full md:w-auto border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6">
+            <div className="flex-1 md:flex-none text-center bg-gray-50/80 border border-gray-200/80 rounded-md px-4 py-2.5 shadow-2xs">
+              <div className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+                Trust Score
+              </div>
+              <div className="text-xl sm:text-2xl font-black text-brand-600 mt-0.5">
+                {seller.trust_score}<span className="text-xs text-gray-400 font-bold">/100</span>
+              </div>
+            </div>
+
+            <div className="flex-1 md:flex-none text-center bg-gray-50/80 border border-gray-200/80 rounded-md px-4 py-2.5 shadow-2xs">
+              <div className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+                Completed Deals
+              </div>
+              <div className="text-xl sm:text-2xl font-black text-gray-900 mt-0.5">
+                {seller.completed_trades_count || 0}
+              </div>
+            </div>
+
+            <div className="flex-1 md:flex-none text-center bg-gray-50/80 border border-gray-200/80 rounded-md px-4 py-2.5 shadow-2xs">
+              <div className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+                Active Items
+              </div>
+              <div className="text-xl sm:text-2xl font-black text-emerald-600 mt-0.5">
+                {data.active_listings_count || 0}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs Navigation */}
+      <div className="flex items-center gap-2 border-b border-gray-200">
+        <button
+          type="button"
+          onClick={() => setActiveTab('listings')}
+          className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
+            activeTab === 'listings'
+              ? 'border-brand-500 text-brand-600'
+              : 'border-transparent text-gray-500 hover:text-gray-900'
+          }`}
+        >
+          <Package className="w-4 h-4" />
+          <span>Active Listings ({data.active_listings_count || 0})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('reviews')}
+          className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
+            activeTab === 'reviews'
+              ? 'border-brand-500 text-brand-600'
+              : 'border-transparent text-gray-500 hover:text-gray-900'
+          }`}
+        >
+          <Star className="w-4 h-4" />
+          <span>Verified Reviews ({seller.reviews_count || 0})</span>
+        </button>
+      </div>
+
+      {/* Tab 1: Active Listings Grid */}
+      {activeTab === 'listings' && (
+        <div>
+          {listings.length === 0 ? (
+            <div className="bg-white border border-gray-200 rounded-md p-12 text-center shadow-xs">
+              <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="font-bold text-sm text-gray-900">No active listings</h3>
+              <p className="text-xs text-gray-500 mt-1">This seller currently has no items available for sale.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+              {listings.map((item) => {
+                const cover =
+                  item.images?.find((i) => i.is_primary)?.image_url ||
+                  item.images?.[0]?.image_url;
+
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-white border border-gray-200/90 rounded-md overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col group"
+                  >
+                    <Link to={`/listing/${item.id}`} className="relative h-44 bg-gray-100 overflow-hidden block">
+                      {cover ? (
+                        <img
+                          src={cover}
+                          alt={item.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                          <Package className="w-8 h-8" />
+                        </div>
+                      )}
+                      <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-xs text-white text-[10px] font-extrabold px-2 py-0.5 rounded">
+                        {item.category?.name || 'Item'}
+                      </div>
+                    </Link>
+
+                    <div className="p-3.5 flex flex-col justify-between flex-1 space-y-2.5">
+                      <div>
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="font-extrabold text-base text-gray-900">
+                            {item.transaction_type === 'DONATE' ? 'Free (Donation)' : `Rs ${item.price}`}
+                          </span>
+                          <span className="text-[10px] font-bold text-gray-500 uppercase bg-gray-100 px-1.5 py-0.5 rounded">
+                            {item.condition}
+                          </span>
+                        </div>
+                        <Link
+                          to={`/listing/${item.id}`}
+                          className="font-bold text-xs text-gray-800 hover:text-brand-600 block line-clamp-2 mt-1"
+                        >
+                          {item.title}
+                        </Link>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs">
+                        <span className="flex items-center gap-1 text-gray-500 truncate text-[11px]">
+                          <MapPin className="w-3 h-3 text-gray-400 shrink-0" />
+                          {item.location}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => setChatListing(item)}
+                          className="inline-flex items-center gap-1 bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold text-xs px-2.5 py-1 rounded transition-colors shadow-2xs cursor-pointer"
+                        >
+                          <MessageCircle className="w-3 h-3" />
+                          Chat
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab 2: Verified Reviews List */}
+      {activeTab === 'reviews' && (
+        <div className="space-y-4">
+          {recent_reviews.length === 0 ? (
+            <div className="bg-white border border-gray-200 rounded-md p-12 text-center shadow-xs">
+              <Star className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="font-bold text-sm text-gray-900">No reviews yet</h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Reviews appear here once campus trades are completed and verified by peers.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {recent_reviews.map((rev) => (
+                <div
+                  key={rev.id}
+                  className="bg-white border border-gray-200 rounded-md p-4 shadow-2xs space-y-2.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 font-bold text-xs flex items-center justify-center">
+                        {rev.reviewer_name?.slice(0, 2).toUpperCase() || 'ST'}
+                      </div>
+                      <div>
+                        <div className="font-bold text-xs text-gray-900">{rev.reviewer_name}</div>
+                        <div className="text-[10px] text-gray-400">Verified Campus Buyer</div>
+                      </div>
+                    </div>
+
+                    {/* Stars */}
+                    <div className="flex items-center gap-0.5">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-3.5 h-3.5 ${
+                            i < rev.rating ? 'fill-amber-400 text-amber-500' : 'text-gray-200'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {rev.quick_tags && rev.quick_tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {rev.quick_tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="bg-gray-100 text-gray-700 text-[10px] font-semibold px-2 py-0.5 rounded"
+                        >
+                          ✓ {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {rev.comment && (
+                    <p className="text-xs text-gray-700 leading-relaxed italic bg-gray-50/80 p-2.5 rounded border border-gray-100">
+                      "{rev.comment}"
+                    </p>
+                  )}
+
+                  <div className="flex items-center justify-between text-[10px] text-gray-400 pt-1 border-t border-gray-50">
+                    <span className="truncate max-w-[200px]">Item: {rev.listing_title}</span>
+                    <span>{new Date(rev.created_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* In-App Chat Drawer Integration */}
+      {chatListing && (
+        <ChatDrawer
+          listingId={chatListing.id}
+          peerId={seller.id}
+          peerName={seller.display_name}
+          listingTitle={chatListing.title}
+          listingPrice={chatListing.price}
+          listingImage={chatListing.images?.[0]?.image_url}
+          onClose={() => setChatListing(null)}
+        />
+      )}
+    </div>
+  );
+}

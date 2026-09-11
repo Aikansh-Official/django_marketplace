@@ -13,7 +13,9 @@ from .views import (
     AdminDealListView, AdminDealActionView,
     AdminBroadcastNotificationView, AdminDirectNotificationView, AdminNotificationStatsView,
     UrgentNotificationView, AdminAnalyticsView,
-    AdminAuditLogListView, AdminSystemHealthView
+    AdminAuditLogListView, AdminSystemHealthView,
+    BuyerCounterRespondView, ReviewCreateView, SellerReviewsListView,
+    PublicSellerProfileView, ChatMessageListCreateView, UserConversationsView, SearchSuggestionsView
 )
 
 urlpatterns = [
@@ -25,6 +27,13 @@ urlpatterns = [
     path('offers/<int:pk>/respond/', RespondOfferView.as_view(), name='respond-offer'),
     path('offers/<int:pk>/generate-qr/', GenerateHandoverQRView.as_view(), name='generate-handover-qr'),
     path('offers/<int:pk>/cancel/', CancelDealView.as_view(), name='cancel-deal'),
+    path('offers/<int:pk>/counter-respond/', BuyerCounterRespondView.as_view(), name='counter-respond'),
+    path('reviews/', ReviewCreateView.as_view(), name='create-review'),
+    path('seller/<int:pk>/reviews/', SellerReviewsListView.as_view(), name='seller-reviews'),
+    path('seller/<int:pk>/', PublicSellerProfileView.as_view(), name='seller-public-profile'),
+    path('chat/<int:listing_id>/<int:peer_id>/', ChatMessageListCreateView.as_view(), name='chat-messages'),
+    path('conversations/', UserConversationsView.as_view(), name='user-conversations'),
+    path('search-suggestions/', SearchSuggestionsView.as_view(), name='search-suggestions'),
     path('handover/verify/', VerifyHandoverView.as_view(), name='verify-handover'),
     path('handover/confirm/', ConfirmHandoverView.as_view(), name='confirm-handover'),
     path('notifications/', NotificationListView.as_view(), name='notifications-list'),

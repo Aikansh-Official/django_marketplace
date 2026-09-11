@@ -67,7 +67,23 @@ class CustomUser(AbstractUser):
         except Exception:
             pass
 
-        return min(100, score)
+        # 5. Peer Ratings & Reviews (+ up to 15 Points for high average ratings, or deduction for low ratings)
+        try:
+            from marketplace.models import Review
+            reviews = Review.objects.filter(reviewed_user=self)
+            review_count = reviews.count()
+            if review_count > 0:
+                avg_rating = reviews.aggregate(models.Avg('rating'))['rating__avg'] or 0
+                if avg_rating >= 4.5:
+                    score += min(15, review_count * 3)
+                elif avg_rating >= 3.5:
+                    score += min(8, review_count * 2)
+                elif avg_rating < 2.5:
+                    score -= min(15, review_count * 3)
+        except Exception:
+            pass
+
+        return max(0, min(100, score))
 
     def save(self, *args, **kwargs):
         if self.full_name and not self.first_name:

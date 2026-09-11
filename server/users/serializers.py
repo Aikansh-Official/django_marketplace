@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db import models
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -210,4 +211,69 @@ class StaffUserSerializer(serializers.ModelSerializer):
             'admin_role', 'effective_role', 'is_staff', 'is_superuser',
             'is_active', 'date_joined', 'last_login', 'profile_photo'
         )
+
+
+class PublicSellerProfileSerializer(serializers.ModelSerializer):
+    """
+    DPDP Act (2023) Compliant Public Seller Profile Serializer.
+    Enforces strict Data Minimization & Privacy Protection:
+    - Never exposes Registration Number (username), raw email, or phone number.
+    - Never exposes Physical ID Card images or OCR metadata.
+    - Exposes only sanitized display name, verified reputation, trust score, and trade stats.
+    """
+    display_name = serializers.SerializerMethodField()
+    member_since = serializers.SerializerMethodField()
+    avg_rating = serializers.SerializerMethodField()
+    reviews_count = serializers.SerializerMethodField()
+    completed_trades_count = serializers.SerializerMethodField()
+    trust_score = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            'id', 'display_name', 'profile_photo',
+            'is_verified_student', 'is_id_verified',
+            'college_domain', 'trust_score', 'completed_trades_count',
+            'member_since', 'avg_rating', 'reviews_count'
+        )
+        read_only_fields = fields
+
+    def get_display_name(self, obj):
+        name = (getattr(obj, 'full_name', '') or getattr(obj, 'first_name', '')).strip()
+        if not name:
+            return f"Campus Trader #{obj.id}"
+        # Keep student privacy intact: e.g. "Rahul S." or single name
+        parts = name.split()
+        if len(parts) >= 2:
+            return f"{parts[0]} {parts[1][0]}."
+        return parts[0]
+
+    def get_member_since(self, obj):
+        if obj.date_joined:
+            return obj.date_joined.strftime('%B %Y')
+        return 'Campus Member'
+
+    def get_trust_score(self, obj):
+        return getattr(obj, 'trust_score', 0) or 0
+
+    def get_completed_trades_count(self, obj):
+        if hasattr(obj, 'annotated_completed_trades'):
+            return obj.annotated_completed_trades
+        return getattr(obj, '_completed_trades_count', 0)
+
+    def get_avg_rating(self, obj):
+        try:
+            from marketplace.models import Review
+            avg = Review.objects.filter(reviewed_user=obj).aggregate(models.Avg('rating'))['rating__avg']
+            return round(avg, 1) if avg is not None else None
+        except Exception:
+            return None
+
+    def get_reviews_count(self, obj):
+        try:
+            from marketplace.models import Review
+            return Review.objects.filter(reviewed_user=obj).count()
+        except Exception:
+            return 0
+
 

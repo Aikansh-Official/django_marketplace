@@ -2,14 +2,18 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
-from .models import OTPVerification
+from django.conf import settings
 from django.utils import timezone
+from .models import OTPVerification
 
 User = get_user_model()
 
 class UserSecurityTests(TestCase):
     def setUp(self):
         self.client = APIClient()
+        security_key = getattr(settings, 'DATA_SECURITY_KEY', '')
+        if security_key:
+            self.client.credentials(HTTP_X_APP_SECURITY_KEY=security_key)
         self.regular_user = User.objects.create_user(
             username='12345678',
             email='student@lpu.in',
@@ -40,9 +44,10 @@ class UserSecurityTests(TestCase):
 
     def test_otp_brute_force_lockout(self):
         email = 'newstudent@gmail.com'
+        from server.crypto import encrypt_data
         OTPVerification.objects.create(
             email=email,
-            otp='123456',
+            otp=encrypt_data('123456'),
             created_at=timezone.now(),
             attempts=0
         )
