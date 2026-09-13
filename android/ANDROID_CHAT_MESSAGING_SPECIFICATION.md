@@ -195,7 +195,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
-data class SocketPayload(val type: String, val message: String?, val sender_id: Int?, val listing_id: Int?)
+data class SocketPayload(val type: String, val message: String?, val sender_id: String?, val listing_id: String?)
 
 @Singleton
 class ChatWebSocketClient @Inject constructor(

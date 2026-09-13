@@ -252,7 +252,7 @@ interface ListingManagementApiService {
 
     @PUT("api/marketplace/listings/{id}/")
     suspend fun updateListing(
-        @Path("id") id: Int,
+        @Path("id") id: String,
         @Body request: CreateListingRequest
     ): Response<ListingDto>
 
@@ -261,12 +261,12 @@ interface ListingManagementApiService {
 
     @POST("api/marketplace/listings/{id}/status/")
     suspend fun updateListingStatus(
-        @Path("id") id: Int,
+        @Path("id") id: String,
         @Body request: StatusUpdateRequest
     ): Response<GenericMessageResponse>
 
     @DELETE("api/marketplace/listings/{id}/")
-    suspend fun deleteListing(@Path("id") id: Int): Response<Unit>
+    suspend fun deleteListing(@Path("id") id: String): Response<Unit>
 }
 ```
 
@@ -343,7 +343,7 @@ import javax.inject.Inject
 
 data class CreateListingUiState(
     val title: String = "",
-    val categoryId: Int = 0,
+    val categoryId: String = "",
     val description: String = "",
     val price: String = "",
     val isNegotiable: Boolean = true,
@@ -373,7 +373,7 @@ class CreateListingViewModel @Inject constructor(
 
     fun onTitleChange(v: String) { _uiState.value = _uiState.value.copy(title = v) }
     fun onPriceChange(v: String) { if (v.all { it.isDigit() || it == '.' }) _uiState.value = _uiState.value.copy(price = v) }
-    fun onCategoryChange(id: Int) { _uiState.value = _uiState.value.copy(categoryId = id) }
+    fun onCategoryChange(id: String) { _uiState.value = _uiState.value.copy(categoryId = id) }
     fun onTransactionTypeChange(type: String) { _uiState.value = _uiState.value.copy(transactionType = type) }
     fun onConditionChange(c: String) { _uiState.value = _uiState.value.copy(condition = c) }
     fun onLocationChange(loc: String) { _uiState.value = _uiState.value.copy(location = loc) }

@@ -234,8 +234,8 @@ data class CreateOfferRequest(
 )
 
 data class OfferDto(
-    val id: Int,
-    @SerializedName("listing") val listingId: Int,
+    val id: String,
+    @SerializedName("listing") val listingId: String,
     @SerializedName("offer_amount") val offerAmount: Double,
     @SerializedName("buyer_message") val buyerMessage: String,
     val status: String,
@@ -243,18 +243,18 @@ data class OfferDto(
 )
 
 data class CreateReportRequest(
-    @SerializedName("listing_id") val listingId: Int,
+    @SerializedName("listing_id") val listingId: String,
     val reason: String,
     val details: String
 )
 
 interface ProductDetailApiService {
     @GET("api/marketplace/listings/{id}/")
-    suspend fun getListingDetail(@Path("id") id: Int): Response<ListingDto>
+    suspend fun getListingDetail(@Path("id") id: String): Response<ListingDto>
 
     @POST("api/marketplace/listings/{id}/offer/")
     suspend fun makeOffer(
-        @Path("id") id: Int,
+        @Path("id") id: String,
         @Body request: CreateOfferRequest
     ): Response<OfferDto>
 

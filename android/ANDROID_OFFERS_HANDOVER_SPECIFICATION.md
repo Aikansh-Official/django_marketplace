@@ -236,7 +236,7 @@ import retrofit2.http.*
 data class RespondOfferRequest(val action: String)
 
 data class HandoverSessionDto(
-    val id: Int,
+    val id: String,
     val token: String,
     @SerializedName("pin_code") val pinCode: String,
     @SerializedName("expires_at") val expiresAt: String,

@@ -612,7 +612,7 @@ data class LoginRequest(
 )
 
 data class UserDto(
-    val id: Int,
+    val id: String,
     val username: String,
     val email: String,
     @SerializedName("full_name") val fullName: String,

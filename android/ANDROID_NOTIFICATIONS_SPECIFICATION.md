@@ -188,7 +188,7 @@ import retrofit2.Response
 import retrofit2.http.*
 
 data class NotificationDto(
-    val id: Int,
+    val id: String,
     @SerializedName("notification_type") val type: String,
     val title: String,
     val message: String,
@@ -198,7 +198,7 @@ data class NotificationDto(
 )
 
 data class ListingSummaryDto(
-    val id: Int,
+    val id: String,
     val title: String
 )
 
@@ -207,13 +207,13 @@ interface NotificationApiService {
     suspend fun getNotifications(): Response<List<NotificationDto>>
 
     @PATCH("api/marketplace/notifications/{id}/read/")
-    suspend fun markAsRead(@Path("id") id: Int): Response<GenericMessageResponse>
+    suspend fun markAsRead(@Path("id") id: String): Response<GenericMessageResponse>
 
     @POST("api/marketplace/notifications/read-all/")
     suspend fun markAllAsRead(): Response<GenericMessageResponse>
 
     @DELETE("api/marketplace/notifications/{id}/delete/")
-    suspend fun deleteNotification(@Path("id") id: Int): Response<GenericMessageResponse>
+    suspend fun deleteNotification(@Path("id") id: String): Response<GenericMessageResponse>
 
     @DELETE("api/marketplace/notifications/clear-all/")
     suspend fun clearAllNotifications(): Response<GenericMessageResponse>
@@ -354,7 +354,7 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    fun markAsRead(id: Int) {
+    fun markAsRead(id: String) {
         viewModelScope.launch {
             api.markAsRead(id)
             val updated = _uiState.value.notifications.map {
@@ -372,7 +372,7 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    fun deleteNotification(id: Int) {
+    fun deleteNotification(id: String) {
         viewModelScope.launch {
             api.deleteNotification(id)
             val updated = _uiState.value.notifications.filter { it.id != id }

@@ -218,20 +218,20 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 
 data class CategoryDto(
-    val id: Int,
+    val id: String,
     val name: String,
     val slug: String,
     val icon: String?
 )
 
 data class ListingImageDto(
-    val id: Int,
+    val id: String,
     @SerializedName("image_url") val imageUrl: String,
     @SerializedName("is_primary") val isPrimary: Boolean
 )
 
 data class SellerSummaryDto(
-    val id: Int,
+    val id: String,
     val username: String,
     @SerializedName("full_name") val fullName: String,
     @SerializedName("trust_score") val trustScore: Int,
@@ -239,7 +239,7 @@ data class SellerSummaryDto(
 )
 
 data class ListingDto(
-    val id: Int,
+    val id: String,
     val title: String,
     val description: String,
     val price: Double,
