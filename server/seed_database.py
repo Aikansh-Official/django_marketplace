@@ -44,7 +44,40 @@ def seed():
         defaults={'value': ''}
     )
     print("Verified platform settings.")
-    print("Database is ready. No dummy listings, users, or offers were created.")
+
+    # 3. Ensure Default Superadmin Exists
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
+    admin_email = os.environ.get('ADMIN_EMAIL', 'admin@campusxchange.com')
+    admin_password = os.environ.get('ADMIN_PASSWORD', 'Admin@123456')
+
+    admin_user, created = User.objects.get_or_create(
+        username=admin_username,
+        defaults={
+            'email': admin_email,
+            'full_name': 'Campus Super Admin',
+            'is_staff': True,
+            'is_superuser': True,
+            'role': 'SELLER',
+            'admin_role': 'SUPER_ADMIN',
+            'is_verified_student': True,
+            'trust_score': 100
+        }
+    )
+    admin_user.is_staff = True
+    admin_user.is_superuser = True
+    admin_user.admin_role = 'SUPER_ADMIN'
+    admin_user.set_password(admin_password)
+    admin_user.save()
+
+    status_str = "Created new" if created else "Updated existing"
+    print(f"{status_str} superadmin user:")
+    print(f"   - Username: {admin_username}")
+    print(f"   - Email: {admin_email}")
+    print(f"   - Password: {admin_password}")
+    print(f"   - Role: SUPER_ADMIN")
+    print("Database seeding completed successfully!")
 
 if __name__ == '__main__':
     seed()

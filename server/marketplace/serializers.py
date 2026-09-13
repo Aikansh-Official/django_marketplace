@@ -274,7 +274,7 @@ class HandoverSessionSerializer(serializers.ModelSerializer):
     seller_reg = serializers.CharField(source='offer.listing.seller.username', read_only=True)
     buyer_name = serializers.CharField(source='offer.buyer.full_name', read_only=True)
     buyer_reg = serializers.CharField(source='offer.buyer.username', read_only=True)
-    listing_id = serializers.IntegerField(source='offer.listing.id', read_only=True)
+    listing_id = serializers.CharField(source='offer.listing.id', read_only=True)
     listing_title = serializers.CharField(source='offer.listing.title', read_only=True)
     listing_price = serializers.DecimalField(source='offer.offer_amount', max_digits=10, decimal_places=2, read_only=True)
     remaining_seconds = serializers.SerializerMethodField()
@@ -299,7 +299,7 @@ class HandoverSessionSerializer(serializers.ModelSerializer):
 class OfferSerializer(serializers.ModelSerializer):
     listing_title = serializers.CharField(source='listing.title', read_only=True)
     listing_price = serializers.DecimalField(source='listing.price', max_digits=10, decimal_places=2, read_only=True)
-    seller_id = serializers.IntegerField(source='listing.seller.id', read_only=True)
+    seller_id = serializers.CharField(source='listing.seller.id', read_only=True)
     seller_name = serializers.CharField(source='listing.seller.full_name', read_only=True)
     seller_reg = serializers.CharField(source='listing.seller.username', read_only=True)
     seller_phone = serializers.CharField(source='listing.contact_phone', read_only=True)
@@ -386,7 +386,7 @@ class ListingReportSerializer(serializers.ModelSerializer):
     listing_description = serializers.CharField(source='listing.description', read_only=True, default='')
     listing_image_url = serializers.SerializerMethodField()
 
-    seller_id = serializers.IntegerField(source='listing.seller.id', read_only=True, default=None)
+    seller_id = serializers.CharField(source='listing.seller.id', read_only=True, default=None)
     seller_username = serializers.CharField(source='listing.seller.username', read_only=True, default='')
     seller_full_name = serializers.CharField(source='listing.seller.full_name', read_only=True, default='')
     seller_email = serializers.CharField(source='listing.seller.email', read_only=True, default='')
@@ -426,7 +426,7 @@ class PlatformSettingSerializer(serializers.ModelSerializer):
 
 
 class AdminDealSerializer(serializers.ModelSerializer):
-    listing_id = serializers.IntegerField(source='listing.id', read_only=True)
+    listing_id = serializers.CharField(source='listing.id', read_only=True)
     listing_title = serializers.CharField(source='listing.title', read_only=True)
     listing_price = serializers.DecimalField(source='listing.price', max_digits=10, decimal_places=2, read_only=True)
     listing_status = serializers.CharField(source='listing.status', read_only=True)
@@ -435,7 +435,7 @@ class AdminDealSerializer(serializers.ModelSerializer):
     listing_category = serializers.CharField(source='listing.category.name', read_only=True, default='General')
     listing_image = serializers.SerializerMethodField()
 
-    buyer_id = serializers.IntegerField(source='buyer.id', read_only=True)
+    buyer_id = serializers.CharField(source='buyer.id', read_only=True)
     buyer_username = serializers.CharField(source='buyer.username', read_only=True)
     buyer_full_name = serializers.CharField(source='buyer.full_name', read_only=True, default='')
     buyer_email = serializers.CharField(source='buyer.email', read_only=True)
@@ -444,7 +444,7 @@ class AdminDealSerializer(serializers.ModelSerializer):
     buyer_is_verified = serializers.BooleanField(source='buyer.is_id_verified', read_only=True, default=False)
     buyer_is_active = serializers.BooleanField(source='buyer.is_active', read_only=True, default=True)
 
-    seller_id = serializers.IntegerField(source='listing.seller.id', read_only=True)
+    seller_id = serializers.CharField(source='listing.seller.id', read_only=True)
     seller_username = serializers.CharField(source='listing.seller.username', read_only=True)
     seller_full_name = serializers.CharField(source='listing.seller.full_name', read_only=True, default='')
     seller_email = serializers.CharField(source='listing.seller.email', read_only=True)
@@ -516,7 +516,7 @@ class AdminAuditLogSerializer(serializers.ModelSerializer):
 class ReviewSerializer(serializers.ModelSerializer):
     reviewer_name = serializers.SerializerMethodField()
     listing_title = serializers.CharField(source='listing.title', read_only=True)
-    deal_id = serializers.IntegerField(source='deal.id', read_only=True)
+    deal_id = serializers.CharField(source='deal.id', read_only=True)
 
     class Meta:
         model = Review
