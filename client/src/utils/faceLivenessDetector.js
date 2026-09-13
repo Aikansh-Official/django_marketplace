@@ -44,9 +44,10 @@ export async function getVisionDetectors() {
       let vision;
       try {
         vision = await FilesetResolver.forVisionTasks('/mediapipe/wasm');
-      } catch {
+      } catch (wasmErr) {
+        console.warn('Local WASM failed, falling back to CDN:', wasmErr);
         vision = await FilesetResolver.forVisionTasks(
-          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm'
+          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm'
         );
       }
 
@@ -59,15 +60,28 @@ export async function getVisionDetectors() {
         faceModelPath = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
       }
 
-      landmarkerInstance = await FaceLandmarker.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath: faceModelPath,
-          delegate: 'GPU'
-        },
-        outputFaceBlendshapes: true,
-        runningMode: 'VIDEO',
-        numFaces: 1
-      });
+      try {
+        landmarkerInstance = await FaceLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: faceModelPath,
+            delegate: 'GPU'
+          },
+          outputFaceBlendshapes: true,
+          runningMode: 'VIDEO',
+          numFaces: 1
+        });
+      } catch (gpuErr) {
+        console.warn('FaceLandmarker GPU init failed, falling back to CPU:', gpuErr);
+        landmarkerInstance = await FaceLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: faceModelPath,
+            delegate: 'CPU'
+          },
+          outputFaceBlendshapes: true,
+          runningMode: 'VIDEO',
+          numFaces: 1
+        });
+      }
 
       // 3. Initialize HandLandmarker (to detect hands / obstacles in selfie)
       let handModelPath = '/mediapipe/models/hand_landmarker.task';
@@ -87,13 +101,25 @@ export async function getVisionDetectors() {
           runningMode: 'VIDEO',
           numHands: 2
         });
-      } catch (handErr) {
-        console.warn('HandLandmarker init warning (face detector will still work):', handErr);
+      } catch {
+        try {
+          handLandmarkerInstance = await HandLandmarker.createFromOptions(vision, {
+            baseOptions: {
+              modelAssetPath: handModelPath,
+              delegate: 'CPU'
+            },
+            runningMode: 'VIDEO',
+            numHands: 2
+          });
+        } catch (handErr) {
+          console.warn('HandLandmarker init warning (face detector will still work):', handErr);
+        }
       }
 
       return { faceLandmarker: landmarkerInstance, handLandmarker: handLandmarkerInstance };
     } catch (err) {
       console.warn('MediaPipe initialization failed:', err);
+      initPromise = null; // Allow retry on subsequent attempts
       return { faceLandmarker: null, handLandmarker: null };
     }
   })();
