@@ -3,6 +3,30 @@ from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from datetime import timedelta
 
+# 12 Modular Administrative Permissions Catalog
+ADMIN_PERMISSIONS_CATALOG = [
+    {'key': 'dashboard', 'label': 'Dashboard Overview', 'group': 'Core', 'description': 'Summary metrics, quick KPIs & overview dashboard'},
+    {'key': 'analytics', 'label': 'Analytics & Growth', 'group': 'Monitoring', 'description': 'Charts, growth trends & volume reports'},
+    {'key': 'students', 'label': 'Students & Verification', 'group': 'Community', 'description': 'Student directory, ID card lightbox & verification status'},
+    {'key': 'listings', 'label': 'Listings & Catalog', 'group': 'Operations', 'description': 'Marketplace catalog, moderation & status management'},
+    {'key': 'deals', 'label': 'Deals & Handovers', 'group': 'Operations', 'description': 'Peer transactions, handover QR sessions & dispute actions'},
+    {'key': 'categories', 'label': 'Category Management', 'group': 'Operations', 'description': 'Create, edit, organize and delete categories'},
+    {'key': 'reports', 'label': 'Reports & Moderation', 'group': 'Operations', 'description': 'Student reports, flagged items & banned keyword blacklist'},
+    {'key': 'notifications', 'label': 'Campus Broadcasts', 'group': 'Community', 'description': 'Campus-wide announcements & direct notices'},
+    {'key': 'audit_logs', 'label': 'Audit Trail', 'group': 'Governance', 'description': 'Immutable admin action history & forensic review'},
+    {'key': 'system_health', 'label': 'System Health', 'group': 'Governance', 'description': 'Database diagnostics, server latency & worker status'},
+    {'key': 'team', 'label': 'Staff Team (RBAC)', 'group': 'Governance', 'description': 'Staff directory, appointments & custom permissions'},
+    {'key': 'settings', 'label': 'Platform Settings', 'group': 'Governance', 'description': 'Platform constraints, maintenance mode & domain whitelist'},
+]
+
+ALL_PERMISSION_KEYS = [p['key'] for p in ADMIN_PERMISSIONS_CATALOG]
+
+DEFAULT_ROLE_PERMISSIONS = {
+    'SUPER_ADMIN': ALL_PERMISSION_KEYS,
+    'MODERATOR': ['dashboard', 'listings', 'deals', 'categories', 'reports'],
+    'ID_VERIFIER': ['dashboard', 'students'],
+}
+
 class CustomUser(AbstractUser):
     # Additional fields for LocalTrade
     full_name = models.CharField(max_length=255, blank=True, default='', help_text="Full Name of the student")
@@ -35,12 +59,32 @@ class CustomUser(AbstractUser):
         blank=True,
         help_text="Role for staff administration (SUPER_ADMIN, MODERATOR, ID_VERIFIER)"
     )
+    admin_permissions = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Custom list of allowed admin permission module keys"
+    )
 
     @property
     def effective_admin_role(self):
         if self.is_superuser:
             return 'SUPER_ADMIN'
         return self.admin_role or 'MODERATOR'
+
+    @property
+    def effective_admin_permissions(self):
+        if self.is_superuser or self.effective_admin_role == 'SUPER_ADMIN':
+            return list(ALL_PERMISSION_KEYS)
+        if self.admin_permissions and isinstance(self.admin_permissions, list) and len(self.admin_permissions) > 0:
+            return list(self.admin_permissions)
+        return list(DEFAULT_ROLE_PERMISSIONS.get(self.effective_admin_role, ['dashboard']))
+
+    def has_admin_permission(self, perm_key):
+        if not (self.is_staff or self.is_superuser):
+            return False
+        if self.is_superuser or self.effective_admin_role == 'SUPER_ADMIN':
+            return True
+        return perm_key in self.effective_admin_permissions
 
     def calculate_trust_score(self):
         score = 0
