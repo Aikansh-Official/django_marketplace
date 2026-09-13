@@ -13,7 +13,6 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 import os
 import sys
 from pathlib import Path
-import dj_database_url
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -44,9 +43,9 @@ if DEBUG and '*' not in ALLOWED_HOSTS:
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
+    'server.apps.MongoAdminConfig',
+    'server.apps.MongoAuthConfig',
+    'server.apps.MongoContentTypesConfig',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
@@ -54,7 +53,6 @@ INSTALLED_APPS = [
     # Third party
     'rest_framework',
     'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     
     # Local
@@ -95,33 +93,27 @@ TEMPLATES = [
 WSGI_APPLICATION = 'server.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/6.1/ref/settings/#databases
+# Database - MongoDB
+# https://django-mongodb-backend.readthedocs.io/
 
-SUPABASE_DB_URL = os.environ.get('SUPABASE_DB_URL')
+DEFAULT_AUTO_FIELD = 'django_mongodb_backend.fields.ObjectIdAutoField'
 
-if 'test' in sys.argv:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': ':memory:',
-        }
+MIGRATION_MODULES = {
+    'admin': 'server.mongo_migrations.admin',
+    'auth': 'server.mongo_migrations.auth',
+    'contenttypes': 'server.mongo_migrations.contenttypes',
+}
+
+MONGODB_URI = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/campusxchange')
+MONGODB_NAME = os.environ.get('MONGODB_NAME', 'campusxchange')
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django_mongodb_backend',
+        'HOST': MONGODB_URI,
+        'NAME': MONGODB_NAME,
     }
-elif SUPABASE_DB_URL:
-    DATABASES = {
-        'default': dj_database_url.parse(
-            SUPABASE_DB_URL,
-            conn_max_age=0 if DEBUG else 60,
-            conn_health_checks=True,
-        )
-    }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+}
 
 
 # Password validation
@@ -228,7 +220,7 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
+    'BLACKLIST_AFTER_ROTATION': False,
     'AUTH_COOKIE': 'access_token',
     'AUTH_COOKIE_REFRESH': 'refresh_token',
     'AUTH_COOKIE_SECURE': not DEBUG,
