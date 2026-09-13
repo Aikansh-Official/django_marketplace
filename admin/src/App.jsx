@@ -16,6 +16,7 @@ import SystemHealth from './pages/SystemHealth';
 import Team from './pages/Team';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
+import PermissionRoute from './components/PermissionRoute';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -74,18 +75,18 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Dashboard />} />
-          <Route path="analytics" element={<Analytics />} />
-          <Route path="students" element={<Students />} />
-          <Route path="listings" element={<Listings />} />
-          <Route path="deals" element={<Deals />} />
-          <Route path="categories" element={<Categories />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="notifications" element={<Notifications />} />
-          <Route path="audit-logs" element={<AuditLogs />} />
-          <Route path="system-health" element={<SystemHealth />} />
-          <Route path="team" element={<Team />} />
-          <Route path="settings" element={<Settings />} />
+          <Route index element={<PermissionRoute requiredPermission="dashboard"><Dashboard /></PermissionRoute>} />
+          <Route path="analytics" element={<PermissionRoute requiredPermission="analytics"><Analytics /></PermissionRoute>} />
+          <Route path="students" element={<PermissionRoute requiredPermission="students"><Students /></PermissionRoute>} />
+          <Route path="listings" element={<PermissionRoute requiredPermission="listings"><Listings /></PermissionRoute>} />
+          <Route path="deals" element={<PermissionRoute requiredPermission="deals"><Deals /></PermissionRoute>} />
+          <Route path="categories" element={<PermissionRoute requiredPermission="categories"><Categories /></PermissionRoute>} />
+          <Route path="reports" element={<PermissionRoute requiredPermission="reports"><Reports /></PermissionRoute>} />
+          <Route path="notifications" element={<PermissionRoute requiredPermission="notifications"><Notifications /></PermissionRoute>} />
+          <Route path="audit-logs" element={<PermissionRoute requiredPermission="audit_logs"><AuditLogs /></PermissionRoute>} />
+          <Route path="system-health" element={<PermissionRoute requiredPermission="system_health"><SystemHealth /></PermissionRoute>} />
+          <Route path="team" element={<PermissionRoute requiredPermission="team"><Team /></PermissionRoute>} />
+          <Route path="settings" element={<PermissionRoute requiredPermission="settings"><Settings /></PermissionRoute>} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
+import axios from 'axios';
 import {
   LayoutDashboard, Users, ShoppingCart, FolderTree, AlertTriangle,
   Settings, LogOut, Clock, Handshake, Bell, TrendingUp,
@@ -7,6 +8,9 @@ import {
 } from 'lucide-react';
 import CommandPalette from '../components/CommandPalette';
 import logoImg from '../assets/CampusXChange_Logo.jpeg';
+import { hasModulePermission, getEffectivePermissions } from '../utils/permissions';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export default function AdminLayout({ setAuth }) {
   const [time, setTime] = useState(new Date());
@@ -16,7 +20,7 @@ export default function AdminLayout({ setAuth }) {
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     
-    // Fetch user info from localStorage
+    // 1. Initial cached user from localStorage
     const userStr = localStorage.getItem('admin_user');
     if (userStr) {
       try {
@@ -25,6 +29,29 @@ export default function AdminLayout({ setAuth }) {
         console.error("Failed to parse user from local storage", e);
       }
     }
+
+    // 2. Refresh live session profile to synchronize permissions in real-time
+    const syncProfile = async () => {
+      try {
+        const token = localStorage.getItem('admin_access');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await axios.get(`${API_BASE}/auth/status/`, { headers, withCredentials: true });
+        if (res.data && res.data.isAuthenticated && res.data.user) {
+          const mergedUser = {
+            ...res.data.user,
+            admin_role: res.data.admin_role || res.data.user.admin_role,
+            effective_role: res.data.admin_role,
+            admin_permissions: res.data.admin_permissions || res.data.user.admin_permissions || [],
+            effective_permissions: res.data.admin_permissions || res.data.user.effective_permissions || []
+          };
+          setAdminUser(mergedUser);
+          localStorage.setItem('admin_user', JSON.stringify(mergedUser));
+        }
+      } catch (err) {
+        console.warn('Could not sync live admin permissions:', err);
+      }
+    };
+    syncProfile();
 
     const handleGlobalKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -49,20 +76,22 @@ export default function AdminLayout({ setAuth }) {
   };
 
   const navItems = [
-    { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-    { name: 'Analytics', path: '/analytics', icon: TrendingUp },
-    { name: 'Students', path: '/students', icon: Users },
-    { name: 'Listings', path: '/listings', icon: ShoppingCart },
-    { name: 'Deals', path: '/deals', icon: Handshake },
-    { name: 'Categories', path: '/categories', icon: FolderTree },
-    { name: 'Reports', path: '/reports', icon: AlertTriangle },
-    { name: 'Notifications', path: '/notifications', icon: Bell },
-    { name: 'Audit Logs', path: '/audit-logs', icon: ShieldAlert },
-    { name: 'System Health', path: '/system-health', icon: Activity },
-    { name: 'Staff Team', path: '/team', icon: UserCheck },
-    { name: 'Settings', path: '/settings', icon: Settings },
+    { name: 'Dashboard', path: '/', icon: LayoutDashboard, permission: 'dashboard' },
+    { name: 'Analytics', path: '/analytics', icon: TrendingUp, permission: 'analytics' },
+    { name: 'Students', path: '/students', icon: Users, permission: 'students' },
+    { name: 'Listings', path: '/listings', icon: ShoppingCart, permission: 'listings' },
+    { name: 'Deals', path: '/deals', icon: Handshake, permission: 'deals' },
+    { name: 'Categories', path: '/categories', icon: FolderTree, permission: 'categories' },
+    { name: 'Reports', path: '/reports', icon: AlertTriangle, permission: 'reports' },
+    { name: 'Notifications', path: '/notifications', icon: Bell, permission: 'notifications' },
+    { name: 'Audit Logs', path: '/audit-logs', icon: ShieldAlert, permission: 'audit_logs' },
+    { name: 'System Health', path: '/system-health', icon: Activity, permission: 'system_health' },
+    { name: 'Staff Team', path: '/team', icon: UserCheck, permission: 'team' },
+    { name: 'Settings', path: '/settings', icon: Settings, permission: 'settings' },
   ];
 
+  const visibleNavItems = navItems.filter((item) => hasModulePermission(adminUser, item.permission));
+  const effectivePerms = getEffectivePermissions(adminUser);
   const adminRoleDisplay = adminUser?.admin_role || (adminUser?.is_superuser ? 'SUPER_ADMIN' : 'MODERATOR');
 
   return (
@@ -72,6 +101,7 @@ export default function AdminLayout({ setAuth }) {
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
+        adminUser={adminUser}
       />
 
       {/* Sidebar - Simple Solid Design */}
@@ -87,7 +117,7 @@ export default function AdminLayout({ setAuth }) {
         </div>
         
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-          {navItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <NavLink 
               key={item.name}
               to={item.path} 
@@ -112,9 +142,14 @@ export default function AdminLayout({ setAuth }) {
             </div>
             <div className="overflow-hidden min-w-0">
               <p className="text-sm font-bold text-white truncate">{adminUser ? adminUser.full_name || adminUser.username : 'Admin User'}</p>
-              <span className="inline-block px-1.5 py-0.2 text-[9px] font-black uppercase rounded bg-brand-900 text-brand-300 border border-brand-700">
-                {adminRoleDisplay.replace('_', ' ')}
-              </span>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="inline-block px-1.5 py-0.2 text-[9px] font-black uppercase rounded bg-brand-900 text-brand-300 border border-brand-700">
+                  {adminRoleDisplay.replace('_', ' ')}
+                </span>
+                <span className="text-[9px] text-gray-400 font-semibold">
+                  {effectivePerms.length} tabs
+                </span>
+              </div>
             </div>
           </div>
           <button 

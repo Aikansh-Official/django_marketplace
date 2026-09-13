@@ -183,7 +183,7 @@ export default function Categories() {
 
     try {
       const payload = {};
-      if (reassignTo) payload.reassign_to = parseInt(reassignTo);
+      if (reassignTo) payload.reassign_to = String(reassignTo);
       if (forceDelete) payload.force = true;
 
       const res = await axios.delete(

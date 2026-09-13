@@ -39,8 +39,8 @@ The platform will be available as both an **Android application** and a **web ap
                               │
         ┌─────────────┬───────┴───────┬──────────────┐
         ▼             ▼               ▼              ▼
-   PostgreSQL       Redis         Cloudinary        FCM
-   (Supabase)    Chat/Cache         Images       Notifications
+     MongoDB        Redis         Cloudinary        FCM
+  (Atlas/Local)  Chat/Cache         Images       Notifications
         │
         ▼
    Django Admin
@@ -145,49 +145,21 @@ Website ─────┼──→ Django REST API
 
 # 6. 🗄️ Database
 
-## PostgreSQL — Hosted on Supabase
+## MongoDB — Hosted on MongoDB Atlas / Local
 
-### Why PostgreSQL?
+### Why MongoDB?
 
-CampusXChange contains many relationships:
+CampusXChange uses MongoDB with the official `django-mongodb-backend` (Django 6.1):
 
-```text
-User
- ↓
-Listing
- ↓
-Offer
- ↓
-Deal
- ↓
-Review
- ↓
-Trust Score
-```
-
-Other relationships include:
-
-```text
-User ↔ Wishlist ↔ Listing
-User ↔ Chat ↔ User
-User ↔ Rental ↔ Listing
-User ↔ Item Request ↔ Listing
-```
-
-PostgreSQL provides:
-
-- Foreign Keys
-- Relationships
-- Transactions
-- Constraints
-- Complex Queries
-- Indexing
-- Strong Data Consistency
-- Excellent Django ORM support
+- Document data model with BSON `ObjectId` primary keys
+- Flexible schema for rich marketplace documents and nested media
+- High-performance horizontal scalability via MongoDB Atlas clusters
+- Seamless integration with Django ORM through `django-mongodb-backend`
+- Rich aggregation pipelines and dynamic indexing
 
 ### Final Database Choice
 
-> **PostgreSQL hosted on Supabase**
+> **MongoDB (Atlas / Local) via `django-mongodb-backend`**
 
 ---
 
@@ -750,7 +722,7 @@ for configuration and secrets.
 | Website | Vercel |
 | Django Backend | Render initially |
 | Backend Future | AWS EC2 |
-| Database | Supabase PostgreSQL |
+| Database | MongoDB Atlas / Local MongoDB |
 | Images | Cloudinary |
 | Notifications | Firebase FCM |
 | Redis | Managed Redis provider |
@@ -779,8 +751,8 @@ for configuration and secrets.
           ┌───────────────────┼───────────────────┐
           │                   │                   │
           ▼                   ▼                   ▼
-   PostgreSQL               Redis             Cloudinary
-   (Supabase)            Cache + Chat            Images
+       MongoDB              Redis             Cloudinary
+    (Atlas/Local)        Cache + Chat            Images
           │                   │
           │                   ▼
           │            Django Channels

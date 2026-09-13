@@ -7,7 +7,9 @@ import {
   Sparkles, FileText, Download, X, CornerDownLeft
 } from 'lucide-react';
 
-export default function CommandPalette({ isOpen, onClose }) {
+import { hasModulePermission } from '../utils/permissions';
+
+export default function CommandPalette({ isOpen, onClose, adminUser }) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef(null);
@@ -15,29 +17,31 @@ export default function CommandPalette({ isOpen, onClose }) {
 
   const commands = [
     // Pages / Navigation
-    { id: 'dash', title: 'Dashboard Overview', category: 'Navigation', icon: LayoutDashboard, path: '/', shortcut: 'D' },
-    { id: 'analytics', title: 'Analytics & Growth Charts', category: 'Navigation', icon: TrendingUp, path: '/analytics', shortcut: 'A' },
-    { id: 'students', title: 'Student Management & ID Cards', category: 'Navigation', icon: Users, path: '/students', shortcut: 'S' },
-    { id: 'listings', title: 'Listing Catalog & Inventory', category: 'Navigation', icon: ShoppingCart, path: '/listings', shortcut: 'L' },
-    { id: 'deals', title: 'Deals & QR Handover Sessions', category: 'Navigation', icon: Handshake, path: '/deals', shortcut: 'H' },
-    { id: 'categories', title: 'Category Management', category: 'Navigation', icon: FolderTree, path: '/categories', shortcut: 'C' },
-    { id: 'reports', title: 'Content Moderation & Reports', category: 'Navigation', icon: AlertTriangle, path: '/reports', shortcut: 'M' },
-    { id: 'notifications', title: 'Broadcasts & Direct Notices', category: 'Navigation', icon: Bell, path: '/notifications', shortcut: 'B' },
-    { id: 'audit-logs', title: 'Audit Trail & Action Logs', category: 'Navigation', icon: ShieldAlert, path: '/audit-logs', shortcut: 'T' },
-    { id: 'system-health', title: 'System Health & Diagnostics', category: 'Navigation', icon: Activity, path: '/system-health', shortcut: 'P' },
-    { id: 'team', title: 'Staff Team & Admin RBAC', category: 'Navigation', icon: UserCheck, path: '/team', shortcut: 'U' },
-    { id: 'settings', title: 'Platform Settings & Constraints', category: 'Navigation', icon: Settings, path: '/settings', shortcut: 'O' },
+    { id: 'dash', title: 'Dashboard Overview', category: 'Navigation', icon: LayoutDashboard, path: '/', shortcut: 'D', permission: 'dashboard' },
+    { id: 'analytics', title: 'Analytics & Growth Charts', category: 'Navigation', icon: TrendingUp, path: '/analytics', shortcut: 'A', permission: 'analytics' },
+    { id: 'students', title: 'Student Management & ID Cards', category: 'Navigation', icon: Users, path: '/students', shortcut: 'S', permission: 'students' },
+    { id: 'listings', title: 'Listing Catalog & Inventory', category: 'Navigation', icon: ShoppingCart, path: '/listings', shortcut: 'L', permission: 'listings' },
+    { id: 'deals', title: 'Deals & QR Handover Sessions', category: 'Navigation', icon: Handshake, path: '/deals', shortcut: 'H', permission: 'deals' },
+    { id: 'categories', title: 'Category Management', category: 'Navigation', icon: FolderTree, path: '/categories', shortcut: 'C', permission: 'categories' },
+    { id: 'reports', title: 'Content Moderation & Reports', category: 'Navigation', icon: AlertTriangle, path: '/reports', shortcut: 'M', permission: 'reports' },
+    { id: 'notifications', title: 'Broadcasts & Direct Notices', category: 'Navigation', icon: Bell, path: '/notifications', shortcut: 'B', permission: 'notifications' },
+    { id: 'audit-logs', title: 'Audit Trail & Action Logs', category: 'Navigation', icon: ShieldAlert, path: '/audit-logs', shortcut: 'T', permission: 'audit_logs' },
+    { id: 'system-health', title: 'System Health & Diagnostics', category: 'Navigation', icon: Activity, path: '/system-health', shortcut: 'P', permission: 'system_health' },
+    { id: 'team', title: 'Staff Team & Admin RBAC', category: 'Navigation', icon: UserCheck, path: '/team', shortcut: 'U', permission: 'team' },
+    { id: 'settings', title: 'Platform Settings & Constraints', category: 'Navigation', icon: Settings, path: '/settings', shortcut: 'O', permission: 'settings' },
 
     // Quick Actions
-    { id: 'act-broadcast', title: 'Compose Campus Broadcast', category: 'Quick Actions', icon: Megaphone, path: '/notifications' },
-    { id: 'act-inspect-reports', title: 'Review Unresolved Flagged Reports', category: 'Quick Actions', icon: AlertTriangle, path: '/reports' },
-    { id: 'act-health', title: 'Run Live Database & Cache Diagnostics', category: 'Quick Actions', icon: Activity, path: '/system-health' },
-    { id: 'act-audit', title: 'Export Audit Logs (CSV)', category: 'Quick Actions', icon: Download, path: '/audit-logs' },
-    { id: 'act-team', title: 'Appoint / Promote Staff Member', category: 'Quick Actions', icon: UserCheck, path: '/team' },
-    { id: 'act-deals', title: 'Inspect Active QR Handovers', category: 'Quick Actions', icon: Handshake, path: '/deals' },
+    { id: 'act-broadcast', title: 'Compose Campus Broadcast', category: 'Quick Actions', icon: Megaphone, path: '/notifications', permission: 'notifications' },
+    { id: 'act-inspect-reports', title: 'Review Unresolved Flagged Reports', category: 'Quick Actions', icon: AlertTriangle, path: '/reports', permission: 'reports' },
+    { id: 'act-health', title: 'Run Live Database & Cache Diagnostics', category: 'Quick Actions', icon: Activity, path: '/system-health', permission: 'system_health' },
+    { id: 'act-audit', title: 'Export Audit Logs (CSV)', category: 'Quick Actions', icon: Download, path: '/audit-logs', permission: 'audit_logs' },
+    { id: 'act-team', title: 'Appoint / Promote Staff Member', category: 'Quick Actions', icon: UserCheck, path: '/team', permission: 'team' },
+    { id: 'act-deals', title: 'Inspect Active QR Handovers', category: 'Quick Actions', icon: Handshake, path: '/deals', permission: 'deals' },
   ];
 
-  const filteredCommands = commands.filter((cmd) =>
+  const authorizedCommands = commands.filter((cmd) => hasModulePermission(adminUser, cmd.permission));
+
+  const filteredCommands = authorizedCommands.filter((cmd) =>
     cmd.title.toLowerCase().includes(query.toLowerCase()) ||
     cmd.category.toLowerCase().includes(query.toLowerCase())
   );
