@@ -426,8 +426,32 @@ class MarketplaceHandoverTests(TestCase):
         self.buyer.refresh_from_db()
         self.assertEqual(self.buyer.admin_role, 'MODERATOR')
 
-        # 5. Moderator cannot modify platform settings (RBAC check)
+        # 5. Moderator has categories permission by default, but lacks 'students' permission
         self.client.force_authenticate(user=self.buyer)
+        cat_ok = self.client.get('/api/marketplace/admin/categories/')
+        self.assertEqual(cat_ok.status_code, status.HTTP_200_OK)
+
+        students_fail = self.client.get('/api/auth/users/')
+        self.assertEqual(students_fail.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 5b. Superadmin updates buyer's permissions to custom ['dashboard', 'students']
+        self.client.force_authenticate(user=self.admin)
+        perm_update_res = self.client.patch(f'/api/auth/staff/{self.buyer.id}/', {
+            'admin_permissions': ['dashboard', 'students']
+        }, format='json')
+        self.assertEqual(perm_update_res.status_code, status.HTTP_200_OK)
+        self.buyer.refresh_from_db()
+        self.assertEqual(self.buyer.admin_permissions, ['dashboard', 'students'])
+
+        # 5c. Buyer now CAN access 'students' but CANNOT access 'categories'
+        self.client.force_authenticate(user=self.buyer)
+        students_ok = self.client.get('/api/auth/users/')
+        self.assertEqual(students_ok.status_code, status.HTTP_200_OK)
+
+        cat_fail = self.client.get('/api/marketplace/admin/categories/')
+        self.assertEqual(cat_fail.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 5d. Moderator cannot modify platform settings (RBAC check)
         settings_fail = self.client.post('/api/marketplace/admin/settings/', {'maintenance_mode': 'true'})
         self.assertEqual(settings_fail.status_code, status.HTTP_403_FORBIDDEN)
 
