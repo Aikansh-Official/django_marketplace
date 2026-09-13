@@ -7,7 +7,8 @@ from rest_framework.throttling import ScopedRateThrottle
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 import random
-from .models import OTPVerification
+from .models import OTPVerification, ADMIN_PERMISSIONS_CATALOG, ALL_PERMISSION_KEYS
+from .permissions import HasAdminModulePermission, IsSuperAdminUser
 from .serializers import (
     UserRegistrationSerializer, UserListSerializer, SendOTPSerializer,
     VerifyOTPSerializer, AdminUserUpdateSerializer, UserAdminDetailSerializer,
@@ -224,13 +225,13 @@ class VerifyOTPView(APIView):
 class UserListView(generics.ListAPIView):
     # This view is for the admin dashboard to fetch all users (deferred heavy image data for speed)
     queryset = User.objects.all().defer('id_card_image', 'id_card_data').order_by('-date_joined')
-    permission_classes = (IsAdminUser,)
+    permission_classes = (HasAdminModulePermission('students'),)
     serializer_class = UserListSerializer
 
 class UserAdminDetailView(generics.RetrieveUpdateDestroyAPIView):
     # This view is for the admin dashboard to inspect/manage/delete a specific user with full ID card
     queryset = User.objects.all()
-    permission_classes = (IsAdminUser,)
+    permission_classes = (HasAdminModulePermission('students'),)
 
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
@@ -414,17 +415,20 @@ class AuthStatusView(APIView):
     def get(self, request):
         if request.user and request.user.is_authenticated:
             user_data = UserListSerializer(request.user).data
-            admin_role = request.user.effective_admin_role if (request.user.is_staff or request.user.is_superuser) else None
+            is_admin = request.user.is_staff or request.user.is_superuser
+            admin_role = request.user.effective_admin_role if is_admin else None
+            admin_permissions = request.user.effective_admin_permissions if is_admin else []
             return Response({
                 "isAuthenticated": True,
                 "is_staff": request.user.is_staff,
                 "is_superuser": request.user.is_superuser,
                 "role": getattr(request.user, 'role', 'BUYER'),
                 "admin_role": admin_role,
+                "admin_permissions": admin_permissions,
                 "username": request.user.username,
                 "user": user_data
             })
-        return Response({"isAuthenticated": False, "user": None, "role": None, "admin_role": None})
+        return Response({"isAuthenticated": False, "user": None, "role": None, "admin_role": None, "admin_permissions": []})
 
 class CompleteIdVerificationView(APIView):
     permission_classes = (IsAuthenticated,)
@@ -586,7 +590,7 @@ class UpgradeToSellerView(APIView):
 
 
 class AdminStaffListView(APIView):
-    permission_classes = (IsAdminUser,)
+    permission_classes = (HasAdminModulePermission('team'),)
 
     def get(self, request):
         from django.db.models import Q
@@ -605,7 +609,8 @@ class AdminStaffListView(APIView):
                 'super_admins': super_admins,
                 'moderators': moderators,
                 'id_verifiers': id_verifiers,
-            }
+            },
+            'available_permissions': ADMIN_PERMISSIONS_CATALOG
         })
 
     def post(self, request):
@@ -615,6 +620,15 @@ class AdminStaffListView(APIView):
         user_id = request.data.get('user_id')
         username = str(request.data.get('username', '')).strip()
         target_role = request.data.get('admin_role', 'MODERATOR')
+        raw_permissions = request.data.get('admin_permissions', None)
+        if hasattr(request.data, 'getlist') and len(request.data.getlist('admin_permissions')) > 1:
+            raw_permissions = request.data.getlist('admin_permissions')
+        if isinstance(raw_permissions, str):
+            import json
+            try:
+                raw_permissions = json.loads(raw_permissions)
+            except Exception:
+                raw_permissions = [p.strip() for p in raw_permissions.split(',') if p.strip()]
 
         if target_role not in ['SUPER_ADMIN', 'MODERATOR', 'ID_VERIFIER']:
             return Response({'error': 'Invalid admin role specified.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -630,7 +644,11 @@ class AdminStaffListView(APIView):
 
         target_user.is_staff = True
         target_user.admin_role = target_role
-        target_user.save(update_fields=['is_staff', 'admin_role'])
+        if raw_permissions is not None and isinstance(raw_permissions, (list, tuple)):
+            target_user.admin_permissions = [p for p in raw_permissions if p in ALL_PERMISSION_KEYS]
+        else:
+            target_user.admin_permissions = []
+        target_user.save(update_fields=['is_staff', 'admin_role', 'admin_permissions'])
 
         try:
             from marketplace.views import log_admin_action
@@ -640,7 +658,10 @@ class AdminStaffListView(APIView):
                 target_type='USER',
                 target_id=target_user.id,
                 target_repr=f"@{target_user.username} ({target_user.full_name or target_user.username})",
-                details={'assigned_role': target_role}
+                details={
+                    'assigned_role': target_role,
+                    'permissions': target_user.effective_admin_permissions
+                }
             )
         except Exception:
             pass
@@ -652,23 +673,47 @@ class AdminStaffListView(APIView):
 
 
 class AdminStaffDetailView(APIView):
-    permission_classes = (IsAdminUser,)
+    permission_classes = (HasAdminModulePermission('team'),)
 
     def patch(self, request, pk):
         if not (request.user.is_superuser or request.user.effective_admin_role == 'SUPER_ADMIN'):
-            return Response({'error': 'Only Super Administrators can modify staff roles.'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'error': 'Only Super Administrators can modify staff roles and permissions.'}, status=status.HTTP_403_FORBIDDEN)
 
         target_user = User.objects.filter(pk=pk).first()
         if not target_user:
             return Response({'error': 'Staff member not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        new_role = request.data.get('admin_role')
-        if new_role not in ['SUPER_ADMIN', 'MODERATOR', 'ID_VERIFIER']:
-            return Response({'error': 'Invalid admin role.'}, status=status.HTTP_400_BAD_REQUEST)
+        update_fields = []
+        details = {}
 
-        old_role = target_user.effective_admin_role
-        target_user.admin_role = new_role
-        target_user.save(update_fields=['admin_role'])
+        if 'admin_role' in request.data:
+            new_role = request.data.get('admin_role')
+            if new_role not in ['SUPER_ADMIN', 'MODERATOR', 'ID_VERIFIER']:
+                return Response({'error': 'Invalid admin role.'}, status=status.HTTP_400_BAD_REQUEST)
+            details['old_role'] = target_user.effective_admin_role
+            details['new_role'] = new_role
+            target_user.admin_role = new_role
+            update_fields.append('admin_role')
+
+        if 'admin_permissions' in request.data:
+            if hasattr(request.data, 'getlist') and len(request.data.getlist('admin_permissions')) > 1:
+                raw_perms = request.data.getlist('admin_permissions')
+            else:
+                raw_perms = request.data.get('admin_permissions')
+            if isinstance(raw_perms, str):
+                import json
+                try:
+                    raw_perms = json.loads(raw_perms)
+                except Exception:
+                    raw_perms = [p.strip() for p in raw_perms.split(',') if p.strip()]
+            if isinstance(raw_perms, (list, tuple)):
+                clean_perms = [p for p in raw_perms if p in ALL_PERMISSION_KEYS]
+                details['permissions_updated'] = clean_perms
+                target_user.admin_permissions = clean_perms
+                update_fields.append('admin_permissions')
+
+        if update_fields:
+            target_user.save(update_fields=update_fields)
 
         try:
             from marketplace.views import log_admin_action
@@ -678,13 +723,13 @@ class AdminStaffDetailView(APIView):
                 target_type='USER',
                 target_id=target_user.id,
                 target_repr=f"@{target_user.username} ({target_user.full_name or target_user.username})",
-                details={'old_role': old_role, 'new_role': new_role}
+                details=details
             )
         except Exception:
             pass
 
         return Response({
-            'message': f"Updated @{target_user.username}'s role to {new_role}.",
+            'message': f"Updated permissions and role for @{target_user.username}.",
             'staff': StaffUserSerializer(target_user).data
         })
 

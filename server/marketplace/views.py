@@ -26,6 +26,7 @@ from .serializers import (
     ReviewSerializer, ChatMessageSerializer
 )
 from users.serializers import PublicSellerProfileSerializer
+from users.permissions import HasAdminModulePermission
 from .cloudinary_upload import upload_image_to_cloudinary
 
 
@@ -144,7 +145,7 @@ class CategoryListView(generics.ListAPIView):
 
 class AdminCategoryListCreateView(generics.ListCreateAPIView):
     serializer_class = AdminCategorySerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [HasAdminModulePermission('categories')]
 
     def get_queryset(self):
         from django.db.models import Count, Q
@@ -172,7 +173,7 @@ class AdminCategoryListCreateView(generics.ListCreateAPIView):
 
 class AdminCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = AdminCategorySerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [HasAdminModulePermission('categories')]
     queryset = Category.objects.all()
 
     def perform_update(self, serializer):
@@ -276,7 +277,7 @@ class ListingListCreateView(generics.ListCreateAPIView):
         return ListingSerializer
 
     def get_queryset(self):
-        queryset = Listing.objects.filter(status='ACTIVE').select_related('seller', 'category').prefetch_related('images')
+        queryset = Listing.objects.filter(status='ACTIVE').select_related('seller', 'category')
 
         # Search query (title, description, location)
         search = self.request.query_params.get('search')
@@ -396,7 +397,7 @@ class ListingListCreateView(generics.ListCreateAPIView):
 
 
 class ListingDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Listing.objects.all().select_related('seller', 'category').prefetch_related('images')
+    queryset = Listing.objects.all().select_related('seller', 'category')
 
     def get_permissions(self):
         if self.request.method in permissions.SAFE_METHODS:
@@ -454,7 +455,7 @@ class MyListingsView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = Listing.objects.filter(seller=user).select_related('seller', 'category').prefetch_related('images').order_by('-created_at')
+        queryset = Listing.objects.filter(seller=user).select_related('seller', 'category').order_by('-created_at')
 
         status_filter = self.request.query_params.get('status')
         if status_filter and status_filter != 'ALL':
@@ -510,15 +511,15 @@ class ToggleListingStatusView(APIView):
 
 
 class AdminListingList(generics.ListAPIView):
-    queryset = Listing.objects.all().select_related('seller', 'category').prefetch_related('images').order_by('-created_at')
+    queryset = Listing.objects.all().select_related('seller', 'category').order_by('-created_at')
     serializer_class = ListingSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [HasAdminModulePermission('listings')]
 
 
 class AdminListingDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Admin view to retrieve, update any field, or delete any listing."""
-    queryset = Listing.objects.all().select_related('seller', 'category').prefetch_related('images')
-    permission_classes = [permissions.IsAdminUser]
+    queryset = Listing.objects.all().select_related('seller', 'category')
+    permission_classes = [HasAdminModulePermission('listings')]
 
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
@@ -564,7 +565,7 @@ class AdminDashboardStatsView(APIView):
     Consolidated single-roundtrip dashboard stats endpoint.
     Runs counts in 1 SQL query and returns only top 5 recent items instead of transferring entire tables.
     """
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [HasAdminModulePermission('dashboard')]
 
     def get(self, request):
         from django.core.cache import cache
@@ -573,28 +574,19 @@ class AdminDashboardStatsView(APIView):
         if cached_data:
             return Response(cached_data)
 
-        from django.db import connection
         from django.contrib.auth import get_user_model
         from users.serializers import UserDashboardSummarySerializer
         User = get_user_model()
 
-        # Run single SQL query to get all counts in ONE network round-trip to Supabase
-        with connection.cursor() as cur:
-            cur.execute("""
-                SELECT 
-                    (SELECT count(*) FROM users_customuser WHERE is_staff=false AND is_superuser=false),
-                    (SELECT count(*) FROM users_customuser WHERE is_staff=false AND is_superuser=false AND is_verified_student=true),
-                    (SELECT count(*) FROM marketplace_listing WHERE status='ACTIVE'),
-                    (SELECT count(*) FROM marketplace_listing),
-                    (SELECT count(*) FROM marketplace_listing WHERE status='SOLD'),
-                    (SELECT count(*) FROM marketplace_listingreport WHERE status='PENDING')
-            """)
-            row = cur.fetchone()
-
-        total_students, verified_students, active_listings, total_listings, completed_deals, pending_reports = row
+        total_students = User.objects.filter(is_staff=False, is_superuser=False).count()
+        verified_students = User.objects.filter(is_staff=False, is_superuser=False, is_verified_student=True).count()
+        active_listings = Listing.objects.filter(status='ACTIVE').count()
+        total_listings = Listing.objects.count()
+        completed_deals = Listing.objects.filter(status='SOLD').count()
+        pending_reports = ListingReport.objects.filter(status='PENDING').count()
 
         # Fetch only the top 5 recent listings and students with minimal fields
-        recent_listings_qs = Listing.objects.select_related('seller', 'category').prefetch_related('images').order_by('-created_at')[:5]
+        recent_listings_qs = Listing.objects.select_related('seller', 'category').order_by('-created_at')[:5]
         recent_students_qs = User.objects.filter(is_staff=False, is_superuser=False).only(
             'id', 'username', 'full_name', 'email', 'is_verified_student', 'trust_score', 'profile_photo'
         ).order_by('-date_joined')[:5]
@@ -1029,7 +1021,7 @@ class PublicSellerProfileView(APIView):
         active_listings = Listing.objects.filter(
             seller=seller,
             status='ACTIVE'
-        ).select_related('category').prefetch_related('images').order_by('-created_at')
+        ).select_related('category').order_by('-created_at')
 
         listings_data = ListingSerializer(active_listings, many=True, context={'request': request}).data
 
@@ -1205,7 +1197,7 @@ class SearchSuggestionsView(APIView):
             status='ACTIVE'
         ).filter(
             Q(title__icontains=query) | Q(description__icontains=query) | Q(location__icontains=query)
-        ).select_related('category').prefetch_related('images')[:5]
+        ).select_related('category')[:5]
 
         listings_data = []
         for item in matched_listings:
@@ -1236,7 +1228,7 @@ class NotificationListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Notification.objects.filter(recipient=self.request.user).select_related('listing').prefetch_related('listing__images').order_by('-created_at')
+        return Notification.objects.filter(recipient=self.request.user).select_related('listing').order_by('-created_at')
 
 
 class MarkNotificationReadView(APIView):
@@ -1294,11 +1286,11 @@ class ListingReportCreateView(APIView):
 class AdminListingReportListView(generics.ListAPIView):
     queryset = ListingReport.objects.all().select_related('reporter', 'listing', 'listing__seller').order_by('-created_at')
     serializer_class = ListingReportSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [HasAdminModulePermission('reports')]
 
 
 class AdminListingReportUpdateView(APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [HasAdminModulePermission('reports')]
 
     def patch(self, request, pk):
         try:
@@ -1416,7 +1408,7 @@ class AdminListingReportUpdateView(APIView):
 
 
 class AdminBannedWordsView(APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [HasAdminModulePermission('reports')]
 
     def get(self, request):
         words = get_banned_words()
@@ -1460,7 +1452,7 @@ class AdminBannedWordsView(APIView):
 
 
 class AdminPlatformSettingsView(APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [HasAdminModulePermission('settings')]
 
     DEFAULT_SETTINGS = {
         'maintenance_mode': 'false',
@@ -1787,13 +1779,11 @@ class AdminDealListView(generics.ListAPIView):
     and searching by buyer, seller, or listing title.
     """
     serializer_class = AdminDealSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [HasAdminModulePermission('deals')]
 
     def get_queryset(self):
         queryset = Offer.objects.select_related(
             'listing', 'listing__seller', 'listing__category', 'buyer'
-        ).prefetch_related(
-            'listing__images', 'handover_sessions'
         ).order_by('-created_at')
 
         status_param = self.request.query_params.get('status', 'ALL').strip().upper()
@@ -1823,7 +1813,7 @@ class AdminDealActionView(APIView):
     - FORCE_COMPLETE: Force completes deal, marks listing SOLD, verifies handover session,
                       awards trust points, and sends completion notifications.
     """
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [HasAdminModulePermission('deals')]
 
     def post(self, request, pk):
         action = request.data.get('action', '').strip().upper()
@@ -1832,7 +1822,7 @@ class AdminDealActionView(APIView):
         try:
             offer = Offer.objects.select_related(
                 'listing', 'listing__seller', 'buyer'
-            ).prefetch_related('handover_sessions').get(pk=pk)
+            ).get(pk=pk)
         except Offer.DoesNotExist:
             return Response({'error': 'Deal / Offer not found.'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -1970,7 +1960,7 @@ class AdminBroadcastNotificationView(APIView):
     Administrator endpoint to dispatch campus-wide or role-targeted broadcast announcements,
     and retrieve past broadcast audit logs.
     """
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [HasAdminModulePermission('notifications')]
 
     def get(self, request):
         logs = BroadcastLog.objects.select_related('sender').order_by('-created_at')[:100]
@@ -2057,7 +2047,7 @@ class AdminDirectNotificationView(APIView):
     Administrator endpoint to dispatch official direct warnings or individual notices
     directly to a specific student account.
     """
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [HasAdminModulePermission('notifications')]
 
     def post(self, request):
         recipient_id = request.data.get('recipient_id')
@@ -2112,7 +2102,7 @@ class AdminNotificationStatsView(APIView):
     """
     Administrator endpoint to fetch notification metrics and audience counts.
     """
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [HasAdminModulePermission('notifications')]
 
     def get(self, request):
         total_broadcasts = BroadcastLog.objects.count()
@@ -2164,7 +2154,7 @@ class AdminAnalyticsView(APIView):
     student acquisition curve, category breakdown, sell vs donation ratio,
     campus location hotspots, price benchmarks, and top sellers leaderboard.
     """
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [HasAdminModulePermission('analytics')]
 
     def get(self, request):
         from django.db.models import Count, Sum, Avg, Min, Max, Q
@@ -2380,7 +2370,7 @@ class AdminAuditLogListView(APIView):
     Supports filtering by action, admin_username, target_type, date range, and text search.
     Also returns aggregate summary statistics.
     """
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [HasAdminModulePermission('audit_logs')]
 
     def get(self, request):
         from datetime import timedelta
@@ -2446,7 +2436,7 @@ class AdminSystemHealthView(APIView):
     Returns database ping latency, cache latency, storage status, security posture audit,
     and platform risk indicators.
     """
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [HasAdminModulePermission('system_health')]
 
     def get(self, request):
         import time
@@ -2462,9 +2452,9 @@ class AdminSystemHealthView(APIView):
         db_healthy = True
         db_error = None
         try:
-            with connection.cursor() as cur:
-                cur.execute("SELECT 1;")
-                cur.fetchone()
+            connection.ensure_connection()
+            if hasattr(connection, 'connection') and hasattr(connection.connection, 'admin'):
+                connection.connection.admin.command('ping')
             db_latency_ms = round((time.perf_counter() - db_start) * 1000, 2)
         except Exception as e:
             db_healthy = False

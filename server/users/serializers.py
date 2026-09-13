@@ -122,6 +122,7 @@ class UserListSerializer(serializers.ModelSerializer):
     completed_trades_count = serializers.SerializerMethodField()
     has_id_card = serializers.SerializerMethodField()
     profile_photo = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    effective_permissions = serializers.ListField(source='effective_admin_permissions', read_only=True)
 
     class Meta:
         model = User
@@ -129,13 +130,15 @@ class UserListSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'full_name', 'phone_number', 'role',
             'is_active', 'is_verified_student', 'is_id_verified', 'has_id_card',
             'college_domain', 'trust_score', 'completed_trades_count', 'profile_photo',
-            'date_joined', 'is_staff', 'is_superuser', 'admin_role'
+            'date_joined', 'is_staff', 'is_superuser', 'admin_role', 'admin_permissions',
+            'effective_permissions'
         )
         read_only_fields = (
             'id', 'username', 'email', 'role', 'is_active', 'is_verified_student',
             'is_id_verified', 'has_id_card', 'college_domain',
             'trust_score', 'completed_trades_count', 'date_joined',
-            'is_staff', 'is_superuser', 'admin_role'
+            'is_staff', 'is_superuser', 'admin_role', 'admin_permissions',
+            'effective_permissions'
         )
 
     def get_trust_score(self, obj):
@@ -150,38 +153,11 @@ class UserListSerializer(serializers.ModelSerializer):
         return bool(getattr(obj, 'id_card_image', None))
 
 
-class UserAdminDetailSerializer(serializers.ModelSerializer):
+class UserAdminDetailSerializer(UserListSerializer):
     """Full detail serializer with physical ID card image and OCR data for a single student."""
-    trust_score = serializers.SerializerMethodField()
-    completed_trades_count = serializers.SerializerMethodField()
-    has_id_card = serializers.SerializerMethodField()
-
-    class Meta:
-        model = User
-        fields = (
-            'id', 'username', 'email', 'full_name', 'phone_number', 'role',
-            'is_active', 'is_verified_student', 'is_id_verified', 'has_id_card',
-            'id_card_image', 'id_card_data',
-            'college_domain', 'trust_score', 'completed_trades_count', 'profile_photo',
-            'date_joined', 'is_staff', 'is_superuser', 'admin_role'
-        )
-        read_only_fields = (
-            'id', 'username', 'email', 'role', 'is_active', 'is_verified_student',
-            'is_id_verified', 'has_id_card', 'college_domain',
-            'trust_score', 'completed_trades_count', 'date_joined',
-            'is_staff', 'is_superuser', 'admin_role'
-        )
-
-    def get_trust_score(self, obj):
-        return getattr(obj, 'trust_score', 0) or 0
-
-    def get_completed_trades_count(self, obj):
-        if hasattr(obj, 'annotated_completed_trades'):
-            return obj.annotated_completed_trades
-        return getattr(obj, '_completed_trades_count', 0)
-
-    def get_has_id_card(self, obj):
-        return bool(getattr(obj, 'id_card_image', None))
+    class Meta(UserListSerializer.Meta):
+        fields = UserListSerializer.Meta.fields + ('id_card_image', 'id_card_data')
+        read_only_fields = UserListSerializer.Meta.read_only_fields + ('id_card_image', 'id_card_data')
 
 
 class UserDashboardSummarySerializer(serializers.ModelSerializer):
@@ -197,20 +173,21 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'username', 'email', 'full_name', 'phone_number', 'role',
             'is_active', 'is_verified_student', 'is_id_verified', 'trust_score',
-            'id_card_image', 'id_card_data', 'profile_photo', 'admin_role'
+            'id_card_image', 'id_card_data', 'profile_photo', 'admin_role', 'admin_permissions'
         )
         read_only_fields = ('id', 'username')
 
 
 class StaffUserSerializer(serializers.ModelSerializer):
     effective_role = serializers.CharField(source='effective_admin_role', read_only=True)
+    effective_permissions = serializers.ListField(source='effective_admin_permissions', read_only=True)
 
     class Meta:
         model = User
         fields = (
             'id', 'username', 'email', 'full_name', 'phone_number',
-            'admin_role', 'effective_role', 'is_staff', 'is_superuser',
-            'is_active', 'date_joined', 'last_login', 'profile_photo'
+            'admin_role', 'effective_role', 'admin_permissions', 'effective_permissions',
+            'is_staff', 'is_superuser', 'is_active', 'date_joined', 'last_login', 'profile_photo'
         )
 
 
