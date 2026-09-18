@@ -526,7 +526,7 @@ export default function Team() {
       {/* MODAL 1: APPOINT / PROMOTE STAFF */}
       {promoteModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-950/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
-          <div className="bg-white rounded-lg shadow-2xl border border-gray-200 max-w-xl w-full my-8 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-xl w-full my-8 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-brand-600" />
@@ -534,14 +534,14 @@ export default function Team() {
               </div>
               <button
                 onClick={() => setPromoteModalOpen(false)}
-                className="p-1 text-gray-400 hover:text-gray-600 rounded cursor-pointer"
+                className="p-1 text-gray-400 hover:text-gray-600 rounded-lg cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handlePromoteStaff} className="p-6 space-y-4 text-xs">
-              {/* Step 1: Search Student */}
+            <form onSubmit={handlePromoteSubmit} className="p-6 space-y-4 text-xs">
+              {/* Search user */}
               <div>
                 <label className="block font-bold text-gray-700 mb-1">
                   1. Lookup Registered Student *
@@ -552,13 +552,13 @@ export default function Team() {
                     placeholder="Enter 8-digit registration no or college email..."
                     value={studentSearch}
                     onChange={(e) => setStudentSearch(e.target.value)}
-                    className="flex-1 border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none text-xs"
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none text-xs"
                   />
                   <button
                     type="button"
                     onClick={handleSearchStudent}
                     disabled={searchingStudent || !studentSearch.trim()}
-                    className="bg-ink-900 hover:bg-black text-white px-4 py-2 rounded text-xs font-bold transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                    className="bg-ink-900 hover:bg-black text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                   >
                     {searchingStudent ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
                     <span>Lookup</span>
@@ -569,22 +569,22 @@ export default function Team() {
               {/* Found Student Card */}
               {foundStudent && (
                 <div className="p-3 bg-brand-50/60 border border-brand-200 rounded-lg flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-gray-900 text-xs">
-                        {foundStudent.full_name || foundStudent.username}
-                      </p>
-                      <span className="text-[10px] bg-brand-100 text-brand-700 font-mono px-1.5 py-0.5 rounded">
-                        @{foundStudent.username}
-                      </span>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 font-bold flex items-center justify-center">
+                      {foundStudent.username?.slice(0, 2).toUpperCase()}
                     </div>
-                    <p className="text-gray-500 text-[11px] mt-0.5">{foundStudent.email}</p>
+                    <div>
+                      <p className="font-bold text-gray-900">{foundStudent.full_name || foundStudent.username}</p>
+                      <p className="text-gray-500 text-[11px]">{foundStudent.email}</p>
+                    </div>
                   </div>
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  <span className="text-xs font-bold text-brand-700 bg-brand-100 px-2 py-0.5 rounded-full">
+                    Student Found
+                  </span>
                 </div>
               )}
 
-              {/* Step 2: Role Selection */}
+              {/* Role Preset Selector */}
               <div>
                 <label className="block font-bold text-gray-700 mb-1">
                   2. Base Administrative Role *
@@ -592,7 +592,7 @@ export default function Team() {
                 <select
                   value={promoteRole}
                   onChange={(e) => handlePromoteRoleChange(e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2 bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none text-xs font-medium"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none text-xs font-medium"
                 >
                   <option value="MODERATOR">Content Moderator (Default: Catalog, Reports, Deals)</option>
                   <option value="ID_VERIFIER">Student ID Verifier (Default: Students & Verification)</option>
@@ -682,14 +682,14 @@ export default function Team() {
                 <button
                   type="button"
                   onClick={() => setPromoteModalOpen(false)}
-                  className="px-4 py-2 rounded text-xs font-semibold text-gray-600 hover:bg-gray-100 cursor-pointer"
+                  className="px-4 py-2 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submittingPromote || !foundStudent}
-                  className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2 rounded text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
+                  className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2 rounded-lg text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {submittingPromote ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
                   <span>Confirm Promotion</span>
@@ -703,7 +703,7 @@ export default function Team() {
       {/* MODAL 2: MANAGE / EDIT ROLE & PERMISSIONS / REVOKE */}
       {editModalOpen && selectedStaff && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-950/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
-          <div className="bg-white rounded-lg shadow-2xl border border-gray-200 max-w-xl w-full my-8 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-xl w-full my-8 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Shield className="w-5 h-5 text-brand-600" />
@@ -713,7 +713,7 @@ export default function Team() {
               </div>
               <button
                 onClick={() => setEditModalOpen(false)}
-                className="p-1 text-gray-400 hover:text-gray-600 rounded cursor-pointer"
+                className="p-1 text-gray-400 hover:text-gray-600 rounded-lg cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -736,7 +736,7 @@ export default function Team() {
                 <select
                   value={editRole}
                   onChange={(e) => handleEditRoleChange(e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2 bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none text-xs font-medium"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none text-xs font-medium"
                 >
                   <option value="SUPER_ADMIN">Super Administrator (Unrestricted)</option>
                   <option value="MODERATOR">Content Moderator (Listings, Reports, Deals)</option>
@@ -829,7 +829,7 @@ export default function Team() {
                     type="button"
                     onClick={handleRevokeStaff}
                     disabled={submittingEdit}
-                    className="px-3 py-1.5 rounded text-xs font-bold text-rose-700 bg-white border border-rose-300 hover:bg-rose-100 transition-colors shrink-0 cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold text-rose-700 bg-white border border-rose-300 hover:bg-rose-100 transition-colors shrink-0 cursor-pointer"
                   >
                     Revoke Access
                   </button>
@@ -841,14 +841,14 @@ export default function Team() {
                 <button
                   type="button"
                   onClick={() => setEditModalOpen(false)}
-                  className="px-4 py-2 rounded text-xs font-semibold text-gray-600 hover:bg-gray-100 cursor-pointer"
+                  className="px-4 py-2 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submittingEdit}
-                  className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2 rounded text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
+                  className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2 rounded-lg text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {submittingEdit ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
                   <span>Save Permissions</span>

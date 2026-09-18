@@ -578,7 +578,7 @@ export default function Students() {
                           <button
                             onClick={() => handleInspectStudent(student)}
                             title="Inspect Profile & ID Card"
-                            className="p-1.5 text-gray-600 hover:text-brand-600 hover:bg-brand-50 rounded border border-gray-200 transition-colors"
+                            className="p-1.5 text-gray-600 hover:text-brand-600 hover:bg-brand-50 rounded-lg border border-gray-200 transition-colors"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
@@ -586,7 +586,7 @@ export default function Students() {
                           <button
                             onClick={() => handleStartEdit(student)}
                             title="Edit Student Info"
-                            className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded border border-gray-200 transition-colors"
+                            className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg border border-gray-200 transition-colors"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
@@ -594,7 +594,7 @@ export default function Students() {
                           <button
                             onClick={() => handleToggleBan(student)}
                             title={isActive ? "Ban / Suspend Account" : "Reactivate Account"}
-                            className={`p-1.5 rounded border transition-colors ${
+                            className={`p-1.5 rounded-lg border transition-colors ${
                               isActive
                                 ? 'text-gray-500 hover:text-amber-600 hover:bg-amber-50 border-gray-200'
                                 : 'text-emerald-600 bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
@@ -606,7 +606,7 @@ export default function Students() {
                           <button
                             onClick={() => handleDeleteUser(student.id)}
                             title="Permanently Delete"
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded border border-gray-200 transition-colors"
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg border border-gray-200 transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -998,7 +998,7 @@ export default function Students() {
                   required
                   value={editFormData.full_name}
                   onChange={(e) => setEditFormData({ ...editFormData, full_name: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                 />
               </div>
 
@@ -1010,7 +1010,7 @@ export default function Students() {
                     required
                     value={editFormData.email}
                     onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                   />
                 </div>
 
@@ -1020,7 +1020,7 @@ export default function Students() {
                     type="text"
                     value={editFormData.phone_number}
                     onChange={(e) => setEditFormData({ ...editFormData, phone_number: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                     placeholder="10-digit mobile"
                   />
                 </div>
@@ -1032,7 +1032,7 @@ export default function Students() {
                   <select
                     value={editFormData.role}
                     onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                   >
                     <option value="BUYER">BUYER</option>
                     <option value="SELLER">SELLER</option>
@@ -1047,7 +1047,7 @@ export default function Students() {
                     max="100"
                     value={editFormData.trust_score}
                     onChange={(e) => setEditFormData({ ...editFormData, trust_score: parseInt(e.target.value) || 0 })}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -1088,14 +1088,14 @@ export default function Students() {
                 <button
                   type="button"
                   onClick={() => setEditingStudent(null)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded font-bold transition-colors"
+                  className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-bold transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded font-bold flex items-center gap-1.5 transition-colors shadow-sm disabled:opacity-50"
+                  className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-bold flex items-center gap-1.5 transition-colors shadow-sm disabled:opacity-50"
                 >
                   {actionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                   Save Changes

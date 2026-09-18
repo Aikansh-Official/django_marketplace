@@ -217,7 +217,7 @@ export default function Settings() {
                     onChange={(e) =>
                       setSettings({ ...settings, max_active_listings_per_student: parseInt(e.target.value) || 1 })
                     }
-                    className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-gray-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 font-mono text-gray-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                   />
                 </div>
 
@@ -225,7 +225,7 @@ export default function Settings() {
                 <div className="p-4 bg-gray-50/80 rounded-lg border border-gray-200 space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="font-bold text-gray-900">Minimum Trust Score to Sell</label>
-                    <span className="font-mono px-2 py-0.5 rounded bg-amber-50 text-amber-700 font-black border border-amber-200">
+                    <span className="font-mono px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-black border border-amber-200">
                       {settings.min_trust_score_to_sell}/100
                     </span>
                   </div>
@@ -240,7 +240,7 @@ export default function Settings() {
                     onChange={(e) =>
                       setSettings({ ...settings, min_trust_score_to_sell: parseInt(e.target.value) || 0 })
                     }
-                    className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-gray-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 font-mono text-gray-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                   />
                 </div>
 
@@ -248,7 +248,7 @@ export default function Settings() {
                 <div className="p-4 bg-gray-50/80 rounded-lg border border-gray-200 space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="font-bold text-gray-900">Handover QR & PIN Expiry</label>
-                    <span className="font-mono px-2 py-0.5 rounded bg-sky-50 text-sky-700 font-black border border-sky-200">
+                    <span className="font-mono px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 font-black border border-sky-200">
                       {settings.handover_qr_expiry_minutes} mins
                     </span>
                   </div>
@@ -260,13 +260,13 @@ export default function Settings() {
                     onChange={(e) =>
                       setSettings({ ...settings, handover_qr_expiry_minutes: parseInt(e.target.value) || 30 })
                     }
-                    className="w-full border border-gray-300 rounded px-3 py-2 bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
                   >
                     <option value="10">10 Minutes (Tight window)</option>
-                    <option value="15">15 Minutes</option>
+                    <option value="20">20 Minutes</option>
                     <option value="30">30 Minutes (Recommended)</option>
-                    <option value="45">45 Minutes</option>
-                    <option value="60">60 Minutes (Maximum)</option>
+                    <option value="60">60 Minutes</option>
+                    <option value="120">2 Hours (Extended window)</option>
                   </select>
                 </div>
 
@@ -274,7 +274,7 @@ export default function Settings() {
                 <div className="p-4 bg-gray-50/80 rounded-lg border border-gray-200 space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="font-bold text-gray-900">Daily OTP Resend Limit</label>
-                    <span className="font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-black border border-emerald-200">
+                    <span className="font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-black border border-emerald-200">
                       {settings.otp_daily_limit} attempts
                     </span>
                   </div>
@@ -289,7 +289,7 @@ export default function Settings() {
                     onChange={(e) =>
                       setSettings({ ...settings, otp_daily_limit: parseInt(e.target.value) || 5 })
                     }
-                    className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-gray-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 font-mono text-gray-800 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -347,7 +347,7 @@ export default function Settings() {
                   <select
                     value={settings.announcement_type}
                     onChange={(e) => setSettings({ ...settings, announcement_type: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2 bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
                   >
                     <option value="INFO">Blue — Official Information / General Notice</option>
                     <option value="WARNING">Amber — Caution / Handover Safety Advisory</option>
@@ -363,7 +363,7 @@ export default function Settings() {
                     placeholder="e.g. /guidelines or https://notice.lpu.in"
                     value={settings.announcement_link}
                     onChange={(e) => setSettings({ ...settings, announcement_link: e.target.value })}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -377,7 +377,7 @@ export default function Settings() {
                   placeholder="e.g. 📢 Campus Advisory: Please conduct all physical item handovers inside well-lit campus zones..."
                   value={settings.announcement_text}
                   onChange={(e) => setSettings({ ...settings, announcement_text: e.target.value })}
-                  className="w-full border border-gray-300 rounded p-3 focus:ring-2 focus:ring-brand-500 focus:outline-none leading-relaxed"
+                  className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-brand-500 focus:outline-none leading-relaxed"
                 />
               </div>
 
@@ -402,7 +402,7 @@ export default function Settings() {
                 <div className={`p-3.5 rounded-lg border transition-all ${previewStyle.bg}`}>
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider shrink-0 ${previewStyle.badgeBg}`}>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0 ${previewStyle.badgeBg}`}>
                         {previewStyle.label}
                       </span>
                       <p className="font-medium text-xs truncate">
@@ -468,7 +468,7 @@ export default function Settings() {
                       rows={2}
                       value={settings.maintenance_message}
                       onChange={(e) => setSettings({ ...settings, maintenance_message: e.target.value })}
-                      className="w-full border border-gray-300 rounded p-2.5 bg-white text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                      className="w-full border border-gray-300 rounded-lg p-2.5 bg-white text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"
                     />
                   </div>
                 )}
@@ -503,7 +503,7 @@ export default function Settings() {
                   type="text"
                   value={settings.allowed_domains}
                   onChange={(e) => setSettings({ ...settings, allowed_domains: e.target.value })}
-                  className="w-full border border-gray-300 rounded px-3 py-2 font-mono text-gray-800 bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 font-mono text-gray-800 bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none"
                   placeholder="lpu.in, thapar.edu"
                 />
               </div>
