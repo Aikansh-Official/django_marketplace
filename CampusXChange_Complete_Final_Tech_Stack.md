@@ -65,16 +65,26 @@ The platform will be available as both an **Android application** and a **web ap
 | UI | Jetpack Compose |
 | Design System | Material 3 |
 | Navigation | Navigation Compose |
-| State Management | ViewModel + StateFlow |
+| State Management | ViewModel + StateFlow (MVI/UDF) |
 | Dependency Injection | Hilt |
-| API Calls | Retrofit |
-| Networking | OkHttp |
-| Async Operations | Kotlin Coroutines |
-| Local Preferences | DataStore |
-| Image Loading | Coil |
-| Push Notifications | Firebase FCM |
+| API Calls | Retrofit 2 |
+| Networking & Interceptors | OkHttp 4 (AuthInterceptor & TokenAuthenticator) |
+| Async Operations | Kotlin Coroutines & Flows |
+| Local Token Storage | Jetpack DataStore (Preferences / Encrypted) |
+| Image Loading | Coil Compose |
+| On-Device OCR (ID Cards)| Google ML Kit Text Recognition (`com.google.mlkit:text-recognition`) |
+| Live Camera & Selfies | Android CameraX (`camera-core`, `camera-camera2`, `camera-lifecycle`, `camera-view`) |
+| Push Notifications | Firebase Cloud Messaging (FCM) |
 | Maps | Google Maps SDK |
-| WebSocket | OkHttp/WebSocket |
+| WebSocket | OkHttp WebSocket |
+
+### Android Authentication Pipeline
+- **Dual-Path Onboarding:**
+  - **Buyer Flow (3 Steps):** Registration Number + Name + Phone + Email ➡️ 6-digit Email OTP ➡️ Password & Auto-Login.
+  - **Seller Flow (5 Steps):** Personal Details ➡️ Student ID Card OCR (Google ML Kit) ➡️ Live Face Selfie Capture (CameraX) ➡️ Email OTP ➡️ Password & Auto-Login.
+- **Pre-Flight Uniqueness Checks:** Debounced live availability checking (`check-username/`, `check-phone/`, `check-email/`, `check-availability/`).
+- **Seamless Silent Refresh:** OkHttp Authenticator automatically catches `401 Unauthorized`, refreshes JWT access token via `/api/auth/token/refresh/`, and retries API calls.
+- **Post-Registration Seller Upgrade:** Buyers can upgrade anytime via `/api/auth/upgrade-to-seller/` by verifying their physical ID card, selfie photo, and email OTP.
 
 ---
 

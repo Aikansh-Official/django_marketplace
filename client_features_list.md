@@ -28,35 +28,37 @@
 - **Registration Steps**: `RegisterStepDetails.jsx`, `RegisterStepIdCard.jsx`, `RegisterStepSelfie.jsx`, `RegisterStepOtp.jsx`, `RegisterStepPassword.jsx`
 - **Utilities**: `client/src/utils/idCardVerification.js`, `client/src/utils/faceLivenessDetector.js`, `client/src/utils/compressImage.js`
 
-### 1.1 Multi-Step Student Registration (5-Step Wizard)
-- **Step 1 — Personal Details**: Full name, college email (`@lpu.in` / `@lpude.in`), phone number, registration number. Real-time Zod schema validation with `react-hook-form`.
-- **Step 2 — Physical LPU ID Card Upload**:
-  - Photo upload with client-side **image compression** (canvas-based downscaling to reduce payload).
-  - **Tesseract.js OCR Engine** scans the uploaded ID card in real-time.
-  - Extracts and cross-validates: Registration Number, Student Name, Programme/Department, and Academic Section from card text.
-  - **Image Authenticity Check** (`checkImageAuthenticity`): Validates minimum resolution, aspect ratio consistency, and detects obvious screenshots/digital fakes.
-  - Animated scan progress bar with live status messages.
-  - Rejection reasons displayed inline (wrong reg number, blurry image, unsupported format).
-- **Step 3 — Face Liveness Selfie**:
-  - Browser camera access with live preview via `getUserMedia`.
-  - **Face Liveness Detection** (`faceLivenessDetector.js`): Validates captured selfie contains a real, centered, well-lit human face using canvas pixel analysis and heuristics.
-  - Selfie stored as compressed Base64 data URL.
-- **Step 4 — Email OTP Verification**:
-  - Server dispatches 6-digit OTP to student's `@lpu.in` college email.
-  - Client-side OTP input with countdown resend timer.
-  - Rate-limited by server-side daily OTP cap.
-- **Step 5 — Password Creation**:
-  - Secure password with minimum 8-character requirement.
-  - Confirm password match validation.
-  - On successful registration: 🎉 **Confetti celebration animation** (`canvas-confetti`).
+### 1.1 Dual-Path Student Registration (Buyer 3-Step / Seller 5-Step)
+- **Role-Aware Onboarding**:
+  - **Buyer Flow (3 Steps)**: Fast-track signup for purchasing or browsing items. (Details ➡️ Email OTP ➡️ Password & Auto-Login).
+  - **Seller Flow (5 Steps)**: Full verification for listing items with verified badge and trust boost. (Details ➡️ ID Card OCR ➡️ Live Selfie ➡️ Email OTP ➡️ Password & Auto-Login).
+- **Step 1 — Personal Details & Live Pre-Flight Checks**:
+  - 8-digit Registration Number (`username`), Full Name, 10-digit Phone Number, and `@gmail.com` Email.
+  - **Real-Time Availability Checks**: Debounced (300ms) live API queries (`GET /api/auth/check-username/`, `GET /api/auth/check-phone/`, `GET /api/auth/check-email/`) plus pre-flight batch validator `POST /api/auth/check-availability/`.
+- **Step 2 (Seller Only) — Physical Student ID Card OCR Scan**:
+  - Photo upload with client-side canvas downscaling (Web) or on-device Google ML Kit Text Recognition (Android).
+  - Validates card authenticity, extracts Registration Number & Full Name, checks match against Step 1 inputs.
+  - Option to "Skip for now" switches student to Buyer role and immediately proceeds to OTP.
+- **Step 3 (Seller Only) — Live Face Selfie Verification**:
+  - Web: Browser camera access via `getUserMedia` / `LivePhotoModal.jsx` with facial framing.
+  - Android: Front-facing CameraX with oval guide, screen flash, and haptic feedback.
+  - Awards instant **+3 Trust Score bonus** and saves as `profile_photo`.
+- **Step 4 (Seller) / Step 2 (Buyer) — Email OTP Verification**:
+  - Server dispatches 6-digit OTP to student's verified email via `POST /api/auth/send-otp/`.
+  - 10-minute validity, 5 attempts maximum lockout (`429 Too Many Requests`), and 60-second resend timer.
+- **Step 5 (Seller) / Step 3 (Buyer) — Password Creation & Auto-Login**:
+  - 8+ characters with at least 1 special character.
+  - On `201 Created`, the system immediately executes `POST /api/auth/login/`, saves JWT tokens to storage (LocalStorage / Jetpack DataStore), and redirects to the marketplace with a celebratory confetti animation.
 
 ### 1.2 Student Login
-- **Email + Password Authentication**: JWT token-based login via `POST /api/auth/login/`.
-- **Persistent Session**: Access token stored in `localStorage`, auto-injected via Axios request interceptor for all authenticated API calls.
-- **Token Refresh**: Automatic refresh token rotation for seamless session continuity.
+- **Registration Number (8 digits) + Password Authentication**: JWT token-based login via `POST /api/auth/login/`.
+- **Persistent Session**: Access token (60 min) and Refresh token (24 hr) with silent automatic refresh interceptor.
 - **Auth Status Sync**: `GET /api/auth/status/` verifies active session; auto-clears stale tokens if server returns unauthenticated.
 
-### 1.3 Auth Modal (Global Overlay)
+### 1.3 Post-Registration Seller Upgrade
+- Existing Buyers can upgrade to Verified Seller at any time via `POST /api/auth/upgrade-to-seller/` by submitting their Student ID card, live selfie photo, and email OTP.
+
+### 1.4 Auth Modal (Global Overlay)
 - Full-screen glassmorphic modal with dual-panel layout:
   - **Left Panel** (`AuthLeftPanel.jsx`): Animated marketing showcase with rotating feature highlights and campus branding.
   - **Right Panel**: Dynamic form switching between Login and multi-step Register.

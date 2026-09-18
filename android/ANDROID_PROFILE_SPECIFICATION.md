@@ -61,35 +61,43 @@ The Profile module handles student identity, trust ratings, ID card upload/verif
 | `email` | String (Email) | ❌ **No (Immutable)** | Verified Google / College Email |
 | `full_name` | String | ✅ **Yes** | 3 to 50 characters, letters & spaces only |
 | `phone_number` | String (10 digits)| ✅ **Yes** | Exactly 10 digits (`^\d{10}$`), unique across users |
-| `profile_picture_url`| String (URL) | ✅ **Yes** | Image uploaded to Cloudinary, valid HTTPS URL |
+| `role` | String (`BUYER` / `SELLER`) | 🔄 **Via Upgrade** | Upgraded to SELLER upon student ID & selfie verification |
+| `is_id_verified` | Boolean | ❌ **No** | Set to true when student ID card is verified |
+| `profile_photo` | String (Base64) | ✅ **Yes (via Selfie)**| Live selfie photo taken via camera; boosts trust score (+3) |
+| `profile_picture_url`| String (URL) | ✅ **Yes** | External/Cloudinary avatar URL |
 | `college_domain` | String | ❌ **No** | Extracted from email (e.g., `gmail.com`, `lpu.in`) |
-| `is_verified_student`| Boolean | ❌ **No** | Set to true upon email OTP and admin/ID confirmation |
-| `trust_score` | Integer (0-100) | ❌ **No** | Computed by backend based on account signals |
+| `is_verified_student`| Boolean | ❌ **No** | Set to true upon email OTP verification |
+| `trust_score` | Integer (0-100) | ❌ **No** | Computed dynamically by backend algorithm |
 | `date_joined` | ISO Timestamp | ❌ **No** | Account creation timestamp |
 
-### 2.2 Trust Score Algorithm & Badges
+### 2.2 Dynamic Trust Score Algorithm & Badges
 
-The **Trust Score** is a dynamic rating from **0 to 100** indicating trader trustworthiness within the campus:
+The **Trust Score** is a dynamic rating from **0 to 100** computed in `CustomUser.calculate_trust_score()` based on verified credentials and campus trading track record:
 
 ```
-Base Score: 50 pts (Verified Email via OTP)
-   + 20 pts: College ID Card Verified
-   + 15 pts: Phone Number Verified & Added
-   + 3 pts per Successful Handover Deal Completed (up to 15 pts)
-   - 25 pts per Validated Item Report / Misconduct
++ 5 pts: Email Authenticated via OTP
++ 5 pts: Physical Student ID Card Verified (`is_id_verified`)
++ 3 pts: Live Selfie Profile Photo Added (`profile_photo`)
++ 5 pts per Successful Peer Deal Completed (Handover session completed)
++ Up to 15 pts: High Peer Reviews (avg >= 4.5 -> +15, avg >= 3.5 -> +8, avg < 2.5 -> -15)
+---------------------------------------------------------------------------------------
+Initial Buyer Score:  5 pts
+Initial Seller Score: 13 pts (5 Email + 5 ID Card + 3 Selfie)
+Max Score:            100 pts
 ```
 
 #### Trader Badges:
 - 🟢 **Elite Trader (80 - 100):** Gold/Emerald shield badge. Highest trust, priority listing visibility.
 - 🔵 **Trusted Trader (50 - 79):** Blue verified badge. Standard verified student trader.
-- 🟠 **New Trader (0 - 49):** Orange notice badge. Encouraged to verify ID and complete handovers.
+- 🟠 **New Trader (0 - 49):** Orange notice badge. Encouraged to verify ID, take a selfie, and complete handovers.
 
-### 2.3 College ID Verification Flow
-1. User selects front photo of Student Identity Card (LPU ID).
-2. Maximum image file size: **5 MB**. Supported formats: JPEG, PNG, WEBP.
-3. User selects Degree/Branch (e.g., *B.Tech CSE*, *MBA*, *B.Des*) and Residence (*Hostel BH-4*, *Day Scholar*, *PG Law Gate*).
-4. Image is uploaded via `POST /api/marketplace/upload-image/` to Cloudinary.
-5. Verification record is submitted for admin review, unlocking the ID Verified badge upon approval (+20 Trust points).
+### 2.3 Student ID Verification & Seller Upgrade Flow
+Buyers can upgrade to **Verified Seller** at any time:
+1. **ID Card Capture & OCR:** User captures physical LPU Student ID card. On-device Google ML Kit extracts registration number and student name for instant verification.
+2. **Live Selfie Capture:** Front-facing CameraX selfie modal with oval face guide verifies student presence against ID card photo (+3 Trust points).
+3. **Email OTP:** 6-digit OTP dispatched to verified email via `POST /api/auth/send-otp/`.
+4. **Upgrade Submission:** App calls `POST /api/auth/upgrade-to-seller/` with `reg_no`, `id_card_image` (Base64), `id_card_data` (JSON), `profile_photo` (Base64), and `otp`.
+5. **Direct Role Upgrade:** On success, backend sets `role = 'SELLER'`, `is_id_verified = true`, recalculates trust score, and returns updated user profile.
 
 ### 2.4 Saved Items & Wishlist Management
 - Students can bookmark listings from the marketplace or product details.
@@ -241,6 +249,64 @@ MainNavGraph ("main_graph")
 ```json
 {
   "message": "Successfully logged out."
+}
+```
+
+---
+
+### 5.5 Upgrade to Seller
+- **URL:** `POST /api/auth/upgrade-to-seller/`
+- **Headers:** `Authorization: Bearer <access_token>`, `Content-Type: application/json`
+
+#### Request Body:
+```json
+{
+  "reg_no": "12200000",
+  "id_card_image": "data:image/jpeg;base64,...",
+  "id_card_data": {
+    "reg_no": "12200000",
+    "name": "Aman Sharma",
+    "program": "B.Tech CSE"
+  },
+  "profile_photo": "data:image/jpeg;base64,...",
+  "otp": "654321"
+}
+```
+
+#### Response `200 OK`:
+```json
+{
+  "message": "Congratulations! You have been successfully upgraded to a Verified Seller.",
+  "user": {
+    "id": 42,
+    "username": "12200000",
+    "role": "SELLER",
+    "is_id_verified": true,
+    "trust_score": 13
+  }
+}
+```
+
+---
+
+### 5.6 Update Profile Selfie (`LivePhotoModal` Equivalent)
+- **URL:** `PATCH /api/auth/profile/`
+- **Headers:** `Authorization: Bearer <access_token>`, `Content-Type: application/json`
+
+#### Request Body:
+```json
+{
+  "profile_photo": "data:image/jpeg;base64,..."
+}
+```
+
+#### Response `200 OK`:
+```json
+{
+  "id": 42,
+  "username": "12200000",
+  "profile_photo": "data:image/jpeg;base64,...",
+  "trust_score": 13
 }
 ```
 
