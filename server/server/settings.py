@@ -39,6 +39,14 @@ ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', 'localhost,1
 if DEBUG and '*' not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append('*')
 
+# Automatic Render deployment support
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+if '.onrender.com' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('.onrender.com')
+
+
 
 # Application definition
 
@@ -253,6 +261,14 @@ if _extra_csrf:
     CSRF_TRUSTED_ORIGINS = _DEFAULT_FRONTEND_ORIGINS + [o.strip() for o in _extra_csrf.split(',') if o.strip()]
 else:
     CSRF_TRUSTED_ORIGINS = _DEFAULT_FRONTEND_ORIGINS
+
+if RENDER_EXTERNAL_HOSTNAME:
+    render_origin = f"https://{RENDER_EXTERNAL_HOSTNAME}"
+    if render_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(render_origin)
+if "https://*.onrender.com" not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append("https://*.onrender.com")
+
 
 if DEBUG:
     CORS_ALLOWED_ORIGIN_REGEXES = [
