@@ -10,15 +10,15 @@ import {
   Heart,
   ChevronDown,
   Search,
-  ShoppingBag
+  ShoppingBag,
+  Trophy
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+import api from '../services/api';
 import logoImg from '../assets/CampusXChange_Logo.jpeg';
 import AuthModal from './AuthModal';
 import SavedItemsDrawer from './SavedItemsDrawer';
+import CampusCommunityModal from './CampusCommunityModal';
 import { getSavedCount } from '../utils/savedStore';
 
 export default function Navbar() {
@@ -41,6 +41,7 @@ export default function Navbar() {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [suggestions, setSuggestions] = useState({ listings: [], categories: [] });
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isCommunityHubOpen, setIsCommunityHubOpen] = useState(false);
 
   const profileMenuRef = useRef(null);
   const searchContainerRef = useRef(null);
@@ -73,7 +74,7 @@ export default function Navbar() {
 
     const timer = setTimeout(async () => {
       try {
-        const res = await axios.get(`${API_BASE}/marketplace/search-suggestions/?q=${encodeURIComponent(q)}`);
+        const res = await api.get(`/marketplace/search-suggestions/?q=${encodeURIComponent(q)}`);
         setSuggestions(res.data);
         setShowSuggestions(Boolean(res.data?.listings?.length || res.data?.categories?.length));
       } catch {
@@ -99,7 +100,7 @@ export default function Navbar() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/auth/status/`);
+        const res = await api.get('/auth/status/');
         if (res.data?.isAuthenticated && res.data?.user) {
           setUserProfile(res.data.user);
           localStorage.setItem('user', JSON.stringify(res.data.user));
@@ -128,7 +129,7 @@ export default function Navbar() {
 
     const fetchNotifications = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/marketplace/notifications/`);
+        const res = await api.get('/marketplace/notifications/');
         const count = res.data.filter((n) => !n.is_read).length;
         setUnreadCount(count);
       } catch {
@@ -205,7 +206,7 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${API_BASE}/auth/logout/`);
+      await api.post('/auth/logout/');
     } catch {
       // ignore
     }
@@ -269,6 +270,14 @@ export default function Navbar() {
                 >
                   Explore
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => setIsCommunityHubOpen(true)}
+                  className="transition-colors py-1.5 px-2.5 rounded-md hover:text-gray-900 hover:bg-gray-100/70 flex items-center gap-1.5 font-semibold text-xs cursor-pointer text-gray-700"
+                >
+                  <Trophy className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Campus Hub</span>
+                </button>
               </div>
             </div>
 
@@ -545,8 +554,8 @@ export default function Navbar() {
                   </div>
                 )}
 
-                {/* Clean Sell Button - Hidden for buyers */}
-                {!isBuyer && (
+                {/* Clean Sell Button - Visible only for verified sellers */}
+                {isSeller && (
                   <Link
                     to="/sell"
                     className="bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold py-1.5 px-3.5 rounded-md transition-colors flex items-center gap-1.5 shadow-2xs"
@@ -580,7 +589,7 @@ export default function Navbar() {
                   <Heart className={`w-5 h-5 ${savedCount > 0 ? 'fill-brand-500 text-brand-500' : 'text-gray-500'}`} />
                 </button>
 
-                {!isBuyer && (
+                {isSeller && (
                   <Link
                     to="/sell"
                     className="bg-brand-500 text-white text-xs font-semibold py-1.5 px-2.5 rounded-md flex items-center gap-1 shadow-2xs"
@@ -658,6 +667,17 @@ export default function Navbar() {
                 >
                   Explore Marketplace
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCommunityHubOpen(true);
+                    setIsOpen(false);
+                  }}
+                  className="flex items-center gap-2 min-h-[44px] px-3 rounded-md hover:bg-gray-100/70 hover:text-brand-600 transition-colors font-semibold text-left w-full text-gray-700"
+                >
+                  <Trophy className="w-4 h-4 text-amber-500" />
+                  <span>Campus Hub & Top Sellers</span>
+                </button>
                 {userProfile && (
                   isSeller ? (
                     <Link
@@ -751,6 +771,12 @@ export default function Navbar() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         initialMode={authModalMode}
+      />
+
+      {/* Campus Community Leaderboard & Hotspots Modal */}
+      <CampusCommunityModal
+        isOpen={isCommunityHubOpen}
+        onClose={() => setIsCommunityHubOpen(false)}
       />
     </>
   );

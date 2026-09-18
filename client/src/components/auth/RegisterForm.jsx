@@ -1,21 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import axios from 'axios';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import Tesseract from 'tesseract.js';
 import { extractLpuCardDetails, checkImageAuthenticity } from '../../utils/idCardVerification';
 import { compressImageToDataUrl } from '../../utils/compressImage';
 import { registerSchema } from './authSchemas';
+import { ShieldAlert } from 'lucide-react';
+import api, { getPlatformConfig } from '../../services/api';
 import RegisterStepper from './RegisterStepper';
 import RegisterStepDetails from './steps/RegisterStepDetails';
 import RegisterStepIdCard from './steps/RegisterStepIdCard';
 import RegisterStepSelfie from './steps/RegisterStepSelfie';
 import RegisterStepOtp from './steps/RegisterStepOtp';
 import RegisterStepPassword from './steps/RegisterStepPassword';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 const baseZodResolver = zodResolver(registerSchema);
 
@@ -86,6 +85,21 @@ export default function RegisterForm({
   const selectedRole = propSelectedRole !== undefined ? propSelectedRole : internalRole;
   const setSelectedRole = propSetSelectedRole || setInternalRole;
   const [isLoading, setIsLoading] = useState(false);
+  const [isRegAllowed, setIsRegAllowed] = useState(true);
+  const [allowedDomains, setAllowedDomains] = useState('lpu.in');
+
+  useEffect(() => {
+    getPlatformConfig().then((cfg) => {
+      if (cfg) {
+        if (cfg.allow_registrations === false) {
+          setIsRegAllowed(false);
+        }
+        if (cfg.allowed_domains) {
+          setAllowedDomains(cfg.allowed_domains);
+        }
+      }
+    }).catch(() => {});
+  }, []);
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState('idle');
   const [phoneStatus, setPhoneStatus] = useState('idle');
@@ -119,7 +133,7 @@ export default function RegisterForm({
     const checkAvailability = async () => {
       setUsernameStatus('checking');
       try {
-        const response = await axios.get(`${API_BASE}/auth/check-username/?username=${encodeURIComponent(trimmed)}`);
+        const response = await api.get(`/auth/check-username/?username=${encodeURIComponent(trimmed)}`);
         if (response.data.available) {
           setUsernameStatus('available');
           clearErrors("username");
@@ -148,7 +162,7 @@ export default function RegisterForm({
     const checkPhoneAvailability = async () => {
       setPhoneStatus('checking');
       try {
-        const response = await axios.get(`${API_BASE}/auth/check-phone/?phone=${encodeURIComponent(trimmed)}`);
+        const response = await api.get(`/auth/check-phone/?phone=${encodeURIComponent(trimmed)}`);
         if (response.data.available) {
           setPhoneStatus('available');
           clearErrors("phone_number");
@@ -177,7 +191,7 @@ export default function RegisterForm({
     const checkEmailAvailability = async () => {
       setEmailStatus('checking');
       try {
-        const response = await axios.get(`${API_BASE}/auth/check-email/?email=${encodeURIComponent(trimmed)}`);
+        const response = await api.get(`/auth/check-email/?email=${encodeURIComponent(trimmed)}`);
         if (response.data.available) {
           setEmailStatus('available');
           clearErrors("email");
@@ -208,7 +222,7 @@ export default function RegisterForm({
     setIsLoading(true);
     try {
       // Pre-flight check against database before advancing to Step 2
-      const res = await axios.post(`${API_BASE}/auth/check-availability/`, {
+      const res = await api.post('/auth/check-availability/', {
         username: usernameValue ? String(usernameValue).trim() : '',
         phone: phoneValue ? String(phoneValue).trim() : '',
         email: emailValue ? String(emailValue).trim() : '',
@@ -355,7 +369,7 @@ export default function RegisterForm({
   const handleProceedToOtp = async (targetStep = 4) => {
     setIsLoading(true);
     try {
-      await axios.post(`${API_BASE}/auth/send-otp/`, { email: emailValue });
+      await api.post('/auth/send-otp/', { email: emailValue });
       toast.success(`Verification code sent to ${emailValue}!`);
       setStep(targetStep);
     } catch (e) {
@@ -381,7 +395,7 @@ export default function RegisterForm({
 
     setIsLoading(true);
     try {
-      await axios.post(`${API_BASE}/auth/verify-otp/`, {
+      await api.post('/auth/verify-otp/', {
         email: emailValue,
         otp: watch('otp')
       });
@@ -426,10 +440,10 @@ export default function RegisterForm({
         profile_photo: selectedRole === 'SELLER' && selfieImage ? selfieImage : null
       };
 
-      await axios.post(`${API_BASE}/auth/register/`, payload);
+      await api.post('/auth/register/', payload);
 
       // Auto login after successful registration
-      const loginResponse = await axios.post(`${API_BASE}/auth/login/`, {
+      const loginResponse = await api.post('/auth/login/', {
         username: data.username,
         password: data.password
       });
@@ -482,6 +496,29 @@ export default function RegisterForm({
     handleSubmit(onSubmit)(e);
   };
 
+  if (!isRegAllowed) {
+    return (
+      <div className="w-full max-w-sm sm:max-w-md mx-auto py-8 text-center space-y-4">
+        <div className="w-16 h-16 bg-amber-50 border border-amber-200 text-amber-600 rounded-full flex items-center justify-center mx-auto shadow-sm">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <h3 className="text-xl font-bold text-gray-900">Registrations Temporarily Closed</h3>
+        <p className="text-xs text-gray-500 max-w-sm mx-auto leading-relaxed">
+          New student account registrations are temporarily paused by campus administration for scheduled maintenance. If you already have an account, please sign in.
+        </p>
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={onSwitch}
+            className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-colors shadow-sm cursor-pointer"
+          >
+            Switch to Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-sm sm:max-w-md mx-auto">
       {/* Top Multi-Step Progress Indicator */}
@@ -499,6 +536,7 @@ export default function RegisterForm({
             isLoading={isLoading}
             onProceed={handleProceedFromDetails}
             role={selectedRole}
+            allowedDomains={allowedDomains}
             onRoleChange={(newRole) => {
               setSelectedRole(newRole);
               setStep(1);

@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Info, AlertTriangle, AlertCircle, Sparkles, X, ArrowRight } from 'lucide-react';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+import { getPlatformConfig } from '../services/api';
 
 export default function AnnouncementBanner() {
   const [announcement, setAnnouncement] = useState(null);
@@ -11,23 +9,18 @@ export default function AnnouncementBanner() {
   useEffect(() => {
     let isMounted = true;
 
-    const fetchAnnouncement = async () => {
-      try {
-        const res = await axios.get(`${API_BASE}/marketplace/announcement/`);
-        if (isMounted && res.data && res.data.enabled && res.data.text) {
+    getPlatformConfig()
+      .then((cfg) => {
+        if (isMounted && cfg?.announcement?.enabled && cfg?.announcement?.text) {
           const dismissedText = sessionStorage.getItem('cxc_announcement_dismissed_text');
-          // If the text is the same as what student dismissed earlier in this session, keep it dismissed
-          if (dismissedText === res.data.text) {
+          if (dismissedText === cfg.announcement.text) {
             setIsDismissed(true);
           }
-          setAnnouncement(res.data);
+          setAnnouncement(cfg.announcement);
         }
-      } catch (err) {
-        // Silently fail if offline / error
-      }
-    };
+      })
+      .catch(() => {});
 
-    fetchAnnouncement();
     return () => {
       isMounted = false;
     };

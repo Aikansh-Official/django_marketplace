@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Star, X, MessageSquare, ShieldCheck, Tag, ThumbsUp } from 'lucide-react';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+import api from '../../services/api';
 
 const QUICK_TAG_OPTIONS = [
   'Item as Described',
@@ -38,7 +36,7 @@ export default function ReviewModal({ dealId, listingTitle, reviewedUserName, on
 
     setSubmitting(true);
     try {
-      await axios.post(`${API_BASE}/marketplace/reviews/`, {
+      await api.post('/marketplace/reviews/', {
         deal_id: dealId,
         rating,
         comment: comment.trim(),

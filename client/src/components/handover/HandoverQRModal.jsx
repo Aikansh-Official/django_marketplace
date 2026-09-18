@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
 import toast from 'react-hot-toast';
 import { QRCodeSVG } from 'qrcode.react';
 import {
@@ -14,8 +13,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+import api, { getPlatformConfig } from '../../services/api';
 
 export default function HandoverQRModal({
   offerId,
@@ -33,19 +31,31 @@ export default function HandoverQRModal({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [regenerating, setRegenerating] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(300);
+  const [defaultExpirySeconds, setDefaultExpirySeconds] = useState(1800);
+  const [secondsLeft, setSecondsLeft] = useState(1800);
   const [copied, setCopied] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isCancelled, setIsCancelled] = useState(false);
+  const [cancellationReason, setCancellationReason] = useState('');
   const isCompletedRef = useRef(false);
   const pollIntervalRef = useRef(null);
+
+  useEffect(() => {
+    getPlatformConfig().then((cfg) => {
+      if (cfg?.handover_qr_expiry_minutes) {
+        const secs = cfg.handover_qr_expiry_minutes * 60;
+        setDefaultExpirySeconds(secs);
+      }
+    }).catch(() => {});
+  }, []);
 
   // Generate or fetch handover session
   const generateQR = async () => {
     setError(null);
     try {
-      const res = await axios.post(`${API_BASE}/marketplace/offers/${offerId}/generate-qr/`);
+      const res = await api.post(`/marketplace/offers/${offerId}/generate-qr/`);
       setSession(res.data);
-      setSecondsLeft(res.data.remaining_seconds || 300);
+      setSecondsLeft(res.data.remaining_seconds || defaultExpirySeconds);
       setIsCompleted(false);
       isCompletedRef.current = false;
     } catch (err) {
@@ -122,11 +132,18 @@ export default function HandoverQRModal({
     const checkOfferStatus = async () => {
       if (isCompletedRef.current) return;
       try {
-        const res = await axios.get(`${API_BASE}/marketplace/listings/${targetListingId}/offers/`);
+        const res = await api.get(`/marketplace/listings/${targetListingId}/offers/`);
         const currentOffer = res.data.find((o) => o.id === offerId);
 
         if (currentOffer && currentOffer.status === 'COMPLETED') {
           triggerCompletion();
+        } else if (currentOffer && currentOffer.status === 'CANCELLED') {
+          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+          setIsCancelled(true);
+          setCancellationReason(
+            currentOffer.cancellation_reason ||
+            'This handover was cancelled by the administration or counterparty.'
+          );
         }
       } catch (e) {
         // Ignore background polling errors
@@ -220,7 +237,40 @@ export default function HandoverQRModal({
           <X className="w-5 h-5" />
         </button>
 
-        {isCompleted ? (
+        {isCancelled ? (
+          /* ====================================================
+             0. DEAL CANCELLED / DISPUTED SCREEN
+             ==================================================== */
+          <div className="py-6 text-center space-y-4 animate-in fade-in">
+            <div className="w-16 h-16 bg-red-100 border border-red-200 text-red-600 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-red-500/10">
+              <AlertCircle className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-1">
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-700 bg-red-50 px-2.5 py-0.5 rounded-full border border-red-200">
+                Deal Interrupted
+              </span>
+              <h3 className="text-xl font-black text-gray-900">Deal Cancelled</h3>
+              <p className="text-xs text-gray-500">
+                This transaction was cancelled and the handover code is void.
+              </p>
+            </div>
+
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-left space-y-1">
+              <div className="text-xs font-bold text-red-800">Reason / Notice:</div>
+              <p className="text-xs text-red-700 leading-relaxed">
+                {cancellationReason}
+              </p>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="w-full py-2.5 rounded-xl bg-gray-900 hover:bg-gray-800 text-white font-semibold text-xs transition-colors"
+            >
+              Close Handover
+            </button>
+          </div>
+        ) : isCompleted ? (
           /* ====================================================
              1. SUCCESS CELEBRATION SCREEN
              ==================================================== */

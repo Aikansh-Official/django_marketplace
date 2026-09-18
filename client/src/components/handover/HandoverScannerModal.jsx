@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import toast from 'react-hot-toast';
 import { Html5Qrcode } from 'html5-qrcode';
 import {
@@ -16,8 +16,6 @@ import {
   ShoppingBag
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export default function HandoverScannerModal({ listingId, defaultOfferId, onClose, onSuccess }) {
   const [activeTab, setActiveTab] = useState('pin'); // 'pin' | 'scan' (default to PIN for immediate reliability)
@@ -100,7 +98,7 @@ export default function HandoverScannerModal({ listingId, defaultOfferId, onClos
 
     setVerifying(true);
     try {
-      const res = await axios.post(`${API_BASE}/marketplace/handover/verify/`, {
+      const res = await api.post('/marketplace/handover/verify/', {
         pin_code: code
       });
       setVerifiedData(res.data);
@@ -118,7 +116,7 @@ export default function HandoverScannerModal({ listingId, defaultOfferId, onClos
     if (!token) return;
     setVerifying(true);
     try {
-      const res = await axios.post(`${API_BASE}/marketplace/handover/verify/`, {
+      const res = await api.post('/marketplace/handover/verify/', {
         token: token.trim()
       });
       setVerifiedData(res.data);
@@ -193,7 +191,7 @@ export default function HandoverScannerModal({ listingId, defaultOfferId, onClos
 
     setConfirming(true);
     try {
-      await axios.post(`${API_BASE}/marketplace/handover/confirm/`, {
+      await api.post('/marketplace/handover/confirm/', {
         token: verifiedData.token
       });
 

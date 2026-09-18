@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import toast from 'react-hot-toast';
 import {
   Send,
@@ -13,8 +13,6 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export default function ChatDrawer({
   listingId,
@@ -40,7 +38,7 @@ export default function ChatDrawer({
   const fetchChat = async (isBackground = false) => {
     if (!listingId || !peerId) return;
     try {
-      const res = await axios.get(`${API_BASE}/marketplace/chat/${listingId}/${peerId}/`);
+      const res = await api.get(`/marketplace/chat/${listingId}/${peerId}/`);
       setMessages(res.data.messages || []);
       if (res.data.listing) setListing(res.data.listing);
       if (res.data.peer) setPeer(res.data.peer);
@@ -75,7 +73,7 @@ export default function ChatDrawer({
 
     setSending(true);
     try {
-      const res = await axios.post(`${API_BASE}/marketplace/chat/${listingId}/${peerId}/`, {
+      const res = await api.post(`/marketplace/chat/${listingId}/${peerId}/`, {
         message: text
       });
       setMessages((prev) => [...prev, res.data]);

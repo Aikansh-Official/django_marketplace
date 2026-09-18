@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { ShieldAlert, AlertTriangle, Check, ExternalLink, X, BellRing } from 'lucide-react';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+import api from '../services/api';
 
 export default function UrgentNoticeModal() {
   const [urgentNotice, setUrgentNotice] = useState(null);
@@ -16,7 +14,7 @@ export default function UrgentNoticeModal() {
     if (!userStr) return;
 
     try {
-      const res = await axios.get(`${API_BASE}/marketplace/notifications/urgent/`);
+      const res = await api.get('/marketplace/notifications/urgent/');
       if (res.data?.urgent) {
         setUrgentNotice(res.data.urgent);
       } else {
@@ -49,7 +47,7 @@ export default function UrgentNoticeModal() {
     setDismissing(true);
 
     try {
-      await axios.patch(`${API_BASE}/marketplace/notifications/${urgentNotice.id}/read/`);
+      await api.patch(`/marketplace/notifications/${urgentNotice.id}/read/`);
       setUrgentNotice(null);
       window.dispatchEvent(new Event('notifications-updated'));
     } catch (err) {

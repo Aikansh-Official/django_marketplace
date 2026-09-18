@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 
 import UniversalLoader from './common/UniversalLoader';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export default function ProtectedRoute({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
@@ -12,7 +10,7 @@ export default function ProtectedRoute({ children }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await axios.get(`${API_BASE}/auth/status/`);
+        const response = await api.get('/auth/status/');
         if (response.data.isAuthenticated) {
           setIsAuthenticated(true);
         } else {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import axios from 'axios';
+import api from '../../services/api';
 import toast from 'react-hot-toast';
 import {
   UserCheck,
@@ -13,8 +13,6 @@ import {
 } from 'lucide-react';
 import { loginSchema } from './authSchemas';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
-
 export default function LoginForm({ onSwitch, onSuccess }) {
   const [showPassword, setShowPassword] = useState(false);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
@@ -23,7 +21,7 @@ export default function LoginForm({ onSwitch, onSuccess }) {
 
   const onSubmit = async (data) => {
     try {
-      const response = await axios.post(`${API_BASE}/auth/login/`, data);
+      const response = await api.post('/auth/login/', data);
       if (response.data.access) {
         localStorage.setItem('access', response.data.access);
         localStorage.setItem('refresh', response.data.refresh);
