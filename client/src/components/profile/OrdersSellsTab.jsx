@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../services/api';
 import toast from 'react-hot-toast';
 import {
   Package,
@@ -27,18 +27,16 @@ import HandoverQRModal from '../handover/HandoverQRModal';
 import HandoverScannerModal from '../handover/HandoverScannerModal';
 import ReviewModal from '../reviews/ReviewModal';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
-
 export default function OrdersSellsTab({ onListingsCountChange, profile, isSeller: isSellerProp }) {
   const isSeller = isSellerProp ?? (profile?.role === 'SELLER' || profile?.is_id_verified);
   const [subTab, setSubTab] = useState(isSeller ? 'selling' : 'orders'); // 'selling' | 'orders'
-  const [listings, setListings] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [listings, setListings] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingOrders, setLoadingOrders] = useState(false);
   const [deleteModalId, setDeleteModalId] = useState(null);
   const [deleting, setDeleting] = useState(false);
-  const [orders, setOrders] = useState([]);
-  const [loadingOrders, setLoadingOrders] = useState(false);
 
   // Sync subTab if isSeller changes
   useEffect(() => {
@@ -60,7 +58,7 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
 
   const handleOpenQRForListing = async (listingId) => {
     try {
-      const res = await axios.get(`${API_BASE}/marketplace/listings/${listingId}/offers/`);
+      const res = await api.get(`/marketplace/listings/${listingId}/offers/`);
       const acceptedOffer = res.data.find((o) => o.status === 'ACCEPTED');
       if (acceptedOffer) {
         const listing = listings.find((l) => l.id === listingId);
@@ -83,7 +81,7 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
       return;
     }
     try {
-      await axios.post(`${API_BASE}/marketplace/offers/${offerId}/cancel/`);
+      await api.post(`/marketplace/offers/${offerId}/cancel/`);
       toast.success('Deal cancelled. Listing restored to Active.');
       fetchMyOffers();
       if (isSeller) fetchMyListings();
@@ -95,7 +93,7 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
   const handleBuyerCounterRespond = async (offerId, action) => {
     setRespondingToCounter(true);
     try {
-      await axios.post(`${API_BASE}/marketplace/offers/${offerId}/counter-respond/`, { action });
+      await api.post(`/marketplace/offers/${offerId}/counter-respond/`, { action });
       toast.success(action === 'ACCEPT' ? 'Counter-offer accepted! Deal is now reserved.' : 'Counter-offer declined.');
       fetchMyOffers();
     } catch (err) {
@@ -115,7 +113,7 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
   const fetchMyOffers = async () => {
     setLoadingOrders(true);
     try {
-      const res = await axios.get(`${API_BASE}/marketplace/my-offers/`);
+      const res = await api.get('/marketplace/my-offers/');
       setOrders(res.data);
     } catch (err) {
       console.error('Failed to load my offers', err);
@@ -130,9 +128,9 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
     try {
       const url =
         statusFilter === 'ALL'
-          ? `${API_BASE}/marketplace/my-listings/`
-          : `${API_BASE}/marketplace/my-listings/?status=${statusFilter}`;
-      const res = await axios.get(url);
+          ? '/marketplace/my-listings/'
+          : `/marketplace/my-listings/?status=${statusFilter}`;
+      const res = await api.get(url);
       setListings(res.data);
       if (onListingsCountChange) {
         onListingsCountChange(res.data.length);
@@ -182,8 +180,8 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
       return;
     }
     try {
-      await axios.patch(
-        `${API_BASE}/marketplace/listings/${listingId}/status/`,
+      await api.patch(
+        `/marketplace/listings/${listingId}/status/`,
         { status: newStatus }
       );
       toast.success(`Listing status marked as ${newStatus}`);
@@ -198,7 +196,7 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
     if (!deleteModalId) return;
     setDeleting(true);
     try {
-      await axios.delete(`${API_BASE}/marketplace/listings/${deleteModalId}/`);
+      await api.delete(`/marketplace/listings/${deleteModalId}/`);
       toast.success('Listing permanently removed.');
       setDeleteModalId(null);
       fetchMyListings();
@@ -641,6 +639,17 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
                             </>
                           )}
                         </div>
+                        {ord.status === 'CANCELLED' && ord.cancellation_reason && (
+                          <div className="text-xs text-red-700 bg-red-50/90 border border-red-200 p-2 rounded mt-1">
+                            <strong>Cancellation Notice:</strong> {ord.cancellation_reason}
+                          </div>
+                        )}
+                        {ord.status === 'COMPLETED' && (
+                          <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 mt-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            Verified Handover (+5 Trust Points Awarded)
+                          </div>
+                        )}
                         {ord.buyer_message && (
                           <p className="text-xs text-gray-500 italic mt-1 bg-white/60 p-1.5 rounded border border-gray-100">
                             Your Note: "{ord.buyer_message}"

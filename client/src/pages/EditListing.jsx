@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
 import toast from 'react-hot-toast';
 import { compressImage } from '../utils/compressImage';
 import {
@@ -17,9 +14,14 @@ import {
   ArrowLeft,
   Check,
   Tag,
-  AlertCircle
+  AlertCircle,
+  AlertTriangle,
+  Repeat,
+  Camera
 } from 'lucide-react';
+import api, { getCategories } from '../services/api';
 import CategoryIcon from '../components/CategoryIcon';
+import LivePhotoModal from '../components/common/LivePhotoModal';
 
 const LPU_LOCATIONS = [
   'BH-1', 'BH-2', 'BH-3', 'BH-4', 'BH-5', 'BH-6', 'BH-7', 'BH-8',
@@ -56,6 +58,8 @@ export default function EditListing() {
   const [title, setTitle] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [transactionType, setTransactionType] = useState('SELL');
+  const [isExchangeAllowed, setIsExchangeAllowed] = useState(false);
+  const [exchangePreferences, setExchangePreferences] = useState('');
   const [price, setPrice] = useState('');
   const [isNegotiable, setIsNegotiable] = useState(true);
   const [condition, setCondition] = useState('GOOD');
@@ -67,18 +71,18 @@ export default function EditListing() {
   const [images, setImages] = useState([]);
   const [primaryIndex, setPrimaryIndex] = useState(0);
   const [status, setStatus] = useState('ACTIVE');
-  const [urlInput, setUrlInput] = useState('');
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
 
   // Fetch listing data and categories
   useEffect(() => {
     const fetchData = async () => {
       setFetching(true);
       try {
-        const catRes = await axios.get(`${API_BASE}/marketplace/categories/`);
-        setCategories(catRes.data);
+        const catData = await getCategories();
+        setCategories(catData);
 
-        const listingRes = await axios.get(
-          `${API_BASE}/marketplace/listings/${id}/`
+        const listingRes = await api.get(
+          `/marketplace/listings/${id}/`
         );
 
         const data = listingRes.data;
@@ -87,10 +91,17 @@ export default function EditListing() {
           navigate(`/listing/${id}`, { replace: true });
           return;
         }
+        if (data.is_seller === false) {
+          toast.error('You do not have permission to edit this listing.');
+          navigate(`/listing/${id}`, { replace: true });
+          return;
+        }
 
         setTitle(data.title || '');
         setCategoryId(data.category?.id || '');
         setTransactionType(data.transaction_type || 'SELL');
+        setIsExchangeAllowed(Boolean(data.is_exchange_allowed));
+        setExchangePreferences(data.exchange_preferences || '');
         setPrice(data.price ? String(Math.round(data.price)) : '');
         setIsNegotiable(data.is_negotiable ?? true);
         setCondition(data.condition || 'GOOD');
@@ -120,8 +131,8 @@ export default function EditListing() {
   // Image Handlers — uploads file to Cloudinary via backend
   const [uploading, setUploading] = useState(false);
 
-  const handleFileUpload = async (e) => {
-    const files = Array.from(e.target.files);
+  const uploadImageFiles = async (fileList) => {
+    const files = Array.from(fileList || []);
     if (!files.length) return;
 
     if (images.length + files.length > 4) {
@@ -139,12 +150,12 @@ export default function EditListing() {
     let uploadedCount = 0;
 
     for (const file of files) {
-      if (!file.type.startsWith('image/')) {
-        toast.error(`${file.name} is not an image.`);
+      if (!file.type || !file.type.startsWith('image/')) {
+        toast.error(`${file.name || 'File'} is not an image.`);
         continue;
       }
       if (file.size > 15 * 1024 * 1024) {
-        toast.error(`${file.name} exceeds 15MB limit.`);
+        toast.error(`${file.name || 'File'} exceeds 15MB limit.`);
         continue;
       }
 
@@ -160,8 +171,8 @@ export default function EditListing() {
       formData.append('image', compressed);
 
       try {
-        const res = await axios.post(
-          `${API_BASE}/marketplace/upload-image/`,
+        const res = await api.post(
+          '/marketplace/upload-image/',
           formData,
           {
             headers: {
@@ -172,8 +183,8 @@ export default function EditListing() {
         setImages((prev) => [...prev, res.data.url]);
         uploadedCount++;
       } catch (err) {
-        console.error(`Failed to upload ${file.name}`, err);
-        const errMsg = err.response?.data?.error || `Failed to upload ${file.name}.`;
+        console.error(`Failed to upload ${file.name || 'image'}`, err);
+        const errMsg = err.response?.data?.error || `Failed to upload ${file.name || 'image'}.`;
         toast.error(errMsg);
       }
     }
@@ -184,14 +195,15 @@ export default function EditListing() {
     setUploading(false);
   };
 
-  const handleAddImageUrl = () => {
-    if (!urlInput.trim()) return;
-    if (images.length >= 4) {
-      toast.error('Maximum 4 images allowed.');
-      return;
+  const handleFileUpload = (e) => {
+    if (e.target && e.target.files) {
+      uploadImageFiles(e.target.files);
+      e.target.value = '';
     }
-    setImages((prev) => [...prev, urlInput.trim()]);
-    setUrlInput('');
+  };
+
+  const handleCameraPhotoCaptured = (file) => {
+    uploadImageFiles([file]);
   };
 
   const handleRemoveImage = (index) => {
@@ -211,18 +223,39 @@ export default function EditListing() {
       toast.error('Please enter a product title.');
       return;
     }
-    if (transactionType !== 'DONATE' && (!price || Number(price) < 0)) {
+    if (images.length === 0) {
+      toast.error('A listing must have at least 1 product photo.');
+      return;
+    }
+    if (uploading) {
+      toast.error('Please wait for photos to finish uploading.');
+      return;
+    }
+    if (transactionType === 'SELL' && (!price || Number(price) <= 0)) {
       toast.error('Please enter a valid price.');
+      return;
+    }
+    if (transactionType === 'EXCHANGE' && !exchangePreferences.trim()) {
+      toast.error('Please specify what item you want in exchange.');
       return;
     }
 
     setLoading(true);
 
+    const isExchange = transactionType === 'EXCHANGE' || isExchangeAllowed;
+    const computedPrice = transactionType === 'DONATE'
+      ? '0.00'
+      : transactionType === 'EXCHANGE'
+        ? (price ? parseFloat(price).toFixed(2) : '0.00')
+        : parseFloat(price).toFixed(2);
+
     const payload = {
       title: title.trim(),
       category: categoryId || null,
       transaction_type: transactionType,
-      price: transactionType === 'DONATE' ? '0.00' : parseFloat(price).toFixed(2),
+      is_exchange_allowed: isExchange,
+      exchange_preferences: isExchange ? exchangePreferences.trim() : '',
+      price: computedPrice,
       is_negotiable: transactionType === 'DONATE' ? false : isNegotiable,
       condition,
       location: location.trim(),
@@ -236,15 +269,27 @@ export default function EditListing() {
     };
 
     try {
-      await axios.patch(
-        `${API_BASE}/marketplace/listings/${id}/`,
+      await api.patch(
+        `/marketplace/listings/${id}/`,
         payload
       );
       toast.success('Listing updated successfully!');
       navigate(`/listing/${id}`);
     } catch (err) {
       console.error('Failed to update listing', err);
-      toast.error(err.response?.data?.detail || 'Failed to update listing.');
+      const data = err.response?.data;
+      let errMsg = 'Failed to update listing.';
+      if (typeof data === 'string') errMsg = data;
+      else if (data?.detail) errMsg = data.detail;
+      else if (data?.error) errMsg = data.error;
+      else if (data && typeof data === 'object') {
+        const firstKey = Object.keys(data)[0];
+        if (firstKey) {
+          const val = data[firstKey];
+          errMsg = Array.isArray(val) ? `${firstKey}: ${val[0]}` : `${firstKey}: ${val}`;
+        }
+      }
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }
@@ -294,6 +339,22 @@ export default function EditListing() {
         </div>
       </div>
 
+      {(() => {
+        const PROHIBITED_WORDS = ['vape', 'alcohol', 'beer', 'whiskey', 'weed', 'cannabis', 'weapon', 'knife', 'gun', 'cheat', 'exam paper', 'fake id', 'porn', 'cigarette', 'hookah'];
+        const detected = PROHIBITED_WORDS.filter((w) =>
+          (title && title.toLowerCase().includes(w)) || (description && description.toLowerCase().includes(w))
+        );
+        if (detected.length === 0) return null;
+        return (
+          <div className="mb-6 p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-start gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold">Prohibited Content Warning:</span> Your text includes "{detected.join(', ')}". Items under campus restricted categories are automatically flagged and hidden by moderation.
+            </div>
+          </div>
+        );
+      })()}
+
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Photos Box */}
         <div className="bg-white border border-gray-200 rounded-md p-4 sm:p-6 shadow-sm">
@@ -303,7 +364,15 @@ export default function EditListing() {
             </h2>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-2 mb-4">
+          {/* Anti-Fraud Notice */}
+          <div className="mb-3 bg-amber-50/90 border border-amber-200 rounded-lg p-2.5 flex items-start gap-2 text-xs text-amber-900">
+            <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-semibold">Real Photos Only:</span> Direct web URLs are disabled to avoid fake listings. Upload genuine pictures or snap a photo directly using your camera.
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 mb-4">
             <input
               type="file"
               id="edit-file-upload"
@@ -311,36 +380,57 @@ export default function EditListing() {
               accept="image/*"
               onChange={handleFileUpload}
               className="hidden"
-              disabled={uploading}
+              disabled={uploading || images.length >= 4}
             />
             <label
               htmlFor="edit-file-upload"
-              className={`border border-brand-200 text-brand-700 text-xs font-semibold px-4 py-2.5 rounded-md transition-colors inline-flex items-center justify-center gap-1.5 ${uploading ? 'bg-brand-100 opacity-60 pointer-events-none' : 'cursor-pointer bg-brand-50 hover:bg-brand-100'}`}
+              className={`border border-brand-200 text-brand-700 text-xs font-semibold px-4 py-2.5 rounded-md transition-colors inline-flex items-center justify-center gap-1.5 ${
+                uploading || images.length >= 4
+                  ? 'bg-gray-100 text-gray-400 border-gray-200 opacity-60 pointer-events-none'
+                  : 'cursor-pointer bg-brand-50 hover:bg-brand-100 shadow-sm'
+              }`}
             >
               {uploading ? (
                 <div className="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
               ) : (
                 <UploadCloud className="w-4 h-4" />
               )}
-              {uploading ? 'Uploading...' : 'Upload New Images'}
+              {uploading ? 'Uploading...' : 'Upload from Device'}
             </label>
 
-            <div className="flex-1 flex gap-2">
-              <input
-                type="url"
-                placeholder="Or paste an image URL..."
-                value={urlInput}
-                onChange={(e) => setUrlInput(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 outline-none"
-              />
-              <button
-                type="button"
-                onClick={handleAddImageUrl}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium px-3 py-2 rounded-md transition-colors whitespace-nowrap"
-              >
-                Add URL
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsCameraOpen(true)}
+              disabled={uploading || images.length >= 4}
+              className={`border border-orange-200 text-orange-700 text-xs font-semibold px-4 py-2.5 rounded-md transition-colors inline-flex items-center justify-center gap-1.5 ${
+                uploading || images.length >= 4
+                  ? 'bg-gray-100 text-gray-400 border-gray-200 opacity-60 pointer-events-none'
+                  : 'cursor-pointer bg-orange-50 hover:bg-orange-100 shadow-sm'
+              }`}
+            >
+              <Camera className="w-4 h-4 text-orange-600" />
+              Take Live Photo
+            </button>
+
+            {/* Mobile Camera Shortcut */}
+            <input
+              type="file"
+              id="edit-mobile-camera"
+              accept="image/*"
+              capture="environment"
+              onChange={handleFileUpload}
+              className="hidden"
+              disabled={uploading || images.length >= 4}
+            />
+            <label
+              htmlFor="edit-mobile-camera"
+              className={`text-[11px] font-medium text-gray-500 hover:text-brand-600 hover:underline inline-flex items-center gap-1 ml-auto ${
+                uploading || images.length >= 4 ? 'pointer-events-none opacity-50' : 'cursor-pointer'
+              }`}
+            >
+              <Camera className="w-3.5 h-3.5" />
+              Phone Camera
+            </label>
           </div>
 
           {images.length > 0 && (
@@ -423,53 +513,125 @@ export default function EditListing() {
 
         {/* Transaction Mode & Price */}
         <div className="bg-white border border-gray-200 rounded-md p-4 sm:p-6 shadow-sm space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            {['SELL', 'DONATE'].map((type) => (
+          <div className="grid grid-cols-3 gap-2.5">
+            {[
+              { id: 'SELL', label: '💰 Sell', desc: 'Cash sale' },
+              { id: 'EXCHANGE', label: '🔄 Exchange', desc: 'Item swap' },
+              { id: 'DONATE', label: '🎁 Donate', desc: 'Free' }
+            ].map((mode) => (
               <button
-                key={type}
+                key={mode.id}
                 type="button"
                 onClick={() => {
-                  setTransactionType(type);
-                  if (type === 'DONATE') setPrice('0');
+                  setTransactionType(mode.id);
+                  if (mode.id === 'DONATE') setPrice('0');
                 }}
-                className={`py-2.5 rounded-md border text-center text-xs font-bold transition-all ${
-                  transactionType === type
-                    ? 'bg-brand-500 text-white border-brand-500 shadow-sm'
-                    : 'bg-gray-50 border-gray-200 text-gray-700'
+                className={`py-2.5 px-2 rounded-md border text-center transition-all ${
+                  transactionType === mode.id
+                    ? mode.id === 'EXCHANGE'
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm font-bold'
+                      : mode.id === 'DONATE'
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm font-bold'
+                      : 'bg-brand-500 text-white border-brand-500 shadow-sm font-bold'
+                    : 'bg-gray-50 border-gray-200 text-gray-700 font-semibold hover:bg-gray-100'
                 }`}
               >
-                {type === 'SELL' ? 'Sell' : 'Donate'}
+                <div className="text-xs">{mode.label}</div>
+                <div className={`text-[10px] ${transactionType === mode.id ? 'text-white/80' : 'text-gray-400'}`}>
+                  {mode.desc}
+                </div>
               </button>
             ))}
           </div>
 
-          {transactionType !== 'DONATE' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+          {transactionType === 'SELL' ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                <div>
+                  <label className="block text-xs font-bold text-gray-900 mb-1">
+                    Price (INR)
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-md px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-brand-500 outline-none"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 p-2.5 bg-gray-50 border border-gray-200 rounded-md">
+                  <input
+                    type="checkbox"
+                    id="edit-negotiable"
+                    checked={isNegotiable}
+                    onChange={(e) => setIsNegotiable(e.target.checked)}
+                    className="w-4 h-4 text-brand-500 rounded border-gray-300"
+                  />
+                  <label htmlFor="edit-negotiable" className="text-xs font-semibold text-gray-700 select-none cursor-pointer">
+                    Price is negotiable
+                  </label>
+                </div>
+              </div>
+
+              {/* Also Open to Exchange Toggle */}
+              <div className="p-3 rounded-lg border border-dashed border-indigo-200 bg-indigo-50/40 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-950">
+                    <Repeat className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Also open to item exchange / swap?</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={isExchangeAllowed}
+                    onChange={(e) => setIsExchangeAllowed(e.target.checked)}
+                    className="w-4 h-4 text-indigo-600 rounded"
+                  />
+                </div>
+                {isExchangeAllowed && (
+                  <input
+                    type="text"
+                    placeholder="e.g. Open to exchange for 4th Sem Books or Calculator"
+                    value={exchangePreferences}
+                    onChange={(e) => setExchangePreferences(e.target.value)}
+                    className="w-full bg-white border border-indigo-200 rounded-md px-3 py-1.5 text-xs text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                )}
+              </div>
+            </div>
+          ) : transactionType === 'EXCHANGE' ? (
+            <div className="space-y-3 p-3.5 rounded-lg border border-indigo-200 bg-indigo-50/40">
               <div>
                 <label className="block text-xs font-bold text-gray-900 mb-1">
-                  Price (INR)
+                  What do you want in exchange? <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   required
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-md px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-brand-500 outline-none"
+                  placeholder="e.g. 4th Sem CSE Books, Casio FX-991EX, Cycle"
+                  value={exchangePreferences}
+                  onChange={(e) => setExchangePreferences(e.target.value)}
+                  className="w-full bg-white border border-indigo-300 rounded-md px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
               </div>
 
-              <div className="flex items-center gap-2 p-2.5 bg-gray-50 border border-gray-200 rounded-md">
-                <input
-                  type="checkbox"
-                  id="edit-negotiable"
-                  checked={isNegotiable}
-                  onChange={(e) => setIsNegotiable(e.target.checked)}
-                  className="w-4 h-4 text-brand-500 rounded border-gray-300"
-                />
-                <label htmlFor="edit-negotiable" className="text-xs font-semibold text-gray-700">
-                  Negotiable
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                  Estimated Value in INR (Optional)
                 </label>
+                <input
+                  type="number"
+                  placeholder="e.g. 1500"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  className="w-full sm:w-1/2 bg-white border border-gray-200 rounded-md px-3 py-2 text-xs outline-none"
+                />
               </div>
+            </div>
+          ) : (
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-md text-xs font-medium text-emerald-800 flex items-center gap-2">
+              <Check className="w-4 h-4 text-emerald-600" />
+              Listed as a free peer donation.
             </div>
           )}
 
@@ -575,13 +737,22 @@ export default function EditListing() {
           </button>
           <button
             type="submit"
-            disabled={loading}
-            className="bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold py-2.5 px-6 rounded-md shadow-md disabled:opacity-50 text-center justify-center flex items-center"
+            disabled={loading || uploading}
+            className="bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold py-2.5 px-6 rounded-md shadow-md disabled:opacity-50 text-center justify-center flex items-center cursor-pointer disabled:cursor-not-allowed"
           >
-            {loading ? 'Saving Changes...' : 'Save Changes'}
+            {loading ? 'Saving Changes...' : uploading ? 'Uploading Photos...' : 'Save Changes'}
           </button>
         </div>
       </form>
+
+      {/* Live Camera Photo Modal */}
+      {isCameraOpen && (
+        <LivePhotoModal
+          isOpen={isCameraOpen}
+          onClose={() => setIsCameraOpen(false)}
+          onPhotoCaptured={handleCameraPhotoCaptured}
+        />
+      )}
     </div>
   );
 }

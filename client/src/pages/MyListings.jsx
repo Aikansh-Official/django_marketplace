@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
 import toast from 'react-hot-toast';
 import {
   Plus,
@@ -16,10 +13,12 @@ import {
   MapPin,
   Tag,
   AlertCircle,
+  AlertTriangle,
   Package,
   Layers,
   ChevronRight
 } from 'lucide-react';
+import api, { getPlatformConfig } from '../services/api';
 import CategoryIcon from '../components/CategoryIcon';
 import UniversalLoader from '../components/common/UniversalLoader';
 
@@ -31,7 +30,7 @@ export default function MyListings() {
   useEffect(() => {
     const checkRole = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/auth/profile/`);
+        const res = await api.get('/auth/profile/');
         if (res.data && res.data.role !== 'SELLER' && !res.data.is_id_verified) {
           toast('Buyers do not have seller listings. Redirecting to your Orders...', { icon: 'ℹ️' });
           navigate('/profile?tab=orders-sells', { replace: true });
@@ -48,15 +47,24 @@ export default function MyListings() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [deleteModalId, setDeleteModalId] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [maxLimit, setMaxLimit] = useState(10);
+
+  useEffect(() => {
+    getPlatformConfig().then((cfg) => {
+      if (cfg && cfg.max_active_listings_per_student) {
+        setMaxLimit(cfg.max_active_listings_per_student);
+      }
+    }).catch(() => {});
+  }, []);
 
   const fetchMyListings = async () => {
     setLoading(true);
     try {
       const url = statusFilter === 'ALL'
-        ? `${API_BASE}/marketplace/my-listings/`
-        : `${API_BASE}/marketplace/my-listings/?status=${statusFilter}`;
+        ? '/marketplace/my-listings/'
+        : `/marketplace/my-listings/?status=${statusFilter}`;
       
-      const res = await axios.get(url);
+      const res = await api.get(url);
       setListings(res.data);
     } catch (err) {
       console.error('Failed to load my listings', err);
@@ -77,8 +85,8 @@ export default function MyListings() {
       return;
     }
     try {
-      await axios.patch(
-        `${API_BASE}/marketplace/listings/${listingId}/status/`,
+      await api.patch(
+        `/marketplace/listings/${listingId}/status/`,
         { status: newStatus }
       );
       toast.success(`Listing status updated to ${newStatus}`);
@@ -93,7 +101,7 @@ export default function MyListings() {
     if (!deleteModalId) return;
     setDeleting(true);
     try {
-      await axios.delete(`${API_BASE}/marketplace/listings/${deleteModalId}/`);
+      await api.delete(`/marketplace/listings/${deleteModalId}/`);
       toast.success('Listing deleted.');
       setDeleteModalId(null);
       fetchMyListings();
@@ -192,6 +200,34 @@ export default function MyListings() {
             Total Views
           </div>
           <div className="text-2xl font-extrabold text-brand-700 mt-1">{totalViews}</div>
+        </div>
+      </div>
+
+      {/* Active Listings Quota Meter */}
+      <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border border-blue-200/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-300 text-blue-600 flex items-center justify-center font-bold">
+            <Package className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="text-xs font-bold text-gray-900">Campus Active Listings Limit</div>
+            <div className="text-xs text-gray-500">
+              You are currently using <strong className="text-blue-700">{activeCount}</strong> of <strong className="text-gray-900">{maxLimit}</strong> allowed active listing slots.
+            </div>
+          </div>
+        </div>
+        <div className="w-full sm:w-56">
+          <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                activeCount >= maxLimit ? 'bg-red-500' : activeCount >= maxLimit * 0.8 ? 'bg-amber-500' : 'bg-brand-500'
+              }`}
+              style={{ width: `${Math.min(100, (activeCount / (maxLimit || 1)) * 100)}%` }}
+            ></div>
+          </div>
+          <div className="text-[11px] text-gray-500 text-right mt-1 font-medium">
+            {maxLimit - activeCount > 0 ? `${maxLimit - activeCount} slots remaining` : 'Limit reached'}
+          </div>
         </div>
       </div>
 
@@ -337,6 +373,23 @@ export default function MyListings() {
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
+
+                {item.status === 'HIDDEN' && (
+                  <div className="w-full mt-3 p-3 rounded-lg bg-amber-50/90 border border-amber-200 text-amber-900 text-xs flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold">Listing Under Moderation / Hidden:</span> This item is not visible in the marketplace. It may contain restricted keywords or was hidden by moderation. You can edit the listing to ensure title and description follow campus guidelines.
+                      </div>
+                    </div>
+                    <Link
+                      to={`/edit-listing/${item.id}`}
+                      className="shrink-0 font-semibold px-2.5 py-1 rounded bg-amber-200 hover:bg-amber-300 text-amber-900 transition-colors text-[11px]"
+                    >
+                      Edit Listing
+                    </Link>
+                  </div>
+                )}
               </div>
             );
           })}

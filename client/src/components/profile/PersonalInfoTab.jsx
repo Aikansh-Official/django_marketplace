@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import toast from 'react-hot-toast';
 import {
   User,
@@ -20,8 +20,6 @@ import {
   Camera
 } from 'lucide-react';
 import UpdateSelfieModal from './UpdateSelfieModal';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export default function PersonalInfoTab({ profile, onProfileUpdated, onUpgradeClick, onOpenSelfieModal }) {
   const isSeller = profile?.role === 'SELLER' || profile?.is_id_verified;
@@ -45,7 +43,7 @@ export default function PersonalInfoTab({ profile, onProfileUpdated, onUpgradeCl
     e.preventDefault();
     setSaving(true);
     try {
-      await axios.patch(`${API_BASE}/auth/profile/`, formData);
+      await api.patch('/auth/profile/', formData);
       toast.success('Profile updated successfully!');
       setIsEditing(false);
       if (onProfileUpdated) onProfileUpdated();

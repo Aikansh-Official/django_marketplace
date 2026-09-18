@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
   Bell,
@@ -21,8 +20,7 @@ import {
   Radio,
   AlertTriangle
 } from 'lucide-react';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+import api from '../services/api';
 import UniversalLoader from '../components/common/UniversalLoader';
 
 export default function Notifications() {
@@ -37,7 +35,7 @@ export default function Notifications() {
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_BASE}/marketplace/notifications/`);
+      const res = await api.get('/marketplace/notifications/');
       setNotifications(res.data);
     } catch (err) {
       console.error('Failed to load notifications', err);
@@ -54,7 +52,7 @@ export default function Notifications() {
 
   const handleMarkRead = async (id) => {
     try {
-      await axios.patch(`${API_BASE}/marketplace/notifications/${id}/read/`);
+      await api.patch(`/marketplace/notifications/${id}/read/`);
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
       );
@@ -66,7 +64,7 @@ export default function Notifications() {
 
   const handleMarkAllRead = async () => {
     try {
-      await axios.post(`${API_BASE}/marketplace/notifications/read-all/`);
+      await api.post('/marketplace/notifications/read-all/');
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
       window.dispatchEvent(new Event('notifications-updated'));
       toast.success('All notifications marked as read.');
@@ -80,7 +78,7 @@ export default function Notifications() {
     if (!deleteModalId) return;
     setDeleting(true);
     try {
-      await axios.delete(`${API_BASE}/marketplace/notifications/${deleteModalId}/delete/`);
+      await api.delete(`/marketplace/notifications/${deleteModalId}/delete/`);
       setNotifications((prev) => prev.filter((n) => n.id !== deleteModalId));
       window.dispatchEvent(new Event('notifications-updated'));
       toast.success('Notification removed.');
@@ -96,7 +94,7 @@ export default function Notifications() {
   const handleClearAll = async () => {
     setClearingAll(true);
     try {
-      await axios.delete(`${API_BASE}/marketplace/notifications/clear-all/`);
+      await api.delete('/marketplace/notifications/clear-all/');
       setNotifications([]);
       window.dispatchEvent(new Event('notifications-updated'));
       toast.success('All notifications cleared.');

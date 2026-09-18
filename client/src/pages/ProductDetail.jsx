@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+import api, { submitReport } from '../services/api';
 import toast from 'react-hot-toast';
 import {
   MapPin,
@@ -36,7 +34,8 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
-  Maximize2
+  Maximize2,
+  Repeat
 } from 'lucide-react';
 import { toggleSavedItem, isItemSaved } from '../utils/savedStore';
 import HandoverQRModal from '../components/handover/HandoverQRModal';
@@ -62,6 +61,8 @@ export default function ProductDetail() {
 
   // Purchase request state
   const [showBuyModal, setShowBuyModal] = useState(false);
+  const [isExchangeProposal, setIsExchangeProposal] = useState(false);
+  const [exchangeItemTitle, setExchangeItemTitle] = useState('');
   const [buyerMessage, setBuyerMessage] = useState('');
   const [offerAmount, setOfferAmount] = useState('');
   const [submittingBuyRequest, setSubmittingBuyRequest] = useState(false);
@@ -105,7 +106,21 @@ export default function ProductDetail() {
       triggerLogin();
       return;
     }
+    setIsExchangeProposal(listing?.transaction_type === 'EXCHANGE');
+    setExchangeItemTitle('');
     setOfferAmount(listing?.price || '');
+    setShowBuyModal(true);
+  };
+
+  const handleOpenExchangeModal = () => {
+    if (!isAuthenticated) {
+      toast('Please log in to propose an item exchange.', { icon: '🔒' });
+      triggerLogin();
+      return;
+    }
+    setIsExchangeProposal(true);
+    setExchangeItemTitle('');
+    setOfferAmount('0');
     setShowBuyModal(true);
   };
 
@@ -167,7 +182,7 @@ export default function ProductDetail() {
         } catch (e) { }
       }
       try {
-        const res = await axios.get(`${API_BASE}/auth/status/`);
+        const res = await api.get('/auth/status/');
         if (res.data?.isAuthenticated && res.data?.user?.id) {
           setIsAuthenticated(true);
           setCurrentUserId(res.data.user.id);
@@ -189,15 +204,15 @@ export default function ProductDetail() {
     const fetchListing = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(`${API_BASE}/marketplace/listings/${id}/`);
+        const res = await api.get(`/marketplace/listings/${id}/`);
         setListing(res.data);
         setActiveImageIndex(0);
 
         // Fetch related listings from same category
         if (res.data.category?.slug) {
           try {
-            const relatedRes = await axios.get(
-              `${API_BASE}/marketplace/listings/?category=${res.data.category.slug}`
+            const relatedRes = await api.get(
+              `/marketplace/listings/?category=${res.data.category.slug}`
             );
             setRelatedListings(
               relatedRes.data.filter((item) => String(item.id) !== String(id)).slice(0, 4)
@@ -228,8 +243,8 @@ export default function ProductDetail() {
 
     setStatusUpdating(true);
     try {
-      const res = await axios.patch(
-        `${API_BASE}/marketplace/listings/${id}/status/`,
+      const res = await api.patch(
+        `/marketplace/listings/${id}/status/`,
         { status: newStatus }
       );
       setListing((prev) => ({ ...prev, status: res.data.status }));
@@ -246,7 +261,7 @@ export default function ProductDetail() {
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      await axios.delete(`${API_BASE}/marketplace/listings/${id}/`);
+      await api.delete(`/marketplace/listings/${id}/`);
       toast.success('Listing deleted successfully');
       navigate('/my-listings');
     } catch (err) {
@@ -272,7 +287,7 @@ export default function ProductDetail() {
   const fetchListingOffers = async () => {
     if (!id) return;
     try {
-      const res = await axios.get(`${API_BASE}/marketplace/listings/${id}/offers/`);
+      const res = await api.get(`/marketplace/listings/${id}/offers/`);
       setListingOffers(res.data);
     } catch (e) {
       // Not owner or error
@@ -283,8 +298,8 @@ export default function ProductDetail() {
     if (isOwner) {
       fetchListingOffers();
     } else if (currentUserId && id) {
-      axios
-        .get(`${API_BASE}/marketplace/my-offers/`)
+      api
+        .get('/marketplace/my-offers/')
         .then((res) => {
           const myOf = res.data.find((o) => String(o.listing) === String(id));
           if (myOf) setUserOffer(myOf);
@@ -295,7 +310,7 @@ export default function ProductDetail() {
 
   const handleRespondOffer = async (offerId, action) => {
     try {
-      await axios.patch(`${API_BASE}/marketplace/offers/${offerId}/respond/`, { action });
+      await api.patch(`/marketplace/offers/${offerId}/respond/`, { action });
       toast.success(action === 'ACCEPT' ? 'Deal accepted! Listing is now Reserved.' : 'Request declined.');
       fetchListingOffers();
       if (action === 'ACCEPT') {
@@ -321,7 +336,7 @@ export default function ProductDetail() {
     }
     setSubmittingCounter(true);
     try {
-      await axios.patch(`${API_BASE}/marketplace/offers/${selectedOfferForCounter.id}/respond/`, {
+      await api.patch(`/marketplace/offers/${selectedOfferForCounter.id}/respond/`, {
         action: 'COUNTER',
         counter_amount: counterAmount,
         seller_note: sellerNote
@@ -340,7 +355,7 @@ export default function ProductDetail() {
     if (!userOffer) return;
     setRespondingToCounter(true);
     try {
-      const res = await axios.post(`${API_BASE}/marketplace/offers/${userOffer.id}/counter-respond/`, { action });
+      const res = await api.post(`/marketplace/offers/${userOffer.id}/counter-respond/`, { action });
       setUserOffer(res.data);
       if (action === 'ACCEPT') {
         toast.success(`Counter-offer accepted! Listing is now reserved for you.`, { icon: '🎉' });
@@ -361,7 +376,7 @@ export default function ProductDetail() {
     }
     setCancellingDeal(true);
     try {
-      await axios.post(`${API_BASE}/marketplace/offers/${offerId}/cancel/`);
+      await api.post(`/marketplace/offers/${offerId}/cancel/`);
       toast.success('Deal cancelled. Listing restored to Active.');
       setListing((prev) => ({ ...prev, status: 'ACTIVE' }));
       if (isOwner) {
@@ -386,8 +401,8 @@ export default function ProductDetail() {
       setUserOffer((prev) => (prev ? { ...prev, status: 'COMPLETED' } : null));
     }
     if (id) {
-      axios
-        .get(`${API_BASE}/marketplace/listings/${id}/`)
+      api
+        .get(`/marketplace/listings/${id}/`)
         .then((res) => setListing(res.data))
         .catch(() => { });
     }
@@ -400,7 +415,7 @@ export default function ProductDetail() {
 
     const syncPendingListing = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/marketplace/listings/${id}/`);
+        const res = await api.get(`/marketplace/listings/${id}/`);
         if (res.data.status === 'SOLD') {
           setListing(res.data);
           if (isOwner) {
@@ -444,18 +459,27 @@ export default function ProductDetail() {
 
   const handleSubmitBuyRequest = async (e) => {
     e.preventDefault();
+    if (isExchangeProposal && !exchangeItemTitle.trim()) {
+      toast.error('Please specify what item you are offering to swap.');
+      return;
+    }
     setSubmittingBuyRequest(true);
     try {
       const payload = {
-        message: buyerMessage
+        message: buyerMessage,
+        is_exchange_offer: isExchangeProposal,
+        exchange_item_title: isExchangeProposal ? exchangeItemTitle.trim() : ''
       };
-      if (listing.is_negotiable && offerAmount && listing.transaction_type !== 'DONATE') {
+      if (offerAmount !== '' && Number(offerAmount) >= 0) {
         payload.offer_amount = offerAmount;
       }
-      const res = await axios.post(`${API_BASE}/marketplace/listings/${id}/offer/`, payload);
-      toast.success('Purchase request sent to the seller!', { icon: '🎉' });
+      const res = await api.post(`/marketplace/listings/${id}/offer/`, payload);
+      toast.success(isExchangeProposal ? 'Exchange proposal sent to the seller!' : 'Purchase request sent to the seller!', {
+        icon: isExchangeProposal ? '🔄' : '🎉'
+      });
       setShowBuyModal(false);
       setBuyerMessage('');
+      setExchangeItemTitle('');
       setUserOffer(res.data);
     } catch (err) {
       const msg = err.response?.data?.error || 'Failed to submit request. Please log in first.';
@@ -473,7 +497,7 @@ export default function ProductDetail() {
     }
     setSubmittingReport(true);
     try {
-      await axios.post(`${API_BASE}/marketplace/reports/`, {
+      await submitReport({
         listing: id,
         reason: reportReason,
         details: reportDetails
@@ -792,6 +816,16 @@ export default function ProductDetail() {
                       </span>
                     </div>
 
+                    {off.is_exchange_offer && off.exchange_item_title && (
+                      <div className="bg-indigo-50 border border-indigo-200/80 rounded p-1.5 flex items-center gap-1.5 text-[11px] text-indigo-900 font-bold">
+                        <Repeat className="w-3 h-3 text-indigo-600 shrink-0" />
+                        <span>Swap with: {off.exchange_item_title}</span>
+                        {Number(off.offer_amount) > 0 && (
+                          <span className="text-indigo-600 font-medium">(+{off.offer_amount} Rs)</span>
+                        )}
+                      </div>
+                    )}
+
                     {off.buyer_message && (
                       <p className="text-gray-600 italic text-[11px] truncate">
                         "{off.buyer_message}"
@@ -1018,11 +1052,21 @@ export default function ProductDetail() {
               )}
 
               {/* Transaction Badge */}
-              {listing.transaction_type === 'DONATE' && (
+              {listing.transaction_type === 'DONATE' ? (
                 <div className="absolute top-4 left-4 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
                   FREE DONATION
                 </div>
-              )}
+              ) : listing.transaction_type === 'EXCHANGE' ? (
+                <div className="absolute top-4 left-4 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1.5">
+                  <Repeat className="w-3.5 h-3.5" />
+                  <span>FOR EXCHANGE / SWAP</span>
+                </div>
+              ) : listing.is_exchange_allowed ? (
+                <div className="absolute top-4 left-4 bg-indigo-600/95 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md flex items-center gap-1.5">
+                  <Repeat className="w-3.5 h-3.5" />
+                  <span>SELL OR SWAP</span>
+                </div>
+              ) : null}
 
               {/* Gallery Arrow Controls (if multiple images) */}
               {images.length > 1 && (
@@ -1142,14 +1186,40 @@ export default function ProductDetail() {
 
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-extrabold text-gray-900 tracking-tight">
-                  {listing.transaction_type === 'DONATE' ? 'Free (Donation)' : `Rs ${listing.price}`}
+                  {listing.transaction_type === 'DONATE'
+                    ? 'Free (Donation)'
+                    : listing.transaction_type === 'EXCHANGE'
+                      ? (Number(listing.price) > 0 ? `Rs ${listing.price} (Est. Value)` : 'For Item Swap')
+                      : `Rs ${listing.price}`}
                 </span>
               </div>
 
-              {listing.is_negotiable && listing.transaction_type === 'SELL' && (
-                <div className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-brand-700 bg-brand-50 border border-brand-200 px-2.5 py-0.5 rounded-full">
-                  <Check className="w-3 h-3" />
-                  Price is negotiable
+              {/* Badges for Negotiable & Exchange */}
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                {listing.is_negotiable && listing.transaction_type === 'SELL' && (
+                  <div className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-700 bg-brand-50 border border-brand-200 px-2.5 py-0.5 rounded-full">
+                    <Check className="w-3 h-3" />
+                    Price is negotiable
+                  </div>
+                )}
+                {(listing.transaction_type === 'EXCHANGE' || listing.is_exchange_allowed) && (
+                  <div className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
+                    <Repeat className="w-3 h-3" />
+                    Open for Item Exchange
+                  </div>
+                )}
+              </div>
+
+              {/* What Seller Wants in Exchange Callout */}
+              {(listing.transaction_type === 'EXCHANGE' || listing.is_exchange_allowed) && listing.exchange_preferences && (
+                <div className="mt-3 p-3 rounded-lg bg-gradient-to-r from-indigo-50/90 to-purple-50/70 border border-indigo-200/90 space-y-1">
+                  <div className="flex items-center gap-1.5 text-[11px] font-black text-indigo-950 uppercase tracking-wider">
+                    <Repeat className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Seller wants in exchange:</span>
+                  </div>
+                  <p className="text-xs font-bold text-indigo-900 pl-5">
+                    &ldquo;{listing.exchange_preferences}&rdquo;
+                  </p>
                 </div>
               )}
             </div>
@@ -1196,19 +1266,49 @@ export default function ProductDetail() {
                       userOffer?.status === 'PENDING' ? (
                         <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-md text-xs font-bold text-center flex items-center justify-center gap-2 shadow-2xs">
                           <Clock className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                          <span>Purchase Request Pending Seller Approval</span>
+                          <span>Request Pending Seller Approval</span>
                         </div>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={handleOpenBuyModal}
-                          className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2 cursor-pointer"
-                        >
-                          <ShoppingBag className="w-4 h-4" />
-                          {listing.transaction_type === 'DONATE'
-                            ? 'Request Free Donation'
-                            : `I Want to Buy This (Rs ${listing.price})`}
-                        </button>
+                        <div className="space-y-2">
+                          <button
+                            type="button"
+                            onClick={handleOpenBuyModal}
+                            className={`w-full text-white font-bold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2 cursor-pointer ${
+                              listing.transaction_type === 'EXCHANGE'
+                                ? 'bg-indigo-600 hover:bg-indigo-700'
+                                : 'bg-brand-500 hover:bg-brand-600'
+                            }`}
+                          >
+                            {listing.transaction_type === 'EXCHANGE' ? (
+                              <>
+                                <Repeat className="w-4 h-4" />
+                                <span>Propose Item Exchange (Swap)</span>
+                              </>
+                            ) : listing.transaction_type === 'DONATE' ? (
+                              <>
+                                <ShoppingBag className="w-4 h-4" />
+                                <span>Request Free Donation</span>
+                              </>
+                            ) : (
+                              <>
+                                <ShoppingBag className="w-4 h-4" />
+                                <span>I Want to Buy This (Rs {listing.price})</span>
+                              </>
+                            )}
+                          </button>
+
+                          {/* Dual option: Also show Propose Exchange if seller is open to it */}
+                          {listing.transaction_type === 'SELL' && listing.is_exchange_allowed && (
+                            <button
+                              type="button"
+                              onClick={handleOpenExchangeModal}
+                              className="w-full bg-white border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 font-bold py-2.5 px-4 rounded-md transition-all text-xs flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                            >
+                              <Repeat className="w-4 h-4" />
+                              <span>Or Propose an Item Exchange</span>
+                            </button>
+                          )}
+                        </div>
                       )
                     )}
 
@@ -1518,8 +1618,17 @@ export default function ProductDetail() {
           <div className="bg-white border border-gray-200 rounded-md max-w-sm w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b pb-3">
               <h3 className="font-extrabold text-gray-900 text-base flex items-center gap-2">
-                <ShoppingBag className="w-4 h-4 text-brand-500" />
-                Confirm Purchase Request
+                {isExchangeProposal ? (
+                  <>
+                    <Repeat className="w-4 h-4 text-indigo-600" />
+                    <span>Propose Item Exchange</span>
+                  </>
+                ) : (
+                  <>
+                    <ShoppingBag className="w-4 h-4 text-brand-500" />
+                    <span>Confirm Purchase Request</span>
+                  </>
+                )}
               </h3>
               <button
                 onClick={() => setShowBuyModal(false)}
@@ -1532,37 +1641,70 @@ export default function ProductDetail() {
             <form onSubmit={handleSubmitBuyRequest} className="space-y-4">
               <div className="bg-gray-50 p-3 rounded-md border border-gray-100 space-y-2">
                 <div className="text-xs text-gray-500">
-                  Item: <strong className="text-gray-900">{listing.title}</strong>
+                  Target Item: <strong className="text-gray-900">{listing.title}</strong>
                 </div>
-                <div className="text-xs text-gray-500 flex items-center justify-between">
-                  <span>Direct Listed Price:</span>
-                  <strong className="text-base font-black text-brand-600">
-                    {listing.transaction_type === 'DONATE' ? 'Free (Donation)' : `Rs ${listing.price}`}
-                  </strong>
-                </div>
+                {listing.exchange_preferences && (
+                  <div className="text-xs text-indigo-900 bg-indigo-50/70 p-2 rounded border border-indigo-100">
+                    <span className="font-bold">Seller wants in return:</span> &ldquo;{listing.exchange_preferences}&rdquo;
+                  </div>
+                )}
                 <div className="text-xs text-gray-500 flex items-center justify-between">
                   <span>Campus Pickup Spot:</span>
                   <span className="font-semibold text-gray-800">{listing.location}</span>
                 </div>
               </div>
 
-              {/* Custom Proposed Price for Negotiable Items */}
-              {listing.is_negotiable && listing.transaction_type !== 'DONATE' && (
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1 flex items-center justify-between">
-                    <span>Your Proposed Price (Rs)</span>
-                    <span className="text-[11px] text-brand-600 font-semibold lowercase first-letter:uppercase">Item is negotiable</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={offerAmount}
-                    onChange={(e) => setOfferAmount(e.target.value)}
-                    placeholder={`Direct price: ${listing.price}`}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                  />
+              {/* What item are you offering (if exchange proposal) */}
+              {isExchangeProposal ? (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-900 uppercase mb-1">
+                      What item are you offering to swap? <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={exchangeItemTitle}
+                      onChange={(e) => setExchangeItemTitle(e.target.value)}
+                      placeholder="e.g. Casio FX-991EX Calculator (Like New) or Atlas Bicycle"
+                      className="w-full border border-indigo-300 rounded-md px-3 py-2 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1 flex items-center justify-between">
+                      <span>Cash Adjustment / Difference (Rs)</span>
+                      <span className="text-[10px] text-gray-400 normal-case">Optional (0 if equal trade)</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={offerAmount}
+                      onChange={(e) => setOfferAmount(e.target.value)}
+                      placeholder="e.g. 200 (if you'll pay extra) or 0"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-medium text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                  </div>
                 </div>
+              ) : (
+                /* Custom Proposed Price for Negotiable Items */
+                listing.is_negotiable && listing.transaction_type !== 'DONATE' && (
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1 flex items-center justify-between">
+                      <span>Your Proposed Price (Rs)</span>
+                      <span className="text-[11px] text-brand-600 font-semibold lowercase first-letter:uppercase">Item is negotiable</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={offerAmount}
+                      onChange={(e) => setOfferAmount(e.target.value)}
+                      placeholder={`Direct price: ${listing.price}`}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    />
+                  </div>
+                )
               )}
 
               <div>
@@ -1574,7 +1716,7 @@ export default function ProductDetail() {
                   value={buyerMessage}
                   onChange={(e) => setBuyerMessage(e.target.value)}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none resize-none"
-                  placeholder="e.g. Can meet at Uni-Mall at 5 PM today."
+                  placeholder="e.g. Can meet at Uni-Mall at 5 PM today to inspect items."
                 />
               </div>
 
@@ -1589,14 +1731,20 @@ export default function ProductDetail() {
                 <button
                   type="submit"
                   disabled={submittingBuyRequest}
-                  className="flex-1 bg-brand-500 hover:bg-brand-600 text-white py-2.5 rounded-md font-bold text-xs disabled:opacity-50 transition-colors shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                  className={`flex-1 text-white py-2.5 rounded-md font-bold text-xs disabled:opacity-50 transition-colors shadow-sm flex items-center justify-center gap-1.5 cursor-pointer ${
+                    isExchangeProposal
+                      ? 'bg-indigo-600 hover:bg-indigo-700'
+                      : 'bg-brand-500 hover:bg-brand-600'
+                  }`}
                 >
                   {submittingBuyRequest ? (
                     <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  ) : isExchangeProposal ? (
+                    <Repeat className="w-3.5 h-3.5" />
                   ) : (
                     <ShoppingBag className="w-3.5 h-3.5" />
                   )}
-                  Confirm & Send Request
+                  {isExchangeProposal ? 'Send Exchange Proposal' : 'Confirm & Send Request'}
                 </button>
               </div>
             </form>

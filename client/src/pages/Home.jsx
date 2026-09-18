@@ -1,10 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { toggleSavedItem, isItemSaved } from '../utils/savedStore';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+import api, { getCategories, getCommunityHubData } from '../services/api';
 import {
   MapPin,
   Heart,
@@ -19,7 +17,12 @@ import {
   ShieldCheck,
   Eye,
   Filter,
-  Package
+  Package,
+  ShoppingBag,
+  ArrowRight,
+  Repeat,
+  GraduationCap,
+  Zap
 } from 'lucide-react';
 import CategoryIcon from '../components/CategoryIcon';
 import UniversalLoader from '../components/common/UniversalLoader';
@@ -28,6 +31,7 @@ import UniversalLoader from '../components/common/UniversalLoader';
 const TRANSACTION_FILTERS = [
   { value: 'ALL', label: 'All Modes' },
   { value: 'SELL', label: 'Buy & Sell' },
+  { value: 'EXCHANGE', label: 'Exchange & Barter' },
   { value: 'DONATE', label: 'Free Donations' },
 ];
 
@@ -40,12 +44,56 @@ const SORT_OPTIONS = [
 
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const listingsRef = useRef(null);
   const initialCategory = searchParams.get('category') || 'ALL';
 
   const [categories, setCategories] = useState([]);
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const [userProfile, setUserProfile] = useState(() => {
+    try {
+      const stored = localStorage.getItem('user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    const handleAuthChanged = () => {
+      try {
+        const stored = localStorage.getItem('user');
+        setUserProfile(stored ? JSON.parse(stored) : null);
+      } catch {
+        setUserProfile(null);
+      }
+    };
+    window.addEventListener('auth-changed', handleAuthChanged);
+    return () => window.removeEventListener('auth-changed', handleAuthChanged);
+  }, []);
+
+  const isSeller = Boolean(
+    userProfile && (
+      userProfile.role === 'SELLER' ||
+      userProfile.is_id_verified ||
+      userProfile.is_staff ||
+      userProfile.is_superuser
+    )
+  );
+
+  const handleSellCardClick = () => {
+    if (isSeller) {
+      navigate('/sell');
+    } else if (userProfile) {
+      toast('Verify your student ID in your profile to start selling!', { icon: '🎓' });
+      navigate('/profile?tab=id-verification');
+    } else {
+      window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { mode: 'login' } }));
+    }
+  };
 
   // Filters State
   const [selectedCategory, setSelectedCategory] = useState(() => searchParams.get('category') || 'ALL');
@@ -65,12 +113,21 @@ export default function Home() {
     setSearchQuery(q);
   }, [searchParams]);
 
+  const [hubData, setHubData] = useState(null);
+
+  // Fetch Community Hub Pulse
+  useEffect(() => {
+    getCommunityHubData()
+      .then((data) => setHubData(data))
+      .catch(() => {});
+  }, []);
+
   // Fetch Categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/marketplace/categories/`);
-        setCategories(res.data);
+        const data = await getCategories();
+        setCategories(data);
       } catch (err) {
         console.error('Failed to load categories', err);
       }
@@ -99,8 +156,8 @@ export default function Home() {
         params.append('sort', sortBy);
       }
 
-      const response = await axios.get(
-        `${API_BASE}/marketplace/listings/?${params.toString()}`
+      const response = await api.get(
+        `/marketplace/listings/?${params.toString()}`
       );
       setListings(response.data);
       setError(null);
@@ -177,8 +234,8 @@ export default function Home() {
             <button
               onClick={() => handleCategoryClick('ALL')}
               className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border shrink-0 ${selectedCategory === 'ALL'
-                  ? 'bg-brand-500 text-white border-brand-500 shadow-sm'
-                  : 'bg-white border-gray-200 text-gray-700 hover:border-brand-300'
+                ? 'bg-brand-500 text-white border-brand-500 shadow-sm'
+                : 'bg-white border-gray-200 text-gray-700 hover:border-brand-300'
                 }`}
             >
               <span>All Categories</span>
@@ -191,8 +248,8 @@ export default function Home() {
                   key={cat.id}
                   onClick={() => handleCategoryClick(cat.slug)}
                   className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap border shrink-0 ${isSelected
-                      ? 'bg-brand-500 text-white border-brand-500 shadow-sm'
-                      : 'bg-white border-gray-200 text-gray-700 hover:border-brand-300'
+                    ? 'bg-brand-500 text-white border-brand-500 shadow-sm'
+                    : 'bg-white border-gray-200 text-gray-700 hover:border-brand-300'
                     }`}
                 >
                   <CategoryIcon
@@ -208,8 +265,196 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Hero Banner & Quick Action Cards (3 Pillars) */}
+      {!searchQuery && (
+        <section className="relative overflow-hidden bg-gradient-to-b from-brand-50/70 via-amber-50/20 to-transparent border-b border-brand-100/60 pt-7 pb-9 sm:pt-11 sm:pb-13 px-3 sm:px-6 lg:px-8">
+          {/* Subtle Ambient Background Glows */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full overflow-hidden pointer-events-none -z-10">
+            <div className="absolute -top-16 left-1/4 w-80 h-80 bg-brand-400/10 rounded-full blur-3xl" />
+            <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-amber-400/10 rounded-full blur-3xl" />
+          </div>
+
+          <div className="max-w-6xl mx-auto text-center">
+            {/* Headline */}
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-gray-950 tracking-tight font-display max-w-3xl mx-auto leading-[1.15]">
+              Buy, Sell & Exchange <span className="bg-gradient-to-r from-brand-600 via-orange-500 to-amber-500 bg-clip-text text-transparent">Inside Campus</span>
+            </h1>
+
+            {/* Subtitle */}
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 max-w-2xl mx-auto font-medium mt-3 leading-relaxed">
+              Trade textbooks, cycles, room essentials, and electronics directly with fellow students — safe, verified, and 100% inside campus boundaries.
+            </p>
+
+            {/* Quick Action Cards (3 Pillars) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mt-8 sm:mt-10 text-left">
+              {/* Pillar 1: Buy Essentials */}
+              <div className="group relative bg-white/90 backdrop-blur-xs rounded-2xl p-5 sm:p-6 border border-gray-200/80 shadow-xs hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50/80 rounded-bl-full pointer-events-none transition-transform group-hover:scale-110" />
+                <div className="flex items-center justify-between mb-4 relative z-10">
+                  <div className="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shadow-2xs group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-200">
+                    <ShoppingBag className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                    Save Up to 80%
+                  </span>
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-gray-900 mb-1.5 group-hover:text-emerald-600 transition-colors">
+                  Buy Essentials
+                </h3>
+                <p className="text-xs text-gray-500 leading-relaxed mb-4 flex-grow">
+                  Explore verified textbooks, calculators, room gear, and cycles from seniors at student-friendly prices.
+                </p>
+                <button
+                  onClick={() => {
+                    handleTransactionTypeChange('ALL');
+                    listingsRef.current?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700 transition-all cursor-pointer mt-auto pt-3 border-t border-gray-100 group-hover:gap-2"
+                >
+                  <span>Browse Recommendations</span>
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                </button>
+              </div>
+
+              {/* Pillar 2: Sell & Earn */}
+              <div className="group relative bg-white/90 backdrop-blur-xs rounded-2xl p-5 sm:p-6 border border-brand-200/90 shadow-xs hover:shadow-xl hover:border-brand-400 hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden ring-1 ring-brand-500/10">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-brand-50/80 rounded-bl-full pointer-events-none transition-transform group-hover:scale-110" />
+                <div className="flex items-center justify-between mb-4 relative z-10">
+                  <div className="w-11 h-11 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600 shadow-2xs group-hover:bg-brand-500 group-hover:text-white transition-colors duration-200">
+                    <Tag className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-brand-700 bg-brand-50 px-2.5 py-1 rounded-full border border-brand-200">
+                    2-Min Post
+                  </span>
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-gray-900 mb-1.5 group-hover:text-brand-600 transition-colors">
+                  Sell & Earn Cash
+                </h3>
+                <p className="text-xs text-gray-500 leading-relaxed mb-4 flex-grow">
+                  Cleared your semester or shifting hostels? Upload 2 photos, set your price, and earn instant money on campus.
+                </p>
+                <button
+                  onClick={handleSellCardClick}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-700 transition-all cursor-pointer mt-auto pt-3 border-t border-gray-100 group-hover:gap-2"
+                >
+                  <span>{isSeller ? 'Post a Listing' : userProfile ? 'Become a Seller' : 'Login to Sell'}</span>
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                </button>
+              </div>
+
+              {/* Pillar 3: Exchange & Barter */}
+              <div className="group relative bg-white/90 backdrop-blur-xs rounded-2xl p-5 sm:p-6 border border-gray-200/80 shadow-xs hover:shadow-xl hover:border-indigo-300 hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50/80 rounded-bl-full pointer-events-none transition-transform group-hover:scale-110" />
+                <div className="flex items-center justify-between mb-4 relative z-10">
+                  <div className="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-2xs group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-200">
+                    <Repeat className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-200">
+                    Zero Cash Needed
+                  </span>
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-gray-900 mb-1.5 group-hover:text-indigo-600 transition-colors">
+                  Exchange & Barter
+                </h3>
+                <p className="text-xs text-gray-500 leading-relaxed mb-4 flex-grow">
+                  Trade course books, lab kits, gaming titles, or hostel gadgets directly with batchmates without spending cash.
+                </p>
+                <button
+                  onClick={() => {
+                    handleTransactionTypeChange('EXCHANGE');
+                    listingsRef.current?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-all cursor-pointer mt-auto pt-3 border-t border-gray-100 group-hover:gap-2"
+                >
+                  <span>Explore Swaps & Exchanges</span>
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Campus Trust Strip */}
+            <div className="mt-8 pt-6 border-t border-orange-100/80 flex flex-wrap items-center justify-center gap-5 sm:gap-10 text-xs font-semibold text-gray-600 max-w-4xl mx-auto">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>Verified Students Only</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-brand-500 shrink-0" />
+                <span>Safe Handover at Uni-Mall & Hostels</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+                <span>0% Brokerage & Direct Handover</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Main Content Area */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 w-full">
+      <div ref={listingsRef} className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 w-full scroll-mt-20">
+        {/* Live Campus Market Pulse Strip */}
+        {hubData?.stats && (
+          <div className="mb-6 bg-gradient-to-r from-orange-50 via-amber-50/50 to-indigo-50/60 border border-orange-200/90 rounded-xl p-3.5 sm:p-4 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-500 to-orange-500 text-white flex items-center justify-center shadow-xs shrink-0">
+                <Zap className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xs sm:text-sm font-black text-gray-900 flex items-center gap-2">
+                  <span>Live Campus Trading Pulse</span>
+                  <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                </div>
+                <div className="text-[11px] text-gray-500">
+                  Real-time activity across hostels & campus blocks
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 sm:gap-6 text-center w-full md:w-auto justify-around border-t md:border-t-0 md:border-l border-orange-200/70 pt-3 md:pt-0 md:pl-6">
+              <div>
+                <div className="text-base sm:text-lg font-black text-gray-900">
+                  {hubData.stats.active_listings ?? listings.length}
+                </div>
+                <div className="text-[10px] uppercase tracking-wider font-extrabold text-gray-400">
+                  Active Items
+                </div>
+              </div>
+              <div>
+                <div className="text-base sm:text-lg font-black text-emerald-600">
+                  {hubData.stats.completed_deals || 0}
+                </div>
+                <div className="text-[10px] uppercase tracking-wider font-extrabold text-gray-400">
+                  Verified Trades
+                </div>
+              </div>
+              <div>
+                <div className="text-base sm:text-lg font-black text-indigo-600">
+                  {hubData.stats.total_students || 0}
+                </div>
+                <div className="text-[10px] uppercase tracking-wider font-extrabold text-gray-400">
+                  Traders
+                </div>
+              </div>
+
+              {hubData.hotspots && hubData.hotspots.length > 0 && (
+                <div className="hidden sm:block text-left pl-4 border-l border-orange-200/70">
+                  <div className="text-[10px] uppercase tracking-wider font-extrabold text-gray-400 flex items-center gap-1">
+                    <MapPin className="w-3 h-3 text-brand-500" />
+                    Top Safe Hotspot
+                  </div>
+                  <div className="text-xs font-black text-gray-800">
+                    {hubData.hotspots[0].location}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Controls Row: Title, Filters & Sorting */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6">
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -303,8 +548,8 @@ export default function Home() {
               {searchQuery ? `No results found for "${searchQuery}"` : 'No matching items found'}
             </h3>
             <p className="text-xs text-gray-500 max-w-sm mx-auto">
-              {searchQuery 
-                ? 'Try checking for spelling errors, broader keywords, or clear the search filter.' 
+              {searchQuery
+                ? 'Try checking for spelling errors, broader keywords, or clear the search filter.'
                 : 'Try adjusting your filters, or be the first student to post this item!'}
             </p>
             {searchQuery && (
@@ -374,8 +619,8 @@ export default function Home() {
                       type="button"
                       onClick={(e) => toggleFavorite(e, listing)}
                       className={`absolute top-2 right-2 sm:top-2.5 sm:right-2.5 p-1.5 rounded-full shadow-sm transition-all z-10 ${isFav
-                          ? 'bg-rose-50 text-rose-500'
-                          : 'bg-white/80 hover:bg-white text-gray-400 hover:text-rose-500'
+                        ? 'bg-rose-50 text-rose-500'
+                        : 'bg-white/80 hover:bg-white text-gray-400 hover:text-rose-500'
                         }`}
                       title={isFav ? 'Remove from Saved' : 'Save Item'}
                     >
@@ -386,11 +631,21 @@ export default function Home() {
                     </button>
 
                     {/* Mode Badges */}
-                    {listing.transaction_type === 'DONATE' && (
+                    {listing.transaction_type === 'DONATE' ? (
                       <div className="absolute top-2 left-2 sm:top-2.5 sm:left-2.5 bg-green-600 text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full shadow-sm">
                         FREE
                       </div>
-                    )}
+                    ) : listing.transaction_type === 'EXCHANGE' ? (
+                      <div className="absolute top-2 left-2 sm:top-2.5 sm:left-2.5 bg-indigo-600 text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+                        <Repeat className="w-2.5 h-2.5" />
+                        <span>SWAP</span>
+                      </div>
+                    ) : listing.is_exchange_allowed ? (
+                      <div className="absolute top-2 left-2 sm:top-2.5 sm:left-2.5 bg-indigo-500/90 backdrop-blur-xs text-white text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm flex items-center gap-1">
+                        <Repeat className="w-2.5 h-2.5" />
+                        <span>+SWAP</span>
+                      </div>
+                    ) : null}
 
                     {/* Condition Badge */}
                     <div className="absolute bottom-2 left-2 sm:bottom-2.5 sm:left-2.5 bg-black/60 backdrop-blur-xs text-white text-[8px] sm:text-[9px] font-semibold px-1.5 sm:px-2 py-0.5 rounded">
@@ -402,7 +657,11 @@ export default function Home() {
                   <div className="p-2.5 sm:p-4 flex flex-col flex-grow">
                     <div className="flex items-baseline justify-between mb-1">
                       <h3 className="font-black text-base sm:text-xl text-gray-900 tracking-tight">
-                        {listing.transaction_type === 'DONATE' ? 'Free' : `Rs ${listing.price}`}
+                        {listing.transaction_type === 'DONATE'
+                          ? 'Free'
+                          : listing.transaction_type === 'EXCHANGE'
+                            ? (Number(listing.price) > 0 ? `Rs ${listing.price} (Swap)` : 'Item Swap')
+                            : `Rs ${listing.price}`}
                       </h3>
                     </div>
 

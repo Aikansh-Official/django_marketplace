@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import api from '../../services/api';
 import confetti from 'canvas-confetti';
 import Tesseract from 'tesseract.js';
 import {
@@ -24,8 +24,6 @@ import {
 import { extractLpuCardDetails } from '../../utils/idCardVerification';
 import { compressImageToDataUrl } from '../../utils/compressImage';
 import UpdateSelfieModal from './UpdateSelfieModal';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 /**
  * Intelligent OCR registration number matching utility.
@@ -443,7 +441,7 @@ export default function IdVerificationTab({ profile, onProfileUpdated, onOpenSel
             console.warn('Compression before upload failed, using original:', compErr);
           }
 
-          await axios.post(`${API_BASE}/auth/verify-id/`, {
+          await api.post('/auth/verify-id/', {
             reg_no: registeredRegNo,
             id_card_image: compressedForDb,
             id_card_data: validationResult.extraData
@@ -490,7 +488,7 @@ export default function IdVerificationTab({ profile, onProfileUpdated, onOpenSel
     setIdFrontImage(null);
     setRejectionInfo(null);
     try {
-      await axios.delete(`${API_BASE}/auth/verify-id/`);
+      await api.delete('/auth/verify-id/');
       if (onProfileUpdated) onProfileUpdated();
     } catch (e) {
       // Non-critical

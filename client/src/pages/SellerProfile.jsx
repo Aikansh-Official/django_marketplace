@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
   ShieldCheck,
@@ -16,12 +15,14 @@ import {
   Eye,
   Tag,
   Lock,
-  Sparkles
+  Sparkles,
+  Flag,
+  X,
+  AlertTriangle
 } from 'lucide-react';
 import UniversalLoader from '../components/common/UniversalLoader';
 import ChatDrawer from '../components/chat/ChatDrawer';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+import api, { submitReport } from '../services/api';
 
 export default function SellerProfile() {
   const { id } = useParams();
@@ -30,6 +31,12 @@ export default function SellerProfile() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('listings'); // 'listings' | 'reviews'
 
+  // Report Modal State
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState('Demanding Advance / External Payment');
+  const [reportDetails, setReportDetails] = useState('');
+  const [submittingReport, setSubmittingReport] = useState(false);
+
   // Chat Drawer State
   const [chatListing, setChatListing] = useState(null);
 
@@ -37,7 +44,7 @@ export default function SellerProfile() {
     const fetchProfile = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(`${API_BASE}/marketplace/seller/${id}/`);
+        const res = await api.get(`/marketplace/seller/${id}/`);
         setData(res.data);
         setError(null);
       } catch (err) {
@@ -49,6 +56,40 @@ export default function SellerProfile() {
 
     if (id) fetchProfile();
   }, [id]);
+
+  const handleOpenReportModal = () => {
+    const token = localStorage.getItem('access');
+    if (!token) {
+      toast('Please log in to report a trader.', { icon: '🔒' });
+      window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { mode: 'login' } }));
+      return;
+    }
+    setShowReportModal(true);
+  };
+
+  const handleSubmitReport = async (e) => {
+    e.preventDefault();
+    if (!reportReason) {
+      toast.error('Please select a reason for reporting.');
+      return;
+    }
+
+    setSubmittingReport(true);
+    try {
+      await submitReport({
+        reportedUserId: id,
+        reason: reportReason,
+        details: reportDetails.trim(),
+      });
+      toast.success('Report submitted. Campus moderators will review this trader.');
+      setShowReportModal(false);
+      setReportDetails('');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to submit report.');
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -88,8 +129,8 @@ export default function SellerProfile() {
 
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
-      {/* Top Breadcrumb Navigation */}
-      <div className="flex items-center justify-between">
+      {/* Top Breadcrumb & Action Navigation */}
+      <div className="flex items-center justify-between gap-3">
         <Link
           to="/"
           className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-gray-900 transition-colors"
@@ -97,6 +138,16 @@ export default function SellerProfile() {
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Marketplace</span>
         </Link>
+
+        <button
+          type="button"
+          onClick={handleOpenReportModal}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 hover:border-red-300 text-gray-600 hover:text-red-600 text-xs font-semibold transition-colors shadow-2xs cursor-pointer bg-white"
+          title="Report this campus trader"
+        >
+          <Flag className="w-3.5 h-3.5 text-red-500" />
+          <span>Report Trader</span>
+        </button>
       </div>
 
       {/* DPDP Act 2023 Compliance Notice Banner */}
@@ -394,6 +445,82 @@ export default function SellerProfile() {
           listingImage={chatListing.images?.[0]?.image_url}
           onClose={() => setChatListing(null)}
         />
+      )}
+
+      {/* Report Trader Modal */}
+      {showReportModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white border border-gray-200 rounded-md max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2 text-rose-600 font-bold text-sm">
+                <Flag className="w-4 h-4" />
+                <span>Report Campus Trader</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowReportModal(false)}
+                className="text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="bg-gray-50 border border-gray-200 rounded-md p-3 text-xs flex items-center justify-between">
+              <span className="text-gray-500">Reported Student:</span>
+              <span className="font-bold text-gray-900">{seller.display_name}</span>
+            </div>
+
+            <form onSubmit={handleSubmitReport} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  Reason for Reporting
+                </label>
+                <select
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  className="w-full text-xs border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-hidden focus:ring-1 focus:ring-brand-500"
+                >
+                  <option value="Demanding Advance / External Payment">Demanding Advance / External Payment</option>
+                  <option value="Suspicious / Fake Trader Profile">Suspicious / Fake Trader Profile</option>
+                  <option value="Harassment / Abusive Behavior">Harassment / Abusive Behavior</option>
+                  <option value="No-Show / Unresponsive Handover">No-Show / Unresponsive Handover</option>
+                  <option value="Selling Counterfeit / Stolen Goods">Selling Counterfeit / Stolen Goods</option>
+                  <option value="Other Guidelines Violation">Other Guidelines Violation</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  Details & Context (Optional)
+                </label>
+                <textarea
+                  rows={3}
+                  value={reportDetails}
+                  onChange={(e) => setReportDetails(e.target.value)}
+                  placeholder="Describe what occurred. Our campus moderation team reviews every report within 12 hours."
+                  className="w-full text-xs border border-gray-300 rounded-md p-2.5 bg-white focus:outline-hidden focus:ring-1 focus:ring-brand-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowReportModal(false)}
+                  className="px-3 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingReport}
+                  className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-md transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+                >
+                  {submittingReport ? 'Submitting...' : 'Submit Report'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

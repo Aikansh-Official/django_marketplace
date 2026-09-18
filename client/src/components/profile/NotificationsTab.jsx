@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../services/api';
 import toast from 'react-hot-toast';
 import {
   Bell,
@@ -17,8 +17,6 @@ import {
   XCircle
 } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
-
 export default function NotificationsTab({ onUnreadCountChange, onNavigateTab }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +24,7 @@ export default function NotificationsTab({ onUnreadCountChange, onNavigateTab })
 
   const fetchNotifications = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/marketplace/notifications/`);
+      const res = await api.get('/marketplace/notifications/');
       setNotifications(res.data);
       const unread = res.data.filter((n) => !n.is_read).length;
       if (onUnreadCountChange) onUnreadCountChange(unread);
@@ -43,7 +41,7 @@ export default function NotificationsTab({ onUnreadCountChange, onNavigateTab })
 
   const handleMarkRead = async (id) => {
     try {
-      await axios.patch(`${API_BASE}/marketplace/notifications/${id}/read/`);
+      await api.patch(`/marketplace/notifications/${id}/read/`);
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
       );
@@ -56,7 +54,7 @@ export default function NotificationsTab({ onUnreadCountChange, onNavigateTab })
 
   const handleMarkAllRead = async () => {
     try {
-      await axios.post(`${API_BASE}/marketplace/notifications/read-all/`);
+      await api.post('/marketplace/notifications/read-all/');
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
       if (onUnreadCountChange) onUnreadCountChange(0);
       toast.success('All notifications marked as read.');
@@ -69,7 +67,7 @@ export default function NotificationsTab({ onUnreadCountChange, onNavigateTab })
   const handleDelete = async (e, id) => {
     e.stopPropagation();
     try {
-      await axios.delete(`${API_BASE}/marketplace/notifications/${id}/delete/`);
+      await api.delete(`/marketplace/notifications/${id}/delete/`);
       const updated = notifications.filter((n) => n.id !== id);
       setNotifications(updated);
       if (onUnreadCountChange) onUnreadCountChange(updated.filter((n) => !n.is_read).length);
@@ -82,7 +80,7 @@ export default function NotificationsTab({ onUnreadCountChange, onNavigateTab })
 
   const handleClearAll = async () => {
     try {
-      await axios.delete(`${API_BASE}/marketplace/notifications/clear-all/`);
+      await api.delete('/marketplace/notifications/clear-all/');
       setNotifications([]);
       if (onUnreadCountChange) onUnreadCountChange(0);
       toast.success('Notifications cleared.');

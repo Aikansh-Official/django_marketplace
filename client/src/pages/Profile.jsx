@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import toast from 'react-hot-toast';
 import ProfileSidebar from '../components/profile/ProfileSidebar';
 import PersonalInfoTab from '../components/profile/PersonalInfoTab';
 import OrdersSellsTab from '../components/profile/OrdersSellsTab';
 import IdVerificationTab from '../components/profile/IdVerificationTab';
 import SavedItemsTab from '../components/profile/SavedItemsTab';
+import MyReportsTab from '../components/profile/MyReportsTab';
 import LogoutModal from '../components/profile/LogoutModal';
 import UpgradeToSellerModal from '../components/profile/UpgradeToSellerModal';
 import UpdateSelfieModal from '../components/profile/UpdateSelfieModal';
 import { getSavedCount } from '../utils/savedStore';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+import api from '../services/api';
 
 import UniversalLoader from '../components/common/UniversalLoader';
 
@@ -68,7 +67,7 @@ export default function Profile() {
 
   const fetchProfile = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/auth/profile/`);
+      const res = await api.get('/auth/profile/');
       setProfile(res.data);
     } catch (err) {
       console.error('Error fetching profile:', err);
@@ -95,7 +94,7 @@ export default function Profile() {
   const handleLogoutConfirm = async () => {
     setLoggingOut(true);
     try {
-      await axios.post(`${API_BASE}/auth/logout/`);
+      await api.post('/auth/logout/');
     } catch (e) {
       // Ignore network errors during logout
     } finally {
@@ -188,6 +187,10 @@ export default function Profile() {
 
           {activeTab === 'saved-items' && (
             <SavedItemsTab onSavedCountChange={setSavedCount} />
+          )}
+
+          {activeTab === 'my-reports' && (
+            <MyReportsTab />
           )}
         </div>
       </div>

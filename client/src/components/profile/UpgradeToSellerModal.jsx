@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import axios from 'axios';
+import api from '../../services/api';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import {
@@ -20,8 +20,6 @@ import Tesseract from 'tesseract.js';
 import { extractLpuCardDetails, checkImageAuthenticity } from '../../utils/idCardVerification';
 import { compressImageToDataUrl } from '../../utils/compressImage';
 import RegisterStepSelfie from '../auth/steps/RegisterStepSelfie';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgradeSuccess }) {
   const [currentStep, setCurrentStep] = useState(1); // 1: ID Card, 2: Selfie, 3: Email OTP
@@ -173,7 +171,7 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
     }
     setOtpSending(true);
     try {
-      await axios.post(`${API_BASE}/auth/send-otp/`, { email });
+      await api.post('/auth/send-otp/', { email });
       setOtpSent(true);
       toast.success(`Verification code sent to ${email}`);
     } catch (e) {
@@ -224,7 +222,7 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
         otp: otpCode.trim()
       };
 
-      const res = await axios.post(`${API_BASE}/auth/upgrade-to-seller/`, payload);
+      const res = await api.post('/auth/upgrade-to-seller/', payload);
 
       if (res.data.user) {
         localStorage.setItem('user', JSON.stringify(res.data.user));

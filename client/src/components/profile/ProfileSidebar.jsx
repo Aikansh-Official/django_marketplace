@@ -58,6 +58,13 @@ export default function ProfileSidebar({
       badge: savedCount > 0 ? savedCount : null,
       badgeColor: 'bg-rose-100 text-rose-700',
       description: 'Wishlist & bookmarked items'
+    },
+    {
+      id: 'my-reports',
+      label: 'My Safety & Reports',
+      icon: ShieldAlert,
+      badge: null,
+      description: 'Submitted issues & moderation status'
     }
   ];
 

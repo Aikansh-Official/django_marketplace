@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
 import toast from 'react-hot-toast';
 import { compressImage } from '../utils/compressImage';
 import {
@@ -22,10 +19,18 @@ import {
   Plus,
   RefreshCw,
   Eye,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Repeat,
+  Camera,
+  AlertTriangle,
+  Lock,
+  ShieldAlert,
+  TrendingUp
 } from 'lucide-react';
+import api, { getPlatformConfig, getCategories } from '../services/api';
 import CategoryIcon from '../components/CategoryIcon';
 import UpgradeToSellerModal from '../components/profile/UpgradeToSellerModal';
+import LivePhotoModal from '../components/common/LivePhotoModal';
 
 const CONDITIONS = [
   { value: 'NEW', label: 'Brand New', desc: 'Unopened / with original tags' },
@@ -53,7 +58,9 @@ export default function CreateListing() {
   // Form State
   const [title, setTitle] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [transactionType, setTransactionType] = useState('SELL'); // SELL, DONATE
+  const [transactionType, setTransactionType] = useState('SELL'); // SELL, EXCHANGE, DONATE
+  const [isExchangeAllowed, setIsExchangeAllowed] = useState(false);
+  const [exchangePreferences, setExchangePreferences] = useState('');
   const [price, setPrice] = useState('');
   const [isNegotiable, setIsNegotiable] = useState(true);
   const [condition, setCondition] = useState('GOOD');
@@ -64,25 +71,38 @@ export default function CreateListing() {
   const [description, setDescription] = useState('');
   const [images, setImages] = useState([]);
   const [primaryIndex, setPrimaryIndex] = useState(0);
-  const [urlInput, setUrlInput] = useState('');
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [platformConfig, setPlatformConfig] = useState(null);
+  const [activeListingsCount, setActiveListingsCount] = useState(0);
 
-  // Fetch categories & user profile
+  // Fetch categories, user profile & platform config
   useEffect(() => {
     const fetchData = async () => {
+      // 1. Fetch categories (cached)
       try {
-        const catRes = await axios.get(`${API_BASE}/marketplace/categories/`);
-        setCategories(catRes.data);
-        if (catRes.data.length > 0) {
-          setCategoryId(catRes.data[0].id);
+        const catData = await getCategories();
+        setCategories(catData);
+        if (catData.length > 0) {
+          setCategoryId(catData[0].id);
         }
       } catch (err) {
         console.error('Failed to load categories', err);
       }
+
+      // 2. Fetch platform operational constraints
+      try {
+        const config = await getPlatformConfig();
+        setPlatformConfig(config);
+      } catch (err) {
+        console.error('Failed to load platform config', err);
+      }
+
+      // 3. Fetch user profile & active listings count
       const token = localStorage.getItem('access');
       if (token) {
         try {
-          const profileRes = await axios.get(`${API_BASE}/auth/profile/`);
+          const profileRes = await api.get('/auth/profile/');
           setUserProfile(profileRes.data);
           if (profileRes.data.phone_number) {
             setContactPhone(profileRes.data.phone_number);
@@ -91,14 +111,23 @@ export default function CreateListing() {
         } catch (err) {
           console.error('Failed to load profile', err);
         }
+
+        try {
+          const myListingsRes = await api.get('/marketplace/my-listings/?status=ACTIVE');
+          if (Array.isArray(myListingsRes.data)) {
+            setActiveListingsCount(myListingsRes.data.length);
+          }
+        } catch (err) {
+          // ignore
+        }
       }
     };
     fetchData();
   }, []);
 
   // Image Upload Handlers — uploads file to Cloudinary via backend
-  const handleFileUpload = async (e) => {
-    const files = Array.from(e.target.files);
+  const uploadImageFiles = async (fileList) => {
+    const files = Array.from(fileList || []);
     if (!files.length) return;
 
     if (images.length + files.length > 4) {
@@ -116,12 +145,12 @@ export default function CreateListing() {
     let uploadedCount = 0;
 
     for (const file of files) {
-      if (!file.type.startsWith('image/')) {
-        toast.error(`${file.name} is not an image file.`);
+      if (!file.type || !file.type.startsWith('image/')) {
+        toast.error(`${file.name || 'File'} is not an image file.`);
         continue;
       }
       if (file.size > 15 * 1024 * 1024) {
-        toast.error(`${file.name} exceeds 15MB limit.`);
+        toast.error(`${file.name || 'File'} exceeds 15MB limit.`);
         continue;
       }
 
@@ -137,8 +166,8 @@ export default function CreateListing() {
       formData.append('image', compressed);
 
       try {
-        const res = await axios.post(
-          `${API_BASE}/marketplace/upload-image/`,
+        const res = await api.post(
+          '/marketplace/upload-image/',
           formData,
           {
             headers: {
@@ -149,8 +178,8 @@ export default function CreateListing() {
         setImages((prev) => [...prev, res.data.url]);
         uploadedCount++;
       } catch (err) {
-        console.error(`Failed to upload ${file.name}`, err);
-        const errMsg = err.response?.data?.error || `Failed to upload ${file.name}.`;
+        console.error(`Failed to upload ${file.name || 'image'}`, err);
+        const errMsg = err.response?.data?.error || `Failed to upload ${file.name || 'image'}.`;
         toast.error(errMsg);
       }
     }
@@ -161,14 +190,15 @@ export default function CreateListing() {
     setUploading(false);
   };
 
-  const handleAddImageUrl = () => {
-    if (!urlInput.trim()) return;
-    if (images.length >= 4) {
-      toast.error('Maximum 4 images allowed.');
-      return;
+  const handleFileUpload = (e) => {
+    if (e.target && e.target.files) {
+      uploadImageFiles(e.target.files);
+      e.target.value = '';
     }
-    setImages((prev) => [...prev, urlInput.trim()]);
-    setUrlInput('');
+  };
+
+  const handleCameraPhotoCaptured = (file) => {
+    uploadImageFiles([file]);
   };
 
   const handleRemoveImage = (index) => {
@@ -190,8 +220,24 @@ export default function CreateListing() {
       toast.error('Please enter a product title.');
       return;
     }
-    if (transactionType !== 'DONATE' && (!price || Number(price) < 0)) {
-      toast.error('Please enter a valid price.');
+    if (!categoryId) {
+      toast.error('Please select a category for your item.');
+      return;
+    }
+    if (images.length === 0) {
+      toast.error('Please add at least 1 real photo of your item.');
+      return;
+    }
+    if (uploading) {
+      toast.error('Please wait for photos to finish uploading.');
+      return;
+    }
+    if (transactionType === 'SELL' && (!price || Number(price) <= 0)) {
+      toast.error('Please enter a valid selling price.');
+      return;
+    }
+    if (transactionType === 'EXCHANGE' && !exchangePreferences.trim()) {
+      toast.error('Please specify what item or gear you want in exchange.');
       return;
     }
     if (!location.trim()) {
@@ -205,11 +251,20 @@ export default function CreateListing() {
 
     setLoading(true);
 
+    const isExchange = transactionType === 'EXCHANGE' || isExchangeAllowed;
+    const computedPrice = transactionType === 'DONATE'
+      ? '0.00'
+      : transactionType === 'EXCHANGE'
+        ? (price ? parseFloat(price).toFixed(2) : '0.00')
+        : parseFloat(price).toFixed(2);
+
     const payload = {
       title: title.trim(),
       category: categoryId || null,
       transaction_type: transactionType,
-      price: transactionType === 'DONATE' ? '0.00' : parseFloat(price).toFixed(2),
+      is_exchange_allowed: isExchange,
+      exchange_preferences: isExchange ? exchangePreferences.trim() : '',
+      price: computedPrice,
       is_negotiable: transactionType === 'DONATE' ? false : isNegotiable,
       condition,
       location: location.trim(),
@@ -223,15 +278,27 @@ export default function CreateListing() {
     };
 
     try {
-      const response = await axios.post(
-        `${API_BASE}/marketplace/listings/`,
+      const response = await api.post(
+        '/marketplace/listings/',
         payload
       );
       toast.success('Listing created successfully!');
       navigate(`/listing/${response.data.id}`);
     } catch (err) {
       console.error('Failed to create listing', err);
-      toast.error(err.response?.data?.detail || 'Failed to create listing. Please check required fields.');
+      const data = err.response?.data;
+      let errMsg = 'Failed to create listing. Please check required fields.';
+      if (typeof data === 'string') errMsg = data;
+      else if (data?.detail) errMsg = data.detail;
+      else if (data?.error) errMsg = data.error;
+      else if (data && typeof data === 'object') {
+        const firstKey = Object.keys(data)[0];
+        if (firstKey) {
+          const val = data[firstKey];
+          errMsg = Array.isArray(val) ? `${firstKey}: ${val[0]}` : `${firstKey}: ${val}`;
+        }
+      }
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }
@@ -310,6 +377,77 @@ export default function CreateListing() {
     );
   }
 
+  const minScore = platformConfig?.min_trust_score_to_sell ?? 0;
+  const isScoreTooLow = Boolean(
+    userProfile &&
+    minScore > 0 &&
+    (userProfile.trust_score || 0) < minScore &&
+    !userProfile.is_staff &&
+    !userProfile.is_superuser
+  );
+
+  if (userProfile && isSeller && isScoreTooLow) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-12 sm:py-16 animate-fade-in-up">
+        <div className="bg-white/95 backdrop-blur-md border border-amber-200 shadow-xl rounded-xl p-8 sm:p-12 text-center relative overflow-hidden">
+          <div className="w-20 h-20 bg-amber-50 border-2 border-amber-200 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+            <Lock className="w-10 h-10 text-amber-600" />
+          </div>
+
+          <span className="inline-block px-3 py-1 bg-amber-100 text-amber-800 text-xs font-black uppercase tracking-wider rounded-full mb-3">
+            Minimum Trust Score Requirement
+          </span>
+
+          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
+            Trust Score {minScore} Required to Sell
+          </h2>
+          <p className="text-gray-600 text-sm sm:text-base max-w-lg mx-auto mt-3 leading-relaxed">
+            Campus safety policies require a minimum Trust Score of <strong>{minScore}</strong> to post active listings. Your current trust score is <span className="font-bold text-amber-600">{userProfile.trust_score || 0}</span>.
+          </p>
+
+          <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-4 max-w-md mx-auto my-6 text-left text-xs text-amber-900 space-y-2">
+            <p className="font-bold flex items-center gap-1.5 text-amber-800">
+              <Sparkles className="w-4 h-4 text-amber-600" />
+              Ways to boost your campus trust score:
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-[11px] text-amber-800">
+              <li>Upload and verify your physical Student ID card (+15 Trust Points).</li>
+              <li>Complete real-time face liveness verification (+5 Trust Points).</li>
+              <li>Successfully complete verified QR handovers (+5 Trust Points per trade).</li>
+            </ul>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={() => navigate('/profile?tab=id-verification')}
+              className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 px-8 rounded-lg shadow-md transition-all text-sm cursor-pointer"
+            >
+              Verify Profile & Boost Trust
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="w-full sm:w-auto bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3.5 px-6 rounded-lg transition-all text-sm cursor-pointer"
+            >
+              Back to Marketplace
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const maxLimit = platformConfig?.max_active_listings_per_student ?? 10;
+  const isQuotaReached = Boolean(
+    activeListingsCount >= maxLimit &&
+    !userProfile?.is_staff &&
+    !userProfile?.is_superuser
+  );
+
+  const PROHIBITED_WORDS = ['vape', 'alcohol', 'beer', 'whiskey', 'weed', 'cannabis', 'weapon', 'knife', 'gun', 'cheat', 'exam paper', 'fake id', 'porn', 'cigarette', 'hookah'];
+  const detectedProhibitedWords = PROHIBITED_WORDS.filter((w) =>
+    (title && title.toLowerCase().includes(w)) || (description && description.toLowerCase().includes(w))
+  );
+
   const selectedCategoryObj = categories.find((c) => String(c.id) === String(categoryId));
   const coverImage = images[primaryIndex] || images[0] || '';
   return (
@@ -325,6 +463,65 @@ export default function CreateListing() {
           </p>
         </div>
       </div>
+
+      {/* Active Listings Quota & Trust Score Header Bar */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+        <div className={`p-4 rounded-xl border flex items-center justify-between ${
+          isQuotaReached
+            ? 'bg-red-50 border-red-300 text-red-900'
+            : 'bg-white/90 border-gray-200 text-gray-800 shadow-sm'
+        }`}>
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
+              Active Listings Quota
+            </div>
+            <div className="text-sm font-extrabold mt-0.5">
+              {activeListingsCount} of {maxLimit} Active Listings
+            </div>
+          </div>
+          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+            isQuotaReached
+              ? 'bg-red-200 text-red-800'
+              : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+          }`}>
+            {isQuotaReached ? 'Limit Reached' : `${maxLimit - activeListingsCount} Slots Available`}
+          </span>
+        </div>
+
+        <div className="p-4 rounded-xl border bg-white/90 border-gray-200 text-gray-800 shadow-sm flex items-center justify-between">
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
+              Your Campus Trust Score
+            </div>
+            <div className="text-sm font-extrabold text-emerald-600 mt-0.5">
+              {userProfile?.trust_score ?? 100} / 100 Score
+            </div>
+          </div>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            Verified Trader
+          </span>
+        </div>
+      </div>
+
+      {isQuotaReached && (
+        <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-300 text-red-900 text-xs flex items-start gap-3">
+          <ShieldAlert className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-bold text-sm mb-0.5">Active Listings Limit Reached ({maxLimit})</p>
+            <p>To keep the campus marketplace fresh, each student can maintain up to {maxLimit} active listings simultaneously. Please go to <button type="button" onClick={() => navigate('/my-listings')} className="underline font-semibold">My Listings</button> to mark sold items or delete inactive listings.</p>
+          </div>
+        </div>
+      )}
+
+      {detectedProhibitedWords.length > 0 && (
+        <div className="mb-6 p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-start gap-2.5">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <span className="font-bold">Prohibited Content Warning:</span> Your text includes "{detectedProhibitedWords.join(', ')}". Items under campus restricted categories are automatically flagged and hidden by moderation.
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
         {/* Left / Main Form Column */}
@@ -347,8 +544,17 @@ export default function CreateListing() {
               </span>
             </div>
 
-            {/* Dropzone & Selector */}
-            <div className={`border-2 border-dashed rounded-md p-6 text-center transition-colors bg-gray-50/50 ${uploading ? 'border-brand-400 bg-brand-50/30' : 'border-gray-300 hover:border-brand-500'}`}>
+            {/* Anti-Fraud Notice: URLs Disabled */}
+            <div className="mb-4 bg-amber-50/90 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5 text-xs text-amber-900">
+              <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold">Real Product Photos Only:</span> Direct web image URLs are permanently disabled to prevent fake products and stock images. Please upload genuine pictures from your device or snap a photo directly using your camera.
+              </div>
+            </div>
+
+            {/* Dual Action: Upload from Gallery vs Take Live Photo */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-3">
+              {/* Option 1: Upload from Gallery / Files */}
               <input
                 type="file"
                 id="file-upload"
@@ -356,48 +562,82 @@ export default function CreateListing() {
                 accept="image/*"
                 onChange={handleFileUpload}
                 className="hidden"
-                disabled={uploading}
+                disabled={uploading || images.length >= 4}
               />
               <label
                 htmlFor="file-upload"
-                className={`flex flex-col items-center justify-center gap-2 ${uploading ? 'pointer-events-none opacity-60' : 'cursor-pointer'}`}
+                className={`group relative flex flex-col items-center justify-center p-5 rounded-xl border-2 border-dashed transition-all text-center select-none ${uploading || images.length >= 4
+                    ? 'border-gray-200 bg-gray-50/70 text-gray-400 cursor-not-allowed opacity-60'
+                    : 'border-gray-300 hover:border-brand-500 bg-white hover:bg-brand-50/20 cursor-pointer shadow-sm hover:shadow active:scale-[0.99]'
+                  }`}
               >
-                <div className="w-12 h-12 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-brand-50 group-hover:bg-brand-100 text-brand-600 flex items-center justify-center mb-2.5 transition-transform group-hover:scale-110">
                   {uploading ? (
-                    <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
                   ) : (
                     <UploadCloud className="w-6 h-6" />
                   )}
                 </div>
-                <div>
-                  <span className="text-sm font-semibold text-brand-600 hover:text-brand-700">
-                    {uploading ? 'Uploading photos...' : 'Click to browse photos'}
-                  </span>
-                  {!uploading && <span className="text-sm text-gray-500"> or drag and drop</span>}
+                <div className="font-bold text-sm text-gray-900 group-hover:text-brand-600">
+                  {uploading ? 'Uploading photos...' : 'Upload from Device'}
                 </div>
-                <p className="text-xs text-gray-400">PNG, JPG, WebP up to 5MB each</p>
+                <p className="text-[11px] text-gray-500 mt-1">
+                  Browse phone gallery or computer files
+                </p>
+                <span className="mt-2.5 inline-flex items-center text-[10px] font-semibold text-brand-600 bg-brand-50 px-2.5 py-0.5 rounded-full border border-brand-200">
+                  Select Files
+                </span>
               </label>
+
+              {/* Option 2: Snap Live Photo via Camera */}
+              <button
+                type="button"
+                onClick={() => setIsCameraOpen(true)}
+                disabled={uploading || images.length >= 4}
+                className={`group relative flex flex-col items-center justify-center p-5 rounded-xl border-2 border-dashed transition-all text-center select-none ${uploading || images.length >= 4
+                    ? 'border-gray-200 bg-gray-50/70 text-gray-400 cursor-not-allowed opacity-60'
+                    : 'border-orange-300 hover:border-orange-500 bg-orange-50/30 hover:bg-orange-50/70 cursor-pointer shadow-sm hover:shadow active:scale-[0.99]'
+                  }`}
+              >
+                <div className="w-12 h-12 rounded-full bg-orange-100 group-hover:bg-orange-200 text-orange-600 flex items-center justify-center mb-2.5 transition-transform group-hover:scale-110">
+                  <Camera className="w-6 h-6" />
+                </div>
+                <div className="font-bold text-sm text-gray-900 group-hover:text-orange-600 flex items-center gap-1.5">
+                  Take Live Photo
+                </div>
+                <p className="text-[11px] text-gray-500 mt-1">
+                  Snap real-time photo using phone or laptop camera
+                </p>
+                <span className="mt-2.5 inline-flex items-center gap-1 text-[10px] font-semibold text-orange-700 bg-orange-100 px-2.5 py-0.5 rounded-full border border-orange-200">
+                  <Camera className="w-3 h-3" />
+                  Open Camera
+                </span>
+              </button>
             </div>
 
-            {/* Direct URL Input & Presets */}
-            <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-center gap-3">
-              <div className="flex-1 flex w-full gap-2">
-                <input
-                  type="url"
-                  placeholder="Or paste an image URL..."
-                  value={urlInput}
-                  onChange={(e) => setUrlInput(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddImageUrl}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium px-3 py-2 rounded-md transition-colors whitespace-nowrap"
-                >
-                  Add URL
-                </button>
-              </div>
-
+            {/* Quick Mobile Native Camera Shortcut */}
+            <div className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg border border-gray-100 text-xs text-gray-500">
+              <span className="flex items-center gap-1.5 text-[11px] text-gray-600">
+                <Sparkles className="w-3.5 h-3.5 text-brand-500" />
+                Capture different angles (front, back, condition)
+              </span>
+              <label
+                htmlFor="mobile-camera-snap"
+                className={`text-[11px] font-semibold text-brand-600 hover:text-brand-700 hover:underline flex items-center gap-1 ${uploading || images.length >= 4 ? 'pointer-events-none opacity-50' : 'cursor-pointer'
+                  }`}
+              >
+                <Camera className="w-3 h-3" />
+                Use Phone Camera
+              </label>
+              <input
+                type="file"
+                id="mobile-camera-snap"
+                accept="image/*"
+                capture="environment"
+                onChange={handleFileUpload}
+                className="hidden"
+                disabled={uploading || images.length >= 4}
+              />
             </div>
 
             {/* Thumbnail Grid */}
@@ -483,8 +723,8 @@ export default function CreateListing() {
                       type="button"
                       onClick={() => setCategoryId(cat.id)}
                       className={`flex items-center gap-2.5 p-2.5 sm:p-3 rounded-md border text-left transition-all ${isSelected
-                          ? 'border-brand-500 bg-brand-50 text-brand-800 font-bold shadow-sm'
-                          : 'border-gray-200 bg-gray-50/50 hover:bg-gray-100/80 text-gray-700 font-medium'
+                        ? 'border-brand-500 bg-brand-50 text-brand-800 font-bold shadow-sm'
+                        : 'border-gray-200 bg-gray-50/50 hover:bg-gray-100/80 text-gray-700 font-medium'
                         }`}
                     >
                       <CategoryIcon
@@ -506,72 +746,174 @@ export default function CreateListing() {
               <label className="block text-sm font-bold text-gray-900 mb-2">
                 Transaction Mode
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <button
                   type="button"
                   onClick={() => setTransactionType('SELL')}
-                  className={`py-3 px-4 rounded-md border text-center text-xs font-bold transition-all ${transactionType === 'SELL'
-                      ? 'bg-brand-500 text-white border-brand-500 shadow-md'
-                      : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                  className={`py-3 px-3 rounded-md border text-center transition-all flex flex-col items-center justify-center gap-1 ${transactionType === 'SELL'
+                    ? 'bg-brand-500 text-white border-brand-500 shadow-md font-bold'
+                    : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 font-semibold'
                     }`}
                 >
-                  Sell (Buy & Sell)
+                  <span className="text-xs">💰 Sell (Cash)</span>
+                  <span className={`text-[10px] ${transactionType === 'SELL' ? 'text-white/80' : 'text-gray-400'}`}>Standard cash sale</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setTransactionType('EXCHANGE')}
+                  className={`py-3 px-3 rounded-md border text-center transition-all flex flex-col items-center justify-center gap-1 ${transactionType === 'EXCHANGE'
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md font-bold'
+                    : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 font-semibold'
+                    }`}
+                >
+                  <span className="text-xs">🔄 Exchange / Swap</span>
+                  <span className={`text-[10px] ${transactionType === 'EXCHANGE' ? 'text-white/80' : 'text-gray-400'}`}>Trade for other items</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => {
                     setTransactionType('DONATE');
                     setPrice('0');
                   }}
-                  className={`py-3 px-4 rounded-md border text-center text-xs font-bold transition-all ${transactionType === 'DONATE'
-                      ? 'bg-brand-500 text-white border-brand-500 shadow-md'
-                      : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                  className={`py-3 px-3 rounded-md border text-center transition-all flex flex-col items-center justify-center gap-1 ${transactionType === 'DONATE'
+                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-md font-bold'
+                    : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 font-semibold'
                     }`}
                 >
-                  Donate (Free)
+                  <span className="text-xs">🎁 Donate (Free)</span>
+                  <span className={`text-[10px] ${transactionType === 'DONATE' ? 'text-white/80' : 'text-gray-400'}`}>Giveaway to peers</span>
                 </button>
               </div>
             </div>
 
-            {/* Price Row */}
-            {transactionType !== 'DONATE' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
-                <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-1">
-                    Selling Price (INR) <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 font-bold">
-                      Rs
-                    </span>
+            {/* Price & Exchange Preference Details */}
+            {transactionType === 'SELL' ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-900 mb-1">
+                      Selling Price (INR) <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 font-bold">
+                        Rs
+                      </span>
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        step="1"
+                        placeholder="e.g. 1200"
+                        value={price}
+                        onChange={(e) => setPrice(e.target.value)}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-md pl-12 pr-4 py-3 text-sm font-bold focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:bg-white outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 p-3.5 bg-gray-50 border border-gray-200 rounded-md">
                     <input
-                      type="number"
-                      required
-                      min="0"
-                      step="1"
-                      placeholder="e.g. 1200"
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-md pl-12 pr-4 py-3 text-sm font-bold focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:bg-white outline-none transition-all"
+                      type="checkbox"
+                      id="negotiable"
+                      checked={isNegotiable}
+                      onChange={(e) => setIsNegotiable(e.target.checked)}
+                      className="w-4 h-4 text-brand-500 rounded border-gray-300 focus:ring-brand-500"
                     />
+                    <label htmlFor="negotiable" className="text-xs font-medium text-gray-700 select-none cursor-pointer">
+                      Price is negotiable
+                    </label>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 p-3.5 bg-gray-50 border border-gray-200 rounded-md">
-                  <input
-                    type="checkbox"
-                    id="negotiable"
-                    checked={isNegotiable}
-                    onChange={(e) => setIsNegotiable(e.target.checked)}
-                    className="w-4 h-4 text-brand-500 rounded border-gray-300 focus:ring-brand-500"
-                  />
-                  <label htmlFor="negotiable" className="text-xs font-medium text-gray-700 select-none cursor-pointer">
-                    Price is negotiable
+                {/* Optional Exchange / Barter Toggle for Cash Sellers */}
+                <div className="p-3.5 rounded-xl border border-dashed border-indigo-200 bg-indigo-50/40 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Repeat className="w-4 h-4 text-indigo-600" />
+                      <span className="text-xs font-bold text-indigo-950">Also open to item exchange / swap?</span>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isExchangeAllowed}
+                        onChange={(e) => setIsExchangeAllowed(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                  </div>
+                  {isExchangeAllowed && (
+                    <div className="pt-2 border-t border-indigo-100 animate-in fade-in">
+                      <label className="block text-xs font-bold text-indigo-950 mb-1">
+                        What items would you trade this for? (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Open to trade for 4th Sem CSE books, scientific calculator, or cycle"
+                        value={exchangePreferences}
+                        onChange={(e) => setExchangePreferences(e.target.value)}
+                        className="w-full bg-white border border-indigo-200 rounded-md px-3 py-2 text-xs text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none font-medium"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : transactionType === 'EXCHANGE' ? (
+              <div className="space-y-4 p-4 rounded-xl border border-indigo-200 bg-indigo-50/40">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+                    <Repeat className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-indigo-950 uppercase tracking-wider">Campus Item Exchange / Barter</h4>
+                    <p className="text-[11px] text-indigo-800">
+                      Trade your item with fellow students without cash. Specify what you are looking for in return.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-900 mb-1">
+                    What item(s) do you want in return? <span className="text-red-500">*</span>
                   </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 4th Sem CSE Books, Casio FX-991EX, Atlas Cycle, or Wireless Keyboard"
+                    value={exchangePreferences}
+                    onChange={(e) => setExchangePreferences(e.target.value)}
+                    className="w-full bg-white border border-indigo-300 rounded-md px-3 py-2.5 text-xs text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none font-medium"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end pt-1">
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                      Estimated Item Value in INR (Optional)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs font-bold">
+                        Rs
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="e.g. 1500 (helps peers find a fair match)"
+                        value={price}
+                        onChange={(e) => setPrice(e.target.value)}
+                        className="w-full bg-white border border-gray-200 rounded-md pl-9 pr-3 py-2 text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-gray-500 pb-1">
+                    💡 An estimated value helps other students offer items of comparable value.
+                  </p>
                 </div>
               </div>
             ) : (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-md flex items-center gap-2 text-xs text-green-800 font-medium">
+              <div className="p-3.5 bg-green-50 border border-green-200 rounded-md flex items-center gap-2.5 text-xs text-green-800 font-medium">
                 <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
                 This item will be listed for free to support peer students.
               </div>
@@ -591,8 +933,8 @@ export default function CreateListing() {
                       type="button"
                       onClick={() => setCondition(cond.value)}
                       className={`p-3 rounded-md border text-left transition-all ${isSelected
-                          ? 'border-brand-500 bg-brand-50 text-brand-900 ring-1 ring-brand-500'
-                          : 'border-gray-200 bg-gray-50/50 hover:bg-gray-100 text-gray-700'
+                        ? 'border-brand-500 bg-brand-50 text-brand-900 ring-1 ring-brand-500'
+                        : 'border-gray-200 bg-gray-50/50 hover:bg-gray-100 text-gray-700'
                         }`}
                     >
                       <div className="text-xs font-bold">{cond.label}</div>
@@ -641,8 +983,8 @@ export default function CreateListing() {
                       type="button"
                       onClick={() => setContactPreference(pref.value)}
                       className={`p-3 rounded-md border text-left transition-all ${isSelected
-                          ? 'border-brand-500 bg-brand-50 text-brand-900 ring-1 ring-brand-500'
-                          : 'border-gray-200 bg-gray-50/50 hover:bg-gray-100 text-gray-700'
+                        ? 'border-brand-500 bg-brand-50 text-brand-900 ring-1 ring-brand-500'
+                        : 'border-gray-200 bg-gray-50/50 hover:bg-gray-100 text-gray-700'
                         }`}
                     >
                       <div className="text-xs font-bold">{pref.label}</div>
@@ -716,13 +1058,23 @@ export default function CreateListing() {
             </button>
             <button
               type="submit"
-              disabled={loading}
-              className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-semibold py-3 px-8 rounded-md transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2"
+              disabled={loading || uploading || isQuotaReached}
+              className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-semibold py-3 px-8 rounded-md transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
             >
-              {loading ? (
+              {isQuotaReached ? (
+                <>
+                  <Lock className="w-4 h-4" />
+                  Listing Quota Reached
+                </>
+              ) : loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Publishing...
+                  Publishing Listing...
+                </>
+              ) : uploading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Uploading Photos...
                 </>
               ) : (
                 <>
@@ -750,11 +1102,19 @@ export default function CreateListing() {
             {/* Preview Card Component */}
             <div className="bg-white border border-gray-200 rounded-md overflow-hidden shadow-lg transition-all">
               <div className="relative h-52 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
-                <img
-                  src={coverImage}
-                  alt={title || 'Product Preview'}
-                  className="w-full h-full object-cover"
-                />
+                {coverImage ? (
+                  <img
+                    src={coverImage}
+                    alt={title || 'Product Preview'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-gray-400 gap-2 p-4 text-center">
+                    <UploadCloud className="w-8 h-8 opacity-40 text-brand-500" />
+                    <span className="text-xs font-semibold text-gray-500">Product Preview</span>
+                    <span className="text-[10px] text-gray-400">Photos will appear here</span>
+                  </div>
+                )}
 
                 {/* Transaction Badge */}
                 {transactionType === 'DONATE' && (
@@ -821,6 +1181,15 @@ export default function CreateListing() {
           </div>
         </div>
       </div>
+
+      {/* Live Camera Photo Modal */}
+      {isCameraOpen && (
+        <LivePhotoModal
+          isOpen={isCameraOpen}
+          onClose={() => setIsCameraOpen(false)}
+          onPhotoCaptured={handleCameraPhotoCaptured}
+        />
+      )}
     </div>
   );
 }
