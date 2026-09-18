@@ -21,7 +21,7 @@ class DataSecurityMiddleware:
             # Allow CORS preflight requests, health check endpoints, and test runner
             import sys
             is_testing = 'test' in sys.argv or getattr(settings, 'TESTING', False)
-            if request.method == 'OPTIONS' or path in ('/api/health/', '/health/', '/api/ping/', '/ping/') or is_testing:
+            if request.method == 'OPTIONS' or path in ('/api/health/', '/health/', '/api/ping/', '/ping/', '/api/health', '/health', '/api/ping', '/ping', '/') or is_testing:
                 return self.get_response(request)
 
             # Retrieve security key from request headers

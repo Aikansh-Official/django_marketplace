@@ -112,16 +112,25 @@ MIGRATION_MODULES = {
     'contenttypes': 'server.mongo_migrations.contenttypes',
 }
 
+import certifi
+
 MONGODB_URI = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/campusxchange')
 MONGODB_NAME = os.environ.get('MONGODB_NAME', 'campusxchange')
+
+_mongo_options = {}
+# Ensure trusted Mozilla CA certificates are used for Atlas TLS handshake
+if 'mongodb+srv' in MONGODB_URI or 'ssl=true' in MONGODB_URI.lower():
+    _mongo_options['tlsCAFile'] = certifi.where()
 
 DATABASES = {
     'default': {
         'ENGINE': 'django_mongodb_backend',
         'HOST': MONGODB_URI,
         'NAME': MONGODB_NAME,
+        'OPTIONS': _mongo_options,
     }
 }
+
 
 
 # Password validation

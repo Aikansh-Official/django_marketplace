@@ -21,10 +21,12 @@ from django.views.static import serve
 from server.health import health_check, ping
 
 urlpatterns = [
-    path('ping/', ping, name='ping'),
-    path('api/ping/', ping, name='api-ping'),
-    path('health/', health_check, name='health-check'),
-    path('api/health/', health_check, name='api-health-check'),
+    re_path(r'^$', ping, name='root-ping'),
+    re_path(r'^ping/?$', ping, name='ping'),
+    re_path(r'^api/ping/?$', ping, name='api-ping'),
+    re_path(r'^health/?$', health_check, name='health-check'),
+    re_path(r'^api/health/?$', health_check, name='api-health-check'),
+
 
     path('campusxchange-admin/', admin.site.urls),
     path('api/auth/', include('users.urls')),
