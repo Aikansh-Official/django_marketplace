@@ -31,3 +31,14 @@ def health_check(request):
     }
 
     return JsonResponse(response_data, status=status_code)
+
+def ping(request):
+    """
+    Simple, lightweight ping-pong probe to quickly verify server availability.
+    """
+    return JsonResponse({
+        "status": "ok",
+        "message": "pong",
+        "timestamp": timezone.now().isoformat()
+    })
+

@@ -18,11 +18,14 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
 from django.views.static import serve
-from server.health import health_check
+from server.health import health_check, ping
 
 urlpatterns = [
+    path('ping/', ping, name='ping'),
+    path('api/ping/', ping, name='api-ping'),
     path('health/', health_check, name='health-check'),
     path('api/health/', health_check, name='api-health-check'),
+
     path('campusxchange-admin/', admin.site.urls),
     path('api/auth/', include('users.urls')),
     path('api/marketplace/', include('marketplace.urls')),
