@@ -110,7 +110,8 @@ class ListingSerializer(serializers.ModelSerializer):
         model = Listing
         fields = [
             'id', 'title', 'description', 'price', 'is_negotiable',
-            'transaction_type', 'rent_period', 'condition', 'location',
+            'transaction_type', 'is_exchange_allowed', 'exchange_preferences',
+            'rent_period', 'condition', 'location',
             'contact_preference', 'contact_phone', 'contact_whatsapp',
             'status', 'views_count', 'created_at', 'updated_at',
             'category', 'category_id', 'images', 'seller', 'is_seller',
@@ -160,7 +161,8 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
         model = Listing
         fields = [
             'id', 'title', 'description', 'price', 'is_negotiable',
-            'transaction_type', 'rent_period', 'condition', 'location',
+            'transaction_type', 'is_exchange_allowed', 'exchange_preferences',
+            'rent_period', 'condition', 'location',
             'contact_preference', 'contact_phone', 'contact_whatsapp',
             'status', 'category', 'uploaded_images', 'primary_image_index'
         ]
@@ -177,6 +179,10 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
         if transaction_type == 'DONATE':
             attrs['price'] = 0
             attrs['is_negotiable'] = False
+        elif transaction_type == 'EXCHANGE':
+            attrs['is_exchange_allowed'] = True
+            if price is None or price == '' or float(price) < 0:
+                attrs['price'] = 0
         elif price is not None and float(price) < 0:
             raise serializers.ValidationError({"price": "Price cannot be negative."})
 
@@ -315,7 +321,9 @@ class OfferSerializer(serializers.ModelSerializer):
         model = Offer
         fields = [
             'id', 'listing', 'listing_title', 'listing_price', 'listing_image',
-            'offer_amount', 'counter_amount', 'seller_note', 'buyer_message', 'status', 'created_at',
+            'offer_amount', 'counter_amount', 'seller_note', 'buyer_message',
+            'is_exchange_offer', 'exchange_item_title',
+            'status', 'created_at',
             'buyer', 'buyer_name', 'buyer_reg', 'buyer_trust_score',
             'seller_id', 'seller_name', 'seller_reg', 'seller_phone', 'seller_whatsapp',
             'meetup_location', 'active_handover'
@@ -394,6 +402,10 @@ class ListingReportSerializer(serializers.ModelSerializer):
     seller_trust_score = serializers.IntegerField(source='listing.seller.trust_score', read_only=True, default=0)
     seller_is_active = serializers.BooleanField(source='listing.seller.is_active', read_only=True, default=True)
 
+    reported_user_id = serializers.CharField(source='reported_user.id', read_only=True, default=None)
+    reported_user_username = serializers.CharField(source='reported_user.username', read_only=True, default='')
+    reported_user_name = serializers.CharField(source='reported_user.get_full_name', read_only=True, default='')
+
     class Meta:
         model = ListingReport
         fields = [
@@ -402,6 +414,7 @@ class ListingReportSerializer(serializers.ModelSerializer):
             'listing_location', 'listing_description', 'listing_image_url',
             'seller_id', 'seller_username', 'seller_full_name', 'seller_email',
             'seller_phone', 'seller_trust_score', 'seller_is_active',
+            'reported_user', 'reported_user_id', 'reported_user_username', 'reported_user_name',
             'reason', 'details', 'status', 'created_at', 'resolved_at'
         ]
         read_only_fields = ['reporter', 'created_at', 'resolved_at']
@@ -416,7 +429,16 @@ class ListingReportSerializer(serializers.ModelSerializer):
 class ListingReportCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ListingReport
-        fields = ['listing', 'reason', 'details']
+        fields = ['listing', 'reported_user', 'reason', 'details']
+        extra_kwargs = {
+            'listing': {'required': False, 'allow_null': True},
+            'reported_user': {'required': False, 'allow_null': True},
+        }
+
+    def validate(self, attrs):
+        if not attrs.get('listing') and not attrs.get('reported_user'):
+            raise serializers.ValidationError("Either a listing or a reported user must be specified.")
+        return attrs
 
 
 class PlatformSettingSerializer(serializers.ModelSerializer):

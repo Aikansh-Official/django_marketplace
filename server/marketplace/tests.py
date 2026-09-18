@@ -535,6 +535,130 @@ class MarketplaceHandoverTests(TestCase):
             key='maintenance_mode',
             defaults={'value': 'false'}
         )
+class MarketplaceClientParityTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        security_key = getattr(settings, 'DATA_SECURITY_KEY', '')
+        if security_key:
+            self.client.credentials(HTTP_X_APP_SECURITY_KEY=security_key)
+        self.seller = User.objects.create_user(
+            username='77777777',
+            email='star.seller@lpu.in',
+            password='Password123!',
+            first_name='Star',
+            last_name='Seller',
+            full_name='Star Seller',
+            phone_number='9876543277',
+            trust_score=95,
+            is_id_verified=True
+        )
+        self.category = Category.objects.create(name='Books', slug='books')
+        self.listing = Listing.objects.create(
+            title='Engineering Physics',
+            description='Textbook for 1st year',
+            price=350,
+            condition='LIKE_NEW',
+            location='BH-3',
+            seller=self.seller,
+            category=self.category,
+            status='ACTIVE'
+        )
 
+    def test_public_platform_config_endpoint(self):
+        PlatformSetting.objects.update_or_create(
+            key='maintenance_mode',
+            defaults={'value': 'false'}
+        )
+        PlatformSetting.objects.update_or_create(
+            key='maintenance_message',
+            defaults={'value': 'Scheduled maintenance window'}
+        )
+        PlatformSetting.objects.update_or_create(
+            key='allow_registrations',
+            defaults={'value': 'true'}
+        )
+        PlatformSetting.objects.update_or_create(
+            key='max_active_listings_per_student',
+            defaults={'value': '5'}
+        )
+        PlatformSetting.objects.update_or_create(
+            key='min_trust_score_to_sell',
+            defaults={'value': '25'}
+        )
+        PlatformSetting.objects.update_or_create(
+            key='allowed_domains',
+            defaults={'value': 'lpu.in,thapar.edu'}
+        )
+        PlatformSetting.objects.update_or_create(
+            key='otp_daily_limit',
+            defaults={'value': '7'}
+        )
 
+        res = self.client.get('/api/marketplace/config/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        data = res.data
+        self.assertIn('maintenance_mode', data)
+        self.assertFalse(data['maintenance_mode'])
+        self.assertEqual(data['maintenance_message'], 'Scheduled maintenance window')
+        self.assertTrue(data['allow_registrations'])
+        self.assertEqual(data['max_active_listings_per_student'], 5)
+        self.assertEqual(data['min_trust_score_to_sell'], 25)
+        self.assertEqual(data['allowed_domains'], 'lpu.in,thapar.edu')
+        self.assertEqual(data['otp_daily_limit'], 7)
+
+    def test_community_hub_endpoint(self):
+        res = self.client.get('/api/marketplace/community-hub/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        data = res.data
+
+        self.assertIn('top_sellers', data)
+        self.assertIsInstance(data['top_sellers'], list)
+        self.assertGreaterEqual(len(data['top_sellers']), 1)
+        top = data['top_sellers'][0]
+        self.assertEqual(top['id'], self.seller.id)
+        self.assertEqual(top['full_name'], 'Star Seller')
+        self.assertEqual(top['trust_score'], 95)
+        self.assertIn('completed_deals', top)
+
+        self.assertIn('hotspots', data)
+        self.assertIsInstance(data['hotspots'], list)
+        self.assertTrue(any(h['location'] == 'BH-3' for h in data['hotspots']))
+
+        self.assertIn('stats', data)
+        self.assertIn('active_listings', data['stats'])
+        self.assertGreaterEqual(data['stats']['active_listings'], 1)
+
+    def test_student_report_seller_and_my_reports(self):
+        student = User.objects.create_user(
+            username='66666666',
+            email='reporter@lpu.in',
+            password='Password123!',
+            full_name='Student Reporter',
+            phone_number='9876543266'
+        )
+        self.client.force_authenticate(user=student)
+
+        # 1. Report a listing
+        listing_report_res = self.client.post('/api/marketplace/reports/', {
+            'listing': str(self.listing.id),
+            'reason': 'Item Overpriced / Fake Condition',
+            'details': 'Item condition was not as described.'
+        })
+        self.assertEqual(listing_report_res.status_code, status.HTTP_201_CREATED)
+
+        # 2. Report a seller directly
+        seller_report_res = self.client.post('/api/marketplace/reports/', {
+            'reported_user': str(self.seller.id),
+            'reason': 'Suspicious Activity / Harassment',
+            'details': 'Seller demanded advance offline transfer.'
+        })
+        self.assertEqual(seller_report_res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(seller_report_res.data['reported_user_id'], str(self.seller.id))
+
+        # 3. Retrieve student's my-reports list
+        my_reports_res = self.client.get('/api/marketplace/my-reports/')
+        self.assertEqual(my_reports_res.status_code, status.HTTP_200_OK)
+        reports = my_reports_res.data
+        self.assertEqual(len(reports), 2)
+        self.assertTrue(all(r['status'] == 'PENDING' for r in reports))
 

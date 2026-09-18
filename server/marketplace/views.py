@@ -301,10 +301,13 @@ class ListingListCreateView(generics.ListCreateAPIView):
         if condition and condition != 'ALL':
             queryset = queryset.filter(condition=condition)
 
-        # Transaction type filter (SELL, DONATE)
+        # Transaction type filter (SELL, DONATE, EXCHANGE)
         transaction_type = self.request.query_params.get('transaction_type')
         if transaction_type and transaction_type != 'ALL':
-            queryset = queryset.filter(transaction_type=transaction_type)
+            if transaction_type == 'EXCHANGE':
+                queryset = queryset.filter(Q(transaction_type='EXCHANGE') | Q(is_exchange_allowed=True))
+            else:
+                queryset = queryset.filter(transaction_type=transaction_type)
 
         # Campus location filter
         location = self.request.query_params.get('location')
@@ -1283,6 +1286,20 @@ class ListingReportCreateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class StudentMyReportsListView(generics.ListAPIView):
+    """
+    Returns reports submitted by the authenticated student.
+    Allows students to track the status (PENDING, RESOLVED, DISMISSED) of their reports.
+    """
+    serializer_class = ListingReportSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return ListingReport.objects.filter(reporter=self.request.user).select_related(
+            'listing', 'listing__seller', 'reported_user', 'reporter'
+        ).order_by('-created_at')
+
+
 class AdminListingReportListView(generics.ListAPIView):
     queryset = ListingReport.objects.all().select_related('reporter', 'listing', 'listing__seller').order_by('-created_at')
     serializer_class = ListingReportSerializer
@@ -1489,6 +1506,8 @@ class AdminPlatformSettingsView(APIView):
             )
         try:
             cache.delete('public_announcement_data')
+            cache.delete('public_platform_config')
+            cache.delete('student_community_hub_data')
         except Exception:
             pass
 
@@ -1526,6 +1545,126 @@ class PublicAnnouncementView(APIView):
         }
         try:
             cache.set('public_announcement_data', payload, 60)
+        except Exception:
+            pass
+        return Response(payload)
+
+
+class PublicPlatformConfigView(APIView):
+    """
+    Public platform configuration endpoint consumed by client web & mobile apps.
+    Synchronizes maintenance mode, listing limits, minimum trust score requirements,
+    registration status, and announcement data.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        from django.core.cache import cache
+        cached_data = cache.get('public_platform_config')
+        if cached_data is not None:
+            return Response(cached_data)
+
+        settings_map = dict(AdminPlatformSettingsView.DEFAULT_SETTINGS)
+        for s in PlatformSetting.objects.all():
+            settings_map[s.key] = s.value
+
+        def to_int(val, default):
+            try:
+                return int(val)
+            except (ValueError, TypeError):
+                return default
+
+        payload = {
+            'maintenance_mode': str(settings_map.get('maintenance_mode', '')).lower() in ('true', '1'),
+            'maintenance_message': settings_map.get('maintenance_message', 'CampusXChange is currently undergoing scheduled campus maintenance. Please check back shortly.'),
+            'allow_registrations': str(settings_map.get('allow_registrations', 'true')).lower() in ('true', '1'),
+            'max_active_listings_per_student': to_int(settings_map.get('max_active_listings_per_student', 10), 10),
+            'min_trust_score_to_sell': to_int(settings_map.get('min_trust_score_to_sell', 0), 0),
+            'handover_qr_expiry_minutes': to_int(settings_map.get('handover_qr_expiry_minutes', 30), 30),
+            'allowed_domains': settings_map.get('allowed_domains', 'lpu.in'),
+            'otp_daily_limit': to_int(settings_map.get('otp_daily_limit', 5), 5),
+            'announcement': {
+                'enabled': str(settings_map.get('announcement_enabled', '')).lower() in ('true', '1'),
+                'text': settings_map.get('announcement_text', ''),
+                'type': settings_map.get('announcement_type', 'INFO').upper(),
+                'link': settings_map.get('announcement_link', ''),
+                'dismissible': str(settings_map.get('announcement_dismissible', '')).lower() not in ('false', '0'),
+            }
+        }
+        try:
+            cache.set('public_platform_config', payload, 60)
+        except Exception:
+            pass
+        return Response(payload)
+
+
+class CommunityHubView(APIView):
+    """
+    Student-facing Community Hub & Leaderboard endpoint.
+    Exposes Top Verified Sellers, Campus Meetup Hotspots, and Safe Trading Milestones.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        from django.core.cache import cache
+        from django.db.models import Count, Q
+        cached_data = cache.get('student_community_hub_data')
+        if cached_data is not None:
+            return Response(cached_data)
+
+        top_sellers_qs = User.objects.filter(is_staff=False, is_superuser=False).annotate(
+            total_listings=Count('listings', distinct=True),
+            sold_listings=Count('listings', filter=Q(listings__status='SOLD'), distinct=True),
+            completed_deals=Count('listings__offers', filter=Q(listings__offers__status='COMPLETED'), distinct=True)
+        ).order_by('-completed_deals', '-trust_score', '-sold_listings')[:10]
+
+        top_sellers = []
+        for rank, seller in enumerate(top_sellers_qs, 1):
+            prof_photo = getattr(seller, 'profile_photo', None) or ''
+            photo_url = getattr(seller, 'profile_picture_url', None) or (
+                prof_photo if prof_photo.startswith('http') else None
+            )
+            top_sellers.append({
+                'rank': rank,
+                'id': seller.id,
+                'username': seller.username,
+                'full_name': getattr(seller, 'full_name', None) or seller.get_full_name() or seller.username,
+                'trust_score': getattr(seller, 'trust_score', 0),
+                'is_verified': getattr(seller, 'is_verified_student', False) or getattr(seller, 'is_id_verified', False),
+                'completed_deals': seller.completed_deals,
+                'sold_listings': seller.sold_listings,
+                'profile_photo': photo_url
+            })
+
+        hotspots_raw = Listing.objects.exclude(location__isnull=True).exclude(location__exact='').values('location').annotate(
+            total=Count('id'),
+            sold=Count('id', filter=Q(status='SOLD'))
+        ).order_by('-total')[:6]
+
+        campus_hotspots = [
+            {
+                'location': h['location'],
+                'total_listings': h['total'],
+                'sold_listings': h['sold']
+            }
+            for h in hotspots_raw
+        ]
+
+        total_students = User.objects.filter(is_staff=False, is_superuser=False).count()
+        total_completed = Offer.objects.filter(status='COMPLETED').count()
+        active_listings = Listing.objects.filter(status='ACTIVE').count()
+
+        payload = {
+            'top_sellers': top_sellers,
+            'hotspots': campus_hotspots,
+            'stats': {
+                'total_students': total_students,
+                'completed_deals': total_completed,
+                'active_listings': active_listings
+            }
+        }
+        try:
+            cache.set('student_community_hub_data', payload, 60)
         except Exception:
             pass
         return Response(payload)
