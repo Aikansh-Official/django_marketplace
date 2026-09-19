@@ -173,9 +173,8 @@ export default function Footer() {
               &copy; {currentYear} CampusXChange. A campus marketplace for LPU students.
             </p>
             <span className="hidden sm:inline text-gray-300">•</span>
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              v{APP_VERSION}
+            <span className="text-xs text-gray-400">
+              Version {APP_VERSION}
             </span>
           </div>
           <p className="flex items-center gap-1 font-medium text-gray-500">

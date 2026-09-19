@@ -759,10 +759,8 @@ export default function Navbar() {
 
               {/* Mobile Drawer Platform Version */}
               <div className="pt-2 mt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
-                <span>CampusXChange Platform</span>
-                <span className="font-mono text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded border border-gray-200">
-                  v{APP_VERSION}
-                </span>
+                <span>CampusXChange</span>
+                <span>Version {APP_VERSION}</span>
               </div>
             </div>
           </>
