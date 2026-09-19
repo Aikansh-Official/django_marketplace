@@ -399,7 +399,7 @@ export default function Home() {
             ) : null}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3 sm:gap-4 lg:gap-5 animate-fade-in-up">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-5 sm:gap-6 animate-fade-in-up">
             {listings.map((listing) => {
               const primaryImage =
                 listing.images?.find((img) => img.is_primary)?.image_url ||
@@ -411,10 +411,10 @@ export default function Home() {
                 <Link
                   to={`/listing/${listing.id}`}
                   key={listing.id}
-                  className="bg-white border border-gray-200 rounded-md overflow-hidden hover:shadow-xl hover:border-brand-200 transition-all duration-200 group flex flex-col"
+                  className="bg-white border border-gray-200 rounded-md overflow-hidden hover:shadow-xl hover:border-brand-200 transition-all duration-200 group flex flex-col shadow-xs"
                 >
                   {/* Image Container */}
-                  <div className="relative h-36 sm:h-44 md:h-48 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                  <div className="relative h-48 sm:h-56 md:h-60 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
                     {primaryImage ? (
                       <img
                         src={getSafeImageUrl(primaryImage)}

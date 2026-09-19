@@ -193,7 +193,7 @@ export default function ChatDrawer({
           {/* Listing Snapshot Bar */}
           <div className="p-3 bg-brand-50/70 border-b border-brand-100 flex items-center justify-between gap-3 text-xs flex-shrink-0">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-10 h-10 rounded-lg bg-white overflow-hidden shrink-0 border border-brand-200 flex items-center justify-center shadow-2xs relative">
+              <div className="w-10 h-10 rounded-md bg-white overflow-hidden shrink-0 border border-brand-200 flex items-center justify-center shadow-2xs relative">
                 {displayImage ? (
                   <img
                     src={getSafeImageUrl(displayImage)}
@@ -228,7 +228,7 @@ export default function ChatDrawer({
             {listingId && (
               <Link
                 to={`/listing/${listingId}`}
-                className="text-[11px] font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1 shrink-0 bg-white px-2.5 py-1.5 rounded-lg border border-brand-200 shadow-2xs transition-colors"
+                className="text-[11px] font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1 shrink-0 bg-white px-2.5 py-1.5 rounded-md border border-brand-200 shadow-2xs transition-colors"
               >
                 <span>View Listing</span>
                 <ExternalLink className="w-3 h-3" />

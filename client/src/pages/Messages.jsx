@@ -237,7 +237,7 @@ export default function Messages() {
   return (
     <div className="w-full px-4 sm:px-6 lg:px-[5%] py-3 sm:py-6 animate-fade-in-up">
       {/* Container with Modern Shadow & Border */}
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-md overflow-hidden flex flex-col md:flex-row h-[84vh] min-h-[550px]">
+      <div className="bg-white border border-gray-200 rounded-md shadow-md overflow-hidden flex flex-col md:flex-row h-[84vh] min-h-[550px]">
         {/* ============================================================ */}
         {/* LEFT COLUMN: CONVERSATIONS INBOX LIST                         */}
         {/* ============================================================ */}
@@ -317,7 +317,7 @@ export default function Messages() {
                   >
                     {/* Product Image Thumbnail with Peer Avatar badge */}
                     <div className="relative flex-shrink-0">
-                      <div className="w-12 h-12 rounded-xl bg-gray-100 border border-gray-200/90 overflow-hidden shadow-2xs flex items-center justify-center relative">
+                      <div className="w-12 h-12 rounded-md bg-gray-100 border border-gray-200/90 overflow-hidden shadow-2xs flex items-center justify-center relative">
                         {conv.listing_image ? (
                           <img
                             src={getSafeImageUrl(conv.listing_image)}
@@ -429,8 +429,8 @@ export default function Messages() {
                 </div>
 
                 {/* Product Snapshot Bar inside Header */}
-                <div className="flex items-center gap-2.5 bg-orange-50/50 border border-orange-200/80 px-3 py-1.5 rounded-xl text-xs shrink-0 max-w-[220px] sm:max-w-xs hover:border-brand-300 transition-all shadow-2xs">
-                  <div className="w-10 h-10 rounded-lg bg-white overflow-hidden shrink-0 border border-brand-200/80 flex items-center justify-center relative shadow-2xs">
+                <div className="flex items-center gap-2.5 bg-orange-50/50 border border-orange-200/80 px-3 py-1.5 rounded-md text-xs shrink-0 max-w-[220px] sm:max-w-xs hover:border-brand-300 transition-all shadow-2xs">
+                  <div className="w-10 h-10 rounded-md bg-white overflow-hidden shrink-0 border border-brand-200/80 flex items-center justify-center relative shadow-2xs">
                     {selectedChat.listing_image ? (
                       <img
                         src={getSafeImageUrl(selectedChat.listing_image)}

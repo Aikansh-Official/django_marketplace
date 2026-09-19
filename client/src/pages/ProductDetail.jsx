@@ -828,14 +828,14 @@ export default function ProductDetail() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
             {relatedListings.map((rel) => {
               const img = rel.images?.find((i) => i.is_primary)?.image_url || rel.images?.[0]?.image_url;
               return (
                 <Link
                   key={rel.id}
                   to={`/listing/${rel.id}`}
-                  className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all group flex flex-col"
+                  className="bg-white border border-gray-200 rounded-md overflow-hidden hover:shadow-lg transition-all group flex flex-col"
                 >
                   <div className="h-40 bg-gray-100 flex items-center justify-center p-2">
                     {img ? (
