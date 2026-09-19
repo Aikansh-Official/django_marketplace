@@ -181,8 +181,8 @@ class ListingSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         request = self.context.get('request')
         user = getattr(request, 'user', None)
-        is_auth = bool(user and user.is_authenticated)
-        if not is_auth:
+        is_owner_or_staff = bool(user and user.is_authenticated and (user.is_staff or user.id == instance.seller_id))
+        if not is_owner_or_staff:
             data['contact_phone'] = None
             data['contact_whatsapp'] = None
         return data

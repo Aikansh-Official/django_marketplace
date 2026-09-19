@@ -7,7 +7,6 @@ import {
   Clock,
   Eye,
   ShieldCheck,
-  Phone,
   MessageSquare,
   Share2,
   Heart,
@@ -557,15 +556,7 @@ export default function ProductDetail() {
   const rawCurrentImage = images[activeImageIndex]?.image_url || images[0]?.image_url || '';
   const currentImage = getSafeImageUrl(rawCurrentImage);
 
-  // Contact helper URLs
-  const rawPhone = listing.contact_phone || listing.seller?.phone_number || '';
-  const cleanPhone = rawPhone.replace(/[^\d+]/g, '');
-  const waPhone = (listing.contact_whatsapp || rawPhone).replace(/[^\d]/g, '');
-  const waMessage = encodeURIComponent(
-    `Hi ${listing.seller?.full_name || 'there'}, I saw your listing "${listing.title}" on CampusXChange for Rs ${listing.price}. Is it still available?`
-  );
-  const waUrl = waPhone ? `https://wa.me/${waPhone}?text=${waMessage}` : null;
-  const callUrl = cleanPhone ? `tel:${cleanPhone}` : null;
+  // Direct contact is routed securely through In-App Chat to safeguard student privacy
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Recent';
@@ -761,7 +752,7 @@ export default function ProductDetail() {
           </div>
 
           {/* Right Column: Incoming Student Purchase Requests */}
-          <div className="bg-white border border-brand-200/90 rounded-md p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3">
+          <div id="seller-offers-panel" className="bg-white border border-brand-200/90 rounded-md p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
               <div className="flex items-center gap-2.5 min-w-0">
@@ -1269,7 +1260,7 @@ export default function ProductDetail() {
                         Log in to Buy or Contact Seller
                       </h3>
                       <p className="text-xs text-gray-500 leading-relaxed mt-1">
-                        To protect campus safety and student privacy, login is required to make purchase requests, chat on WhatsApp, or call the seller.
+                        To protect campus safety and student privacy, login is required to make purchase requests or chat with the seller.
                       </p>
                     </div>
                     <button
@@ -1281,93 +1272,123 @@ export default function ProductDetail() {
                       <span>Log In / Sign Up to Continue</span>
                     </button>
                   </div>
-                ) : (
-                  <>
-                    {/* Direct Purchase Button (for non-owners) */}
-                    {!isOwner && (
-                      userOffer?.status === 'PENDING' ? (
-                        <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-md text-xs font-bold text-center flex items-center justify-center gap-2 shadow-2xs">
-                          <Clock className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                          <span>Request Pending Seller Approval</span>
+                ) : isOwner ? (
+                  /* Clean Seller Status & Management Box */
+                  <div className="bg-gradient-to-br from-brand-50/60 via-white to-orange-50/30 border border-brand-200/80 rounded-xl p-4 sm:p-5 shadow-xs space-y-3.5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-brand-500 text-white flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
+                        <Tag className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Live on Campus</span>
                         </div>
+                        <h4 className="text-sm font-black text-gray-900 truncate">
+                          Your Active Listing
+                        </h4>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-gray-500 leading-relaxed">
+                      You are the seller of this item. Buyers will contact you safely via campus in-app chat and make purchase offers.
+                    </p>
+
+                    <div className="space-y-2 pt-1">
+                      <Link
+                        to={`/edit-listing/${listing.id}`}
+                        className="w-full bg-white hover:bg-gray-50 border border-gray-300 hover:border-gray-400 text-gray-800 font-bold py-2.5 px-4 rounded-md transition-all text-xs flex items-center justify-center gap-2 shadow-2xs"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-gray-600" />
+                        <span>Edit Listing Details</span>
+                      </Link>
+
+                      {listingOffers.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const el = document.getElementById('seller-offers-panel');
+                            if (el) el.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className="w-full bg-brand-500 hover:bg-brand-600 active:scale-[0.99] text-white font-bold py-2.5 px-4 rounded-md transition-all text-xs flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                        >
+                          <ShoppingBag className="w-3.5 h-3.5" />
+                          <span>View Buyer Requests ({listingOffers.length})</span>
+                        </button>
                       ) : (
-                        <div className="space-y-2">
+                        <div className="bg-white/90 border border-dashed border-gray-200 rounded-md py-2 px-3 text-center text-[11px] text-gray-400">
+                          No buyer requests yet • Keep checking
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  /* Buyer Actions */
+                  <div className="space-y-3">
+                    {userOffer?.status === 'PENDING' ? (
+                      <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3.5 rounded-lg text-xs font-bold text-center flex items-center justify-center gap-2 shadow-2xs">
+                        <Clock className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <span>Purchase Request Pending Seller Approval</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <button
+                          type="button"
+                          onClick={handleOpenBuyModal}
+                          className={`w-full text-white font-bold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2 cursor-pointer ${
+                            listing.transaction_type === 'EXCHANGE'
+                              ? 'bg-indigo-600 hover:bg-indigo-700'
+                              : 'bg-brand-500 hover:bg-brand-600'
+                          }`}
+                        >
+                          {listing.transaction_type === 'EXCHANGE' ? (
+                            <>
+                              <Repeat className="w-4 h-4" />
+                              <span>Propose Item Exchange (Swap)</span>
+                            </>
+                          ) : listing.transaction_type === 'DONATE' ? (
+                            <>
+                              <ShoppingBag className="w-4 h-4" />
+                              <span>Request Free Donation</span>
+                            </>
+                          ) : (
+                            <>
+                              <ShoppingBag className="w-4 h-4" />
+                              <span>I Want to Buy This (Rs {listing.price})</span>
+                            </>
+                          )}
+                        </button>
+
+                        {/* Dual option: Also show Propose Exchange if seller is open to it */}
+                        {listing.transaction_type === 'SELL' && listing.is_exchange_allowed && (
                           <button
                             type="button"
-                            onClick={handleOpenBuyModal}
-                            className={`w-full text-white font-bold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2 cursor-pointer ${
-                              listing.transaction_type === 'EXCHANGE'
-                                ? 'bg-indigo-600 hover:bg-indigo-700'
-                                : 'bg-brand-500 hover:bg-brand-600'
-                            }`}
+                            onClick={handleOpenExchangeModal}
+                            className="w-full bg-white border border-indigo-500 text-indigo-600 hover:bg-indigo-50/70 font-bold py-2.5 px-4 rounded-lg transition-all text-xs flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
                           >
-                            {listing.transaction_type === 'EXCHANGE' ? (
-                              <>
-                                <Repeat className="w-4 h-4" />
-                                <span>Propose Item Exchange (Swap)</span>
-                              </>
-                            ) : listing.transaction_type === 'DONATE' ? (
-                              <>
-                                <ShoppingBag className="w-4 h-4" />
-                                <span>Request Free Donation</span>
-                              </>
-                            ) : (
-                              <>
-                                <ShoppingBag className="w-4 h-4" />
-                                <span>I Want to Buy This (Rs {listing.price})</span>
-                              </>
-                            )}
+                            <Repeat className="w-4 h-4" />
+                            <span>Or Propose an Item Exchange</span>
                           </button>
-
-                          {/* Dual option: Also show Propose Exchange if seller is open to it */}
-                          {listing.transaction_type === 'SELL' && listing.is_exchange_allowed && (
-                            <button
-                              type="button"
-                              onClick={handleOpenExchangeModal}
-                              className="w-full bg-white border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 font-bold py-2.5 px-4 rounded-md transition-all text-xs flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
-                            >
-                              <Repeat className="w-4 h-4" />
-                              <span>Or Propose an Item Exchange</span>
-                            </button>
-                          )}
-                        </div>
-                      )
-                    )}
-
-                    {/* WhatsApp Button */}
-                    {waUrl && (
-                      <a
-                        href={waUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-4 rounded-md transition-all shadow-sm hover:shadow-md text-sm flex items-center justify-center gap-2"
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                        Chat on WhatsApp
-                      </a>
-                    )}
-
-                    {/* Call Button */}
-                    {callUrl && (
-                      <a
-                        href={callUrl}
-                        className="w-full bg-white border border-gray-300 hover:border-gray-400 text-gray-800 font-semibold py-2.5 px-4 rounded-md transition-all text-sm flex items-center justify-center gap-2"
-                      >
-                        <Phone className="w-4 h-4 text-gray-600" />
-                        Call Seller ({rawPhone})
-                      </a>
+                        )}
+                      </div>
                     )}
 
                     {/* In-App Direct Message */}
                     <button
                       type="button"
                       onClick={handleOpenChat}
-                      className="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full bg-brand-500 hover:bg-brand-600 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg text-sm flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <Send className="w-4 h-4" />
-                      Send In-App Message
+                      <span>Send In-App Message</span>
                     </button>
-                  </>
+
+                    {/* Privacy Reassurance Badge */}
+                    <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-lg py-2 px-3 flex items-center justify-center gap-1.5 text-[11px] font-semibold text-emerald-800 text-center">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Safe Campus Deal • Private In-App Messaging Only</span>
+                    </div>
+                  </div>
                 )}
               </div>
             ) : listing.status === 'PENDING' ? (
@@ -1435,17 +1456,16 @@ export default function ProductDetail() {
                     ⚠️ Item Currently Reserved for Another Buyer
                   </div>
                 )}
-                {/* Still allow contact for winning buyer */}
-                {userOffer?.status === 'ACCEPTED' && waUrl && (
-                  <a
-                    href={waUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-4 rounded-md transition-all shadow-sm text-xs flex items-center justify-center gap-2"
+                {/* In-app contact for winning buyer */}
+                {userOffer?.status === 'ACCEPTED' && (
+                  <button
+                    type="button"
+                    onClick={handleOpenChat}
+                    className="w-full bg-white hover:bg-brand-50 border border-brand-300 text-brand-700 font-semibold py-2 px-4 rounded-md transition-all shadow-2xs text-xs flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <MessageSquare className="w-4 h-4" />
-                    Chat on WhatsApp with Seller
-                  </a>
+                    <Send className="w-3.5 h-3.5 text-brand-600" />
+                    Chat with Seller In-App
+                  </button>
                 )}
               </div>
             ) : listing.status === 'SOLD' ? (
@@ -1516,23 +1536,11 @@ export default function ProductDetail() {
             </div>
 
             <div className="text-[11px] text-gray-500 flex items-center justify-between pt-1">
-              <span>Contact Options:</span>
-              {isAuthenticated ? (
-                <span className="font-bold text-gray-700">
-                  {listing.contact_preference === 'ALL'
-                    ? 'All Channels'
-                    : listing.contact_preference?.replace('_', ' ')}
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={triggerLogin}
-                  className="font-semibold text-brand-600 hover:text-brand-700 bg-brand-50 border border-brand-200 px-2 py-0.5 rounded text-[10px] flex items-center gap-1 cursor-pointer transition-colors"
-                >
-                  <Lock className="w-3 h-3 text-brand-600" />
-                  Log in to view
-                </button>
-              )}
+              <span>Contact Mode:</span>
+              <span className="font-bold text-emerald-700 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                Verified In-App Chat
+              </span>
             </div>
 
             {/* Link to DPDP-Compliant Public Seller Profile */}
@@ -1886,17 +1894,14 @@ export default function ProductDetail() {
             </button>
           ) : (
             <div className="flex items-center gap-2 shrink-0">
-              {waUrl && (
-                <a
-                  href={waUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white p-2.5 rounded-md shadow-xs flex items-center justify-center"
-                  title="Chat on WhatsApp"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                </a>
-              )}
+              <button
+                type="button"
+                onClick={handleOpenChat}
+                className="bg-white border border-gray-300 hover:border-brand-500 text-gray-700 hover:text-brand-600 p-2.5 rounded-md shadow-xs flex items-center justify-center cursor-pointer"
+                title="Send In-App Message"
+              >
+                <Send className="w-4 h-4" />
+              </button>
 
               {userOffer?.status === 'PENDING' ? (
                 <div className="bg-blue-50 border border-blue-200 text-blue-800 px-3 py-2 rounded-md text-xs font-bold text-center">
