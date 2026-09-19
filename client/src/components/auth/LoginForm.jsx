@@ -51,7 +51,6 @@ export default function LoginForm({ onSwitch, onForgotPassword, onSuccess }) {
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
               Registration Number
             </label>
-            <span className="text-xs font-medium text-gray-400">8 digits</span>
           </div>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">

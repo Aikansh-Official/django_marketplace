@@ -181,7 +181,6 @@ export default function ForgotPasswordForm({ onBackToLogin }) {
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
                   Registered Email
                 </label>
-                <span className="text-[11px] font-medium text-gray-400">@gmail.com</span>
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
@@ -197,14 +196,6 @@ export default function ForgotPasswordForm({ onBackToLogin }) {
               {errorsStep1.email && (
                 <p className="text-red-500 text-xs font-medium mt-1">{errorsStep1.email.message}</p>
               )}
-            </div>
-
-            {/* Security Verification Notice */}
-            <div className="bg-brand-50/60 border border-brand-100 rounded-md p-2.5 flex items-start gap-2 text-[11px] text-brand-900">
-              <ShieldCheck className="w-4 h-4 text-brand-500 shrink-0 mt-0.5" />
-              <span>
-                Your Registration Number and Email must both match your registered student account in the database before an OTP is dispatched.
-              </span>
             </div>
 
             {/* Submit Button */}
@@ -330,9 +321,8 @@ export default function ForgotPasswordForm({ onBackToLogin }) {
             <div className="bg-gray-50 border border-gray-200 rounded-md p-2.5 space-y-1 text-xs">
               <div className="flex items-center gap-2">
                 <div
-                  className={`w-3.5 h-3.5 rounded-full flex items-center justify-center transition-colors ${
-                    hasMinLength ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500'
-                  }`}
+                  className={`w-3.5 h-3.5 rounded-full flex items-center justify-center transition-colors ${hasMinLength ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500'
+                    }`}
                 >
                   <Check className="w-2.5 h-2.5 stroke-[3]" />
                 </div>
@@ -342,9 +332,8 @@ export default function ForgotPasswordForm({ onBackToLogin }) {
               </div>
               <div className="flex items-center gap-2">
                 <div
-                  className={`w-3.5 h-3.5 rounded-full flex items-center justify-center transition-colors ${
-                    hasSpecialChar ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500'
-                  }`}
+                  className={`w-3.5 h-3.5 rounded-full flex items-center justify-center transition-colors ${hasSpecialChar ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500'
+                    }`}
                 >
                   <Check className="w-2.5 h-2.5 stroke-[3]" />
                 </div>

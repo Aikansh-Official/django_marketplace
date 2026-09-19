@@ -7,6 +7,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.throttling import ScopedRateThrottle
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from django.db import models
 import random
 from .models import OTPVerification, PasswordResetToken, PasswordResetOTP, ADMIN_PERMISSIONS_CATALOG, ALL_PERMISSION_KEYS
 from .permissions import HasAdminModulePermission, IsSuperAdminUser
