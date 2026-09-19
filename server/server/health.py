@@ -1,4 +1,4 @@
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.db import connection
 from django.conf import settings
 from django.utils import timezone
@@ -34,11 +34,10 @@ def health_check(request):
 
 def ping(request):
     """
-    Simple, lightweight ping-pong probe to quickly verify server availability.
+    Ultra-lightweight ping probe returning minimal 'True' (4 bytes)
+    to minimize bandwidth consumption on frequent uptime / cron pings.
     """
-    return JsonResponse({
-        "status": "ok",
-        "message": "pong",
-        "timestamp": timezone.now().isoformat()
-    })
+    response = HttpResponse("True", content_type="text/plain")
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    return response
 
