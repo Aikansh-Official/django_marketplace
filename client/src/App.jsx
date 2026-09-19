@@ -15,6 +15,7 @@ const ProductDetail = lazy(() => import('./pages/ProductDetail'));
 const MyListings = lazy(() => import('./pages/MyListings'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Notifications = lazy(() => import('./pages/Notifications'));
+const Messages = lazy(() => import('./pages/Messages'));
 const SellerProfile = lazy(() => import('./pages/SellerProfile'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const About = lazy(() => import('./pages/About'));
@@ -160,6 +161,22 @@ function App() {
                       element={
                         <ProtectedRoute>
                           <Notifications />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/messages"
+                      element={
+                        <ProtectedRoute>
+                          <Messages />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/messages/:listingId/:peerId"
+                      element={
+                        <ProtectedRoute>
+                          <Messages />
                         </ProtectedRoute>
                       }
                     />

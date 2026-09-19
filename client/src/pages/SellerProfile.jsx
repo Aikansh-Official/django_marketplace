@@ -129,7 +129,7 @@ export default function SellerProfile() {
   const trustBadge = getTrustScoreBadge(seller.trust_score);
 
   return (
-    <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+    <div className="w-full px-4 sm:px-6 lg:px-[5%] py-6 sm:py-8 space-y-6 animate-fade-in-up">
       {/* Top Breadcrumb & Action Navigation */}
       <div className="flex items-center justify-between gap-3">
         <Link
@@ -301,7 +301,7 @@ export default function SellerProfile() {
               <p className="text-xs text-gray-500 mt-1">This seller currently has no items available for sale.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
               {listings.map((item) => {
                 const cover =
                   item.images?.find((i) => i.is_primary)?.image_url ||

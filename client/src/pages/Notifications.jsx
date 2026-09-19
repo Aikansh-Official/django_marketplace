@@ -18,7 +18,8 @@ import {
   Megaphone,
   ShieldAlert,
   Radio,
-  AlertTriangle
+  AlertTriangle,
+  MessageSquare
 } from 'lucide-react';
 import api from '../services/api';
 import UniversalLoader from '../components/common/UniversalLoader';
@@ -111,7 +112,7 @@ export default function Notifications() {
   const totalNotifications = notifications.length;
   const unreadCount = notifications.filter((n) => !n.is_read).length;
   const dealCount = notifications.filter((n) =>
-    ['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'ITEM_SOLD', 'DEAL_CANCELLED', 'HANDOVER_READY'].includes(
+    ['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'ITEM_SOLD', 'DEAL_CANCELLED', 'HANDOVER_READY', 'NEW_CHAT_MESSAGE'].includes(
       n.notification_type
     )
   ).length;
@@ -123,7 +124,7 @@ export default function Notifications() {
   const filteredNotifications = notifications.filter((n) => {
     if (filter === 'UNREAD') return !n.is_read;
     if (filter === 'TRADE')
-      return ['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'ITEM_SOLD', 'DEAL_CANCELLED', 'HANDOVER_READY'].includes(
+      return ['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'ITEM_SOLD', 'DEAL_CANCELLED', 'HANDOVER_READY', 'NEW_CHAT_MESSAGE'].includes(
         n.notification_type
       );
     if (filter === 'BROADCAST')
@@ -134,6 +135,13 @@ export default function Notifications() {
   const getTypeBadge = (notif) => {
     const type = notif.notification_type;
     switch (type) {
+      case 'NEW_CHAT_MESSAGE':
+        return (
+          <span className="inline-flex items-center gap-1 bg-brand-50 border border-brand-200 text-brand-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <MessageSquare className="w-3 h-3 text-brand-600" />
+            Product Inquiry
+          </span>
+        );
       case 'BROADCAST':
         return (
           <span className="inline-flex items-center gap-1 bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
@@ -217,6 +225,8 @@ export default function Notifications() {
       return <AlertTriangle className="w-6 h-6 text-red-600 animate-bounce" />;
     }
     switch (type) {
+      case 'NEW_CHAT_MESSAGE':
+        return <MessageSquare className="w-6 h-6 text-brand-600" />;
       case 'BROADCAST':
         return <Megaphone className="w-6 h-6 text-indigo-600" />;
       case 'DIRECT_WARNING':
@@ -251,7 +261,7 @@ export default function Notifications() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 animate-fade-in-up">
+    <div className="w-full px-4 sm:px-6 lg:px-[5%] py-5 sm:py-8 animate-fade-in-up">
       {/* Top Banner - matching MyListings */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8 pb-4 border-b border-gray-200">
         <div>
@@ -479,6 +489,20 @@ export default function Notifications() {
 
                 {/* Right Actions - matching MyListings action buttons */}
                 <div className="flex flex-wrap items-center gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-gray-100 self-end md:self-center flex-shrink-0">
+                  {notif.notification_type === 'NEW_CHAT_MESSAGE' && (
+                    <Link
+                      to="/messages"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!notif.is_read) handleMarkRead(notif.id);
+                      }}
+                      className="bg-brand-500 hover:bg-brand-600 text-white px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      Reply in Messenger
+                    </Link>
+                  )}
+
                   {!notif.is_read && (
                     <button
                       type="button"

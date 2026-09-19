@@ -457,7 +457,7 @@ export default function CreateListing() {
   const selectedCategoryObj = categories.find((c) => String(c.id) === String(categoryId));
   const coverImage = images[primaryIndex] || images[0] || '';
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 animate-fade-in-up">
+    <div className="w-full px-4 sm:px-6 lg:px-[5%] py-5 sm:py-8 animate-fade-in-up">
       {/* Header */}
       <div className="flex items-center justify-between gap-4 mb-6 sm:mb-8 pb-4 border-b border-gray-200">
         <div>

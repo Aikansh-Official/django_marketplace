@@ -11,7 +11,8 @@ import {
   ChevronDown,
   Search,
   ShoppingBag,
-  Trophy
+  Trophy,
+  MessageSquare
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
@@ -34,6 +35,7 @@ export default function Navbar() {
     }
   });
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
   const [savedCount, setSavedCount] = useState(() => getSavedCount());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState('login');
@@ -148,6 +150,31 @@ export default function Navbar() {
     };
   }, [userProfile]);
 
+  // Fetch unread messages count for Campus Messenger
+  useEffect(() => {
+    if (!userProfile) return;
+
+    const fetchChatUnread = async () => {
+      try {
+        const res = await api.get('/marketplace/conversations/');
+        if (Array.isArray(res.data)) {
+          const totalUnread = res.data.reduce((acc, c) => acc + (c.unread_count || 0), 0);
+          setUnreadChatCount(totalUnread);
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    fetchChatUnread();
+    const interval = setInterval(fetchChatUnread, 10000);
+    window.addEventListener('messages-updated', fetchChatUnread);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('messages-updated', fetchChatUnread);
+    };
+  }, [userProfile]);
+
   // Listen to open-auth-modal events
   useEffect(() => {
     const handleOpenAuthModal = (e) => {
@@ -244,7 +271,7 @@ export default function Navbar() {
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200/90 shadow-2xs h-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
+        <div className="w-full px-4 sm:px-6 lg:px-[5%] h-full">
           <div className="flex items-center justify-between h-full gap-2 sm:gap-4 lg:gap-6">
 
             {/* Left: Brand Logo & Links */}
@@ -266,8 +293,8 @@ export default function Navbar() {
                 <Link
                   to="/"
                   className={`transition-colors py-1.5 px-2.5 rounded-md ${location.pathname === '/' && !location.search.includes('search=')
-                      ? 'text-brand-600 font-bold bg-brand-50'
-                      : 'hover:text-gray-900 hover:bg-gray-100/70'
+                    ? 'text-brand-600 font-bold bg-brand-50'
+                    : 'hover:text-gray-900 hover:bg-gray-100/70'
                     }`}
                 >
                   Explore
@@ -290,7 +317,7 @@ export default function Navbar() {
                 setShowSuggestions(false);
                 handleSearchSubmit(e);
               }}
-              className="flex-1 max-w-xs md:max-w-md lg:max-w-xl hidden sm:flex items-center relative"
+              className="flex-1 max-w-xs md:max-w-md lg:max-w-2xl xl:max-w-3xl hidden sm:flex items-center relative"
             >
               <div className="relative w-full flex items-center group">
                 <div className="absolute left-3.5 pointer-events-none text-gray-400 group-focus-within:text-brand-500 transition-colors">
@@ -429,7 +456,21 @@ export default function Navbar() {
               {/* Desktop Auth State */}
               <div className="hidden sm:flex items-center gap-2.5">
                 {userProfile ? (
-                  <div className="flex items-center gap-2">
+                  <>
+                    {/* Campus Messenger / Chat */}
+                    <Link
+                      to="/messages"
+                      className="relative p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
+                      title="Campus Messenger"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      {unreadChatCount > 0 && (
+                        <span className="absolute top-1 right-1 flex h-4 min-w-4 px-1 items-center justify-center text-[9px] font-black text-white bg-brand-500 rounded-full ring-2 ring-white animate-pulse">
+                          {unreadChatCount > 9 ? '9+' : unreadChatCount}
+                        </span>
+                      )}
+                    </Link>
+
                     {/* Notifications */}
                     <Link
                       to="/notifications"
@@ -514,6 +555,22 @@ export default function Navbar() {
                               My Orders & Trades
                             </Link>
                           )}
+                          <Link
+                            to="/messages"
+                            onClick={() => setIsProfileMenuOpen(false)}
+                            className="w-full flex items-center justify-between px-3 py-2 text-gray-700 hover:bg-gray-50 transition-colors text-left"
+                          >
+                            <span className="flex items-center gap-2">
+                              <MessageSquare className="w-3.5 h-3.5 text-brand-500" />
+                              Messenger / Chats
+                            </span>
+                            {unreadChatCount > 0 && (
+                              <span className="text-[10px] font-bold bg-brand-500 text-white px-1.5 py-0.5 rounded-full">
+                                {unreadChatCount}
+                              </span>
+                            )}
+                          </Link>
+
                           <button
                             type="button"
                             onClick={() => {
@@ -544,7 +601,7 @@ export default function Navbar() {
                         </div>
                       )}
                     </div>
-                  </div>
+                  </>
                 ) : (
                   <div className="flex items-center gap-1.5">
                     <button
@@ -710,6 +767,23 @@ export default function Navbar() {
                       My Orders & Trades
                     </Link>
                   )
+                )}
+                {userProfile && (
+                  <Link
+                    to="/messages"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center justify-between min-h-[44px] px-3 rounded-md hover:bg-gray-100/70 hover:text-brand-600 transition-colors font-semibold"
+                  >
+                    <span className="flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-brand-500" />
+                      <span>Campus Messenger</span>
+                    </span>
+                    {unreadChatCount > 0 && (
+                      <span className="text-xs bg-brand-500 text-white px-2 py-0.5 rounded-full font-bold">
+                        {unreadChatCount}
+                      </span>
+                    )}
+                  </Link>
                 )}
                 {userProfile && (
                   <Link

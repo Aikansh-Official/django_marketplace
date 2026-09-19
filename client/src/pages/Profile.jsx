@@ -121,7 +121,7 @@ export default function Profile() {
   if (!profile) return null;
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 animate-fade-in-up">
+    <div className="w-full px-4 sm:px-6 lg:px-[5%] py-4 sm:py-8 animate-fade-in-up">
       {/* Mobile Top Tabs Slider */}
       <div className="lg:hidden flex items-center gap-2 overflow-x-auto pb-2 mb-4 scrollbar-none touch-pan-x -mx-1 px-1">
         {[
