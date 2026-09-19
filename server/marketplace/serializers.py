@@ -63,38 +63,68 @@ class AdminCategorySerializer(serializers.ModelSerializer):
 
 
 class ListingImageSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
     class Meta:
         model = ListingImage
         fields = ['id', 'image_url', 'is_primary', 'created_at']
 
+    def get_image_url(self, obj):
+        from .media_security import generate_secure_image_url
+        return generate_secure_image_url(obj.image_url)
+
 class SellerSerializer(serializers.ModelSerializer):
     """Full seller info — only used in authenticated contexts (e.g. accepted offers)."""
     full_name = serializers.SerializerMethodField()
+    profile_picture_url = serializers.SerializerMethodField()
+    profile_photo = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             'id', 'username', 'full_name',
             'email', 'is_verified_student', 'is_id_verified', 'college_domain',
-            'trust_score', 'profile_picture_url', 'phone_number'
+            'trust_score', 'profile_picture_url', 'profile_photo', 'phone_number'
         ]
 
     def get_full_name(self, obj):
         return getattr(obj, 'full_name', '') or f"{obj.first_name} {obj.last_name}".strip() or obj.username
 
+    def get_profile_picture_url(self, obj):
+        from .media_security import generate_secure_image_url
+        raw = getattr(obj, 'profile_photo', None) or getattr(obj, 'profile_picture_url', None)
+        return generate_secure_image_url(raw)
+
+    def get_profile_photo(self, obj):
+        from .media_security import generate_secure_image_url
+        raw = getattr(obj, 'profile_photo', None) or getattr(obj, 'profile_picture_url', None)
+        return generate_secure_image_url(raw)
+
 class PublicSellerSerializer(serializers.ModelSerializer):
     """Safe seller info — used in public listing responses. Hides email, phone, and registration number."""
     full_name = serializers.SerializerMethodField()
+    profile_picture_url = serializers.SerializerMethodField()
+    profile_photo = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             'id', 'full_name', 'is_verified_student', 'is_id_verified',
-            'college_domain', 'trust_score', 'profile_picture_url'
+            'college_domain', 'trust_score', 'profile_picture_url', 'profile_photo'
         ]
 
     def get_full_name(self, obj):
         return getattr(obj, 'full_name', '') or f"{obj.first_name} {obj.last_name}".strip() or obj.username
+
+    def get_profile_picture_url(self, obj):
+        from .media_security import generate_secure_image_url
+        raw = getattr(obj, 'profile_photo', None) or getattr(obj, 'profile_picture_url', None)
+        return generate_secure_image_url(raw)
+
+    def get_profile_photo(self, obj):
+        from .media_security import generate_secure_image_url
+        raw = getattr(obj, 'profile_photo', None) or getattr(obj, 'profile_picture_url', None)
+        return generate_secure_image_url(raw)
 
 class ListingSerializer(serializers.ModelSerializer):
     images = ListingImageSerializer(many=True, read_only=True)

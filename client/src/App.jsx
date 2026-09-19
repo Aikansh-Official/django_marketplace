@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import AnnouncementBanner from './components/AnnouncementBanner';
@@ -27,10 +27,44 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ScrollToTop from './components/common/ScrollToTop';
 import UniversalLoader from './components/common/UniversalLoader';
 import ThemeBackground from './components/ThemeBackground';
-import { Toaster } from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 import { LoadingProvider } from './context/LoadingContext';
 
 function App() {
+  // Global Image Protection & Anti-Exfiltration Layer
+  useEffect(() => {
+    const handleContextMenu = (e) => {
+      if (e.target && e.target.tagName === 'IMG') {
+        e.preventDefault();
+        toast('Image Protected: Direct link sharing & saving are disabled for student privacy.', {
+          id: 'image-protected-notice',
+          duration: 3000,
+          style: {
+            background: '#0f172a',
+            color: '#f8fafc',
+            fontSize: '12px',
+            fontWeight: '600',
+            border: '1px solid #334155'
+          }
+        });
+      }
+    };
+
+    const handleDragStart = (e) => {
+      if (e.target && e.target.tagName === 'IMG') {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('contextmenu', handleContextMenu);
+    window.addEventListener('dragstart', handleDragStart);
+
+    return () => {
+      window.removeEventListener('contextmenu', handleContextMenu);
+      window.removeEventListener('dragstart', handleDragStart);
+    };
+  }, []);
+
   return (
     <BrowserRouter>
       <ScrollToTop />

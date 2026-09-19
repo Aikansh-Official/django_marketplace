@@ -19,6 +19,7 @@ from django.urls import path, include, re_path
 from django.conf import settings
 from django.views.static import serve
 from server.health import health_check, ping
+from marketplace.media_security import secure_image_proxy_view
 
 urlpatterns = [
     re_path(r'^$', ping, name='root-ping'),
@@ -31,6 +32,7 @@ urlpatterns = [
     path('campusxchange-admin/', admin.site.urls),
     path('api/auth/', include('users.urls')),
     path('api/marketplace/', include('marketplace.urls')),
+    path('api/media/secure-image/', secure_image_proxy_view, name='secure-image-proxy'),
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ]
 

@@ -75,10 +75,11 @@ def upload_base64_to_cloudinary(base64_data, folder="campusxchange/listings"):
     }
 
 
-def upload_user_image_to_cloudinary(image_data, folder="campusxchange/profiles"):
+def upload_user_image_to_cloudinary(image_data, folder="campusxchange/profiles", is_private=False):
     """
     Universal helper to upload user images (profile photos, ID cards) to Cloudinary in .webp format.
     Accepts base64 data URIs or existing URLs. If already a URL, returns as-is.
+    For sensitive documents (ID cards), uploads as type='authenticated' so direct CDN access is blocked.
     Returns the secure Cloudinary HTTPS WebP URL.
     """
     if not image_data or not isinstance(image_data, str):
@@ -88,22 +89,27 @@ def upload_user_image_to_cloudinary(image_data, folder="campusxchange/profiles")
     if is_url(image_data):
         return image_data
 
+    is_id_card = ("id_cards" in folder) or is_private
+
     # If it's a base64 string
     if is_base64_image(image_data) or len(image_data) > 100:
         try:
             configure_cloudinary()
-            result = cloudinary.uploader.upload(
-                image_data,
-                folder=folder,
-                resource_type="image",
-                format="webp",
-                transformation=[
+            upload_kwargs = {
+                "folder": folder,
+                "resource_type": "image",
+                "format": "webp",
+                "transformation": [
                     {"width": 1200, "height": 1200, "crop": "limit", "quality": "auto:good", "fetch_format": "webp"}
                 ],
-            )
+            }
+            if is_id_card:
+                upload_kwargs["type"] = "authenticated"
+
+            result = cloudinary.uploader.upload(image_data, **upload_kwargs)
             secure_url = result.get("secure_url")
             if secure_url:
-                logger.info(f"Successfully uploaded user image to Cloudinary ({folder}): {secure_url}")
+                logger.info(f"Successfully uploaded user image to Cloudinary ({folder}, type={'authenticated' if is_id_card else 'upload'}): {secure_url}")
                 return secure_url
         except Exception as e:
             logger.error(f"Failed to upload user image to Cloudinary ({folder}): {e}")

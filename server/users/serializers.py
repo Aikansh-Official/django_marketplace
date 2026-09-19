@@ -209,6 +209,15 @@ class UserListSerializer(serializers.ModelSerializer):
     def get_has_id_card(self, obj):
         return bool(getattr(obj, 'id_card_image', None))
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        from marketplace.media_security import generate_secure_image_url
+        if data.get('profile_photo'):
+            data['profile_photo'] = generate_secure_image_url(data['profile_photo'])
+        if 'id_card_image' in data and data.get('id_card_image'):
+            data['id_card_image'] = generate_secure_image_url(data['id_card_image'])
+        return data
+
 
 class UserAdminDetailSerializer(UserListSerializer):
     """Full detail serializer with physical ID card image and OCR data for a single student."""
@@ -219,9 +228,15 @@ class UserAdminDetailSerializer(UserListSerializer):
 
 class UserDashboardSummarySerializer(serializers.ModelSerializer):
     """Ultra lightweight serializer for dashboard recent students preview."""
+    profile_photo = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = ('id', 'username', 'full_name', 'email', 'is_verified_student', 'trust_score', 'profile_photo')
+
+    def get_profile_photo(self, obj):
+        from marketplace.media_security import generate_secure_image_url
+        return generate_secure_image_url(getattr(obj, 'profile_photo', None))
 
 
 class AdminUserUpdateSerializer(serializers.ModelSerializer):
@@ -262,6 +277,7 @@ class PublicSellerProfileSerializer(serializers.ModelSerializer):
     reviews_count = serializers.SerializerMethodField()
     completed_trades_count = serializers.SerializerMethodField()
     trust_score = serializers.SerializerMethodField()
+    profile_photo = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -272,6 +288,11 @@ class PublicSellerProfileSerializer(serializers.ModelSerializer):
             'member_since', 'avg_rating', 'reviews_count'
         )
         read_only_fields = fields
+
+    def get_profile_photo(self, obj):
+        from marketplace.media_security import generate_secure_image_url
+        raw = getattr(obj, 'profile_photo', None) or getattr(obj, 'profile_picture_url', None)
+        return generate_secure_image_url(raw)
 
     def get_display_name(self, obj):
         name = (getattr(obj, 'full_name', '') or getattr(obj, 'first_name', '')).strip()
