@@ -190,8 +190,8 @@ STORAGES = {
 
 # Resend Email & Service Configuration
 RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
-RESEND_FROM_EMAIL = os.environ.get('RESEND_FROM_EMAIL', os.environ.get('DEFAULT_FROM_EMAIL', 'CampusXChange <onboarding@resend.dev>'))
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
+RESEND_FROM_EMAIL = os.environ.get('RESEND_FROM_EMAIL', 'CampusXChange <noreply@cxc.anshuman892494.online>')
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://cxc.anshuman892494.online')
 PASSWORD_RESET_TIMEOUT_SECONDS = int(os.environ.get('PASSWORD_RESET_TIMEOUT_SECONDS', '900'))  # 15 minutes
 
 # Email Configuration (Fallback / Django MAILERS)
@@ -256,6 +256,8 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = False
 
 _DEFAULT_FRONTEND_ORIGINS = [
+    "https://cxc.anshuman892494.online",
+    "http://cxc.anshuman892494.online",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:5174",
@@ -277,6 +279,11 @@ if _extra_csrf:
     CSRF_TRUSTED_ORIGINS = _DEFAULT_FRONTEND_ORIGINS + [o.strip() for o in _extra_csrf.split(',') if o.strip()]
 else:
     CSRF_TRUSTED_ORIGINS = _DEFAULT_FRONTEND_ORIGINS
+
+if "https://cxc.anshuman892494.online" not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append("https://cxc.anshuman892494.online")
+if "https://*.anshuman892494.online" not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append("https://*.anshuman892494.online")
 
 if RENDER_EXTERNAL_HOSTNAME:
     render_origin = f"https://{RENDER_EXTERNAL_HOSTNAME}"
