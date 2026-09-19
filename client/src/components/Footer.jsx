@@ -73,7 +73,7 @@ export default function Footer() {
               <img
                 src={logoImg}
                 alt="CampusXChange"
-                className="h-8 w-8 object-cover rounded-lg"
+                className="h-8 w-8 object-cover rounded-md"
               />
               <div className="flex items-baseline">
                 <span className="text-lg font-bold tracking-tight text-gray-950 font-display">Campus</span>

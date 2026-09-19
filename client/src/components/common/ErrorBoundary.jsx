@@ -43,8 +43,8 @@ export class ErrorBoundary extends Component {
 
       return (
         <div className="min-h-[60vh] flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-white/95 backdrop-blur-md border border-gray-200 rounded-2xl shadow-xl p-6 sm:p-8 text-center space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto shadow-inner">
+          <div className="max-w-md w-full bg-white/95 backdrop-blur-md border border-gray-200 rounded-md shadow-xl p-6 sm:p-8 text-center space-y-4">
+            <div className="w-16 h-16 rounded-md bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto shadow-inner">
               <AlertTriangle className="w-8 h-8" />
             </div>
 
@@ -58,7 +58,7 @@ export class ErrorBoundary extends Component {
             </div>
 
             {import.meta.env.DEV && this.state.error && (
-              <details className="text-left bg-gray-50 border border-gray-200 rounded-lg p-3 text-[11px] text-red-600 font-mono overflow-auto max-h-40">
+              <details className="text-left bg-gray-50 border border-gray-200 rounded-md p-3 text-[11px] text-red-600 font-mono overflow-auto max-h-40">
                 <summary className="cursor-pointer font-bold select-none text-gray-700">
                   Developer Error Details
                 </summary>
@@ -75,14 +75,14 @@ export class ErrorBoundary extends Component {
               <button
                 type="button"
                 onClick={this.handleReset}
-                className="w-full sm:w-auto flex-1 bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-lg shadow-sm transition-all text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-full sm:w-auto flex-1 bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-md shadow-sm transition-all text-xs flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Reload Page</span>
               </button>
               <a
                 href="/"
-                className="w-full sm:w-auto flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 px-4 rounded-lg transition-all text-xs flex items-center justify-center gap-1.5"
+                className="w-full sm:w-auto flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 px-4 rounded-md transition-all text-xs flex items-center justify-center gap-1.5"
               >
                 <Home className="w-3.5 h-3.5" />
                 <span>Marketplace</span>

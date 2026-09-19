@@ -52,7 +52,7 @@ export default function MobileStickyBar({
         <button
           type="button"
           onClick={onTriggerLogin}
-          className="bg-brand-500 hover:bg-brand-600 active:scale-95 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-md flex items-center gap-1.5 cursor-pointer shrink-0"
+          className="bg-brand-500 hover:bg-brand-600 active:scale-95 text-white font-bold py-2.5 px-4 rounded-md text-xs shadow-md flex items-center gap-1.5 cursor-pointer shrink-0"
         >
           <Lock className="w-3.5 h-3.5" />
           <span>Log In to Buy</span>
@@ -66,19 +66,19 @@ export default function MobileStickyBar({
                 <button
                   type="button"
                   onClick={() => onOpenQRModal(acceptedOffer)}
-                  className="bg-brand-500 hover:bg-brand-600 active:scale-95 text-white font-bold py-2.5 px-3.5 rounded-xl text-xs shadow-md flex items-center gap-1.5 cursor-pointer"
+                  className="bg-brand-500 hover:bg-brand-600 active:scale-95 text-white font-bold py-2.5 px-3.5 rounded-md text-xs shadow-md flex items-center gap-1.5 cursor-pointer"
                 >
                   <QrCode className="w-4 h-4" />
                   <span>Show QR</span>
                 </button>
               ) : (
-                <span className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg">
+                <span className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-md">
                   Deal Reserved
                 </span>
               );
             })()
           ) : listing.status === 'SOLD' ? (
-            <span className="text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded-lg">
+            <span className="text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded-md">
               Sold Out
             </span>
           ) : (
@@ -88,7 +88,7 @@ export default function MobileStickyBar({
                 const el = document.getElementById('seller-offers-panel');
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="bg-brand-500 hover:bg-brand-600 active:scale-95 text-white font-bold py-2.5 px-3.5 rounded-xl text-xs shadow-md flex items-center gap-1.5 cursor-pointer"
+              className="bg-brand-500 hover:bg-brand-600 active:scale-95 text-white font-bold py-2.5 px-3.5 rounded-md text-xs shadow-md flex items-center gap-1.5 cursor-pointer"
             >
               <ShoppingBag className="w-3.5 h-3.5" />
               <span>Offers ({listingOffers.length})</span>
@@ -102,7 +102,7 @@ export default function MobileStickyBar({
             type="button"
             onClick={() => onBuyerCounterRespond('ACCEPT')}
             disabled={respondingToCounter}
-            className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold py-2.5 px-3 rounded-xl text-xs shadow-sm flex items-center gap-1 cursor-pointer disabled:opacity-50"
+            className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold py-2.5 px-3 rounded-md text-xs shadow-sm flex items-center gap-1 cursor-pointer disabled:opacity-50"
           >
             <Check className="w-3.5 h-3.5" />
             <span>Accept</span>
@@ -111,7 +111,7 @@ export default function MobileStickyBar({
             type="button"
             onClick={() => onBuyerCounterRespond('REJECT')}
             disabled={respondingToCounter}
-            className="bg-white border border-gray-300 text-gray-700 font-bold py-2.5 px-2.5 rounded-xl text-xs hover:bg-gray-50 cursor-pointer disabled:opacity-50"
+            className="bg-white border border-gray-300 text-gray-700 font-bold py-2.5 px-2.5 rounded-md text-xs hover:bg-gray-50 cursor-pointer disabled:opacity-50"
           >
             Decline
           </button>
@@ -122,7 +122,7 @@ export default function MobileStickyBar({
           <button
             type="button"
             onClick={onOpenChat}
-            className="bg-white border border-gray-300 hover:border-brand-500 text-gray-700 hover:text-brand-600 p-2.5 rounded-xl shadow-xs flex items-center justify-center cursor-pointer"
+            className="bg-white border border-gray-300 hover:border-brand-500 text-gray-700 hover:text-brand-600 p-2.5 rounded-md shadow-xs flex items-center justify-center cursor-pointer"
             title="Chat with Seller"
           >
             <Send className="w-4 h-4" />
@@ -130,18 +130,18 @@ export default function MobileStickyBar({
           <button
             type="button"
             onClick={onOpenScannerModal}
-            className="bg-brand-500 hover:bg-brand-600 active:scale-95 text-white font-bold py-2.5 px-3.5 rounded-xl text-xs shadow-md flex items-center gap-1.5 cursor-pointer"
+            className="bg-brand-500 hover:bg-brand-600 active:scale-95 text-white font-bold py-2.5 px-3.5 rounded-md text-xs shadow-md flex items-center gap-1.5 cursor-pointer"
           >
             <Camera className="w-4 h-4" />
             <span>Complete Handover</span>
           </button>
         </div>
       ) : listing.status === 'PENDING' ? (
-        <span className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl">
+        <span className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-md">
           Reserved for Peer
         </span>
       ) : listing.status === 'SOLD' ? (
-        <span className="text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded-xl">
+        <span className="text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded-md">
           Item Sold
         </span>
       ) : (
@@ -150,14 +150,14 @@ export default function MobileStickyBar({
           <button
             type="button"
             onClick={onOpenChat}
-            className="bg-white border border-gray-300 hover:border-brand-500 text-gray-700 hover:text-brand-600 p-2.5 rounded-xl shadow-xs flex items-center justify-center cursor-pointer"
+            className="bg-white border border-gray-300 hover:border-brand-500 text-gray-700 hover:text-brand-600 p-2.5 rounded-md shadow-xs flex items-center justify-center cursor-pointer"
             title="Send In-App Message"
           >
             <Send className="w-4 h-4" />
           </button>
 
           {userOffer?.status === 'PENDING' ? (
-            <div className="bg-blue-50 border border-blue-200 text-blue-800 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5">
+            <div className="bg-blue-50 border border-blue-200 text-blue-800 px-3 py-2 rounded-md text-xs font-bold flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-blue-600" />
               <span>Pending</span>
             </div>
@@ -165,7 +165,7 @@ export default function MobileStickyBar({
             <button
               type="button"
               onClick={onOpenBuyModal}
-              className={`text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-md flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all ${
+              className={`text-white font-bold py-2.5 px-4 rounded-md text-xs shadow-md flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all ${
                 listing.transaction_type === 'EXCHANGE'
                   ? 'bg-indigo-600 hover:bg-indigo-700'
                   : listing.transaction_type === 'DONATE'

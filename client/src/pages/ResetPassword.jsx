@@ -65,11 +65,11 @@ export default function ResetPassword() {
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+      <div className="w-full max-w-md bg-white rounded-md shadow-xl border border-gray-100 overflow-hidden">
         {/* Header Ribbon */}
         <div className="bg-gradient-to-r from-brand-600 via-brand-500 to-indigo-600 px-6 py-8 text-center text-white relative">
-          <div className="w-14 h-14 mx-auto mb-3 bg-white rounded-xl p-1.5 shadow-md flex items-center justify-center">
-            <img src={logoImg} alt="CampusXChange" className="w-full h-full object-cover rounded-lg" />
+          <div className="w-14 h-14 mx-auto mb-3 bg-white rounded-md p-1.5 shadow-md flex items-center justify-center">
+            <img src={logoImg} alt="CampusXChange" className="w-full h-full object-cover rounded-md" />
           </div>
           <h1 className="text-2xl font-black tracking-tight font-display text-white">
             CampusXChange
@@ -93,7 +93,7 @@ export default function ResetPassword() {
               <div className="mt-6">
                 <Link
                   to="/"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand-500 text-white font-bold text-xs hover:bg-brand-600 transition-colors shadow-sm"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-brand-500 text-white font-bold text-xs hover:bg-brand-600 transition-colors shadow-sm"
                 >
                   Return to Home
                 </Link>
@@ -124,7 +124,7 @@ export default function ResetPassword() {
                     <input
                       type={showPassword ? 'text' : 'password'}
                       {...register('password')}
-                      className="w-full bg-gray-50/80 hover:bg-white focus:bg-white border border-gray-200 text-gray-900 font-medium rounded-lg pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all placeholder:text-gray-400"
+                      className="w-full bg-gray-50/80 hover:bg-white focus:bg-white border border-gray-200 text-gray-900 font-medium rounded-md pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all placeholder:text-gray-400"
                       placeholder="At least 8 characters"
                       autoFocus
                     />
@@ -142,7 +142,7 @@ export default function ResetPassword() {
                 </div>
 
                 {/* Password Strength Requirements Helper */}
-                <div className="bg-gray-50 border border-gray-200/80 rounded-lg p-3 space-y-1.5 text-xs">
+                <div className="bg-gray-50 border border-gray-200/80 rounded-md p-3 space-y-1.5 text-xs">
                   <div className="flex items-center gap-2">
                     <div
                       className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors ${
@@ -181,7 +181,7 @@ export default function ResetPassword() {
                     <input
                       type={showConfirmPassword ? 'text' : 'password'}
                       {...register('password_confirm')}
-                      className="w-full bg-gray-50/80 hover:bg-white focus:bg-white border border-gray-200 text-gray-900 font-medium rounded-lg pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all placeholder:text-gray-400"
+                      className="w-full bg-gray-50/80 hover:bg-white focus:bg-white border border-gray-200 text-gray-900 font-medium rounded-md pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all placeholder:text-gray-400"
                       placeholder="Re-enter your new password"
                     />
                     <button
@@ -203,7 +203,7 @@ export default function ResetPassword() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-brand-500 hover:bg-brand-600 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg mt-6 disabled:opacity-70 text-sm flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full bg-brand-500 hover:bg-brand-600 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-md transition-all shadow-md hover:shadow-lg mt-6 disabled:opacity-70 text-sm flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
@@ -246,7 +246,7 @@ export default function ResetPassword() {
               <div className="mt-6">
                 <button
                   onClick={() => navigate('/')}
-                  className="w-full inline-flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 px-4 rounded-lg text-sm transition-all shadow-md hover:shadow-lg cursor-pointer"
+                  className="w-full inline-flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 px-4 rounded-md text-sm transition-all shadow-md hover:shadow-lg cursor-pointer"
                 >
                   <span>Go to Login</span>
                   <ArrowRight className="w-4 h-4" />

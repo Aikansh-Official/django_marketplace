@@ -300,7 +300,7 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
       onClick={onClose}
     >
       <div
-        className="m-auto w-full max-w-xl bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden relative my-6 sm:my-auto"
+        className="m-auto w-full max-w-xl bg-white rounded-md shadow-2xl border border-gray-200 overflow-hidden relative my-6 sm:my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -313,7 +313,7 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
           </button>
 
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-white/15 border border-white/25 flex items-center justify-center shadow-inner">
+            <div className="w-10 h-10 rounded-md bg-white/15 border border-white/25 flex items-center justify-center shadow-inner">
               <Store className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -387,7 +387,7 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
               {/* ID Card Display / Dropzone */}
               {idFrontImage ? (
                 <div className="space-y-3">
-                  <div className="relative rounded-lg overflow-hidden border-2 border-gray-300 bg-gray-900/5 min-h-[200px] flex items-center justify-center p-2 shadow-inner group">
+                  <div className="relative rounded-md overflow-hidden border-2 border-gray-300 bg-gray-900/5 min-h-[200px] flex items-center justify-center p-2 shadow-inner group">
                     {/* Laser scanning animation */}
                     {isScanning && (
                       <div className="absolute inset-0 bg-black/70 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center p-4 text-white text-center">
@@ -449,9 +449,9 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
               ) : (
                 <label
                   onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-gray-300 hover:border-brand-500 rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer bg-gray-50/50 hover:bg-brand-50/20 transition-all text-center min-h-[200px]"
+                  className="border-2 border-dashed border-gray-300 hover:border-brand-500 rounded-md p-8 flex flex-col items-center justify-center cursor-pointer bg-gray-50/50 hover:bg-brand-50/20 transition-all text-center min-h-[200px]"
                 >
-                  <div className="w-12 h-12 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center mb-3 shadow-2xs border border-brand-100">
+                  <div className="w-12 h-12 rounded-md bg-brand-50 text-brand-600 flex items-center justify-center mb-3 shadow-2xs border border-brand-100">
                     <Camera className="w-6 h-6" />
                   </div>
                   <span className="text-xs font-bold text-gray-800">
@@ -475,7 +475,7 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
               />
 
               {/* Details Cross-Matching Checklist */}
-              <div className="bg-gray-50/90 border border-gray-200 rounded-lg p-3.5 space-y-2.5">
+              <div className="bg-gray-50/90 border border-gray-200 rounded-md p-3.5 space-y-2.5">
                 <span className="text-[10px] font-black uppercase text-gray-400 tracking-wider block">
                   Details Cross-Matching
                 </span>
@@ -536,7 +536,7 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
 
               {/* Extracted Card Badges */}
               {extractedCardData && (
-                <div className="bg-emerald-50/60 border border-emerald-200 rounded-lg p-3 space-y-2">
+                <div className="bg-emerald-50/60 border border-emerald-200 rounded-md p-3 space-y-2">
                   <span className="text-[10px] font-black uppercase text-emerald-800 tracking-wider flex items-center gap-1">
                     <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
                     Extracted Card Information
@@ -575,7 +575,7 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
 
               {/* Rejection Alert */}
               {rejectionInfo && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-800 flex items-start gap-2">
+                <div className="bg-red-50 border border-red-200 rounded-md p-3 text-xs text-red-800 flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <strong className="block font-bold">Verification Note:</strong>
@@ -591,7 +591,7 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
                     type="button"
                     onClick={handleScanAndVerifyId}
                     disabled={!idFrontImage || isScanning}
-                    className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer disabled:opacity-50"
+                    className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 px-4 rounded-md transition-all shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer disabled:opacity-50"
                   >
                     {isScanning ? (
                       <>
@@ -609,7 +609,7 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
                   <button
                     type="button"
                     onClick={() => setCurrentStep(2)}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer"
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-md transition-all shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer"
                   >
                     <span>Proceed to Step 2: Selfie Verification</span>
                     <ArrowRight className="w-4 h-4" />
@@ -655,7 +655,7 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
                   type="text"
                   value={otpCode}
                   onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  className="w-full bg-gray-50 hover:bg-white focus:bg-white border border-gray-200 text-gray-900 text-center font-black tracking-[0.4em] text-2xl rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all placeholder:text-gray-300"
+                  className="w-full bg-gray-50 hover:bg-white focus:bg-white border border-gray-200 text-gray-900 text-center font-black tracking-[0.4em] text-2xl rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all placeholder:text-gray-300"
                   placeholder="••••••"
                   maxLength={6}
                 />
@@ -665,7 +665,7 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
                 type="button"
                 onClick={handleFinalUpgrade}
                 disabled={loading || otpCode.length !== 6}
-                className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-md text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 px-4 rounded-md transition-all shadow-md text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
               >
                 {loading ? (
                   <>

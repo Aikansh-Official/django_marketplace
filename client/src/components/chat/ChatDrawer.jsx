@@ -168,7 +168,7 @@ export default function ChatDrawer({
               <button
                 type="button"
                 onClick={() => setIsFullScreen((prev) => !prev)}
-                className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors cursor-pointer"
+                className="p-1.5 rounded-md text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors cursor-pointer"
                 title={isFullScreen ? 'Exit full screen' : 'Expand full screen'}
               >
                 {isFullScreen ? (
@@ -182,7 +182,7 @@ export default function ChatDrawer({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+                className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
                 title="Close chat"
               >
                 <X className="w-5 h-5" />
@@ -253,7 +253,7 @@ export default function ChatDrawer({
               </div>
             ) : messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 text-center text-gray-500 space-y-2.5 p-4">
-                <div className="w-14 h-14 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center border border-brand-100 shadow-xs">
+                <div className="w-14 h-14 rounded-md bg-brand-50 text-brand-600 flex items-center justify-center border border-brand-100 shadow-xs">
                   <MessageCircle className="w-7 h-7" />
                 </div>
                 <div>
@@ -272,7 +272,7 @@ export default function ChatDrawer({
                     className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} max-w-full`}
                   >
                     <div
-                      className={`max-w-[85%] sm:max-w-[75%] px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-normal shadow-2xs leading-relaxed break-words whitespace-pre-wrap ${
+                      className={`max-w-[85%] sm:max-w-[75%] px-4 py-2.5 rounded-md text-xs sm:text-sm font-normal shadow-2xs leading-relaxed break-words whitespace-pre-wrap ${
                         isMine
                           ? 'bg-brand-500 text-white rounded-br-xs'
                           : 'bg-white border border-gray-200 text-gray-800 rounded-bl-xs'
@@ -300,12 +300,12 @@ export default function ChatDrawer({
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Type a message (Press Enter to send)..."
-                className="flex-1 border border-gray-300 rounded-xl p-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none resize-none font-normal"
+                className="flex-1 border border-gray-300 rounded-md p-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none resize-none font-normal"
               />
               <button
                 type="submit"
                 disabled={!inputMessage.trim() || sending}
-                className="h-11 px-4 sm:px-5 bg-brand-500 hover:bg-brand-600 active:scale-95 text-white rounded-xl font-bold text-xs sm:text-sm disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shadow-sm shrink-0 cursor-pointer"
+                className="h-11 px-4 sm:px-5 bg-brand-500 hover:bg-brand-600 active:scale-95 text-white rounded-md font-bold text-xs sm:text-sm disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shadow-sm shrink-0 cursor-pointer"
               >
                 {sending ? (
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>

@@ -215,7 +215,7 @@ export default function AuthLeftPanel({
 
             {/* ID Card Display Card */}
             {idFrontImage && (
-              <div className="w-full rounded-lg overflow-hidden bg-white/10 backdrop-blur-xs border border-white/20 p-2 shadow-sm mb-2.5 text-left">
+              <div className="w-full rounded-md overflow-hidden bg-white/10 backdrop-blur-xs border border-white/20 p-2 shadow-sm mb-2.5 text-left">
                 <div className="flex items-center justify-between text-[10px] font-bold text-white mb-1.5 px-0.5">
                   <span className="flex items-center gap-1 uppercase tracking-wider">
                     <ShieldCheck className="w-3.5 h-3.5 text-white" />
@@ -234,7 +234,7 @@ export default function AuthLeftPanel({
 
             {/* Live Selfie Photo & Student Profile (Shown prominently during Step 4 OTP and Step 5 Password) */}
             {selfieImage ? (
-              <div className="w-full rounded-lg overflow-hidden bg-white/10 backdrop-blur-xs border border-white/20 p-2.5 shadow-sm text-left">
+              <div className="w-full rounded-md overflow-hidden bg-white/10 backdrop-blur-xs border border-white/20 p-2.5 shadow-sm text-left">
                 <div className="flex items-center justify-between text-[10px] font-bold text-white mb-1.5 px-0.5">
                   <span className="flex items-center gap-1 uppercase tracking-wider">
                     <Camera className="w-3.5 h-3.5 text-white" />

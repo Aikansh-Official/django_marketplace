@@ -280,7 +280,7 @@ export default function Navbar() {
                 <img
                   src={logoImg}
                   alt="CampusXChange"
-                  className="h-8 w-8 sm:h-9 sm:w-9 object-cover rounded-lg shadow-2xs shrink-0"
+                  className="h-8 w-8 sm:h-9 sm:w-9 object-cover rounded-md shadow-2xs shrink-0"
                 />
                 <div className="flex items-baseline">
                   <span className="text-lg sm:text-xl font-bold tracking-tight text-gray-950 font-display">Campus</span>

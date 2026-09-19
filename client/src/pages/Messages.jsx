@@ -275,7 +275,7 @@ export default function Messages() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search chats, students, items..."
-                className="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                className="w-full bg-white border border-gray-200 rounded-md pl-9 pr-3 py-2 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
               />
             </div>
           </div>
@@ -289,7 +289,7 @@ export default function Messages() {
               </div>
             ) : filteredConversations.length === 0 ? (
               <div className="p-8 text-center text-gray-400 space-y-2 flex flex-col items-center justify-center h-full">
-                <div className="w-12 h-12 rounded-2xl bg-brand-50 text-brand-500 flex items-center justify-center border border-brand-100">
+                <div className="w-12 h-12 rounded-md bg-brand-50 text-brand-500 flex items-center justify-center border border-brand-100">
                   <MessageSquare className="w-6 h-6" />
                 </div>
                 <h4 className="text-sm font-bold text-gray-800">No Messages Found</h4>
@@ -404,7 +404,7 @@ export default function Messages() {
                       setSelectedChat(null);
                       navigate('/messages');
                     }}
-                    className="md:hidden p-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+                    className="md:hidden p-1.5 rounded-md text-gray-600 hover:bg-gray-100 transition-colors"
                     title="Back to conversations"
                   >
                     <ArrowLeft className="w-5 h-5" />
@@ -487,7 +487,7 @@ export default function Messages() {
                   </div>
                 ) : messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-64 text-center text-gray-500 space-y-3 p-4">
-                    <div className="w-14 h-14 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center border border-brand-100 shadow-xs">
+                    <div className="w-14 h-14 rounded-md bg-brand-50 text-brand-600 flex items-center justify-center border border-brand-100 shadow-xs">
                       <MessageSquare className="w-7 h-7" />
                     </div>
                     <div>
@@ -533,7 +533,7 @@ export default function Messages() {
                         } max-w-full`}
                       >
                         <div
-                          className={`max-w-[85%] sm:max-w-[70%] px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-normal shadow-2xs leading-relaxed break-words whitespace-pre-wrap ${
+                          className={`max-w-[85%] sm:max-w-[70%] px-4 py-2.5 rounded-md text-xs sm:text-sm font-normal shadow-2xs leading-relaxed break-words whitespace-pre-wrap ${
                             isMine
                               ? 'bg-brand-500 text-white rounded-br-xs'
                               : 'bg-white border border-gray-200 text-gray-800 rounded-bl-xs'
@@ -564,12 +564,12 @@ export default function Messages() {
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Type a message (Press Enter to send)..."
-                    className="flex-1 border border-gray-300 rounded-xl p-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none resize-none font-normal"
+                    className="flex-1 border border-gray-300 rounded-md p-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none resize-none font-normal"
                   />
                   <button
                     type="submit"
                     disabled={!inputMessage.trim() || sending}
-                    className="h-11 px-5 bg-brand-500 hover:bg-brand-600 active:scale-95 text-white rounded-xl font-bold text-xs sm:text-sm disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shadow-sm shrink-0 cursor-pointer"
+                    className="h-11 px-5 bg-brand-500 hover:bg-brand-600 active:scale-95 text-white rounded-md font-bold text-xs sm:text-sm disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shadow-sm shrink-0 cursor-pointer"
                   >
                     {sending ? (
                       <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -586,7 +586,7 @@ export default function Messages() {
           ) : (
             /* Empty State when no chat is selected on desktop */
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-gray-400 space-y-3">
-              <div className="w-16 h-16 rounded-3xl bg-brand-50 text-brand-500 flex items-center justify-center border border-brand-100 shadow-sm">
+              <div className="w-16 h-16 rounded-md bg-brand-50 text-brand-500 flex items-center justify-center border border-brand-100 shadow-sm">
                 <MessageSquare className="w-8 h-8" />
               </div>
               <div>

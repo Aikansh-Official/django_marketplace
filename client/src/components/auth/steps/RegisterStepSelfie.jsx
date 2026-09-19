@@ -418,7 +418,7 @@ export default function RegisterStepSelfie({
               !cameraReady ||
               cameraError
             }
-            className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-black text-sm tracking-tight transition-all duration-200 ${
+            className={`w-full flex items-center justify-center gap-2 py-3 rounded-md font-black text-sm tracking-tight transition-all duration-200 ${
               (liveness.fullyVisible || allowDirectCapture) && !liveness.handDetected && cameraReady && !cameraError
                 ? 'bg-brand-500 hover:bg-brand-600 text-white shadow-lg shadow-brand-500/25 cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0'
                 : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
@@ -456,7 +456,7 @@ export default function RegisterStepSelfie({
             <button
               type="button"
               onClick={onProceed}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-black text-sm tracking-tight shadow-md shadow-brand-500/25 transition-all cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-md bg-brand-500 hover:bg-brand-600 text-white font-black text-sm tracking-tight shadow-md shadow-brand-500/25 transition-all cursor-pointer"
             >
               Use This Photo
               <ArrowRight className="w-4 h-4" />
@@ -464,7 +464,7 @@ export default function RegisterStepSelfie({
             <button
               type="button"
               onClick={handleRetake}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-gray-200 hover:border-gray-300 text-gray-600 hover:text-gray-800 font-bold text-sm transition-all cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-md border-2 border-gray-200 hover:border-gray-300 text-gray-600 hover:text-gray-800 font-bold text-sm transition-all cursor-pointer"
             >
               <RefreshCw className="w-4 h-4" />
               Retake Photo

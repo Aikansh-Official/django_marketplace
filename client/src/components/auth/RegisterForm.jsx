@@ -562,7 +562,7 @@ export default function RegisterForm({
           <button
             type="button"
             onClick={onSwitch}
-            className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-colors shadow-sm cursor-pointer"
+            className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-md text-xs transition-colors shadow-sm cursor-pointer"
           >
             Switch to Sign In
           </button>

@@ -86,7 +86,7 @@ export default function SavedItemsDrawer({ isOpen, onClose }) {
           <div className="flex-1 overflow-y-auto p-5 divide-y divide-gray-100">
             {items.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center px-4 py-12">
-                <div className="w-16 h-16 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-brand-500 mb-4 shadow-inner">
+                <div className="w-16 h-16 rounded-md bg-orange-50 border border-orange-100 flex items-center justify-center text-brand-500 mb-4 shadow-inner">
                   <ShoppingBag className="w-8 h-8 text-brand-400" />
                 </div>
                 <h3 className="text-base font-bold text-gray-800 mb-1">Your wishlist is empty</h3>
@@ -108,13 +108,13 @@ export default function SavedItemsDrawer({ isOpen, onClose }) {
                   return (
                     <div 
                       key={item.id}
-                      className="group flex gap-3 p-3 bg-white hover:bg-orange-50/30 rounded-xl border border-gray-100 hover:border-orange-200 transition-all shadow-2xs relative"
+                      className="group flex gap-3 p-3 bg-white hover:bg-orange-50/30 rounded-md border border-gray-100 hover:border-orange-200 transition-all shadow-2xs relative"
                     >
                       {/* Image Thumbnail */}
                       <Link 
                         to={`/listing/${item.id}`} 
                         onClick={onClose}
-                        className="w-20 h-20 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 relative block"
+                        className="w-20 h-20 rounded-md bg-gray-100 overflow-hidden flex-shrink-0 relative block"
                       >
                         {imageSrc ? (
                           <img 
@@ -203,7 +203,7 @@ export default function SavedItemsDrawer({ isOpen, onClose }) {
               </span>
               <button
                 onClick={onClose}
-                className="text-xs font-semibold text-gray-700 hover:text-gray-900 bg-white border border-gray-200 hover:border-gray-300 px-4 py-2 rounded-lg transition-colors shadow-2xs"
+                className="text-xs font-semibold text-gray-700 hover:text-gray-900 bg-white border border-gray-200 hover:border-gray-300 px-4 py-2 rounded-md transition-colors shadow-2xs"
               >
                 Close Wishlist
               </button>

@@ -322,8 +322,8 @@ export default function CreateListing() {
   if (userProfile && !isSeller) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-12 sm:py-16 animate-fade-in-up">
-        <div className="bg-white/95 backdrop-blur-md border border-gray-200 shadow-xl rounded-xl p-8 sm:p-12 text-center relative overflow-hidden">
-          <div className="w-20 h-20 bg-brand-50 border-2 border-brand-200 text-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+        <div className="bg-white/95 backdrop-blur-md border border-gray-200 shadow-xl rounded-md p-8 sm:p-12 text-center relative overflow-hidden">
+          <div className="w-20 h-20 bg-brand-50 border-2 border-brand-200 text-brand-600 rounded-md flex items-center justify-center mx-auto mb-6 shadow-inner">
             <ShieldCheck className="w-10 h-10 text-brand-600" />
           </div>
 
@@ -339,15 +339,15 @@ export default function CreateListing() {
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 my-8 text-left max-w-xl mx-auto">
-            <div className="bg-gray-50 border border-gray-100 rounded-lg p-4">
+            <div className="bg-gray-50 border border-gray-100 rounded-md p-4">
               <div className="text-brand-600 font-black text-lg mb-1">✓ Unlimited</div>
               <p className="text-xs text-gray-600">List as many campus items or books as you want for free.</p>
             </div>
-            <div className="bg-gray-50 border border-gray-100 rounded-lg p-4">
+            <div className="bg-gray-50 border border-gray-100 rounded-md p-4">
               <div className="text-emerald-600 font-black text-lg mb-1">✓ Trust Badge</div>
               <p className="text-xs text-gray-600">Earn the Verified Student badge & boost buyer inquiries.</p>
             </div>
-            <div className="bg-gray-50 border border-gray-100 rounded-lg p-4">
+            <div className="bg-gray-50 border border-gray-100 rounded-md p-4">
               <div className="text-blue-600 font-black text-lg mb-1">✓ Instant OCR</div>
               <p className="text-xs text-gray-600">Takes less than 15 seconds to scan and unlock selling.</p>
             </div>
@@ -356,14 +356,14 @@ export default function CreateListing() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
               onClick={() => setIsUpgradeModalOpen(true)}
-              className="w-full sm:w-auto bg-brand-500 hover:bg-brand-600 text-white font-bold py-3.5 px-8 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+              className="w-full sm:w-auto bg-brand-500 hover:bg-brand-600 text-white font-bold py-3.5 px-8 rounded-md shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
             >
               <ShieldCheck className="w-5 h-5" />
               <span>Verify Student ID & Start Selling</span>
             </button>
             <button
               onClick={() => navigate('/')}
-              className="w-full sm:w-auto bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3.5 px-6 rounded-lg transition-all text-sm cursor-pointer"
+              className="w-full sm:w-auto bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3.5 px-6 rounded-md transition-all text-sm cursor-pointer"
             >
               Back to Marketplace
             </button>
@@ -395,8 +395,8 @@ export default function CreateListing() {
   if (userProfile && isSeller && isScoreTooLow) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-12 sm:py-16 animate-fade-in-up">
-        <div className="bg-white/95 backdrop-blur-md border border-amber-200 shadow-xl rounded-xl p-8 sm:p-12 text-center relative overflow-hidden">
-          <div className="w-20 h-20 bg-amber-50 border-2 border-amber-200 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+        <div className="bg-white/95 backdrop-blur-md border border-amber-200 shadow-xl rounded-md p-8 sm:p-12 text-center relative overflow-hidden">
+          <div className="w-20 h-20 bg-amber-50 border-2 border-amber-200 text-amber-600 rounded-md flex items-center justify-center mx-auto mb-6 shadow-inner">
             <Lock className="w-10 h-10 text-amber-600" />
           </div>
 
@@ -411,7 +411,7 @@ export default function CreateListing() {
             Campus safety policies require a minimum Trust Score of <strong>{minScore}</strong> to post active listings. Your current trust score is <span className="font-bold text-amber-600">{userProfile.trust_score || 0}</span>.
           </p>
 
-          <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-4 max-w-md mx-auto my-6 text-left text-xs text-amber-900 space-y-2">
+          <div className="bg-amber-50/70 border border-amber-200 rounded-md p-4 max-w-md mx-auto my-6 text-left text-xs text-amber-900 space-y-2">
             <p className="font-bold flex items-center gap-1.5 text-amber-800">
               <Sparkles className="w-4 h-4 text-amber-600" />
               Ways to boost your campus trust score:
@@ -426,13 +426,13 @@ export default function CreateListing() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
               onClick={() => navigate('/profile?tab=id-verification')}
-              className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 px-8 rounded-lg shadow-md transition-all text-sm cursor-pointer"
+              className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 px-8 rounded-md shadow-md transition-all text-sm cursor-pointer"
             >
               Verify Profile & Boost Trust
             </button>
             <button
               onClick={() => navigate('/')}
-              className="w-full sm:w-auto bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3.5 px-6 rounded-lg transition-all text-sm cursor-pointer"
+              className="w-full sm:w-auto bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3.5 px-6 rounded-md transition-all text-sm cursor-pointer"
             >
               Back to Marketplace
             </button>
@@ -472,11 +472,10 @@ export default function CreateListing() {
 
       {/* Active Listings Quota & Trust Score Header Bar */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-        <div className={`p-4 rounded-xl border flex items-center justify-between ${
-          isQuotaReached
-            ? 'bg-red-50 border-red-300 text-red-900'
-            : 'bg-white/90 border-gray-200 text-gray-800 shadow-sm'
-        }`}>
+        <div className={`p-4 rounded-md border flex items-center justify-between ${isQuotaReached
+          ? 'bg-red-50 border-red-300 text-red-900'
+          : 'bg-white/90 border-gray-200 text-gray-800 shadow-sm'
+          }`}>
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
               Active Listings Quota
@@ -485,16 +484,15 @@ export default function CreateListing() {
               {activeListingsCount} of {maxLimit} Active Listings
             </div>
           </div>
-          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-            isQuotaReached
-              ? 'bg-red-200 text-red-800'
-              : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-          }`}>
+          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${isQuotaReached
+            ? 'bg-red-200 text-red-800'
+            : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+            }`}>
             {isQuotaReached ? 'Limit Reached' : `${maxLimit - activeListingsCount} Slots Available`}
           </span>
         </div>
 
-        <div className="p-4 rounded-xl border bg-white/90 border-gray-200 text-gray-800 shadow-sm flex items-center justify-between">
+        <div className="p-4 rounded-md border bg-white/90 border-gray-200 text-gray-800 shadow-sm flex items-center justify-between">
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
               Your Campus Trust Score
@@ -511,7 +509,7 @@ export default function CreateListing() {
       </div>
 
       {isQuotaReached && (
-        <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-300 text-red-900 text-xs flex items-start gap-3">
+        <div className="mb-6 p-4 rounded-md bg-red-50 border border-red-300 text-red-900 text-xs flex items-start gap-3">
           <ShieldAlert className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
           <div>
             <p className="font-bold text-sm mb-0.5">Active Listings Limit Reached ({maxLimit})</p>
@@ -521,7 +519,7 @@ export default function CreateListing() {
       )}
 
       {detectedProhibitedWords.length > 0 && (
-        <div className="mb-6 p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-start gap-2.5">
+        <div className="mb-6 p-3.5 rounded-md bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-start gap-2.5">
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
           <div>
             <span className="font-bold">Prohibited Content Warning:</span> Your text includes "{detectedProhibitedWords.join(', ')}". Items under campus restricted categories are automatically flagged and hidden by moderation.
@@ -551,7 +549,7 @@ export default function CreateListing() {
             </div>
 
             {/* Anti-Fraud Notice: URLs Disabled */}
-            <div className="mb-4 bg-amber-50/90 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5 text-xs text-amber-900">
+            <div className="mb-4 bg-amber-50/90 border border-amber-200 rounded-md p-3 flex items-start gap-2.5 text-xs text-amber-900">
               <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold">Real Product Photos Only:</span> Direct web image URLs are permanently disabled to prevent fake products and stock images. Please upload genuine pictures from your device or snap a photo directly using your camera.
@@ -572,9 +570,9 @@ export default function CreateListing() {
               />
               <label
                 htmlFor="file-upload"
-                className={`group relative flex flex-col items-center justify-center p-5 rounded-xl border-2 border-dashed transition-all text-center select-none ${uploading || images.length >= 4
-                    ? 'border-gray-200 bg-gray-50/70 text-gray-400 cursor-not-allowed opacity-60'
-                    : 'border-gray-300 hover:border-brand-500 bg-white hover:bg-brand-50/20 cursor-pointer shadow-sm hover:shadow active:scale-[0.99]'
+                className={`group relative flex flex-col items-center justify-center p-5 rounded-md border-2 border-dashed transition-all text-center select-none ${uploading || images.length >= 4
+                  ? 'border-gray-200 bg-gray-50/70 text-gray-400 cursor-not-allowed opacity-60'
+                  : 'border-gray-300 hover:border-brand-500 bg-white hover:bg-brand-50/20 cursor-pointer shadow-sm hover:shadow active:scale-[0.99]'
                   }`}
               >
                 <div className="w-12 h-12 rounded-full bg-brand-50 group-hover:bg-brand-100 text-brand-600 flex items-center justify-center mb-2.5 transition-transform group-hover:scale-110">
@@ -600,9 +598,9 @@ export default function CreateListing() {
                 type="button"
                 onClick={() => setIsCameraOpen(true)}
                 disabled={uploading || images.length >= 4}
-                className={`group relative flex flex-col items-center justify-center p-5 rounded-xl border-2 border-dashed transition-all text-center select-none ${uploading || images.length >= 4
-                    ? 'border-gray-200 bg-gray-50/70 text-gray-400 cursor-not-allowed opacity-60'
-                    : 'border-orange-300 hover:border-orange-500 bg-orange-50/30 hover:bg-orange-50/70 cursor-pointer shadow-sm hover:shadow active:scale-[0.99]'
+                className={`group relative flex flex-col items-center justify-center p-5 rounded-md border-2 border-dashed transition-all text-center select-none ${uploading || images.length >= 4
+                  ? 'border-gray-200 bg-gray-50/70 text-gray-400 cursor-not-allowed opacity-60'
+                  : 'border-orange-300 hover:border-orange-500 bg-orange-50/30 hover:bg-orange-50/70 cursor-pointer shadow-sm hover:shadow active:scale-[0.99]'
                   }`}
               >
                 <div className="w-12 h-12 rounded-full bg-orange-100 group-hover:bg-orange-200 text-orange-600 flex items-center justify-center mb-2.5 transition-transform group-hover:scale-110">
@@ -619,31 +617,6 @@ export default function CreateListing() {
                   Open Camera
                 </span>
               </button>
-            </div>
-
-            {/* Quick Mobile Native Camera Shortcut */}
-            <div className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg border border-gray-100 text-xs text-gray-500">
-              <span className="flex items-center gap-1.5 text-[11px] text-gray-600">
-                <Sparkles className="w-3.5 h-3.5 text-brand-500" />
-                Capture different angles (front, back, condition)
-              </span>
-              <label
-                htmlFor="mobile-camera-snap"
-                className={`text-[11px] font-semibold text-brand-600 hover:text-brand-700 hover:underline flex items-center gap-1 ${uploading || images.length >= 4 ? 'pointer-events-none opacity-50' : 'cursor-pointer'
-                  }`}
-              >
-                <Camera className="w-3 h-3" />
-                Use Phone Camera
-              </label>
-              <input
-                type="file"
-                id="mobile-camera-snap"
-                accept="image/*"
-                capture="environment"
-                onChange={handleFileUpload}
-                className="hidden"
-                disabled={uploading || images.length >= 4}
-              />
             </div>
 
             {/* Thumbnail Grid */}
@@ -761,7 +734,7 @@ export default function CreateListing() {
                     : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 font-semibold'
                     }`}
                 >
-                  <span className="text-xs">💰 Sell (Cash)</span>
+                  <span className="text-xs">Sell (Cash)</span>
                   <span className={`text-[10px] ${transactionType === 'SELL' ? 'text-white/80' : 'text-gray-400'}`}>Standard cash sale</span>
                 </button>
 
@@ -773,7 +746,7 @@ export default function CreateListing() {
                     : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 font-semibold'
                     }`}
                 >
-                  <span className="text-xs">🔄 Exchange / Swap</span>
+                  <span className="text-xs">Exchange / Swap</span>
                   <span className={`text-[10px] ${transactionType === 'EXCHANGE' ? 'text-white/80' : 'text-gray-400'}`}>Trade for other items</span>
                 </button>
 
@@ -788,7 +761,7 @@ export default function CreateListing() {
                     : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 font-semibold'
                     }`}
                 >
-                  <span className="text-xs">🎁 Donate (Free)</span>
+                  <span className="text-xs">Donate (Free)</span>
                   <span className={`text-[10px] ${transactionType === 'DONATE' ? 'text-white/80' : 'text-gray-400'}`}>Giveaway to peers</span>
                 </button>
               </div>
@@ -834,7 +807,7 @@ export default function CreateListing() {
                 </div>
 
                 {/* Optional Exchange / Barter Toggle for Cash Sellers */}
-                <div className="p-3.5 rounded-xl border border-dashed border-indigo-200 bg-indigo-50/40 space-y-2.5">
+                <div className="p-3.5 rounded-md border border-dashed border-indigo-200 bg-indigo-50/40 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Repeat className="w-4 h-4 text-indigo-600" />
@@ -867,9 +840,9 @@ export default function CreateListing() {
                 </div>
               </div>
             ) : transactionType === 'EXCHANGE' ? (
-              <div className="space-y-4 p-4 rounded-xl border border-indigo-200 bg-indigo-50/40">
+              <div className="space-y-4 p-4 rounded-md border border-indigo-200 bg-indigo-50/40">
                 <div className="flex items-start gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
                     <Repeat className="w-4 h-4" />
                   </div>
                   <div>

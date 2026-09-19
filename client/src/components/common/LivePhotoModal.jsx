@@ -145,7 +145,7 @@ export default function LivePhotoModal({ isOpen, onClose, onPhotoCaptured }) {
             </button>
 
             <div className="flex items-center gap-3.5 pr-8">
-              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-xs border border-white/30 flex items-center justify-center shadow-inner flex-shrink-0">
+              <div className="w-12 h-12 rounded-md bg-white/20 backdrop-blur-xs border border-white/30 flex items-center justify-center shadow-inner flex-shrink-0">
                 <Camera className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -168,7 +168,7 @@ export default function LivePhotoModal({ isOpen, onClose, onPhotoCaptured }) {
           {/* Drawer Body Content (Scrollable) */}
           <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 bg-white">
             {/* Camera Viewport Frame */}
-            <div className="relative w-full h-64 sm:h-72 bg-gray-100 rounded-2xl overflow-hidden border-2 border-gray-200 shadow-inner flex items-center justify-center">
+            <div className="relative w-full h-64 sm:h-72 bg-gray-100 rounded-md overflow-hidden border-2 border-gray-200 shadow-inner flex items-center justify-center">
               {flash && (
                 <div className="absolute inset-0 z-30 bg-white pointer-events-none transition-opacity duration-200" />
               )}
@@ -201,7 +201,7 @@ export default function LivePhotoModal({ isOpen, onClose, onPhotoCaptured }) {
                 <button
                   type="button"
                   onClick={() => nativeCameraInputRef.current?.click()}
-                  className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md shadow-brand-500/20 cursor-pointer"
+                  className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs py-2.5 px-4 rounded-md flex items-center justify-center gap-2 transition-colors shadow-md shadow-brand-500/20 cursor-pointer"
                 >
                   <Smartphone className="w-4 h-4" />
                   Use Phone Camera App
@@ -222,8 +222,8 @@ export default function LivePhotoModal({ isOpen, onClose, onPhotoCaptured }) {
                 {/* Viewfinder Overlays */}
                 <div className="absolute inset-3 pointer-events-none flex flex-col justify-between p-1">
                   <div className="flex justify-between">
-                    <div className="w-6 h-6 border-t-2 border-l-2 border-brand-500 rounded-tl-lg" />
-                    <div className="w-6 h-6 border-t-2 border-r-2 border-brand-500 rounded-tr-lg" />
+                    <div className="w-6 h-6 border-t-2 border-l-2 border-brand-500 rounded-tl-md" />
+                    <div className="w-6 h-6 border-t-2 border-r-2 border-brand-500 rounded-tr-md" />
                   </div>
 
                   <div className="text-center">
@@ -234,8 +234,8 @@ export default function LivePhotoModal({ isOpen, onClose, onPhotoCaptured }) {
                   </div>
 
                   <div className="flex justify-between">
-                    <div className="w-6 h-6 border-b-2 border-l-2 border-brand-500 rounded-bl-lg" />
-                    <div className="w-6 h-6 border-b-2 border-r-2 border-brand-500 rounded-br-lg" />
+                    <div className="w-6 h-6 border-b-2 border-l-2 border-brand-500 rounded-bl-md" />
+                    <div className="w-6 h-6 border-b-2 border-r-2 border-brand-500 rounded-br-md" />
                   </div>
                 </div>
 
@@ -244,7 +244,7 @@ export default function LivePhotoModal({ isOpen, onClose, onPhotoCaptured }) {
                   type="button"
                   onClick={toggleFacingMode}
                   title="Switch Camera"
-                  className="absolute top-3 right-3 z-20 bg-black/50 hover:bg-black/70 text-white p-2 sm:p-2.5 rounded-xl backdrop-blur-sm border border-white/20 transition-all cursor-pointer flex items-center gap-1 text-xs font-semibold"
+                  className="absolute top-3 right-3 z-20 bg-black/50 hover:bg-black/70 text-white p-2 sm:p-2.5 rounded-md backdrop-blur-sm border border-white/20 transition-all cursor-pointer flex items-center gap-1 text-xs font-semibold"
                 >
                   <FlipHorizontal className="w-4 h-4" />
                   <span className="hidden sm:inline">{facingMode === 'environment' ? 'Back' : 'Front'}</span>
@@ -259,7 +259,7 @@ export default function LivePhotoModal({ isOpen, onClose, onPhotoCaptured }) {
               <button
                 type="button"
                 onClick={retakePhoto}
-                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 cursor-pointer transition-all"
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-md font-bold text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 cursor-pointer transition-all"
               >
                 <RefreshCw className="w-4 h-4" />
                 Retake Photo
@@ -267,7 +267,7 @@ export default function LivePhotoModal({ isOpen, onClose, onPhotoCaptured }) {
               <button
                 type="button"
                 onClick={confirmPhoto}
-                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-black text-sm bg-brand-500 hover:bg-brand-600 text-white shadow-lg shadow-brand-500/25 cursor-pointer transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-md font-black text-sm bg-brand-500 hover:bg-brand-600 text-white shadow-lg shadow-brand-500/25 cursor-pointer transition-all transform hover:-translate-y-0.5 active:translate-y-0"
               >
                 <Check className="w-4 h-4" />
                 Use This Photo
@@ -278,7 +278,7 @@ export default function LivePhotoModal({ isOpen, onClose, onPhotoCaptured }) {
               <button
                 type="button"
                 onClick={capturePhoto}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-black text-sm tracking-tight bg-brand-500 hover:bg-brand-600 text-white shadow-lg shadow-brand-500/25 cursor-pointer transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-md font-black text-sm tracking-tight bg-brand-500 hover:bg-brand-600 text-white shadow-lg shadow-brand-500/25 cursor-pointer transition-all transform hover:-translate-y-0.5 active:translate-y-0"
               >
                 <Camera className="w-5 h-5" />
                 Capture Product Photo

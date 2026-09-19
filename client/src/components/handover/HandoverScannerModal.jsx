@@ -229,7 +229,7 @@ export default function HandoverScannerModal({ listingId, defaultOfferId, onClos
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 shadow-2xl border border-gray-100 relative animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-md max-w-md w-full p-4 sm:p-6 shadow-2xl border border-gray-100 relative animate-in fade-in zoom-in-95 duration-200">
         {/* Close Button */}
         <button
           onClick={() => {
@@ -254,7 +254,7 @@ export default function HandoverScannerModal({ listingId, defaultOfferId, onClos
                 <strong className="text-gray-800">{verifiedData?.listing_title}</strong>.
               </p>
             </div>
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-800 font-semibold inline-block">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-md p-3 text-xs text-emerald-800 font-semibold inline-block">
               Saved to your profile under: <span className="font-extrabold text-emerald-700">My Purchases</span>
             </div>
           </div>
@@ -274,16 +274,16 @@ export default function HandoverScannerModal({ listingId, defaultOfferId, onClos
             </div>
 
             {/* Product Summary Card */}
-            <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-3">
+            <div className="bg-gray-50 border border-gray-200 rounded-md p-4 space-y-3">
               <div className="flex items-center gap-3">
                 {verifiedData.listing_image ? (
                   <img
                     src={verifiedData.listing_image}
                     alt=""
-                    className="w-16 h-16 rounded-xl object-cover border border-gray-200 flex-shrink-0"
+                    className="w-16 h-16 rounded-md object-cover border border-gray-200 flex-shrink-0"
                   />
                 ) : (
-                  <div className="w-16 h-16 rounded-xl bg-gray-200 flex items-center justify-center text-gray-400 flex-shrink-0">
+                  <div className="w-16 h-16 rounded-md bg-gray-200 flex items-center justify-center text-gray-400 flex-shrink-0">
                     <Package className="w-8 h-8" />
                   </div>
                 )}
@@ -311,7 +311,7 @@ export default function HandoverScannerModal({ listingId, defaultOfferId, onClos
             </div>
 
             {/* Verification Checkboxes */}
-            <div className="space-y-2.5 bg-amber-50/60 border border-amber-200/80 rounded-2xl p-4">
+            <div className="space-y-2.5 bg-amber-50/60 border border-amber-200/80 rounded-md p-4">
               <label className="flex items-start gap-3 cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -342,7 +342,7 @@ export default function HandoverScannerModal({ listingId, defaultOfferId, onClos
               <button
                 onClick={handleConfirmPurchase}
                 disabled={confirming || !hasInspected || !hasPaid}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs py-3 px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs py-3 px-4 rounded-md transition-all shadow-md flex items-center justify-center gap-2"
               >
                 {confirming ? (
                   <>
@@ -381,10 +381,10 @@ export default function HandoverScannerModal({ listingId, defaultOfferId, onClos
             </div>
 
             {/* Switch Tabs (PIN vs QR Camera) */}
-            <div className="flex bg-gray-100 p-1 rounded-xl gap-1">
+            <div className="flex bg-gray-100 p-1 rounded-md gap-1">
               <button
                 onClick={() => setActiveTab('pin')}
-                className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                className={`flex-1 py-2 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                   activeTab === 'pin'
                     ? 'bg-white text-gray-900 shadow-xs'
                     : 'text-gray-500 hover:text-gray-700'
@@ -395,7 +395,7 @@ export default function HandoverScannerModal({ listingId, defaultOfferId, onClos
               </button>
               <button
                 onClick={() => setActiveTab('scan')}
-                className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                className={`flex-1 py-2 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                   activeTab === 'scan'
                     ? 'bg-white text-gray-900 shadow-xs'
                     : 'text-gray-500 hover:text-gray-700'
@@ -421,7 +421,7 @@ export default function HandoverScannerModal({ listingId, defaultOfferId, onClos
                       onChange={(e) => handlePinChange(idx, e.target.value)}
                       onKeyDown={(e) => handleKeyDown(idx, e)}
                       autoFocus={idx === 0}
-                      className="w-9 sm:w-11 h-11 sm:h-13 text-center font-mono text-lg sm:text-xl font-black bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:bg-white outline-none transition-all shadow-2xs"
+                      className="w-9 sm:w-11 h-11 sm:h-13 text-center font-mono text-lg sm:text-xl font-black bg-gray-50 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:bg-white outline-none transition-all shadow-2xs"
                     />
                   ))}
                 </div>
@@ -433,7 +433,7 @@ export default function HandoverScannerModal({ listingId, defaultOfferId, onClos
                 <button
                   onClick={() => verifyPin()}
                   disabled={verifying || pinDigits.some((d) => d === '')}
-                  className="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                  className="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-bold text-xs py-2.5 px-4 rounded-md transition-all shadow-sm flex items-center justify-center gap-2"
                 >
                   {verifying ? (
                     <>
@@ -454,18 +454,18 @@ export default function HandoverScannerModal({ listingId, defaultOfferId, onClos
             {activeTab === 'scan' && (
               <div className="space-y-3">
                 {scannerError ? (
-                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center space-y-2">
+                  <div className="bg-amber-50 border border-amber-200 rounded-md p-4 text-center space-y-2">
                     <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
                     <p className="text-xs text-amber-800 font-medium">{scannerError}</p>
                     <button
                       onClick={() => setActiveTab('pin')}
-                      className="bg-white border border-amber-300 text-amber-900 font-bold text-xs px-3 py-1.5 rounded-lg shadow-2xs"
+                      className="bg-white border border-amber-300 text-amber-900 font-bold text-xs px-3 py-1.5 rounded-md shadow-2xs"
                     >
                       Switch to PIN Entry
                     </button>
                   </div>
                 ) : (
-                  <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-black min-h-[220px] flex items-center justify-center">
+                  <div className="relative overflow-hidden rounded-md border border-gray-200 bg-black min-h-[220px] flex items-center justify-center">
                     <div id="handover-qr-reader" className="w-full"></div>
                     {verifying && (
                       <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center text-white space-y-2">

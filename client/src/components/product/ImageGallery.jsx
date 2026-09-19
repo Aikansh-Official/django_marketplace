@@ -55,7 +55,7 @@ export default function ImageGallery({
   return (
     <>
       {/* Hero Image Container on Product Page */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-xs">
+      <div className="bg-white border border-gray-200 rounded-md overflow-hidden shadow-xs">
         <div
           onClick={() => currentImage && setIsLightboxOpen(true)}
           className="relative h-64 sm:h-80 md:h-96 lg:h-[420px] w-full bg-gray-50 flex items-center justify-center group cursor-zoom-in select-none"
@@ -82,7 +82,7 @@ export default function ImageGallery({
               </div>
 
               {/* Floating Fullscreen Magnifier Badge */}
-              <div className="absolute bottom-3 right-3 bg-black/70 hover:bg-black/90 backdrop-blur-xs text-white text-xs font-bold px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shadow-md">
+              <div className="absolute bottom-3 right-3 bg-black/70 hover:bg-black/90 backdrop-blur-xs text-white text-xs font-bold px-3 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shadow-md">
                 <Maximize2 className="w-4 h-4" />
                 <span>Click for Full Screen View</span>
               </div>
@@ -99,7 +99,7 @@ export default function ImageGallery({
           {/* Status Overlay if Sold or Reserved */}
           {listing?.status === 'SOLD' && (
             <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center">
-              <span className="bg-red-600 text-white font-extrabold text-lg sm:text-xl px-6 py-2 rounded-lg tracking-wider shadow-lg border border-red-400 animate-pulse">
+              <span className="bg-red-600 text-white font-extrabold text-lg sm:text-xl px-6 py-2 rounded-md tracking-wider shadow-lg border border-red-400 animate-pulse">
                 ITEM SOLD
               </span>
             </div>
@@ -164,7 +164,7 @@ export default function ImageGallery({
                 key={img.id || idx}
                 type="button"
                 onClick={() => setActiveImageIndex(idx)}
-                className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 flex-shrink-0 transition-all aspect-square bg-white cursor-pointer ${
+                className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-md overflow-hidden border-2 flex-shrink-0 transition-all aspect-square bg-white cursor-pointer ${
                   activeImageIndex === idx
                     ? 'border-brand-500 ring-2 ring-brand-200 shadow-xs'
                     : 'border-gray-200 opacity-70 hover:opacity-100'
@@ -208,7 +208,7 @@ export default function ImageGallery({
               <button
                 type="button"
                 onClick={() => setLightboxZoom((prev) => Math.min(3, prev + 0.25))}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                className="p-2 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
                 title="Zoom In (+)"
               >
                 <ZoomIn className="w-4 h-4" />
@@ -216,7 +216,7 @@ export default function ImageGallery({
               <button
                 type="button"
                 onClick={() => setLightboxZoom((prev) => Math.max(0.75, prev - 0.25))}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                className="p-2 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
                 title="Zoom Out (-)"
               >
                 <ZoomOut className="w-4 h-4" />
@@ -224,7 +224,7 @@ export default function ImageGallery({
               <button
                 type="button"
                 onClick={() => setLightboxZoom(1)}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer text-xs font-bold"
+                className="p-2 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer text-xs font-bold"
                 title="Reset Zoom"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -232,7 +232,7 @@ export default function ImageGallery({
               <button
                 type="button"
                 onClick={() => setIsLightboxOpen(false)}
-                className="p-2 rounded-xl bg-white/20 hover:bg-red-600 text-white transition-colors ml-2 cursor-pointer"
+                className="p-2 rounded-md bg-white/20 hover:bg-red-600 text-white transition-colors ml-2 cursor-pointer"
                 title="Close Full Screen"
               >
                 <X className="w-5 h-5" />
@@ -295,7 +295,7 @@ export default function ImageGallery({
                     setActiveImageIndex(idx);
                     setLightboxZoom(1);
                   }}
-                  className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                  className={`w-14 h-14 rounded-md overflow-hidden border-2 transition-all cursor-pointer ${
                     activeImageIndex === idx
                       ? 'border-brand-500 scale-110 shadow-lg ring-2 ring-brand-300'
                       : 'border-white/20 opacity-60 hover:opacity-100'

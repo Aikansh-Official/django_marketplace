@@ -59,7 +59,7 @@ export default function CampusCommunityModal({ isOpen, onClose }) {
   return createPortal(
     <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
       <div 
-        className="max-w-2xl w-full bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[90vh]"
+        className="max-w-2xl w-full bg-white rounded-md shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header - Warm Light Theme Matching CampusXChange */}
@@ -86,15 +86,15 @@ export default function CampusCommunityModal({ isOpen, onClose }) {
 
           {/* Quick stats ticker */}
           <div className="grid grid-cols-3 gap-2.5 mt-4 pt-4 border-t border-orange-100">
-            <div className="bg-white/90 p-2.5 rounded-xl border border-orange-100 shadow-2xs text-center">
+            <div className="bg-white/90 p-2.5 rounded-md border border-orange-100 shadow-2xs text-center">
               <div className="text-lg sm:text-xl font-bold text-gray-900 font-display">{stats.completed_deals}+</div>
               <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Deals Completed</div>
             </div>
-            <div className="bg-white/90 p-2.5 rounded-xl border border-orange-100 shadow-2xs text-center">
+            <div className="bg-white/90 p-2.5 rounded-md border border-orange-100 shadow-2xs text-center">
               <div className="text-lg sm:text-xl font-bold text-gray-900 font-display">{stats.total_students}</div>
               <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Registered Students</div>
             </div>
-            <div className="bg-white/90 p-2.5 rounded-xl border border-orange-100 shadow-2xs text-center">
+            <div className="bg-white/90 p-2.5 rounded-md border border-orange-100 shadow-2xs text-center">
               <div className="text-lg sm:text-xl font-bold text-gray-900 font-display">{stats.active_listings}</div>
               <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Live Listings</div>
             </div>
@@ -148,7 +148,7 @@ export default function CampusCommunityModal({ isOpen, onClose }) {
                   return (
                     <div
                       key={seller.id}
-                      className={`flex items-center justify-between p-3.5 rounded-xl border transition-all ${
+                      className={`flex items-center justify-between p-3.5 rounded-md border transition-all ${
                         isGold
                           ? 'bg-amber-50/50 border-amber-200/80 shadow-2xs'
                           : isSilver
@@ -214,7 +214,7 @@ export default function CampusCommunityModal({ isOpen, onClose }) {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-xs text-emerald-800">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-md p-4 text-xs text-emerald-800">
                 <p className="font-bold mb-1 flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                   Campus Safety Meetup Protocol
@@ -228,10 +228,10 @@ export default function CampusCommunityModal({ isOpen, onClose }) {
                 {hotspots.map((h, idx) => (
                   <div
                     key={idx}
-                    className="p-3.5 rounded-xl bg-white border border-gray-100 hover:border-brand-200 hover:shadow-xs transition-all flex items-center justify-between"
+                    className="p-3.5 rounded-md bg-white border border-gray-100 hover:border-brand-200 hover:shadow-xs transition-all flex items-center justify-between"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                      <div className="w-9 h-9 rounded-md bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
                         <MapPin className="w-4 h-4" />
                       </div>
                       <div className="min-w-0">
@@ -256,7 +256,7 @@ export default function CampusCommunityModal({ isOpen, onClose }) {
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+            className="px-4 py-2 rounded-md bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
           >
             Close Hub
           </button>

@@ -50,11 +50,11 @@ export default function SellerControlPanel({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 items-stretch">
       {/* Left Column: Seller Control Panel */}
-      <div className="bg-white border border-brand-200/90 rounded-xl p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3.5">
+      <div className="bg-white border border-brand-200/90 rounded-md p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3.5">
         {/* Header with Title & Action Buttons */}
         <div className="flex items-center justify-between gap-2 border-b border-gray-100 pb-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-brand-500 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
+            <div className="w-8 h-8 rounded-md bg-brand-500 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
               <Tag className="w-4 h-4" />
             </div>
             <div className="min-w-0">
@@ -70,7 +70,7 @@ export default function SellerControlPanel({
           <div className="flex items-center gap-1.5 shrink-0">
             <Link
               to="/messages"
-              className="inline-flex items-center gap-1 bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-semibold py-1.5 px-2.5 rounded-lg border border-brand-200 transition-colors shadow-2xs"
+              className="inline-flex items-center gap-1 bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-semibold py-1.5 px-2.5 rounded-md border border-brand-200 transition-colors shadow-2xs"
               title="Open Campus Messenger"
             >
               <MessageSquare className="w-3.5 h-3.5 text-brand-600" />
@@ -80,7 +80,7 @@ export default function SellerControlPanel({
             {listing.status !== 'SOLD' && (
               <Link
                 to={`/edit-listing/${listing.id}`}
-                className="inline-flex items-center gap-1 bg-gray-50 hover:bg-gray-100 text-gray-700 hover:text-brand-600 text-xs font-semibold py-1.5 px-2.5 rounded-lg border border-gray-200 transition-colors shadow-2xs"
+                className="inline-flex items-center gap-1 bg-gray-50 hover:bg-gray-100 text-gray-700 hover:text-brand-600 text-xs font-semibold py-1.5 px-2.5 rounded-md border border-gray-200 transition-colors shadow-2xs"
                 title="Edit listing details"
               >
                 <Edit3 className="w-3.5 h-3.5" />
@@ -91,7 +91,7 @@ export default function SellerControlPanel({
             <button
               type="button"
               onClick={onDeleteClick}
-              className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold py-1.5 px-2.5 rounded-lg border border-red-200 transition-colors shadow-2xs cursor-pointer"
+              className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold py-1.5 px-2.5 rounded-md border border-red-200 transition-colors shadow-2xs cursor-pointer"
               title="Delete listing"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -101,7 +101,7 @@ export default function SellerControlPanel({
         </div>
 
         {/* Quick Listing Info Strip */}
-        <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-gray-50/80 border border-gray-100 rounded-lg text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-gray-50/80 border border-gray-100 rounded-md text-xs">
           <div className="flex items-center gap-1.5 text-gray-600 min-w-0">
             <MapPin className="w-3.5 h-3.5 text-brand-500 shrink-0" />
             <span className="truncate font-medium text-gray-700">{listing.location || 'Campus'}</span>
@@ -139,7 +139,7 @@ export default function SellerControlPanel({
           {listing.status === 'SOLD' ? (
             /* Static / Display-only when Sold */
             <div className="space-y-1">
-              <div className="grid grid-cols-4 gap-1.5 bg-gray-50/90 p-1.5 rounded-lg border border-gray-200/80 select-none cursor-default">
+              <div className="grid grid-cols-4 gap-1.5 bg-gray-50/90 p-1.5 rounded-md border border-gray-200/80 select-none cursor-default">
                 {['ACTIVE', 'PENDING', 'SOLD', 'HIDDEN'].map((st) => (
                   <div
                     key={st}
@@ -159,7 +159,7 @@ export default function SellerControlPanel({
             </div>
           ) : (
             /* Interactive status buttons */
-            <div className="grid grid-cols-4 gap-1.5 bg-gray-50/90 p-1.5 rounded-lg border border-gray-200/80">
+            <div className="grid grid-cols-4 gap-1.5 bg-gray-50/90 p-1.5 rounded-md border border-gray-200/80">
               {['ACTIVE', 'PENDING', 'SOLD', 'HIDDEN'].map((st) => (
                 <button
                   key={st}
@@ -183,12 +183,12 @@ export default function SellerControlPanel({
       {/* Right Column: Incoming Student Purchase Requests */}
       <div
         id="seller-offers-panel"
-        className="bg-white border border-brand-200/90 rounded-xl p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3.5"
+        className="bg-white border border-brand-200/90 rounded-md p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3.5"
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-orange-50 text-brand-600 flex items-center justify-center font-bold text-xs shrink-0">
+            <div className="w-8 h-8 rounded-md bg-orange-50 text-brand-600 flex items-center justify-center font-bold text-xs shrink-0">
               <ShoppingBag className="w-4 h-4" />
             </div>
             <div className="min-w-0">
@@ -207,7 +207,7 @@ export default function SellerControlPanel({
           </div>
 
           {listingOffers.some((o) => o.status === 'PENDING') && (
-            <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg shrink-0 animate-pulse">
+            <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md shrink-0 animate-pulse">
               Action Needed
             </span>
           )}
@@ -215,7 +215,7 @@ export default function SellerControlPanel({
 
         {/* List of Offers or Empty Placeholder */}
         {listingOffers.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center py-6 sm:py-8 text-center bg-gray-50/70 rounded-xl border border-dashed border-gray-200">
+          <div className="flex-1 flex flex-col items-center justify-center py-6 sm:py-8 text-center bg-gray-50/70 rounded-md border border-dashed border-gray-200">
             <ShoppingBag className="w-8 h-8 text-gray-300 mb-2" />
             <p className="text-xs font-semibold text-gray-600">No purchase requests yet</p>
             <p className="text-[11px] text-gray-400 mt-0.5 max-w-xs px-2">
@@ -227,7 +227,7 @@ export default function SellerControlPanel({
             {sortedOffers.map((off) => (
               <div
                 key={off.id}
-                className="p-3 bg-gray-50/90 rounded-xl border border-gray-200/90 text-xs space-y-2 hover:border-brand-200 transition-colors"
+                className="p-3 bg-gray-50/90 rounded-md border border-gray-200/90 text-xs space-y-2 hover:border-brand-200 transition-colors"
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 flex-wrap min-w-0">
@@ -256,7 +256,7 @@ export default function SellerControlPanel({
                 </div>
 
                 {off.is_exchange_offer && off.exchange_item_title && (
-                  <div className="bg-indigo-50 border border-indigo-200/80 rounded-lg p-2 flex items-center gap-1.5 text-[11px] text-indigo-900 font-bold">
+                  <div className="bg-indigo-50 border border-indigo-200/80 rounded-md p-2 flex items-center gap-1.5 text-[11px] text-indigo-900 font-bold">
                     <Repeat className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                     <span>Swap with: {off.exchange_item_title}</span>
                     {Number(off.offer_amount) > 0 && (
@@ -282,7 +282,7 @@ export default function SellerControlPanel({
                         <button
                           type="button"
                           onClick={() => onRespondOffer(off.id, 'ACCEPT')}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 rounded-md text-xs transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
                         >
                           <Check className="w-3 h-3" />
                           <span>Accept</span>
@@ -291,7 +291,7 @@ export default function SellerControlPanel({
                           <button
                             type="button"
                             onClick={() => onOpenCounterModal(off)}
-                            className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
+                            className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-2.5 py-1 rounded-md text-xs transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
                             title="Propose a counter price"
                           >
                             Counter
@@ -300,7 +300,7 @@ export default function SellerControlPanel({
                         <button
                           type="button"
                           onClick={() => onRespondOffer(off.id, 'REJECT')}
-                          className="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold px-2 py-1 rounded-lg text-xs transition-colors cursor-pointer"
+                          className="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold px-2 py-1 rounded-md text-xs transition-colors cursor-pointer"
                         >
                           Decline
                         </button>
@@ -314,7 +314,7 @@ export default function SellerControlPanel({
                         <button
                           type="button"
                           onClick={() => onOpenQRModal(off)}
-                          className="bg-brand-500 hover:bg-brand-600 text-white font-bold px-2.5 py-1 rounded-lg text-xs transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
+                          className="bg-brand-500 hover:bg-brand-600 text-white font-bold px-2.5 py-1 rounded-md text-xs transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
                         >
                           <QrCode className="w-3 h-3" />
                           <span>Show QR</span>
@@ -323,7 +323,7 @@ export default function SellerControlPanel({
                           type="button"
                           onClick={() => onCancelDeal(off.id)}
                           disabled={cancellingDeal}
-                          className="bg-white border border-red-200 hover:bg-red-50 text-red-600 font-semibold px-2 py-1 rounded-lg text-xs transition-colors cursor-pointer disabled:opacity-50"
+                          className="bg-white border border-red-200 hover:bg-red-50 text-red-600 font-semibold px-2 py-1 rounded-md text-xs transition-colors cursor-pointer disabled:opacity-50"
                           title="Cancel this deal"
                         >
                           Cancel

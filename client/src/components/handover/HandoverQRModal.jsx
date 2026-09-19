@@ -215,7 +215,7 @@ export default function HandoverQRModal({
         {digits.map((digit, idx) => (
           <div
             key={idx}
-            className="w-9 h-11 sm:w-11 sm:h-12 flex items-center justify-center bg-gray-50 rounded-xl border border-gray-200 font-mono text-lg sm:text-2xl font-bold text-gray-900 select-all"
+            className="w-9 h-11 sm:w-11 sm:h-12 flex items-center justify-center bg-gray-50 rounded-md border border-gray-200 font-mono text-lg sm:text-2xl font-bold text-gray-900 select-all"
           >
             {digit}
           </div>
@@ -226,7 +226,7 @@ export default function HandoverQRModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-sm w-full p-4 sm:p-5 shadow-2xl border border-gray-100 relative animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-md max-w-sm w-full p-4 sm:p-5 shadow-2xl border border-gray-100 relative animate-in fade-in zoom-in-95 duration-200">
         
         {/* Close Button */}
         <button
@@ -256,7 +256,7 @@ export default function HandoverQRModal({
               </p>
             </div>
 
-            <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-left space-y-1">
+            <div className="bg-red-50 border border-red-200 rounded-md p-3 text-left space-y-1">
               <div className="text-xs font-bold text-red-800">Reason / Notice:</div>
               <p className="text-xs text-red-700 leading-relaxed">
                 {cancellationReason}
@@ -265,7 +265,7 @@ export default function HandoverQRModal({
 
             <button
               onClick={onClose}
-              className="w-full py-2.5 rounded-xl bg-gray-900 hover:bg-gray-800 text-white font-semibold text-xs transition-colors"
+              className="w-full py-2.5 rounded-md bg-gray-900 hover:bg-gray-800 text-white font-semibold text-xs transition-colors"
             >
               Close Handover
             </button>
@@ -292,7 +292,7 @@ export default function HandoverQRModal({
               </p>
             </div>
 
-            <div className="bg-emerald-50 border border-emerald-200/90 rounded-xl p-3 text-center space-y-1">
+            <div className="bg-emerald-50 border border-emerald-200/90 rounded-md p-3 text-center space-y-1">
               <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-800">
                 <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                 <span>+3 Trust Score Added!</span>
@@ -307,7 +307,7 @@ export default function HandoverQRModal({
                 if (onComplete) onComplete();
                 onClose();
               }}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 px-4 rounded-xl shadow-sm transition-colors"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 px-4 rounded-md shadow-sm transition-colors"
             >
               Done
             </button>
@@ -335,7 +335,7 @@ export default function HandoverQRModal({
             <button
               onClick={handleRegenerate}
               disabled={regenerating}
-              className="inline-flex items-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-4 py-2 rounded-md transition-colors cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${regenerating ? 'animate-spin' : ''}`} />
               Try Again
@@ -372,7 +372,7 @@ export default function HandoverQRModal({
                   <button
                     onClick={handleRegenerate}
                     disabled={regenerating}
-                    className="inline-flex items-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors shadow-xs"
+                    className="inline-flex items-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-4 py-2 rounded-md transition-colors shadow-xs"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${regenerating ? 'animate-spin' : ''}`} />
                     Generate New Code
@@ -381,7 +381,7 @@ export default function HandoverQRModal({
               ) : (
                 <>
                   {/* Clean QR Code */}
-                  <div className="p-3 bg-white border border-gray-200 rounded-2xl shadow-xs">
+                  <div className="p-3 bg-white border border-gray-200 rounded-md shadow-xs">
                     {session?.token && (
                       <QRCodeSVG
                         value={session.token}
@@ -426,7 +426,7 @@ export default function HandoverQRModal({
                   <div className="text-center">
                     <button
                       onClick={handleCopyPin}
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 px-3 py-1 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 px-3 py-1 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
                     >
                       {copied ? (
                         <>
@@ -452,10 +452,10 @@ export default function HandoverQRModal({
                   <img
                     src={image}
                     alt=""
-                    className="w-9 h-9 rounded-lg object-cover border border-gray-200 shrink-0"
+                    className="w-9 h-9 rounded-md object-cover border border-gray-200 shrink-0"
                   />
                 ) : (
-                  <div className="w-9 h-9 rounded-lg bg-orange-50 text-brand-500 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-md bg-orange-50 text-brand-500 flex items-center justify-center shrink-0">
                     <Package className="w-4 h-4" />
                   </div>
                 )}
@@ -483,7 +483,7 @@ export default function HandoverQRModal({
               </button>
               <button
                 onClick={onClose}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold px-4 py-2 rounded-xl transition-colors cursor-pointer"
+                className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold px-4 py-2 rounded-md transition-colors cursor-pointer"
               >
                 Close Window
               </button>

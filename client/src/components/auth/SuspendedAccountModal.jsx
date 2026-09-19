@@ -32,7 +32,7 @@ export default function SuspendedAccountModal() {
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl border border-red-200 overflow-hidden text-center p-6 sm:p-8 relative">
+      <div className="max-w-md w-full bg-white rounded-md shadow-2xl border border-red-200 overflow-hidden text-center p-6 sm:p-8 relative">
         {/* Header Icon */}
         <div className="w-16 h-16 rounded-full bg-red-100 border border-red-300 flex items-center justify-center mx-auto mb-5 text-red-600 shadow-lg shadow-red-500/10">
           <ShieldAlert className="w-8 h-8 animate-bounce" />
@@ -48,7 +48,7 @@ export default function SuspendedAccountModal() {
         </p>
 
         {/* Details box */}
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-left">
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6 text-left">
           <div className="flex items-center gap-2 text-red-700 text-xs font-bold uppercase tracking-wider mb-1">
             <AlertOctagon className="w-4 h-4" />
             Safety Action Applied
@@ -78,7 +78,7 @@ export default function SuspendedAccountModal() {
         {/* Logout Button */}
         <button
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gray-900 hover:bg-black text-white font-bold text-sm transition-all shadow-md cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-md bg-gray-900 hover:bg-black text-white font-bold text-sm transition-all shadow-md cursor-pointer"
         >
           <LogOut className="w-4 h-4" />
           Sign Out & Return Home

@@ -49,7 +49,7 @@ export default function MaintenanceScreen() {
 
   return (
     <div className="fixed inset-0 z-[9999] bg-gray-950/95 backdrop-blur-xl flex items-center justify-center p-4">
-      <div className="max-w-lg w-full bg-gradient-to-b from-gray-900 to-gray-950 border border-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8 text-center relative overflow-hidden">
+      <div className="max-w-lg w-full bg-gradient-to-b from-gray-900 to-gray-950 border border-gray-800 rounded-md shadow-2xl p-6 sm:p-8 text-center relative overflow-hidden">
         {/* Glowing aura */}
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -60,7 +60,7 @@ export default function MaintenanceScreen() {
         </div>
 
         {/* Icon & Heading */}
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center mx-auto shadow-lg shadow-amber-500/20 mb-6">
+        <div className="w-16 h-16 rounded-md bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center mx-auto shadow-lg shadow-amber-500/20 mb-6">
           <Wrench className="w-8 h-8 text-white animate-pulse" />
         </div>
 
@@ -73,7 +73,7 @@ export default function MaintenanceScreen() {
         </p>
 
         {/* Info card */}
-        <div className="bg-gray-900/80 border border-gray-800/80 rounded-xl p-4 mb-6 text-left text-xs text-gray-400 flex items-start gap-3">
+        <div className="bg-gray-900/80 border border-gray-800/80 rounded-md p-4 mb-6 text-left text-xs text-gray-400 flex items-start gap-3">
           <Clock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-gray-200 mb-0.5">Platform Upgrades in Progress</p>
@@ -85,7 +85,7 @@ export default function MaintenanceScreen() {
         <button
           onClick={checkStatus}
           disabled={checking}
-          className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold text-sm shadow-lg shadow-orange-500/20 transition-all disabled:opacity-50"
+          className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-md bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold text-sm shadow-lg shadow-orange-500/20 transition-all disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${checking ? 'animate-spin' : ''}`} />
           {checking ? 'Checking Status...' : 'Check If Maintenance Completed'}

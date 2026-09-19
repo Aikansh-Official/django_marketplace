@@ -344,7 +344,7 @@ export default function UpdateSelfieModal({
               <button
                 type="button"
                 onClick={() => setActiveTab('camera')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-xs font-bold transition-all cursor-pointer ${
                   activeTab === 'camera'
                     ? 'bg-white text-gray-900 shadow-xs border border-gray-200/80 font-black'
                     : 'text-gray-500 hover:text-gray-800 hover:bg-white/50'
@@ -356,7 +356,7 @@ export default function UpdateSelfieModal({
               <button
                 type="button"
                 onClick={() => setActiveTab('upload')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-xs font-bold transition-all cursor-pointer ${
                   activeTab === 'upload'
                     ? 'bg-white text-gray-900 shadow-xs border border-gray-200/80 font-black'
                     : 'text-gray-500 hover:text-gray-800 hover:bg-white/50'
@@ -512,7 +512,7 @@ export default function UpdateSelfieModal({
                         !cameraReady ||
                         Boolean(cameraError)
                       }
-                      className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-black text-sm tracking-tight transition-all duration-200 ${
+                      className={`w-full flex items-center justify-center gap-2 py-3 rounded-md font-black text-sm tracking-tight transition-all duration-200 ${
                         (liveness.fullyVisible || allowDirectCapture) && !liveness.handDetected && cameraReady && !cameraError
                           ? 'bg-brand-500 hover:bg-brand-600 text-white shadow-lg shadow-brand-500/25 cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0'
                           : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
@@ -560,7 +560,7 @@ export default function UpdateSelfieModal({
 
                   <label
                     htmlFor="selfie-file-input"
-                    className="w-full border-2 border-dashed border-gray-300 hover:border-brand-500 bg-gray-50/70 hover:bg-brand-50/20 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all group"
+                    className="w-full border-2 border-dashed border-gray-300 hover:border-brand-500 bg-gray-50/70 hover:bg-brand-50/20 rounded-md p-8 flex flex-col items-center justify-center cursor-pointer transition-all group"
                   >
                     <div className="w-16 h-16 rounded-full bg-brand-50 group-hover:bg-brand-100 text-brand-600 flex items-center justify-center mb-3.5 transition-all shadow-xs">
                       <Upload className="w-8 h-8 group-hover:scale-110 transition-transform" />
@@ -645,7 +645,7 @@ export default function UpdateSelfieModal({
                   type="button"
                   onClick={handleSaveProfilePhoto}
                   disabled={saving}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-black text-sm tracking-tight shadow-lg shadow-brand-500/25 transition-all cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-md bg-brand-500 hover:bg-brand-600 text-white font-black text-sm tracking-tight shadow-lg shadow-brand-500/25 transition-all cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
                 >
                   {saving ? (
                     <>
@@ -664,7 +664,7 @@ export default function UpdateSelfieModal({
                   type="button"
                   onClick={handleRetake}
                   disabled={saving}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-gray-200 hover:border-gray-300 text-gray-600 hover:text-gray-900 font-bold text-sm transition-all cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-md border-2 border-gray-200 hover:border-gray-300 text-gray-600 hover:text-gray-900 font-bold text-sm transition-all cursor-pointer"
                 >
                   <RefreshCw className="w-4 h-4" />
                   Retake Photo / Select Another

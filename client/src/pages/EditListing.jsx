@@ -347,7 +347,7 @@ export default function EditListing() {
         );
         if (detected.length === 0) return null;
         return (
-          <div className="mb-6 p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-start gap-2.5">
+          <div className="mb-6 p-3.5 rounded-md bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-start gap-2.5">
             <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <div>
               <span className="font-bold">Prohibited Content Warning:</span> Your text includes "{detected.join(', ')}". Items under campus restricted categories are automatically flagged and hidden by moderation.
@@ -366,7 +366,7 @@ export default function EditListing() {
           </div>
 
           {/* Anti-Fraud Notice */}
-          <div className="mb-3 bg-amber-50/90 border border-amber-200 rounded-lg p-2.5 flex items-start gap-2 text-xs text-amber-900">
+          <div className="mb-3 bg-amber-50/90 border border-amber-200 rounded-md p-2.5 flex items-start gap-2 text-xs text-amber-900">
             <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <div>
               <span className="font-semibold">Real Photos Only:</span> Direct web URLs are disabled to avoid fake listings. Upload genuine pictures or snap a photo directly using your camera.
@@ -584,7 +584,7 @@ export default function EditListing() {
               </div>
 
               {/* Also Open to Exchange Toggle */}
-              <div className="p-3 rounded-lg border border-dashed border-indigo-200 bg-indigo-50/40 space-y-2">
+              <div className="p-3 rounded-md border border-dashed border-indigo-200 bg-indigo-50/40 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-950">
                     <Repeat className="w-3.5 h-3.5 text-indigo-600" />
@@ -609,7 +609,7 @@ export default function EditListing() {
               </div>
             </div>
           ) : transactionType === 'EXCHANGE' ? (
-            <div className="space-y-3 p-3.5 rounded-lg border border-indigo-200 bg-indigo-50/40">
+            <div className="space-y-3 p-3.5 rounded-md border border-indigo-200 bg-indigo-50/40">
               <div>
                 <label className="block text-xs font-bold text-gray-900 mb-1">
                   What do you want in exchange? <span className="text-red-500">*</span>

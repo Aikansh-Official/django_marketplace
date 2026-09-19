@@ -71,7 +71,7 @@ export default function CounterOfferModal({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors flex-shrink-0 cursor-pointer"
+              className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors flex-shrink-0 cursor-pointer"
               title="Close drawer"
             >
               <X className="w-5 h-5" />
@@ -81,7 +81,7 @@ export default function CounterOfferModal({
           {/* Drawer Body (Scrollable Form) */}
           <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-5 space-y-4">
             {/* Offer Comparison Box */}
-            <div className="bg-gray-50/90 p-4 rounded-xl border border-gray-100 text-xs space-y-2.5">
+            <div className="bg-gray-50/90 p-4 rounded-md border border-gray-100 text-xs space-y-2.5">
               <div className="flex justify-between items-center text-gray-600">
                 <span>Buyer's Initial Offer:</span>
                 <strong className="text-gray-900 font-bold text-sm">Rs {selectedOffer.offer_amount || 0}</strong>
@@ -107,7 +107,7 @@ export default function CounterOfferModal({
                 required
                 value={counterAmount}
                 onChange={(e) => setCounterAmount(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                 placeholder="e.g. 1500"
               />
             </div>
@@ -120,12 +120,12 @@ export default function CounterOfferModal({
                 rows={3}
                 value={sellerNote}
                 onChange={(e) => setSellerNote(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-xs font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none resize-none"
+                className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-xs font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none resize-none"
                 placeholder="e.g. Can do Rs 1500 including accessories and free notes."
               />
             </div>
 
-            <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3 text-[11px] text-amber-900 flex items-start gap-2">
+            <div className="bg-amber-50/70 border border-amber-200/80 rounded-md p-3 text-[11px] text-amber-900 flex items-start gap-2">
               <ShieldCheck className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
               <span>
                 If the buyer accepts your counter-offer, this listing will be reserved automatically and ready for physical handover!
@@ -137,14 +137,14 @@ export default function CounterOfferModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 bg-white border border-gray-300 text-gray-700 py-3 rounded-xl font-bold text-xs hover:bg-gray-50 transition-colors cursor-pointer"
+                className="flex-1 bg-white border border-gray-300 text-gray-700 py-3 rounded-md font-bold text-xs hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submittingCounter}
-                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-bold text-xs disabled:opacity-50 transition-colors shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-md font-bold text-xs disabled:opacity-50 transition-colors shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 {submittingCounter ? 'Sending...' : 'Send Counter'}
               </button>

@@ -50,7 +50,7 @@ export default function RegisterStepDetails({
           <button
             type="button"
             onClick={() => onRoleChange && onRoleChange('BUYER')}
-            className={`py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 border cursor-pointer ${role === 'BUYER'
+            className={`py-2.5 px-3 rounded-md text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 border cursor-pointer ${role === 'BUYER'
                 ? 'bg-emerald-50/80 border-emerald-500 text-emerald-700 shadow-2xs'
                 : 'bg-gray-50/80 hover:bg-white border-gray-200 text-gray-600'
               }`}
@@ -62,7 +62,7 @@ export default function RegisterStepDetails({
           <button
             type="button"
             onClick={() => onRoleChange && onRoleChange('SELLER')}
-            className={`py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 border cursor-pointer ${role === 'SELLER'
+            className={`py-2.5 px-3 rounded-md text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 border cursor-pointer ${role === 'SELLER'
                 ? 'bg-brand-50/80 border-brand-500 text-brand-600 shadow-2xs'
                 : 'bg-gray-50/80 hover:bg-white border-gray-200 text-gray-600'
               }`}

@@ -76,7 +76,7 @@ export default function UrgentNoticeModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-950/80 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border-2 border-red-500/80 overflow-hidden animate-zoom-in">
+      <div className="relative w-full max-w-lg bg-white rounded-md shadow-2xl border-2 border-red-500/80 overflow-hidden animate-zoom-in">
         {/* Top Warning Banner Stripe */}
         <div className="bg-gradient-to-r from-red-600 via-rose-600 to-red-700 px-6 py-3.5 text-white flex items-center justify-between shadow-md">
           <div className="flex items-center gap-2.5">
@@ -113,13 +113,13 @@ export default function UrgentNoticeModal() {
           </div>
 
           {/* Formatted Message Box */}
-          <div className="bg-red-50/60 p-4 rounded-xl border border-red-100/80 text-xs text-gray-800 leading-relaxed max-h-60 overflow-y-auto whitespace-pre-line">
+          <div className="bg-red-50/60 p-4 rounded-md border border-red-100/80 text-xs text-gray-800 leading-relaxed max-h-60 overflow-y-auto whitespace-pre-line">
             {urgentNotice.message}
           </div>
 
           {/* Action Link Note if available */}
           {urgentNotice.link && (
-            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 flex items-center justify-between gap-3 text-xs">
+            <div className="bg-gray-50 p-3 rounded-md border border-gray-200 flex items-center justify-between gap-3 text-xs">
               <div className="min-w-0">
                 <span className="font-bold text-gray-700 block">Action Required</span>
                 <span className="text-[11px] text-gray-500 truncate block font-mono">
@@ -150,7 +150,7 @@ export default function UrgentNoticeModal() {
           <button
             onClick={handleAcknowledge}
             disabled={dismissing}
-            className="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            className="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-md text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             <Check className="w-4 h-4 text-emerald-400" />
             <span>I Acknowledge & Understand</span>

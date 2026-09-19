@@ -69,7 +69,7 @@ export default function ReportModal({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors flex-shrink-0 cursor-pointer"
+              className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors flex-shrink-0 cursor-pointer"
               title="Close drawer"
             >
               <X className="w-5 h-5" />
@@ -85,7 +85,7 @@ export default function ReportModal({
               <select
                 value={reportReason}
                 onChange={(e) => setReportReason(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-xs font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white cursor-pointer"
+                className="w-full border border-gray-300 rounded-md px-3 py-2.5 text-xs font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white cursor-pointer"
               >
                 <option value="Duplicate / Spam">Duplicate / Spam Listing</option>
                 <option value="Incorrect Price / Info">Incorrect Price or Misleading Information</option>
@@ -103,12 +103,12 @@ export default function ReportModal({
                 rows={4}
                 value={reportDetails}
                 onChange={(e) => setReportDetails(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl p-3 text-xs font-normal focus:ring-2 focus:ring-brand-500 focus:outline-none resize-none"
+                className="w-full border border-gray-300 rounded-md p-3 text-xs font-normal focus:ring-2 focus:ring-brand-500 focus:outline-none resize-none"
                 placeholder="Explain why this listing violates campus guidelines or safety rules..."
               />
             </div>
 
-            <div className="bg-red-50/70 border border-red-200/80 rounded-xl p-3 text-[11px] text-red-900 flex items-start gap-2">
+            <div className="bg-red-50/70 border border-red-200/80 rounded-md p-3 text-[11px] text-red-900 flex items-start gap-2">
               <ShieldAlert className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
               <span>
                 All reports are reviewed anonymously by campus student moderators. False reporting may affect your campus trust score.
@@ -120,14 +120,14 @@ export default function ReportModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 bg-white border border-gray-300 text-gray-700 py-3 rounded-xl font-bold text-xs hover:bg-gray-50 transition-colors cursor-pointer"
+                className="flex-1 bg-white border border-gray-300 text-gray-700 py-3 rounded-md font-bold text-xs hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submittingReport}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold text-xs disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-md font-bold text-xs disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
               >
                 {submittingReport ? 'Submitting...' : 'Submit Report'}
               </button>

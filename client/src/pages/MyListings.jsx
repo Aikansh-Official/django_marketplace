@@ -205,9 +205,9 @@ export default function MyListings() {
       </div>
 
       {/* Active Listings Quota Meter */}
-      <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border border-blue-200/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+      <div className="mb-6 p-4 rounded-md bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border border-blue-200/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-300 text-blue-600 flex items-center justify-center font-bold">
+          <div className="w-10 h-10 rounded-md bg-blue-500/15 border border-blue-300 text-blue-600 flex items-center justify-center font-bold">
             <Package className="w-5 h-5" />
           </div>
           <div>
@@ -386,7 +386,7 @@ export default function MyListings() {
                 </div>
 
                 {item.status === 'HIDDEN' && (
-                  <div className="w-full mt-3 p-3 rounded-lg bg-amber-50/90 border border-amber-200 text-amber-900 text-xs flex items-start justify-between gap-3">
+                  <div className="w-full mt-3 p-3 rounded-md bg-amber-50/90 border border-amber-200 text-amber-900 text-xs flex items-start justify-between gap-3">
                     <div className="flex items-start gap-2">
                       <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                       <div>

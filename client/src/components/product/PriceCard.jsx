@@ -20,7 +20,7 @@ export default function PriceCard({
   if (!listing) return null;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-5">
+    <div className="bg-white border border-gray-200 rounded-md p-6 shadow-sm space-y-5">
       <div>
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
@@ -60,7 +60,7 @@ export default function PriceCard({
 
         {/* What Seller Wants in Exchange Callout */}
         {(listing.transaction_type === 'EXCHANGE' || listing.is_exchange_allowed) && listing.exchange_preferences && (
-          <div className="mt-3 p-3 rounded-xl bg-gradient-to-r from-indigo-50/90 to-purple-50/70 border border-indigo-200/90 space-y-1">
+          <div className="mt-3 p-3 rounded-md bg-gradient-to-r from-indigo-50/90 to-purple-50/70 border border-indigo-200/90 space-y-1">
             <div className="flex items-center gap-1.5 text-[11px] font-black text-indigo-950 uppercase tracking-wider">
               <Repeat className="w-3.5 h-3.5 text-indigo-600" />
               <span>Seller wants in exchange:</span>

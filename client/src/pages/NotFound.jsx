@@ -5,7 +5,7 @@ import { SearchX, ArrowLeft } from 'lucide-react';
 export default function NotFound() {
   return (
     <div className="w-full px-4 sm:px-6 lg:px-[5%] py-20 min-h-[60vh] flex flex-col items-center justify-center text-center">
-      <div className="bg-white border border-gray-200 rounded-xl p-10 shadow-sm max-w-md w-full">
+      <div className="bg-white border border-gray-200 rounded-md p-10 shadow-sm max-w-md w-full">
         <div className="w-20 h-20 bg-gray-50 border border-gray-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
           <SearchX className="w-10 h-10 text-brand-500" />
         </div>

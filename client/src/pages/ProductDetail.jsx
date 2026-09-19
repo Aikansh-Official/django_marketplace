@@ -537,13 +537,13 @@ export default function ProductDetail() {
   if (error || !listing) {
     return (
       <div className="max-w-xl mx-auto px-4 py-20 text-center">
-        <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-md p-8 shadow-sm">
           <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-900 mb-2">Listing Unavailable</h2>
           <p className="text-sm text-gray-500 mb-6">{error || 'This item is no longer available.'}</p>
           <Link
             to="/"
-            className="bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2.5 px-6 rounded-xl transition-all text-sm inline-block shadow-sm"
+            className="bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2.5 px-6 rounded-md transition-all text-sm inline-block shadow-sm"
           >
             Back to Marketplace
           </Link>
@@ -589,7 +589,7 @@ export default function ProductDetail() {
           <button
             type="button"
             onClick={handleToggleSave}
-            className={`flex items-center gap-1.5 border px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer ${
+            className={`flex items-center gap-1.5 border px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-semibold transition-all shadow-xs cursor-pointer ${
               isSaved
                 ? 'bg-rose-50 border-rose-200 text-rose-600'
                 : 'bg-white border-gray-200 hover:border-brand-500 text-gray-600 hover:text-brand-600'
@@ -602,7 +602,7 @@ export default function ProductDetail() {
           <button
             type="button"
             onClick={handleShare}
-            className="flex items-center gap-1.5 bg-white border border-gray-200 hover:border-brand-500 text-gray-600 hover:text-brand-600 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer"
+            className="flex items-center gap-1.5 bg-white border border-gray-200 hover:border-brand-500 text-gray-600 hover:text-brand-600 px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-semibold transition-all shadow-xs cursor-pointer"
           >
             <Share2 className="w-3.5 h-3.5" />
             <span>Share</span>
@@ -612,7 +612,7 @@ export default function ProductDetail() {
             <button
               type="button"
               onClick={handleOpenReportModal}
-              className="flex items-center gap-1 bg-white border border-gray-200 hover:border-red-300 text-gray-500 hover:text-red-600 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all shadow-xs cursor-pointer"
+              className="flex items-center gap-1 bg-white border border-gray-200 hover:border-red-300 text-gray-500 hover:text-red-600 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all shadow-xs cursor-pointer"
               title="Report this listing"
             >
               <Flag className="w-3.5 h-3.5" />
@@ -663,13 +663,13 @@ export default function ProductDetail() {
           />
 
           {/* Description Section */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
+          <div className="bg-white border border-gray-200 rounded-md p-6 shadow-sm space-y-4">
             <h2 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-3">
               Item Details & Description
             </h2>
 
             {/* Structured Specifications Table */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-xl text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-md text-xs">
               <div>
                 <span className="text-gray-400 block mb-0.5">Category</span>
                 <span className="font-bold text-gray-800">{listing.category?.name || 'General'}</span>
@@ -705,7 +705,7 @@ export default function ProductDetail() {
           </div>
 
           {/* Safety & Campus Trade Guidelines */}
-          <div className="bg-amber-50/70 border border-amber-200/90 rounded-xl p-5 text-xs text-amber-900 space-y-2">
+          <div className="bg-amber-50/70 border border-amber-200/90 rounded-md p-5 text-xs text-amber-900 space-y-2">
             <div className="font-bold flex items-center gap-2 text-sm text-amber-950">
               <ShieldCheck className="w-4 h-4 text-amber-700" />
               <span>LPU Student Safety Recommendations</span>
@@ -739,7 +739,7 @@ export default function ProductDetail() {
           />
 
           {/* Seller Profile Card */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
+          <div className="bg-white border border-gray-200 rounded-md p-6 shadow-sm space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">
               Seller Information
             </h3>
@@ -778,7 +778,7 @@ export default function ProductDetail() {
             </div>
 
             {/* Trust Score */}
-            <div className="p-3 bg-gray-50 rounded-xl space-y-1.5 border border-gray-100">
+            <div className="p-3 bg-gray-50 rounded-md space-y-1.5 border border-gray-100">
               <div className="flex justify-between text-xs">
                 <span className="font-medium text-gray-600">Student Trust Score</span>
                 <span className="font-bold text-brand-600">
@@ -804,7 +804,7 @@ export default function ProductDetail() {
             {/* Link to DPDP-Compliant Public Seller Profile */}
             <Link
               to={listing.seller?.id ? `/seller/${listing.seller.id}` : '#'}
-              className="w-full mt-2 inline-flex items-center justify-center gap-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 hover:text-brand-600 py-2.5 px-3 rounded-xl text-xs font-bold border border-gray-200 transition-colors shadow-2xs"
+              className="w-full mt-2 inline-flex items-center justify-center gap-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 hover:text-brand-600 py-2.5 px-3 rounded-md text-xs font-bold border border-gray-200 transition-colors shadow-2xs"
             >
               <UserCheck className="w-3.5 h-3.5 text-brand-500" />
               <span>View Verified Public Profile →</span>
