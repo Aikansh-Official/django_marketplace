@@ -4,43 +4,108 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 import re
-from .models import OTPVerification, PasswordResetToken
+from .models import OTPVerification, PasswordResetToken, PasswordResetOTP
 
 User = get_user_model()
 
 class ForgotPasswordRequestSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    reg_no = serializers.CharField(max_length=64, required=True)
+    email = serializers.EmailField(required=True)
+
+    def validate_reg_no(self, value):
+        reg = str(value).strip().lstrip('@')
+        if not reg.isdigit() or len(reg) != 8:
+            raise serializers.ValidationError("Registration number must be exactly 8 digits.")
+        return reg
 
     def validate_email(self, value):
-        email = value.strip().lower()
-        if not User.objects.filter(email__iexact=email).exists():
-            raise serializers.ValidationError("No registered student account was found with this email.")
-        return email
+        return value.strip().lower()
+
+    def validate(self, attrs):
+        reg_no = attrs.get('reg_no')
+        email = attrs.get('email')
+
+        user = User.objects.filter(username__iexact=reg_no, email__iexact=email).first()
+        if not user:
+            raise serializers.ValidationError({
+                "non_field_errors": ["No registered student account matches both this Registration Number and Email address. Please verify your credentials."]
+            })
+
+        if not user.is_active:
+            raise serializers.ValidationError({
+                "non_field_errors": ["This student account is currently suspended. Please contact campus support."]
+            })
+
+        attrs['user'] = user
+        return attrs
+
 
 class ForgotPasswordResetSerializer(serializers.Serializer):
-    token = serializers.CharField(max_length=255)
+    reg_no = serializers.CharField(max_length=64, required=True)
+    email = serializers.EmailField(required=True)
+    otp = serializers.CharField(max_length=6, required=True)
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
     password_confirm = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
 
-    def validate(self, attrs):
-        token_str = attrs.get('token', '').strip()
-        try:
-            token_obj = PasswordResetToken.objects.get(token=token_str)
-        except PasswordResetToken.DoesNotExist:
-            raise serializers.ValidationError({"token": "Invalid or expired password reset link."})
+    def validate_reg_no(self, value):
+        reg = str(value).strip().lstrip('@')
+        if not reg.isdigit() or len(reg) != 8:
+            raise serializers.ValidationError("Registration number must be exactly 8 digits.")
+        return reg
 
-        if not token_obj.is_valid():
-            raise serializers.ValidationError({"token": "This password reset link has expired or has already been used. Please request a new one."})
+    def validate_email(self, value):
+        return value.strip().lower()
+
+    def validate_otp(self, value):
+        val = str(value).strip()
+        if not val.isdigit() or len(val) != 6:
+            raise serializers.ValidationError("OTP must be exactly 6 numeric digits.")
+        return val
+
+    def validate(self, attrs):
+        reg_no = attrs.get('reg_no')
+        email = attrs.get('email')
+        otp = attrs.get('otp')
+
+        user = User.objects.filter(username__iexact=reg_no, email__iexact=email).first()
+        if not user:
+            raise serializers.ValidationError({"non_field_errors": ["User account not found matching these credentials."]})
+
+        if not user.is_active:
+            raise serializers.ValidationError({"non_field_errors": ["This student account is currently suspended."]})
+
+        # Retrieve active PasswordResetOTP record
+        reset_otp_obj = PasswordResetOTP.objects.filter(
+            reg_no__iexact=reg_no,
+            email__iexact=email,
+            is_verified=False
+        ).order_by('-created_at').first()
+
+        if not reset_otp_obj or not reset_otp_obj.is_valid():
+            raise serializers.ValidationError({"otp": ["Password reset OTP has expired or is invalid. Please request a new OTP."]})
+
+        if reset_otp_obj.is_locked():
+            raise serializers.ValidationError({"otp": ["Too many failed attempts. This OTP is locked. Please request a new one."]})
+
+        if reset_otp_obj.get_plain_otp() != otp:
+            reset_otp_obj.attempts += 1
+            reset_otp_obj.save(update_fields=['attempts'])
+            remaining = reset_otp_obj.MAX_ATTEMPTS - reset_otp_obj.attempts
+            if remaining > 0:
+                raise serializers.ValidationError({"otp": [f"Invalid OTP code. {remaining} attempt(s) remaining."]})
+            else:
+                raise serializers.ValidationError({"otp": ["Too many invalid attempts. This OTP is now locked. Please request a new one."]})
 
         if attrs['password'] != attrs['password_confirm']:
-            raise serializers.ValidationError({"password": "Password fields didn't match."})
+            raise serializers.ValidationError({"password": ["Password fields didn't match."]})
 
         try:
             validate_password(attrs['password'])
         except DjangoValidationError as e:
             raise serializers.ValidationError({"password": list(e.messages)})
 
-        attrs['token_obj'] = token_obj
+        attrs['user'] = user
+        attrs['reset_otp_obj'] = reset_otp_obj
         return attrs
 
 class SendOTPSerializer(serializers.Serializer):
@@ -179,10 +244,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # Invalidate OTP record upon successful registration to prevent reuse
         OTPVerification.objects.filter(email=validated_data['email']).delete()
 
-        # Send welcome email asynchronously / gracefully via Resend
+        # Send welcome email asynchronously / gracefully via Resend with user's role
         try:
             from .email_service import send_welcome_email
-            send_welcome_email(user.email, user.full_name or user.username)
+            send_welcome_email(user.email, user.full_name or user.username, role=user.role)
         except Exception:
             pass
 

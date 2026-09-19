@@ -45,6 +45,10 @@ export const registerSchema = z.object({
 });
 
 export const forgotPasswordSchema = z.object({
+  reg_no: z
+    .string()
+    .min(1, { message: 'Registration number is required' })
+    .regex(/^\d{8}$/, { message: 'Registration number must be exactly 8 digits' }),
   email: z
     .string()
     .min(1, { message: 'Email address is required' })
@@ -52,7 +56,11 @@ export const forgotPasswordSchema = z.object({
     .regex(/@gmail\.com$/i, { message: 'Only @gmail.com emails are allowed' }),
 });
 
-export const resetPasswordSchema = z.object({
+export const forgotPasswordResetOTPSchema = z.object({
+  otp: z
+    .string()
+    .min(1, { message: 'Verification code is required' })
+    .regex(/^\d{6}$/, { message: 'OTP must be exactly 6 numeric digits' }),
   password: z
     .string({ message: 'Password is required' })
     .min(8, { message: 'Must be at least 8 characters' })
@@ -66,3 +74,6 @@ export const resetPasswordSchema = z.object({
   message: "Passwords don't match",
   path: ["password_confirm"],
 });
+
+export const resetPasswordSchema = forgotPasswordResetOTPSchema;
+

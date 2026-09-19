@@ -8,7 +8,7 @@ from rest_framework.throttling import ScopedRateThrottle
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 import random
-from .models import OTPVerification, PasswordResetToken, ADMIN_PERMISSIONS_CATALOG, ALL_PERMISSION_KEYS
+from .models import OTPVerification, PasswordResetToken, PasswordResetOTP, ADMIN_PERMISSIONS_CATALOG, ALL_PERMISSION_KEYS
 from .permissions import HasAdminModulePermission, IsSuperAdminUser
 from .serializers import (
     UserRegistrationSerializer, UserListSerializer, SendOTPSerializer,
@@ -16,7 +16,7 @@ from .serializers import (
     UserDashboardSummarySerializer, StaffUserSerializer,
     ForgotPasswordRequestSerializer, ForgotPasswordResetSerializer
 )
-from .email_service import send_otp_email, send_password_reset_email
+from .email_service import send_otp_email, send_password_reset_email, send_password_reset_otp_email
 
 logger = logging.getLogger(__name__)
 
@@ -399,44 +399,63 @@ class ForgotPasswordRequestView(APIView):
         try:
             serializer = ForgotPasswordRequestSerializer(data=request.data)
             if not serializer.is_valid():
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                errors = serializer.errors
+                if 'non_field_errors' in errors and len(errors['non_field_errors']) > 0:
+                    err_msg = errors['non_field_errors'][0]
+                elif 'reg_no' in errors:
+                    err_msg = errors['reg_no'][0]
+                elif 'email' in errors:
+                    err_msg = errors['email'][0]
+                else:
+                    err_msg = "Invalid registration number or email address."
+                return Response({"error": err_msg}, status=status.HTTP_400_BAD_REQUEST)
 
-            email = serializer.validated_data['email']
-            user = User.objects.filter(email__iexact=email).first()
+            user = serializer.validated_data['user']
+            clean_reg = serializer.validated_data['reg_no']
+            clean_email = serializer.validated_data['email']
 
-            if not user:
-                return Response(
-                    {"message": "If an account exists with this email address, a password reset link has been sent."},
-                    status=status.HTTP_200_OK
-                )
+            # Invalidate previous unused password reset OTPs for this user
+            PasswordResetOTP.objects.filter(
+                models.Q(email__iexact=clean_email) | models.Q(reg_no__iexact=clean_reg),
+                is_verified=False
+            ).delete()
 
-            # Invalidate previous unused reset tokens for this email
-            PasswordResetToken.objects.filter(email=email, is_used=False).update(is_used=True)
+            # Generate 6-digit numeric OTP
+            import secrets
+            otp = f"{secrets.randbelow(900000) + 100000}"
 
-            # Generate a cryptographically secure token
-            token = secrets.token_urlsafe(32)
-            PasswordResetToken.objects.create(email=email, token=token)
+            # Encrypt OTP before storing in database
+            from server.crypto import encrypt_data
+            encrypted_otp = encrypt_data(otp)
 
-            frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173').rstrip('/')
-            reset_url = f"{frontend_url}/reset-password?token={token}"
+            PasswordResetOTP.objects.create(
+                user=user,
+                email=clean_email,
+                reg_no=clean_reg,
+                otp=encrypted_otp,
+                is_verified=False,
+                attempts=0
+            )
 
-            # Send email via Resend
+            # Send OTP email via Resend
             name_to_greet = user.full_name or user.first_name or user.username
-            mail_res = send_password_reset_email(email, reset_url, name_to_greet)
+            mail_res = send_password_reset_otp_email(clean_email, otp, name_to_greet)
 
             if not mail_res.get('success', False) and not mail_res.get('mock', False):
-                logger.warning(f"Resend password reset delivery issue for {email}: {mail_res.get('error')}")
+                logger.warning(f"Resend password reset OTP delivery issue for {clean_email}: {mail_res.get('error')}")
                 if not settings.DEBUG and getattr(settings, 'RESEND_API_KEY', None):
                     return Response(
-                        {"error": "Failed to deliver password reset email. Please try again in a few minutes."},
+                        {"error": "Failed to deliver verification code email. Please try again in a moment."},
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR
                     )
 
             if settings.DEBUG:
-                print(f"\n=========================================\n[PASSWORD RESET LINK FOR {email}]: {reset_url}\n=========================================\n")
+                print(f"\n=========================================\n[PASSWORD RESET OTP FOR {clean_reg} ({clean_email})]: {otp}\n=========================================\n")
 
             return Response({
-                "message": "Password reset instructions have been sent to your email address."
+                "message": f"A 6-digit verification code has been sent to {clean_email}.",
+                "email": clean_email,
+                "reg_no": clean_reg
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
@@ -456,36 +475,44 @@ class ForgotPasswordResetView(APIView):
         try:
             serializer = ForgotPasswordResetSerializer(data=request.data)
             if not serializer.is_valid():
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                errors = serializer.errors
+                if 'non_field_errors' in errors and len(errors['non_field_errors']) > 0:
+                    err_msg = errors['non_field_errors'][0]
+                elif 'otp' in errors:
+                    err_msg = errors['otp'][0]
+                elif 'password' in errors:
+                    err_msg = errors['password'][0]
+                elif 'password_confirm' in errors:
+                    err_msg = errors['password_confirm'][0]
+                else:
+                    err_msg = "Invalid data provided for password reset."
+                return Response({"error": err_msg}, status=status.HTTP_400_BAD_REQUEST)
 
-            token_obj = serializer.validated_data['token_obj']
+            user = serializer.validated_data['user']
+            reset_otp_obj = serializer.validated_data['reset_otp_obj']
             new_password = serializer.validated_data['password']
-
-            user = User.objects.filter(email__iexact=token_obj.email).first()
-            if not user:
-                return Response(
-                    {"error": "The user account associated with this reset link was not found."},
-                    status=status.HTTP_404_NOT_FOUND
-                )
 
             # Update user password using Django's secure hasher
             user.set_password(new_password)
             user.save()
 
-            # Mark token as used to prevent replay attacks
-            token_obj.is_used = True
-            token_obj.save(update_fields=['is_used'])
+            # Mark OTP as verified and clean up used OTPs
+            reset_otp_obj.is_verified = True
+            reset_otp_obj.save(update_fields=['is_verified'])
+            PasswordResetOTP.objects.filter(
+                models.Q(email__iexact=user.email) | models.Q(reg_no__iexact=user.username)
+            ).delete()
 
-            logger.info(f"Password successfully reset for user {user.username} ({user.email})")
+            logger.info(f"Password successfully reset with OTP for user {user.username} ({user.email})")
 
             return Response({
-                "message": "Your password has been reset successfully! You can now log in with your new credentials."
+                "message": "Your password has been reset successfully! You can now log in with your registration number and new password."
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
             logger.exception(f"Unexpected error in ForgotPasswordResetView: {e}")
             return Response(
-                {"error": "Failed to reset password. Please request a new reset link."},
+                {"error": "Failed to reset password. Please request a new verification code."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

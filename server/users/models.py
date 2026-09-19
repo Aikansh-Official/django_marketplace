@@ -194,3 +194,31 @@ class PasswordResetToken(models.Model):
 
     def __str__(self):
         return f"PasswordResetToken({self.email}, used={self.is_used})"
+
+
+class PasswordResetOTP(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='password_reset_otps', null=True, blank=True)
+    email = models.EmailField(db_index=True)
+    reg_no = models.CharField(max_length=64, db_index=True)
+    otp = models.CharField(max_length=255, help_text="Encrypted OTP verification code")
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_verified = models.BooleanField(default=False)
+    attempts = models.PositiveIntegerField(default=0)
+
+    MAX_ATTEMPTS = 5
+
+    def is_valid(self, timeout_minutes=10):
+        if self.is_verified:
+            return False
+        return timezone.now() < self.created_at + timedelta(minutes=timeout_minutes)
+
+    def is_locked(self):
+        return self.attempts >= self.MAX_ATTEMPTS
+
+    def get_plain_otp(self):
+        from server.crypto import decrypt_data
+        return decrypt_data(self.otp)
+
+    def __str__(self):
+        return f"PasswordResetOTP({self.reg_no} - {self.email})"
+

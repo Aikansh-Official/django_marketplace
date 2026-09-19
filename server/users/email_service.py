@@ -28,14 +28,14 @@ def _get_base_template(title: str, preheader: str, content_html: str) -> str:
     body, table, td, a {{ -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }}
     table, td {{ mso-table-lspace: 0pt; mso-table-rspace: 0pt; }}
     body {{ margin: 0; padding: 0; width: 100% !important; background-color: {BG_PAGE}; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }}
-    .container {{ max-width: 540px; margin: 0 auto; background-color: #FFFFFF; border-radius: 12px; border: 1px solid {BORDER_LIGHT}; overflow: hidden; }}
+    .container {{ max-width: 540px; margin: 0 auto; background-color: #FFFFFF; border-radius: 6px; border: 1px solid {BORDER_LIGHT}; overflow: hidden; }}
     .header {{ padding: 28px 32px 20px; border-bottom: 1px solid #F3F4F6; text-align: center; }}
     .content {{ padding: 32px 32px; }}
     .footer {{ padding: 20px 32px 28px; text-align: center; border-top: 1px solid #F3F4F6; background-color: #FAFAFA; }}
-    .otp-box {{ background-color: {BRAND_ORANGE_BG}; border: 1px solid {BRAND_ORANGE_BORDER}; border-radius: 10px; padding: 20px 16px; text-align: center; margin: 24px 0; }}
+    .otp-box {{ background-color: {BRAND_ORANGE_BG}; border: 1px solid {BRAND_ORANGE_BORDER}; border-radius: 6px; padding: 20px 16px; text-align: center; margin: 24px 0; }}
     .otp-code {{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 36px; font-weight: 800; color: {BRAND_ORANGE}; letter-spacing: 10px; padding-left: 10px; margin: 0; }}
-    .btn {{ display: inline-block; background-color: {BRAND_ORANGE}; color: #FFFFFF !important; font-size: 14px; font-weight: 700; text-decoration: none; padding: 12px 28px; border-radius: 8px; text-align: center; }}
-    .note-box {{ background-color: #F9FAFB; border-left: 3px solid {BRAND_ORANGE}; border-radius: 4px; padding: 12px 14px; margin: 20px 0; }}
+    .btn {{ display: inline-block; background-color: {BRAND_ORANGE}; color: #FFFFFF !important; font-size: 14px; font-weight: 700; text-decoration: none; padding: 12px 28px; border-radius: 6px; text-align: center; }}
+    .note-box {{ background-color: #F9FAFB; border-left: 3px solid {BRAND_ORANGE}; border-radius: 6px; padding: 12px 14px; margin: 20px 0; }}
     @media only screen and (max-width: 560px) {{
       .container {{ border-radius: 0 !important; border: none !important; width: 100% !important; }}
       .content {{ padding: 24px 20px !important; }}
@@ -57,7 +57,7 @@ def _get_base_template(title: str, preheader: str, content_html: str) -> str:
                 <tr>
                   <td align="center">
                     <a href="https://cxc.anshuman892494.online" target="_blank" style="text-decoration: none;">
-                      <img src="{logo_url}" width="38" height="38" alt="CampusXChange" style="border-radius: 8px; vertical-align: middle; margin-right: 10px; display: inline-block; border: 1px solid #E5E7EB;" />
+                      <img src="{logo_url}" width="38" height="38" alt="CampusXChange" style="border-radius: 6px; vertical-align: middle; margin-right: 10px; display: inline-block; border: 1px solid #E5E7EB;" />
                       <span style="font-size: 22px; font-weight: 800; color: {TEXT_DARK}; vertical-align: middle; letter-spacing: -0.5px; display: inline-block;">Campus<span style="color: {BRAND_ORANGE};">XChange</span></span>
                     </a>
                   </td>
@@ -157,9 +157,68 @@ https://cxc.anshuman892494.online
     return subject, html, text
 
 
+def get_password_reset_otp_template(otp_code: str, email: str, name: str = "") -> tuple[str, str, str]:
+    """
+    Returns (subject, html_content, text_content) for Password Reset OTP verification
+    """
+    subject = f"Your CampusXChange Password Reset Code: {otp_code}"
+    preheader = f"Use code {otp_code} to reset your password. Valid for 10 minutes."
+    greeting = f"Hello {name}," if name else "Hello Student,"
+
+    content = f"""
+      <h1 style="font-size: 20px; font-weight: 700; color: {TEXT_DARK}; margin: 0 0 12px;">
+        Reset Your Password
+      </h1>
+      <p style="font-size: 14px; line-height: 1.6; color: #4B5563; margin: 0 0 16px;">
+        {greeting}<br>
+        We received a verified request to reset the password for your student account associated with <strong>{email}</strong>.
+      </p>
+
+      <div class="otp-box">
+        <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: {BRAND_ORANGE_HOVER}; margin-bottom: 6px;">
+          Password Reset Code
+        </div>
+        <div class="otp-code">{otp_code}</div>
+        <div style="font-size: 12px; color: #9A3412; margin-top: 8px; font-weight: 500;">
+          Valid for 10 minutes &bull; Single-use only
+        </div>
+      </div>
+
+      <div class="note-box">
+        <p style="font-size: 12px; color: #4B5563; line-height: 1.5; margin: 0;">
+          <strong>Security Warning:</strong> Never share this OTP code with anyone. CampusXChange moderators will never ask for your OTP. If you did not request a password reset, you can safely ignore this email; your current password remains unchanged.
+        </p>
+      </div>
+
+      <p style="font-size: 12px; color: {TEXT_MUTED}; margin: 20px 0 0; line-height: 1.5;">
+        Enter this 6-digit code on the password reset screen to set your new password.
+      </p>
+    """
+    
+    html = _get_base_template("Reset Your Password - CampusXChange", preheader, content)
+    
+    text = f"""CampusXChange - Password Reset Code
+
+{greeting}
+
+We received a request to reset the password for your account ({email}).
+
+Your 6-digit Password Reset Code is: {otp_code}
+
+This code is valid for 10 minutes and can only be used once.
+Never share this code with anyone.
+
+If you did not request a password reset, please ignore this email.
+
+CampusXChange — Student Marketplace
+https://cxc.anshuman892494.online
+"""
+    return subject, html, text
+
+
 def get_password_reset_template(reset_url: str, email: str, name: str = "") -> tuple[str, str, str]:
     """
-    Returns (subject, html_content, text_content) for Password Reset
+    Legacy helper for password reset URLs (retained for backward compatibility)
     """
     subject = "Reset your CampusXChange password"
     preheader = "We received a request to reset your CampusXChange password."
@@ -185,17 +244,6 @@ def get_password_reset_template(reset_url: str, email: str, name: str = "") -> t
           <strong>Note:</strong> This link is valid for <strong>15 minutes</strong> and can only be used once.
         </p>
       </div>
-
-      <p style="font-size: 12px; color: {TEXT_MUTED}; margin: 20px 0 6px; line-height: 1.5;">
-        If the button above does not work, copy and paste this URL into your browser:
-      </p>
-      <p style="background: #F3F4F6; padding: 10px 12px; border-radius: 6px; font-size: 11px; word-break: break-all; color: #374151; font-family: ui-monospace, monospace; margin: 0;">
-        {reset_url}
-      </p>
-
-      <p style="font-size: 12px; color: {TEXT_MUTED}; margin: 20px 0 0; line-height: 1.5;">
-        If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.
-      </p>
     """
     
     html = _get_base_template("Reset Your Password - CampusXChange", preheader, content)
@@ -204,27 +252,39 @@ def get_password_reset_template(reset_url: str, email: str, name: str = "") -> t
 
 {greeting}
 
-We received a request to reset your CampusXChange account password.
-
-Open the link below to set a new password (valid for 15 minutes):
+We received a request to reset your CampusXChange account password:
 {reset_url}
-
-If you did not request this, please ignore this email.
-
-CampusXChange — Student Marketplace
-https://cxc.anshuman892494.online
 """
     return subject, html, text
 
 
-def get_welcome_email_template(name: str, email: str) -> tuple[str, str, str]:
+def get_welcome_email_template(name: str, email: str, role: str = "BUYER") -> tuple[str, str, str]:
     """
-    Returns (subject, html_content, text_content) for Welcome Email
+    Returns (subject, html_content, text_content) for Welcome Email with student role highlighted.
     """
     subject = "Welcome to CampusXChange! 🎓"
     preheader = "Your student account is verified. Start exploring campus deals."
     display_name = name or "Student"
     frontend_url = getattr(settings, 'FRONTEND_URL', 'https://cxc.anshuman892494.online')
+
+    is_seller = str(role).upper() == 'SELLER'
+    role_label = "Verified Student Seller" if is_seller else "Student Buyer"
+    role_badge_bg = "#FFF7ED" if is_seller else "#ECFDF5"
+    role_badge_text = "#C2410C" if is_seller else "#047857"
+    role_badge_border = "#FED7AA" if is_seller else "#A7F3D0"
+    role_icon = "🛡️" if is_seller else "🛒"
+
+    seller_perks = """
+      <li style="margin-bottom: 8px;"><strong>List Your Items:</strong> Sell course books, notes, cycles, kettles & hostel gear.</li>
+      <li style="margin-bottom: 8px;"><strong>Verified Trust Badge:</strong> Your student ID is verified for 100% peer buyer confidence.</li>
+      <li><strong>Safe In-Campus Handovers:</strong> Complete handovers with secure QR sessions.</li>
+    """
+
+    buyer_perks = """
+      <li style="margin-bottom: 8px;"><strong>Course Books & Gear:</strong> Buy textbooks, lab coats & gadgets from seniors.</li>
+      <li style="margin-bottom: 8px;"><strong>Secure Direct Chat:</strong> Negotiate safely with verified campus peers.</li>
+      <li><strong>Upgrade to Seller Anytime:</strong> Upload your student ID card anytime to start selling.</li>
+    """
 
     content = f"""
       <h1 style="font-size: 20px; font-weight: 700; color: {TEXT_DARK}; margin: 0 0 12px;">
@@ -234,18 +294,26 @@ def get_welcome_email_template(name: str, email: str) -> tuple[str, str, str]:
         Your student account is now verified and active. You are part of your campus's official student-to-student marketplace.
       </p>
 
-      <div style="background-color: #FAFAFA; border: 1px solid #E5E7EB; border-radius: 10px; padding: 16px 18px; margin: 20px 0;">
-        <p style="font-size: 13px; font-weight: 700; color: {TEXT_DARK}; margin: 0 0 8px;">What you can do on CampusXChange:</p>
-        <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #4B5563; line-height: 1.7;">
-          <li><strong>Buy & Sell Course Books:</strong> Textbooks, notes & lab coats from seniors.</li>
-          <li><strong>Campus Essentials:</strong> Cycles, kettles, electronics & room gear.</li>
-          <li><strong>Safe In-Campus Handovers:</strong> Verified student IDs & trust scores.</li>
+      <!-- Role Badge Highlight Card -->
+      <div style="background-color: {role_badge_bg}; border: 1px solid {role_badge_border}; border-radius: 6px; padding: 14px 18px; margin: 20px 0; text-align: left;">
+        <div style="display: inline-block; background-color: #FFFFFF; border: 1px solid {role_badge_border}; border-radius: 6px; padding: 3px 10px; font-size: 11px; font-weight: 800; color: {role_badge_text}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+          {role_icon} Account Role: {role_label}
+        </div>
+        <p style="font-size: 12px; color: {TEXT_DARK}; margin: 4px 0 0; line-height: 1.5;">
+          {"You have complete seller privileges to post listings, respond to offers, and sell to peers." if is_seller else "You can browse listings, save favorite items, make offers, and chat with verified sellers."}
+        </p>
+      </div>
+
+      <div style="background-color: #FAFAFA; border: 1px solid #E5E7EB; border-radius: 6px; padding: 16px 18px; margin: 20px 0;">
+        <p style="font-size: 13px; font-weight: 700; color: {TEXT_DARK}; margin: 0 0 10px;">Your Campus Privileges:</p>
+        <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #4B5563; line-height: 1.6;">
+          {seller_perks if is_seller else buyer_perks}
         </ul>
       </div>
 
       <div style="text-align: center; margin: 26px 0;">
         <a href="{frontend_url}" target="_blank" class="btn">
-          Explore Campus Deals
+          {"Go to Seller Dashboard" if is_seller else "Explore Campus Deals"}
         </a>
       </div>
     """
@@ -255,6 +323,8 @@ def get_welcome_email_template(name: str, email: str) -> tuple[str, str, str]:
     text = f"""Welcome to CampusXChange, {display_name}!
 
 Your student account is active.
+Registered Role: {role_label}
+
 Visit {frontend_url} to explore course books, electronics, and hostel essentials.
 
 Happy trading,
@@ -310,11 +380,16 @@ def send_otp_email(to_email: str, otp_code: str) -> dict:
     return send_email_via_resend(to_email, subject, html, text)
 
 
+def send_password_reset_otp_email(to_email: str, otp_code: str, name: str = "") -> dict:
+    subject, html, text = get_password_reset_otp_template(otp_code, to_email, name)
+    return send_email_via_resend(to_email, subject, html, text)
+
+
 def send_password_reset_email(to_email: str, reset_url: str, name: str = "") -> dict:
     subject, html, text = get_password_reset_template(reset_url, to_email, name)
     return send_email_via_resend(to_email, subject, html, text)
 
 
-def send_welcome_email(to_email: str, name: str = "") -> dict:
-    subject, html, text = get_welcome_email_template(name, to_email)
+def send_welcome_email(to_email: str, name: str = "", role: str = "BUYER") -> dict:
+    subject, html, text = get_welcome_email_template(name, to_email, role=role)
     return send_email_via_resend(to_email, subject, html, text)
