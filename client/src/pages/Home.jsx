@@ -424,14 +424,19 @@ export default function Home() {
                         onError={(e) => {
                           e.currentTarget.onerror = null;
                           e.currentTarget.style.display = 'none';
+                          const fallback = e.currentTarget.nextElementSibling;
+                          if (fallback) fallback.style.display = 'flex';
                         }}
                       />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-100 group-hover:bg-gray-200 transition-colors">
-                        <Package className="w-7 h-7 sm:w-8 sm:h-8 mb-1 sm:mb-2 opacity-50" />
-                        <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider opacity-60">No Image</span>
-                      </div>
-                    )}
+                    ) : null}
+                    <div
+                      className={`w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-100 group-hover:bg-gray-200 transition-colors ${
+                        primaryImage ? 'hidden' : 'flex'
+                      }`}
+                    >
+                      <Package className="w-7 h-7 sm:w-8 sm:h-8 mb-1 sm:mb-2 opacity-50" />
+                      <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider opacity-60">No Image</span>
+                    </div>
 
                     {/* Favorite Button */}
                     <button

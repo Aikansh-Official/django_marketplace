@@ -72,7 +72,7 @@ class ListingImageSerializer(serializers.ModelSerializer):
     def get_image_url(self, obj):
         from .media_security import generate_secure_image_url
         request = self.context.get('request') if hasattr(self, 'context') else None
-        return generate_secure_image_url(obj.image_url, request=request)
+        return generate_secure_image_url(obj.image_url, ttl_seconds=86400, request=request)
 
 class SellerSerializer(serializers.ModelSerializer):
     """Full seller info — only used in authenticated contexts (e.g. accepted offers)."""

@@ -296,11 +296,12 @@ export default function MyListings() {
                         onError={(e) => {
                           e.currentTarget.onerror = null;
                           e.currentTarget.style.display = 'none';
+                          const fallback = e.currentTarget.nextElementSibling;
+                          if (fallback) fallback.style.display = 'block';
                         }}
                       />
-                    ) : (
-                      <Package className="w-6 h-6 text-gray-300" />
-                    )}
+                    ) : null}
+                    <Package className={`w-6 h-6 text-gray-300 ${cover ? 'hidden' : 'block'}`} />
                   </div>
 
                   <div className="min-w-0 space-y-1">

@@ -1035,7 +1035,17 @@ export default function ProductDetail() {
                     src={currentImage}
                     alt={listing.title}
                     className="max-h-full max-w-full object-contain p-2 group-hover:scale-102 transition-transform duration-300"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.style.display = 'none';
+                      const fallback = e.currentTarget.parentElement?.querySelector('.product-hero-fallback');
+                      if (fallback) fallback.style.display = 'flex';
+                    }}
                   />
+                  <div className="product-hero-fallback hidden w-full h-full flex-col items-center justify-center text-gray-400 bg-gray-100">
+                    <Package className="w-16 h-16 mb-3 opacity-30" />
+                    <span className="text-sm font-semibold uppercase tracking-wider opacity-50">Image Protected or Unavailable</span>
+                  </div>
                   {/* Floating Magnifier Badge */}
                   <div className="absolute bottom-3 right-3 bg-black/60 hover:bg-black/80 backdrop-blur-xs text-white text-[11px] font-bold px-2.5 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shadow-sm">
                     <Maximize2 className="w-3.5 h-3.5" />

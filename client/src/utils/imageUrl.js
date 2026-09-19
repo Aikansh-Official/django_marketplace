@@ -30,21 +30,34 @@ export function getSafeImageUrl(url, options = {}) {
     return trimmed;
   }
 
-  // 2. Relative API or Media URLs (/api/media/secure-image/... or /media/...)
-  // In production, frontend is on cxc.anshuman892494.online and backend is on Render.
-  // Prepending BACKEND_ORIGIN ensures the request hits the Django backend, not the static frontend host.
-  if (trimmed.startsWith('/api/') || trimmed.startsWith('/media/')) {
-    if (BACKEND_ORIGIN && !trimmed.startsWith('http')) {
-      return `${BACKEND_ORIGIN}${trimmed}`;
+  // 2. Remap legacy localhost media URLs in production
+  let processedUrl = trimmed;
+  if (
+    BACKEND_ORIGIN &&
+    !BACKEND_ORIGIN.includes('localhost') &&
+    !BACKEND_ORIGIN.includes('127.0.0.1')
+  ) {
+    // If running in production but image URL points to localhost:8000
+    if (processedUrl.startsWith('http://localhost:8000') || processedUrl.startsWith('http://127.0.0.1:8000')) {
+      processedUrl = processedUrl.replace(/^http:\/\/(localhost|127\.0\.0\.1):8000/, BACKEND_ORIGIN);
     }
-    return trimmed;
   }
 
-  // 3. Direct Cloudinary URLs — auto-optimize to WebP with smart compression
-  if (trimmed.includes('res.cloudinary.com') && trimmed.includes('/image/upload/')) {
+  // 3. Relative API or Media URLs (/api/media/secure-image/... or /media/...)
+  // In production, frontend is on cxc.anshuman892494.online and backend is on Render.
+  // Prepending BACKEND_ORIGIN ensures the request hits the Django backend, not the static frontend host.
+  if (processedUrl.startsWith('/api/') || processedUrl.startsWith('/media/')) {
+    if (BACKEND_ORIGIN && !processedUrl.startsWith('http')) {
+      return `${BACKEND_ORIGIN}${processedUrl}`;
+    }
+    return processedUrl;
+  }
+
+  // 4. Direct Cloudinary URLs — auto-optimize to WebP with smart compression
+  if (processedUrl.includes('res.cloudinary.com') && processedUrl.includes('/image/upload/')) {
     // If it already has transformations, preserve them
-    if (trimmed.includes('/f_auto') || trimmed.includes('/f_webp') || trimmed.includes('/q_auto')) {
-      return trimmed;
+    if (processedUrl.includes('/f_auto') || processedUrl.includes('/f_webp') || processedUrl.includes('/q_auto')) {
+      return processedUrl;
     }
 
     let transform = 'f_auto,q_auto';
@@ -52,20 +65,29 @@ export function getSafeImageUrl(url, options = {}) {
       transform += `,w_${options.width},c_limit`;
     }
 
-    return trimmed.replace('/image/upload/', `/image/upload/${transform}/`);
+    return processedUrl.replace('/image/upload/', `/image/upload/${transform}/`);
   }
 
-  // 4. Absolute URLs (already starting with http:// or https://)
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-    return trimmed;
+  // 5. Absolute URLs (already starting with http:// or https://)
+  if (processedUrl.startsWith('http://') || processedUrl.startsWith('https://')) {
+    // If page is HTTPS and URL is HTTP to our domain, upgrade to HTTPS to avoid mixed content
+    if (
+      typeof window !== 'undefined' &&
+      window.location?.protocol === 'https:' &&
+      processedUrl.startsWith('http://') &&
+      (processedUrl.includes('anshuman892494.online') || processedUrl.includes('onrender.com'))
+    ) {
+      return processedUrl.replace('http://', 'https://');
+    }
+    return processedUrl;
   }
 
-  // 5. Fallback relative path
+  // 6. Fallback relative path
   if (BACKEND_ORIGIN) {
-    return `${BACKEND_ORIGIN}/${trimmed.replace(/^\/+/, '')}`;
+    return `${BACKEND_ORIGIN}/${processedUrl.replace(/^\/+/, '')}`;
   }
 
-  return trimmed;
+  return processedUrl;
 }
 
 export default getSafeImageUrl;

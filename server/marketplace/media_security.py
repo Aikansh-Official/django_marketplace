@@ -1,3 +1,4 @@
+import os
 import base64
 import hashlib
 import hmac
@@ -167,6 +168,28 @@ def optimize_cloudinary_url(url):
     return url
 
 
+def is_origin_allowed(base_url, allowed_origins):
+    """Check if an origin or referer base URL is permissible."""
+    if not base_url:
+        return False
+    if base_url in allowed_origins:
+        return True
+    try:
+        parsed = urllib.parse.urlparse(base_url)
+        hostname = (parsed.hostname or '').lower()
+        if (
+            hostname.endswith('.anshuman892494.online') or
+            hostname == 'anshuman892494.online' or
+            hostname.endswith('.onrender.com') or
+            hostname.endswith('.vercel.app') or
+            hostname in ('localhost', '127.0.0.1')
+        ):
+            return True
+    except Exception:
+        pass
+    return False
+
+
 def is_authorized_request(request):
     """
     Validate that the incoming request is originating from our allowed site context
@@ -189,7 +212,7 @@ def is_authorized_request(request):
         try:
             parsed_ref = urllib.parse.urlparse(referer)
             ref_base = f"{parsed_ref.scheme}://{parsed_ref.netloc}".rstrip('/')
-            if ref_base in allowed_origins:
+            if is_origin_allowed(ref_base, allowed_origins):
                 return True, None
             else:
                 return False, f"Unauthorized external referer: {ref_base}"
@@ -201,7 +224,7 @@ def is_authorized_request(request):
         try:
             parsed_orig = urllib.parse.urlparse(origin)
             orig_base = f"{parsed_orig.scheme}://{parsed_orig.netloc}".rstrip('/')
-            if orig_base in allowed_origins:
+            if is_origin_allowed(orig_base, allowed_origins):
                 return True, None
             else:
                 return False, f"Unauthorized external origin: {orig_base}"
@@ -265,49 +288,78 @@ def secure_image_proxy_view(request):
 
     # Fetch asset bytes
     try:
-        final_url_to_fetch = optimize_cloudinary_url(decoded_url)
+        content_type = None
+        image_bytes = None
 
-        # If it is a Cloudinary authenticated asset, sign it with server credentials
-        if 'res.cloudinary.com' in decoded_url and '/image/authenticated/' in decoded_url:
-            try:
-                import cloudinary.utils
-                from .cloudinary_upload import configure_cloudinary
-                configure_cloudinary()
+        # A. If it's a local media path (e.g. /media/listings/... or http://localhost:8000/media/...)
+        if '/media/' in decoded_url or decoded_url.startswith('/media/'):
+            rel_media_path = decoded_url.split('/media/', 1)[1]
+            # Strip query params if present
+            clean_rel_path = rel_media_path.split('?')[0]
+            local_file_path = os.path.join(settings.MEDIA_ROOT, clean_rel_path.replace('/', os.sep))
+            if os.path.isfile(local_file_path):
+                import mimetypes
+                guessed_type, _ = mimetypes.guess_type(local_file_path)
+                content_type = guessed_type or 'image/jpeg'
+                with open(local_file_path, 'rb') as f:
+                    image_bytes = f.read()
 
-                # Extract public_id from authenticated URL
-                parts = decoded_url.split('/image/authenticated/')
-                if len(parts) > 1:
-                    subpath = parts[1]
-                    subparts = subpath.split('/')
-                    clean_parts = [p for p in subparts if not p.startswith('s--') and not p.startswith('v1')]
-                    public_id = '/'.join(clean_parts).rsplit('.', 1)[0]
-                    signed_url, _ = cloudinary.utils.cloudinary_url(
-                        public_id,
-                        type='authenticated',
-                        sign_url=True,
-                        format='webp'
-                    )
-                    final_url_to_fetch = signed_url
-            except Exception as sign_err:
-                logger.warning(f"Error signing authenticated Cloudinary asset: {sign_err}")
+        # B. If not a local file on disk, fetch via HTTP / Cloudinary
+        if image_bytes is None:
+            # If pointing to localhost on production where local disk file is absent
+            if ('localhost:8000' in decoded_url or '127.0.0.1:8000' in decoded_url) and not getattr(settings, 'DEBUG', False):
+                resp = HttpResponse(PROTECTED_ASSET_SVG, content_type='image/svg+xml', status=200)
+                resp['Cache-Control'] = 'public, max-age=3600'
+                resp['Access-Control-Allow-Origin'] = '*'
+                return resp
 
-        # Fetch from source
-        req = urllib.request.Request(
-            final_url_to_fetch,
-            headers={'User-Agent': 'CampusXChange-SecureMediaProxy/1.0'}
-        )
-        with urllib.request.urlopen(req, timeout=10) as upstream:
-            status_code = upstream.status
-            if status_code != 200:
-                return HttpResponse(PROTECTED_ASSET_SVG, content_type='image/svg+xml', status=status_code)
+            final_url_to_fetch = optimize_cloudinary_url(decoded_url)
 
-            content_type = upstream.headers.get('Content-Type', 'image/webp')
-            image_bytes = upstream.read()
+            # If it is a Cloudinary authenticated asset, sign it with server credentials
+            if 'res.cloudinary.com' in decoded_url and '/image/authenticated/' in decoded_url:
+                try:
+                    import cloudinary.utils
+                    from .cloudinary_upload import configure_cloudinary
+                    configure_cloudinary()
+
+                    # Extract public_id from authenticated URL
+                    parts = decoded_url.split('/image/authenticated/')
+                    if len(parts) > 1:
+                        subpath = parts[1]
+                        subparts = subpath.split('/')
+                        clean_parts = [p for p in subparts if not p.startswith('s--') and not p.startswith('v1')]
+                        public_id = '/'.join(clean_parts).rsplit('.', 1)[0]
+                        signed_url, _ = cloudinary.utils.cloudinary_url(
+                            public_id,
+                            type='authenticated',
+                            sign_url=True,
+                            format='webp'
+                        )
+                        final_url_to_fetch = signed_url
+                except Exception as sign_err:
+                    logger.warning(f"Error signing authenticated Cloudinary asset: {sign_err}")
+
+            # Fetch from source
+            req = urllib.request.Request(
+                final_url_to_fetch,
+                headers={'User-Agent': 'CampusXChange-SecureMediaProxy/1.0'}
+            )
+            with urllib.request.urlopen(req, timeout=10) as upstream:
+                status_code = upstream.status
+                if status_code != 200:
+                    resp = HttpResponse(PROTECTED_ASSET_SVG, content_type='image/svg+xml', status=200)
+                    resp['Cache-Control'] = 'public, max-age=300'
+                    resp['Access-Control-Allow-Origin'] = '*'
+                    return resp
+
+                content_type = upstream.headers.get('Content-Type', 'image/webp')
+                image_bytes = upstream.read()
 
         # Cache in memory for up to 1 hour (3600s)
-        cache.set(cache_key, (content_type, image_bytes), timeout=3600)
+        if content_type and image_bytes:
+            cache.set(cache_key, (content_type, image_bytes), timeout=3600)
 
-        response = HttpResponse(image_bytes, content_type=content_type)
+        response = HttpResponse(image_bytes, content_type=content_type or 'image/jpeg')
         response['Cache-Control'] = 'private, max-age=86400, stale-while-revalidate=3600'
         response['X-Content-Type-Options'] = 'nosniff'
         response['Cross-Origin-Resource-Policy'] = 'cross-origin'
@@ -318,4 +370,7 @@ def secure_image_proxy_view(request):
 
     except Exception as fetch_err:
         logger.error(f"Error proxying secure image ({decoded_url}): {fetch_err}")
-        return HttpResponse(PROTECTED_ASSET_SVG, content_type='image/svg+xml', status=404)
+        resp = HttpResponse(PROTECTED_ASSET_SVG, content_type='image/svg+xml', status=200)
+        resp['Cache-Control'] = 'public, max-age=300'
+        resp['Access-Control-Allow-Origin'] = '*'
+        return resp
