@@ -77,6 +77,11 @@ export default function RegisterForm({
     },
   });
 
+  // Role management
+  const [internalRole, setInternalRole] = useState('BUYER');
+  const selectedRole = propSelectedRole !== undefined ? propSelectedRole : internalRole;
+  const setSelectedRole = propSetSelectedRole || setInternalRole;
+
   // Clear errors when switching steps so no premature validation errors linger
   useEffect(() => {
     clearErrors();
@@ -89,10 +94,6 @@ export default function RegisterForm({
       preloadVisionDetectors();
     }
   }, [selectedRole, step]);
-
-  const [internalRole, setInternalRole] = useState('BUYER');
-  const selectedRole = propSelectedRole !== undefined ? propSelectedRole : internalRole;
-  const setSelectedRole = propSetSelectedRole || setInternalRole;
   const [isLoading, setIsLoading] = useState(false);
   const [isRegAllowed, setIsRegAllowed] = useState(true);
   const [allowedDomains, setAllowedDomains] = useState('lpu.in');
