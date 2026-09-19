@@ -69,9 +69,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'server.middleware.DataSecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -253,7 +253,7 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 _DEFAULT_FRONTEND_ORIGINS = [
     "https://cxc.anshuman892494.online",
@@ -319,8 +319,13 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 # ── Production Security Hardening ──────────────────────────────
-# These settings are automatically applied when DEBUG is False.
-if not DEBUG:
+# Only apply HTTPS redirect in production environments (e.g. Render with HTTPS),
+# NEVER redirect local dev traffic (localhost/127.0.0.1) to HTTPS.
+is_local_host = not RENDER_EXTERNAL_HOSTNAME and any(
+    h in os.environ.get('ALLOWED_HOSTS', '') for h in ('localhost', '127.0.0.1')
+)
+
+if not DEBUG and not is_local_host and RENDER_EXTERNAL_HOSTNAME:
     # HTTPS / SSL
     SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'True') == 'True'
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -336,6 +341,10 @@ if not DEBUG:
 
     # Prevent content-type sniffing
     SECURE_CONTENT_TYPE_NOSNIFF = True
+else:
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
 
 # ── Structured Production Logging ──────────────────────────────
 LOGGING = {
