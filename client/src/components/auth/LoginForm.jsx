@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { loginSchema } from './authSchemas';
 
-export default function LoginForm({ onSwitch, onSuccess }) {
+export default function LoginForm({ onSwitch, onForgotPassword, onSuccess }) {
   const [showPassword, setShowPassword] = useState(false);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(loginSchema),
@@ -74,6 +74,15 @@ export default function LoginForm({ onSwitch, onSuccess }) {
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
               Password
             </label>
+            {onForgotPassword && (
+              <button
+                type="button"
+                onClick={onForgotPassword}
+                className="text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline cursor-pointer"
+              >
+                Forgot password?
+              </button>
+            )}
           </div>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">

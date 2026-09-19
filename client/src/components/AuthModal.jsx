@@ -4,9 +4,10 @@ import { X } from 'lucide-react';
 import AuthLeftPanel from './auth/AuthLeftPanel';
 import LoginForm from './auth/LoginForm';
 import RegisterForm from './auth/RegisterForm';
+import ForgotPasswordForm from './auth/ForgotPasswordForm';
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }) {
-  const [mode, setMode] = useState(initialMode); // 'login' or 'register'
+  const [mode, setMode] = useState(initialMode); // 'login', 'register', or 'forgot-password'
 
   // Shared register verification state across left panel and right form
   const [registerStep, setRegisterStep] = useState(1);
@@ -130,7 +131,12 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
               {mode === 'login' ? (
                 <LoginForm
                   onSwitch={() => setMode('register')}
+                  onForgotPassword={() => setMode('forgot-password')}
                   onSuccess={() => { onClose(); if (onSuccess) onSuccess(); }}
+                />
+              ) : mode === 'forgot-password' ? (
+                <ForgotPasswordForm
+                  onBackToLogin={() => setMode('login')}
                 />
               ) : (
                 <RegisterForm

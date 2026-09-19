@@ -21,6 +21,7 @@ const About = lazy(() => import('./pages/About'));
 const Guidelines = lazy(() => import('./pages/Guidelines'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 
 import ProtectedRoute from './components/ProtectedRoute';
 import ScrollToTop from './components/common/ScrollToTop';
@@ -88,6 +89,7 @@ function App() {
                   <Route path="/guidelines" element={<Guidelines />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/terms" element={<Terms />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route
                     path="/my-listings"
                     element={

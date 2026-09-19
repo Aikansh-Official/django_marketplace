@@ -14,7 +14,6 @@ def seed():
         ('Books & Notes', 'books-notes', 'BookOpen'),
         ('Laptops & Computers', 'laptops-computers', 'Laptop'),
         ('Mobiles & Electronics', 'mobiles-electronics', 'Smartphone'),
-        ('Cycles & Mobility', 'cycles-mobility', 'Bike'),
         ('Hostel & Room Essentials', 'hostel-room-essentials', 'Home'),
         ('Fashion & Lifestyle', 'fashion-lifestyle', 'Shirt'),
         ('Stationery & Lab Gear', 'stationery-lab-gear', 'PenTool'),

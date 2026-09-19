@@ -4,9 +4,44 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 import re
-from .models import OTPVerification
+from .models import OTPVerification, PasswordResetToken
 
 User = get_user_model()
+
+class ForgotPasswordRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        email = value.strip().lower()
+        if not User.objects.filter(email__iexact=email).exists():
+            raise serializers.ValidationError("No registered student account was found with this email.")
+        return email
+
+class ForgotPasswordResetSerializer(serializers.Serializer):
+    token = serializers.CharField(max_length=255)
+    password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+    password_confirm = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+
+    def validate(self, attrs):
+        token_str = attrs.get('token', '').strip()
+        try:
+            token_obj = PasswordResetToken.objects.get(token=token_str)
+        except PasswordResetToken.DoesNotExist:
+            raise serializers.ValidationError({"token": "Invalid or expired password reset link."})
+
+        if not token_obj.is_valid():
+            raise serializers.ValidationError({"token": "This password reset link has expired or has already been used. Please request a new one."})
+
+        if attrs['password'] != attrs['password_confirm']:
+            raise serializers.ValidationError({"password": "Password fields didn't match."})
+
+        try:
+            validate_password(attrs['password'])
+        except DjangoValidationError as e:
+            raise serializers.ValidationError({"password": list(e.messages)})
+
+        attrs['token_obj'] = token_obj
+        return attrs
 
 class SendOTPSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -114,6 +149,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
         # Invalidate OTP record upon successful registration to prevent reuse
         OTPVerification.objects.filter(email=validated_data['email']).delete()
+
+        # Send welcome email asynchronously / gracefully via Resend
+        try:
+            from .email_service import send_welcome_email
+            send_welcome_email(user.email, user.full_name or user.username)
+        except Exception:
+            pass
 
         return user
 

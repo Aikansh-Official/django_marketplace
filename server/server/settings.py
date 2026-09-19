@@ -188,7 +188,13 @@ STORAGES = {
 }
 
 
-# Email Configuration (Django 6+ MAILERS format)
+# Resend Email & Service Configuration
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+RESEND_FROM_EMAIL = os.environ.get('RESEND_FROM_EMAIL', os.environ.get('DEFAULT_FROM_EMAIL', 'CampusXChange <onboarding@resend.dev>'))
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
+PASSWORD_RESET_TIMEOUT_SECONDS = int(os.environ.get('PASSWORD_RESET_TIMEOUT_SECONDS', '900'))  # 15 minutes
+
+# Email Configuration (Fallback / Django MAILERS)
 MAILERS = {
     'default': {
         'BACKEND': os.environ.get(
@@ -202,7 +208,7 @@ MAILERS = {
         'PASSWORD': os.environ.get('EMAIL_HOST_PASSWORD', ''),
     },
 }
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'CampusXChange <noreply@campusxchange.com>')
+DEFAULT_FROM_EMAIL = RESEND_FROM_EMAIL
 
 AUTH_USER_MODEL = 'users.CustomUser'
 
@@ -220,6 +226,7 @@ REST_FRAMEWORK = {
         'user': '2000/minute' if DEBUG else '300/minute',
         'signup': '100/minute' if DEBUG else '5/minute',
         'login': '100/minute' if DEBUG else '10/minute',
+        'password_reset': '30/hour' if DEBUG else '5/hour',
         'image_upload': '200/hour' if DEBUG else '20/hour',
     }
 }

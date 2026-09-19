@@ -161,3 +161,20 @@ class OTPVerification(models.Model):
 
     def __str__(self):
         return f"{self.email} - [Encrypted OTP]"
+
+
+class PasswordResetToken(models.Model):
+    email = models.EmailField(db_index=True)
+    token = models.CharField(max_length=255, unique=True, help_text="Cryptographically secure reset token")
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_used = models.BooleanField(default=False)
+
+    def is_valid(self, timeout_seconds=None):
+        if self.is_used:
+            return False
+        from django.conf import settings
+        timeout = timeout_seconds or getattr(settings, 'PASSWORD_RESET_TIMEOUT_SECONDS', 900)
+        return timezone.now() < self.created_at + timedelta(seconds=timeout)
+
+    def __str__(self):
+        return f"PasswordResetToken({self.email}, used={self.is_used})"

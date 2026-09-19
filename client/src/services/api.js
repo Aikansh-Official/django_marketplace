@@ -89,6 +89,8 @@ api.interceptors.response.use(
       const isAuthUrl =
         originalRequest.url?.includes('/auth/login/') ||
         originalRequest.url?.includes('/auth/register/') ||
+        originalRequest.url?.includes('/auth/forgot-password/') ||
+        originalRequest.url?.includes('/auth/reset-password/') ||
         originalRequest.url?.includes('/auth/token/refresh/');
 
       if (isAuthUrl) {

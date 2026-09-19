@@ -22,3 +22,26 @@ export const registerSchema = z.object({
   message: "Passwords don't match",
   path: ["password_confirm"],
 });
+
+export const forgotPasswordSchema = z.object({
+  email: z
+    .string()
+    .min(1, { message: 'Email address is required' })
+    .email({ message: 'Must be a valid email address' })
+    .regex(/@gmail\.com$/i, { message: 'Only @gmail.com emails are allowed' }),
+});
+
+export const resetPasswordSchema = z.object({
+  password: z
+    .string({ message: 'Password is required' })
+    .min(8, { message: 'Must be at least 8 characters' })
+    .regex(/[^a-zA-Z0-9]/, { message: 'Must contain at least one special character' }),
+  password_confirm: z
+    .string({ message: 'Please confirm your password' })
+    .min(1, { message: 'Please confirm your password' }),
+}).refine((data) => {
+  return data.password === data.password_confirm;
+}, {
+  message: "Passwords don't match",
+  path: ["password_confirm"],
+});
