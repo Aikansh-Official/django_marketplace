@@ -25,7 +25,8 @@ import {
   AlertTriangle,
   Lock,
   ShieldAlert,
-  TrendingUp
+  TrendingUp,
+  Clock
 } from 'lucide-react';
 import api, { getPlatformConfig, getCategories } from '../services/api';
 import CategoryIcon from '../components/CategoryIcon';
@@ -63,6 +64,10 @@ export default function CreateListing() {
   const [isExchangeAllowed, setIsExchangeAllowed] = useState(false);
   const [exchangePreferences, setExchangePreferences] = useState('');
   const [price, setPrice] = useState('');
+  const [originalPrice, setOriginalPrice] = useState('');
+  const [hasSaleTimer, setHasSaleTimer] = useState(false);
+  const [saleDuration, setSaleDuration] = useState('24h'); // '12h', '24h', '48h', '3d', '7d', 'custom'
+  const [customSaleEndTime, setCustomSaleEndTime] = useState('');
   const [isNegotiable, setIsNegotiable] = useState(true);
   const [condition, setCondition] = useState('GOOD');
   const [location, setLocation] = useState('');
@@ -76,6 +81,29 @@ export default function CreateListing() {
   const [uploading, setUploading] = useState(false);
   const [platformConfig, setPlatformConfig] = useState(null);
   const [activeListingsCount, setActiveListingsCount] = useState(0);
+
+  const calculateSaleEndTime = () => {
+    if (!hasSaleTimer) return null;
+    if (saleDuration === 'custom') {
+      return customSaleEndTime ? new Date(customSaleEndTime).toISOString() : null;
+    }
+    const now = new Date();
+    if (saleDuration === '12h') now.setHours(now.getHours() + 12);
+    else if (saleDuration === '24h') now.setHours(now.getHours() + 24);
+    else if (saleDuration === '48h') now.setHours(now.getHours() + 48);
+    else if (saleDuration === '3d') now.setDate(now.getDate() + 3);
+    else if (saleDuration === '7d') now.setDate(now.getDate() + 7);
+    return now.toISOString();
+  };
+
+  const calculatedDiscount = React.useMemo(() => {
+    const orig = parseFloat(originalPrice);
+    const curr = parseFloat(price);
+    if (orig && curr && orig > curr && curr > 0) {
+      return Math.round(((orig - curr) / orig) * 100);
+    }
+    return 0;
+  }, [originalPrice, price]);
 
   // Fetch categories, user profile & platform config
   useEffect(() => {
@@ -266,6 +294,8 @@ export default function CreateListing() {
       is_exchange_allowed: isExchange,
       exchange_preferences: isExchange ? exchangePreferences.trim() : '',
       price: computedPrice,
+      original_price: (transactionType === 'SELL' && originalPrice) ? parseFloat(originalPrice).toFixed(2) : null,
+      sale_end_time: (transactionType === 'SELL' && hasSaleTimer) ? calculateSaleEndTime() : null,
       is_negotiable: transactionType === 'DONATE' ? false : isNegotiable,
       condition,
       location: location.trim(),
@@ -777,7 +807,7 @@ export default function CreateListing() {
                     </label>
                     <div className="relative">
                       <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 font-bold">
-                        Rs
+                        ₹
                       </span>
                       <input
                         type="number"
@@ -792,18 +822,115 @@ export default function CreateListing() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 p-3.5 bg-gray-50 border border-gray-200 rounded-md">
-                    <input
-                      type="checkbox"
-                      id="negotiable"
-                      checked={isNegotiable}
-                      onChange={(e) => setIsNegotiable(e.target.checked)}
-                      className="w-4 h-4 text-brand-500 rounded border-gray-300 focus:ring-brand-500"
-                    />
-                    <label htmlFor="negotiable" className="text-xs font-medium text-gray-700 select-none cursor-pointer">
-                      Price is negotiable
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-sm font-bold text-gray-900">
+                        Original / MRP Price (Optional)
+                      </label>
+                      {calculatedDiscount > 0 && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-black bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full border border-rose-200">
+                          {calculatedDiscount}% OFF
+                        </span>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 font-bold">
+                        ₹
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="e.g. 1600 (original MRP)"
+                        value={originalPrice}
+                        onChange={(e) => setOriginalPrice(e.target.value)}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-md pl-12 pr-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:bg-white outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 p-3.5 bg-gray-50 border border-gray-200 rounded-md">
+                  <input
+                    type="checkbox"
+                    id="negotiable"
+                    checked={isNegotiable}
+                    onChange={(e) => setIsNegotiable(e.target.checked)}
+                    className="w-4 h-4 text-brand-500 rounded border-gray-300 focus:ring-brand-500"
+                  />
+                  <label htmlFor="negotiable" className="text-xs font-medium text-gray-700 select-none cursor-pointer">
+                    Price is negotiable
+                  </label>
+                </div>
+
+                {/* Limited Time Sale / Deal Countdown Timer */}
+                <div className="p-4 rounded-md border border-amber-200 bg-amber-50/40 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-md bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                        <Clock className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-amber-950">Add Limited-Time Sale Countdown Timer</div>
+                        <div className="text-[11px] text-amber-800">Shows an active countdown badge on the product card to boost buyers' urgency</div>
+                      </div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={hasSaleTimer}
+                        onChange={(e) => setHasSaleTimer(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
                     </label>
                   </div>
+
+                  {hasSaleTimer && (
+                    <div className="pt-3 border-t border-amber-200/70 space-y-2.5 animate-in fade-in">
+                      <label className="block text-xs font-bold text-amber-950">
+                        Sale Ends In:
+                      </label>
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                        {[
+                          { id: '12h', label: '12 Hours' },
+                          { id: '24h', label: '24 Hours' },
+                          { id: '48h', label: '48 Hours' },
+                          { id: '3d', label: '3 Days' },
+                          { id: '7d', label: '7 Days' },
+                          { id: 'custom', label: 'Custom' },
+                        ].map((preset) => (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            onClick={() => setSaleDuration(preset.id)}
+                            className={`py-2 px-1.5 rounded-md border text-center text-xs font-bold transition-all ${
+                              saleDuration === preset.id
+                                ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                                : 'bg-white border-amber-200 text-amber-900 hover:bg-amber-100/50'
+                            }`}
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {saleDuration === 'custom' && (
+                        <div className="pt-2">
+                          <label className="block text-[11px] font-semibold text-amber-900 mb-1">
+                            Pick Custom End Date & Time:
+                          </label>
+                          <input
+                            type="datetime-local"
+                            value={customSaleEndTime}
+                            onChange={(e) => setCustomSaleEndTime(e.target.value)}
+                            min={new Date().toISOString().slice(0, 16)}
+                            className="bg-white border border-amber-300 rounded-md px-3 py-2 text-xs text-gray-800 focus:ring-2 focus:ring-amber-500 outline-none w-full sm:w-auto"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Optional Exchange / Barter Toggle for Cash Sellers */}

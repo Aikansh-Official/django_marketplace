@@ -17,7 +17,8 @@ import {
   AlertCircle,
   AlertTriangle,
   Repeat,
-  Camera
+  Camera,
+  Clock
 } from 'lucide-react';
 import api, { getCategories } from '../services/api';
 import CategoryIcon from '../components/CategoryIcon';
@@ -62,6 +63,10 @@ export default function EditListing() {
   const [isExchangeAllowed, setIsExchangeAllowed] = useState(false);
   const [exchangePreferences, setExchangePreferences] = useState('');
   const [price, setPrice] = useState('');
+  const [originalPrice, setOriginalPrice] = useState('');
+  const [hasSaleTimer, setHasSaleTimer] = useState(false);
+  const [saleDuration, setSaleDuration] = useState('24h');
+  const [customSaleEndTime, setCustomSaleEndTime] = useState('');
   const [isNegotiable, setIsNegotiable] = useState(true);
   const [condition, setCondition] = useState('GOOD');
   const [location, setLocation] = useState('');
@@ -73,6 +78,29 @@ export default function EditListing() {
   const [primaryIndex, setPrimaryIndex] = useState(0);
   const [status, setStatus] = useState('ACTIVE');
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+
+  const calculateSaleEndTime = () => {
+    if (!hasSaleTimer) return null;
+    if (saleDuration === 'custom') {
+      return customSaleEndTime ? new Date(customSaleEndTime).toISOString() : null;
+    }
+    const now = new Date();
+    if (saleDuration === '12h') now.setHours(now.getHours() + 12);
+    else if (saleDuration === '24h') now.setHours(now.getHours() + 24);
+    else if (saleDuration === '48h') now.setHours(now.getHours() + 48);
+    else if (saleDuration === '3d') now.setDate(now.getDate() + 3);
+    else if (saleDuration === '7d') now.setDate(now.getDate() + 7);
+    return now.toISOString();
+  };
+
+  const calculatedDiscount = React.useMemo(() => {
+    const orig = parseFloat(originalPrice);
+    const curr = parseFloat(price);
+    if (orig && curr && orig > curr && curr > 0) {
+      return Math.round(((orig - curr) / orig) * 100);
+    }
+    return 0;
+  }, [originalPrice, price]);
 
   // Fetch listing data and categories
   useEffect(() => {
@@ -104,6 +132,16 @@ export default function EditListing() {
         setIsExchangeAllowed(Boolean(data.is_exchange_allowed));
         setExchangePreferences(data.exchange_preferences || '');
         setPrice(data.price ? String(Math.round(data.price)) : '');
+        setOriginalPrice(data.original_price ? String(Math.round(data.original_price)) : '');
+        if (data.sale_end_time && new Date(data.sale_end_time) > new Date()) {
+          setHasSaleTimer(true);
+          setSaleDuration('custom');
+          const d = new Date(data.sale_end_time);
+          const localIso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+          setCustomSaleEndTime(localIso);
+        } else {
+          setHasSaleTimer(false);
+        }
         setIsNegotiable(data.is_negotiable ?? true);
         setCondition(data.condition || 'GOOD');
         setLocation(data.location || '');
@@ -257,6 +295,8 @@ export default function EditListing() {
       is_exchange_allowed: isExchange,
       exchange_preferences: isExchange ? exchangePreferences.trim() : '',
       price: computedPrice,
+      original_price: (transactionType === 'SELL' && originalPrice) ? parseFloat(originalPrice).toFixed(2) : null,
+      sale_end_time: (transactionType === 'SELL' && hasSaleTimer) ? calculateSaleEndTime() : null,
       is_negotiable: transactionType === 'DONATE' ? false : isNegotiable,
       condition,
       location: location.trim(),
@@ -554,11 +594,11 @@ export default function EditListing() {
           </div>
 
           {transactionType === 'SELL' ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
                 <div>
                   <label className="block text-xs font-bold text-gray-900 mb-1">
-                    Price (INR)
+                    Selling Price (INR)
                   </label>
                   <input
                     type="number"
@@ -569,18 +609,109 @@ export default function EditListing() {
                   />
                 </div>
 
-                <div className="flex items-center gap-2 p-2.5 bg-gray-50 border border-gray-200 rounded-md">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-gray-900">
+                      Original / MRP Price (Optional)
+                    </label>
+                    {calculatedDiscount > 0 && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-black bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full border border-rose-200">
+                        {calculatedDiscount}% OFF
+                      </span>
+                    )}
+                  </div>
                   <input
-                    type="checkbox"
-                    id="edit-negotiable"
-                    checked={isNegotiable}
-                    onChange={(e) => setIsNegotiable(e.target.checked)}
-                    className="w-4 h-4 text-brand-500 rounded border-gray-300"
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 1600 (original MRP)"
+                    value={originalPrice}
+                    onChange={(e) => setOriginalPrice(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-md px-4 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-brand-500 outline-none"
                   />
-                  <label htmlFor="edit-negotiable" className="text-xs font-semibold text-gray-700 select-none cursor-pointer">
-                    Price is negotiable
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 p-2.5 bg-gray-50 border border-gray-200 rounded-md">
+                <input
+                  type="checkbox"
+                  id="edit-negotiable"
+                  checked={isNegotiable}
+                  onChange={(e) => setIsNegotiable(e.target.checked)}
+                  className="w-4 h-4 text-brand-500 rounded border-gray-300"
+                />
+                <label htmlFor="edit-negotiable" className="text-xs font-semibold text-gray-700 select-none cursor-pointer">
+                  Price is negotiable
+                </label>
+              </div>
+
+              {/* Limited Time Sale / Deal Countdown Timer */}
+              <div className="p-4 rounded-md border border-amber-200 bg-amber-50/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-md bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                      <Clock className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-amber-950">Add Limited-Time Sale Countdown Timer</div>
+                      <div className="text-[11px] text-amber-800">Shows an active countdown badge on the product card to boost buyers' urgency</div>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={hasSaleTimer}
+                      onChange={(e) => setHasSaleTimer(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
                   </label>
                 </div>
+
+                {hasSaleTimer && (
+                  <div className="pt-3 border-t border-amber-200/70 space-y-2.5 animate-in fade-in">
+                    <label className="block text-xs font-bold text-amber-950">
+                      Sale Ends In:
+                    </label>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                      {[
+                        { id: '12h', label: '12 Hours' },
+                        { id: '24h', label: '24 Hours' },
+                        { id: '48h', label: '48 Hours' },
+                        { id: '3d', label: '3 Days' },
+                        { id: '7d', label: '7 Days' },
+                        { id: 'custom', label: 'Custom' },
+                      ].map((preset) => (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => setSaleDuration(preset.id)}
+                          className={`py-2 px-1.5 rounded-md border text-center text-xs font-bold transition-all ${
+                            saleDuration === preset.id
+                              ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                              : 'bg-white border-amber-200 text-amber-900 hover:bg-amber-100/50'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {saleDuration === 'custom' && (
+                      <div className="pt-2">
+                        <label className="block text-[11px] font-semibold text-amber-900 mb-1">
+                          Pick Custom End Date & Time:
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={customSaleEndTime}
+                          onChange={(e) => setCustomSaleEndTime(e.target.value)}
+                          min={new Date().toISOString().slice(0, 16)}
+                          className="bg-white border border-amber-300 rounded-md px-3 py-2 text-xs text-gray-800 focus:ring-2 focus:ring-amber-500 outline-none w-full sm:w-auto"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Also Open to Exchange Toggle */}

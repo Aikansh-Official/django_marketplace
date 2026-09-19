@@ -5,7 +5,7 @@ import {
   Tag, MapPin, Eye, EyeOff, Search, Trash2, Edit3, X,
   ExternalLink, Phone, MessageSquare, AlertTriangle,
   CheckCircle2, RefreshCw, Loader2, Maximize2, ShoppingBag,
-  DollarSign, HeartHandshake, Layers
+  DollarSign, HeartHandshake, Layers, ShieldCheck
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -101,6 +101,26 @@ export default function Listings() {
     }
   };
 
+  // Quick Toggle Trusted Status
+  const handleToggleTrusted = async (listingId, currentVal) => {
+    setActionLoading(true);
+    try {
+      await axios.patch(`${API_BASE}/marketplace/admin/listings/${listingId}/`, {
+        is_trusted: !currentVal
+      });
+      toast.success(!currentVal ? 'Listing marked as Trusted' : 'Trusted badge removed');
+      setListings(prev => prev.map(l => l.id === listingId ? { ...l, is_trusted: !currentVal } : l));
+      if (selectedListing && selectedListing.id === listingId) {
+        setSelectedListing(prev => ({ ...prev, is_trusted: !currentVal }));
+      }
+    } catch (error) {
+      console.error('Failed to toggle trusted status:', error);
+      toast.error('Failed to update trusted badge.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // Open Edit Modal
   const handleStartEdit = (listing) => {
     setEditingListing(listing);
@@ -116,7 +136,8 @@ export default function Listings() {
       category: listing.category?.id || listing.category || '',
       contact_phone: listing.contact_phone || '',
       contact_whatsapp: listing.contact_whatsapp || '',
-      contact_preference: listing.contact_preference || 'ALL'
+      contact_preference: listing.contact_preference || 'ALL',
+      is_trusted: Boolean(listing.is_trusted)
     });
   };
 
@@ -308,6 +329,9 @@ export default function Listings() {
                 <th scope="col" className="px-6 py-3 text-left text-xs font-black text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
+                <th scope="col" className="px-6 py-3 text-center text-xs font-black text-gray-500 uppercase tracking-wider">
+                  Trusted
+                </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-black text-gray-500 uppercase tracking-wider">
                   Views
                 </th>
@@ -334,12 +358,13 @@ export default function Listings() {
                     <td className="px-6 py-4"><div className="h-4 w-24 bg-gray-200 rounded"></div></td>
                     <td className="px-6 py-4"><div className="h-5 w-20 bg-gray-200 rounded-full"></div></td>
                     <td className="px-6 py-4"><div className="h-4 w-10 bg-gray-200 rounded"></div></td>
+                    <td className="px-6 py-4"><div className="h-4 w-10 bg-gray-200 rounded"></div></td>
                     <td className="px-6 py-4"><div className="h-7 w-24 bg-gray-200 rounded ml-auto"></div></td>
                   </tr>
                 ))
               ) : filteredListings.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-6 py-12 text-center text-sm text-gray-500">
+                  <td colSpan="8" className="px-6 py-12 text-center text-sm text-gray-500">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <AlertTriangle className="w-8 h-8 text-gray-400" />
                       <p className="font-semibold text-gray-700">No listings found matching your filters.</p>
@@ -451,6 +476,24 @@ export default function Listings() {
                           <option value="SOLD">SOLD</option>
                           <option value="HIDDEN">HIDDEN</option>
                         </select>
+                      </td>
+
+                      {/* Trusted Toggle */}
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <button
+                          type="button"
+                          disabled={actionLoading}
+                          onClick={() => handleToggleTrusted(listing.id, listing.is_trusted)}
+                          title={listing.is_trusted ? "Click to revoke Trusted status" : "Click to mark as CXC Trusted"}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all ${
+                            listing.is_trusted
+                              ? 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 shadow-sm'
+                              : 'bg-gray-100 text-gray-500 hover:bg-gray-200 border border-dashed border-gray-300'
+                          }`}
+                        >
+                          <ShieldCheck className={`w-3.5 h-3.5 ${listing.is_trusted ? 'text-blue-600' : 'text-gray-400'}`} />
+                          {listing.is_trusted ? 'Trusted' : 'Unset'}
+                        </button>
                       </td>
 
                       {/* Views Count */}
@@ -823,7 +866,7 @@ export default function Listings() {
               </div>
 
               {/* Checkboxes */}
-              <div className="pt-2 border-t border-gray-100">
+              <div className="pt-2 border-t border-gray-100 space-y-3">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -833,6 +876,23 @@ export default function Listings() {
                   />
                   <span className="font-semibold text-gray-800">Price is Negotiable</span>
                 </label>
+
+                <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-md flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                    <div>
+                      <div className="font-black text-xs text-blue-950">CampusXChange Trusted Listing</div>
+                      <div className="text-[11px] text-blue-700">Display the official CXC Trusted verified badge on product cards</div>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    id="edit_is_trusted"
+                    checked={Boolean(editFormData.is_trusted)}
+                    onChange={(e) => setEditFormData({ ...editFormData, is_trusted: e.target.checked })}
+                    className="rounded text-blue-600 focus:ring-blue-500 h-5 w-5 cursor-pointer"
+                  />
+                </div>
               </div>
 
               {/* Buttons */}

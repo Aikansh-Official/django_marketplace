@@ -16,6 +16,7 @@ import {
 import CategoryIcon from '../components/CategoryIcon';
 import UniversalLoader from '../components/common/UniversalLoader';
 import { getSafeImageUrl } from '../utils/imageUrl';
+import ListingCard from '../components/product/ListingCard';
 
 const TRANSACTION_FILTERS = [
   { value: 'ALL', label: 'All Modes' },
@@ -401,112 +402,15 @@ export default function Home() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-5 sm:gap-6 animate-fade-in-up">
             {listings.map((listing) => {
-              const primaryImage =
-                listing.images?.find((img) => img.is_primary)?.image_url ||
-                listing.images?.[0]?.image_url
-
               const isFav = favorites[listing.id] !== undefined ? favorites[listing.id] : isItemSaved(listing.id);
-
               return (
-                <Link
-                  to={`/listing/${listing.id}`}
+                <ListingCard
                   key={listing.id}
-                  className="bg-white border border-gray-200 rounded-md overflow-hidden hover:shadow-xl hover:border-brand-200 transition-all duration-200 group flex flex-col shadow-xs"
-                >
-                  {/* Image Container */}
-                  <div className="relative h-48 sm:h-56 md:h-60 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
-                    {primaryImage ? (
-                      <img
-                        src={getSafeImageUrl(primaryImage)}
-                        alt={listing.title}
-                        loading="lazy"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        onError={(e) => {
-                          e.currentTarget.onerror = null;
-                          e.currentTarget.style.display = 'none';
-                          const fallback = e.currentTarget.nextElementSibling;
-                          if (fallback) fallback.style.display = 'flex';
-                        }}
-                      />
-                    ) : null}
-                    <div
-                      className={`w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-100 group-hover:bg-gray-200 transition-colors ${
-                        primaryImage ? 'hidden' : 'flex'
-                      }`}
-                    >
-                      <Package className="w-7 h-7 sm:w-8 sm:h-8 mb-1 sm:mb-2 opacity-50" />
-                      <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider opacity-60">No Image</span>
-                    </div>
-
-                    {/* Favorite Button */}
-                    <button
-                      type="button"
-                      onClick={(e) => toggleFavorite(e, listing)}
-                      className={`absolute top-2 right-2 sm:top-2.5 sm:right-2.5 p-1.5 rounded-full shadow-sm transition-all z-10 ${isFav
-                        ? 'bg-rose-50 text-rose-500'
-                        : 'bg-white/80 hover:bg-white text-gray-400 hover:text-rose-500'
-                        }`}
-                      title={isFav ? 'Remove from Saved' : 'Save Item'}
-                    >
-                      <Heart
-                        className="h-3.5 w-3.5 sm:h-4 sm:w-4"
-                        fill={isFav ? 'currentColor' : 'none'}
-                      />
-                    </button>
-
-                    {/* Mode Badges */}
-                    {listing.transaction_type === 'DONATE' ? (
-                      <div className="absolute top-2 left-2 sm:top-2.5 sm:left-2.5 bg-green-600 text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full shadow-sm">
-                        FREE
-                      </div>
-                    ) : listing.transaction_type === 'EXCHANGE' ? (
-                      <div className="absolute top-2 left-2 sm:top-2.5 sm:left-2.5 bg-indigo-600 text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
-                        <Repeat className="w-2.5 h-2.5" />
-                        <span>SWAP</span>
-                      </div>
-                    ) : listing.is_exchange_allowed ? (
-                      <div className="absolute top-2 left-2 sm:top-2.5 sm:left-2.5 bg-indigo-500/90 backdrop-blur-xs text-white text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm flex items-center gap-1">
-                        <Repeat className="w-2.5 h-2.5" />
-                        <span>+SWAP</span>
-                      </div>
-                    ) : null}
-
-                    {/* Condition Badge */}
-                    <div className="absolute bottom-2 left-2 sm:bottom-2.5 sm:left-2.5 bg-black/60 backdrop-blur-xs text-white text-[8px] sm:text-[9px] font-semibold px-1.5 sm:px-2 py-0.5 rounded">
-                      {listing.condition ? listing.condition.replace('_', ' ') : 'GOOD'}
-                    </div>
-                  </div>
-
-                  {/* Content Container */}
-                  <div className="p-2.5 sm:p-4 flex flex-col flex-grow">
-                    <div className="flex items-baseline justify-between mb-1">
-                      <h3 className="font-black text-base sm:text-xl text-gray-900 tracking-tight">
-                        {listing.transaction_type === 'DONATE'
-                          ? 'Free'
-                          : listing.transaction_type === 'EXCHANGE'
-                            ? (Number(listing.price) > 0 ? `Rs ${listing.price} (Swap)` : 'Item Swap')
-                            : `Rs ${listing.price}`}
-                      </h3>
-                    </div>
-
-                    <p
-                      className="text-gray-700 text-xs sm:text-xs font-medium line-clamp-2 mb-2 sm:mb-3 group-hover:text-brand-600 transition-colors"
-                      title={listing.title}
-                    >
-                      {listing.title}
-                    </p>
-
-                    <div className="mt-auto pt-2 sm:pt-3 border-t border-gray-100 flex justify-between items-center text-[10px] sm:text-[11px] text-gray-500">
-                      <span className="flex items-center gap-1 truncate max-w-[65%]">
-                        <MapPin className="h-3 w-3 flex-shrink-0 text-gray-400" />
-                        <span className="truncate">{listing.location}</span>
-                      </span>
-                      <span className="font-bold text-[9px] sm:text-[10px] text-gray-400 uppercase whitespace-nowrap">
-                        {formatDate(listing.created_at)}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
+                  listing={listing}
+                  isFavorite={isFav}
+                  onToggleFavorite={toggleFavorite}
+                  formatDate={formatDate}
+                />
               );
             })}
           </div>

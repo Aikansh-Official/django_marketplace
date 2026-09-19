@@ -19,7 +19,7 @@ from .models import (
     Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession, BroadcastLog, AdminAuditLog, Review, ChatMessage
 )
 from .serializers import (
-    ListingSerializer, ListingCreateUpdateSerializer, CategorySerializer,
+    ListingSerializer, ListingCreateUpdateSerializer, AdminListingUpdateSerializer, CategorySerializer,
     AdminCategorySerializer, OfferSerializer, ListingReportSerializer,
     ListingReportCreateSerializer, PlatformSettingSerializer, NotificationSerializer,
     HandoverSessionSerializer, AdminDealSerializer, BroadcastLogSerializer, AdminAuditLogSerializer,
@@ -526,7 +526,7 @@ class AdminListingDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
-            return ListingCreateUpdateSerializer
+            return AdminListingUpdateSerializer
         return ListingSerializer
 
     def update(self, request, *args, **kwargs):

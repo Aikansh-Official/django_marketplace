@@ -50,6 +50,9 @@ class Listing(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Set to 0 for Donate or pure Exchange")
+    original_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Original / MRP price before discount")
+    sale_end_time = models.DateTimeField(null=True, blank=True, help_text="Sale countdown expiration timestamp")
+    is_trusted = models.BooleanField(default=False, help_text="Admin-verified trusted listing badge")
     is_negotiable = models.BooleanField(default=True)
     transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPES, default='SELL')
     is_exchange_allowed = models.BooleanField(default=False, help_text="Open for item swap/exchange")
@@ -64,6 +67,17 @@ class Listing(models.Model):
     views_count = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def discount_percentage(self):
+        try:
+            if self.original_price and self.price and float(self.original_price) > float(self.price) > 0:
+                orig = float(self.original_price)
+                curr = float(self.price)
+                return round(((orig - curr) / orig) * 100)
+        except (ValueError, TypeError, ZeroDivisionError):
+            pass
+        return 0
 
     class Meta:
         ordering = ['-created_at']

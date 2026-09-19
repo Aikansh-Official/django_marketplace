@@ -141,10 +141,13 @@ class ListingSerializer(serializers.ModelSerializer):
     is_seller = serializers.SerializerMethodField()
     offers_count = serializers.SerializerMethodField()
 
+    discount_percentage = serializers.ReadOnlyField()
+
     class Meta:
         model = Listing
         fields = [
-            'id', 'title', 'description', 'price', 'is_negotiable',
+            'id', 'title', 'description', 'price', 'original_price', 'sale_end_time',
+            'discount_percentage', 'is_trusted', 'is_negotiable',
             'transaction_type', 'is_exchange_allowed', 'exchange_preferences',
             'rent_period', 'condition', 'location',
             'contact_preference', 'contact_phone', 'contact_whatsapp',
@@ -152,7 +155,7 @@ class ListingSerializer(serializers.ModelSerializer):
             'category', 'category_id', 'images', 'seller', 'is_seller',
             'offers_count'
         ]
-        read_only_fields = ['views_count', 'created_at', 'updated_at', 'seller', 'offers_count']
+        read_only_fields = ['views_count', 'created_at', 'updated_at', 'seller', 'offers_count', 'discount_percentage', 'is_trusted']
 
     def get_seller(self, obj):
         request = self.context.get('request')
@@ -199,7 +202,7 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Listing
         fields = [
-            'id', 'title', 'description', 'price', 'is_negotiable',
+            'id', 'title', 'description', 'price', 'original_price', 'sale_end_time', 'is_negotiable',
             'transaction_type', 'is_exchange_allowed', 'exchange_preferences',
             'rent_period', 'condition', 'location',
             'contact_preference', 'contact_phone', 'contact_whatsapp',
@@ -225,7 +228,21 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
         elif price is not None and float(price) < 0:
             raise serializers.ValidationError({"price": "Price cannot be negative."})
 
+        original_price = attrs.get('original_price', getattr(self.instance, 'original_price', None))
+        if original_price is not None and original_price != '':
+            try:
+                if float(original_price) < 0:
+                    raise serializers.ValidationError({"original_price": "Original price cannot be negative."})
+                if price is not None and float(price) > float(original_price) > 0:
+                    raise serializers.ValidationError({"original_price": "Original price (MRP) should be greater than or equal to the selling price."})
+            except (ValueError, TypeError):
+                pass
+
         return attrs
+
+class AdminListingUpdateSerializer(ListingCreateUpdateSerializer):
+    class Meta(ListingCreateUpdateSerializer.Meta):
+        fields = ListingCreateUpdateSerializer.Meta.fields + ['is_trusted']
 
     def _process_image(self, img_data):
         """
