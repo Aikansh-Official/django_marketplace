@@ -14,6 +14,7 @@ import {
   ShoppingBag,
   Camera
 } from 'lucide-react';
+import { APP_VERSION } from '../../config/version';
 
 export default function ProfileSidebar({
   activeTab,
@@ -249,6 +250,14 @@ export default function ProfileSidebar({
           </button>
         </div>
       )}
+
+      {/* Platform Version Badge */}
+      <div className="pt-2 px-1 flex items-center justify-between text-[11px] text-gray-400 font-medium">
+        <span className="truncate">CampusXChange Platform</span>
+        <span className="font-mono text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded border border-gray-200 flex-shrink-0">
+          v{APP_VERSION}
+        </span>
+      </div>
     </div>
   );
 }

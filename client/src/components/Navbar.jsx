@@ -20,6 +20,7 @@ import AuthModal from './AuthModal';
 import SavedItemsDrawer from './SavedItemsDrawer';
 import CampusCommunityModal from './CampusCommunityModal';
 import { getSavedCount } from '../utils/savedStore';
+import { APP_VERSION } from '../config/version';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -754,6 +755,14 @@ export default function Navbar() {
                     </button>
                   </div>
                 )}
+              </div>
+
+              {/* Mobile Drawer Platform Version */}
+              <div className="pt-2 mt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
+                <span>CampusXChange Platform</span>
+                <span className="font-mono text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded border border-gray-200">
+                  v{APP_VERSION}
+                </span>
               </div>
             </div>
           </>

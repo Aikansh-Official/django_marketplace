@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import logoImg from '../assets/CampusXChange_Logo.jpeg';
+import { APP_VERSION } from '../config/version';
 
 export default function Footer() {
   const location = useLocation();
@@ -167,9 +168,16 @@ export default function Footer() {
 
         {/* Bottom Bar */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-400">
-          <p>
-            &copy; {currentYear} CampusXChange. A campus marketplace for LPU students.
-          </p>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <p>
+              &copy; {currentYear} CampusXChange. A campus marketplace for LPU students.
+            </p>
+            <span className="hidden sm:inline text-gray-300">•</span>
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              v{APP_VERSION}
+            </span>
+          </div>
           <p className="flex items-center gap-1 font-medium text-gray-500">
             Made by LPU Student
           </p>

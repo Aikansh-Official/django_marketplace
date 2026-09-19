@@ -25,6 +25,7 @@ def health_check(request):
     response_data = {
         "status": "ok" if status_code == 200 else "degraded",
         "service": "CampusXChange API",
+        "version": "2.4.0",
         "database": db_status,
         "environment": "development" if settings.DEBUG else "production",
         "timestamp": timezone.now().isoformat(),

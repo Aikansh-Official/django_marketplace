@@ -9,6 +9,7 @@ import {
 import CommandPalette from '../components/CommandPalette';
 import logoImg from '../assets/CampusXChange_Logo.jpeg';
 import { hasModulePermission, getEffectivePermissions } from '../utils/permissions';
+import { APP_VERSION } from '../config/version';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -158,6 +159,17 @@ export default function AdminLayout({ setAuth }) {
           >
             <LogOut className="h-4 w-4" /> Sign Out
           </button>
+
+          {/* Sidebar Version Pill */}
+          <div className="mt-3 pt-2 border-t border-gray-800/80 flex items-center justify-between text-[11px] text-gray-500">
+            <span className="flex items-center gap-1.5 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Enterprise
+            </span>
+            <span className="font-mono text-[10px] text-gray-400 bg-gray-800 px-1.5 py-0.5 rounded border border-gray-700/60">
+              v{APP_VERSION}
+            </span>
+          </div>
         </div>
       </aside>
 
@@ -207,6 +219,17 @@ export default function AdminLayout({ setAuth }) {
         <main className="flex-1 overflow-auto p-8 relative">
           <Outlet />
         </main>
+
+        {/* Admin Footer */}
+        <footer className="h-11 bg-white/70 backdrop-blur-sm border-t border-gray-200/80 px-8 flex items-center justify-between text-xs text-gray-500 shrink-0">
+          <p>© {new Date().getFullYear()} CampusXChange Enterprise Admin Portal</p>
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 font-mono text-[11px] text-gray-600 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              v{APP_VERSION} (Stable)
+            </span>
+          </div>
+        </footer>
       </div>
 
     </div>
