@@ -241,16 +241,6 @@ export default function RegisterStepDetails({
           </div>
         </div>
         {errors.email && <p className="text-red-500 text-xs font-medium mt-1">{errors.email.message}</p>}
-        {allowedDomains && (
-          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-gray-500">
-            <span className="font-semibold text-gray-600">Accepted Domains:</span>
-            {allowedDomains.split(',').map((domain) => (
-              <span key={domain.trim()} className="bg-brand-50 text-brand-700 font-bold px-1.5 py-0.5 rounded border border-brand-200 text-[10px]">
-                @{domain.trim()}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
 
       <button
