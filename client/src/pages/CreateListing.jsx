@@ -31,6 +31,7 @@ import api, { getPlatformConfig, getCategories } from '../services/api';
 import CategoryIcon from '../components/CategoryIcon';
 import UpgradeToSellerModal from '../components/profile/UpgradeToSellerModal';
 import LivePhotoModal from '../components/common/LivePhotoModal';
+import { getSafeImageUrl } from '../utils/imageUrl';
 
 const CONDITIONS = [
   { value: 'NEW', label: 'Brand New', desc: 'Unopened / with original tags' },
@@ -282,8 +283,13 @@ export default function CreateListing() {
         '/marketplace/listings/',
         payload
       );
+      const createdId = response.data?.id || response.data?._id;
       toast.success('Listing created successfully!');
-      navigate(`/listing/${response.data.id}`);
+      if (createdId) {
+        navigate(`/listing/${createdId}`);
+      } else {
+        navigate('/my-listings');
+      }
     } catch (err) {
       console.error('Failed to create listing', err);
       const data = err.response?.data;
@@ -650,7 +656,7 @@ export default function CreateListing() {
                       }`}
                   >
                     <img
-                      src={img}
+                      src={getSafeImageUrl(img)}
                       alt={`Upload ${idx + 1}`}
                       className="w-full h-full object-cover"
                     />
@@ -1104,7 +1110,7 @@ export default function CreateListing() {
               <div className="relative h-52 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
                 {coverImage ? (
                   <img
-                    src={coverImage}
+                    src={getSafeImageUrl(coverImage)}
                     alt={title || 'Product Preview'}
                     className="w-full h-full object-cover"
                   />

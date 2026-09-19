@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { X, Trash2, ExternalLink, Heart, ShoppingBag, MapPin, Tag } from 'lucide-react';
 import { getSavedItems, removeSavedItem } from '../utils/savedStore';
+import { getSafeImageUrl } from '../utils/imageUrl';
 
 export default function SavedItemsDrawer({ isOpen, onClose }) {
   const [items, setItems] = useState(() => getSavedItems());
@@ -117,9 +118,14 @@ export default function SavedItemsDrawer({ isOpen, onClose }) {
                       >
                         {imageSrc ? (
                           <img 
-                            src={imageSrc} 
+                            src={getSafeImageUrl(imageSrc)} 
                             alt={item.title} 
+                            loading="lazy"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.style.display = 'none';
+                            }}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-300 bg-gray-50">

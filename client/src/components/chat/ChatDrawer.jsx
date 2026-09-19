@@ -13,6 +13,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getSafeImageUrl } from '../../utils/imageUrl';
 
 export default function ChatDrawer({
   listingId,
@@ -139,7 +140,15 @@ export default function ChatDrawer({
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-10 h-10 rounded bg-white overflow-hidden shrink-0 border border-brand-200 flex items-center justify-center">
             {displayImage ? (
-              <img src={displayImage} alt={displayTitle} className="w-full h-full object-cover" />
+              <img
+                src={getSafeImageUrl(displayImage)}
+                alt={displayTitle}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
             ) : (
               <Package className="w-5 h-5 text-gray-300" />
             )}

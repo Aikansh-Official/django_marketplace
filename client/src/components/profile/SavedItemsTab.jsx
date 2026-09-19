@@ -12,6 +12,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { getSavedItems, removeSavedItem } from '../../utils/savedStore';
+import { getSafeImageUrl } from '../../utils/imageUrl';
 
 export default function SavedItemsTab({ onSavedCountChange }) {
   const [savedItems, setSavedItems] = useState(getSavedItems());
@@ -87,9 +88,14 @@ export default function SavedItemsTab({ onSavedCountChange }) {
                 <div className="relative h-44 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
                   {cover ? (
                     <img
-                      src={cover}
+                      src={getSafeImageUrl(cover)}
                       alt={item.title}
+                      loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.style.display = 'none';
+                      }}
                     />
                   ) : (
                     <div className="text-gray-400 flex flex-col items-center">

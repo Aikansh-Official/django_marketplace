@@ -19,7 +19,7 @@ export default defineConfig({
     },
   },
   build: {
-    chunkSizeWarningLimit: 800,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -27,14 +27,11 @@ export default defineConfig({
             if (id.includes('tesseract.js')) {
               return 'vendor-ocr';
             }
+            if (id.includes('html5-qrcode')) {
+              return 'vendor-scanner';
+            }
             if (id.includes('leaflet')) {
               return 'vendor-maps';
-            }
-            if (id.includes('lucide-react')) {
-              return 'vendor-icons';
-            }
-            if (id.includes('react-router-dom') || id.includes('react-dom') || id.includes('react/')) {
-              return 'vendor-react';
             }
           }
         },

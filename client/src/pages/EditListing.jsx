@@ -22,6 +22,7 @@ import {
 import api, { getCategories } from '../services/api';
 import CategoryIcon from '../components/CategoryIcon';
 import LivePhotoModal from '../components/common/LivePhotoModal';
+import { getSafeImageUrl } from '../utils/imageUrl';
 
 const LPU_LOCATIONS = [
   'BH-1', 'BH-2', 'BH-3', 'BH-4', 'BH-5', 'BH-6', 'BH-7', 'BH-8',
@@ -442,7 +443,15 @@ export default function EditListing() {
                     primaryIndex === idx ? 'border-brand-500 ring-2 ring-brand-200' : 'border-gray-200'
                   }`}
                 >
-                  <img src={img} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
+                  <img
+                    src={getSafeImageUrl(img)}
+                    alt={`Thumb ${idx}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
                   {primaryIndex === idx ? (
                     <span className="absolute top-2 left-2 bg-brand-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                       Cover

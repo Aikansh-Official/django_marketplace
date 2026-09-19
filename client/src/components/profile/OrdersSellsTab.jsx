@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
+import { getSafeImageUrl } from '../../utils/imageUrl';
 import {
   Package,
   Plus,
@@ -402,9 +403,14 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
                       <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-md bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200 flex items-center justify-center">
                         {cover ? (
                           <img
-                            src={cover}
+                            src={getSafeImageUrl(cover)}
                             alt={item.title}
+                            loading="lazy"
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.style.display = 'none';
+                            }}
                           />
                         ) : (
                           <Package className="w-7 h-7 text-gray-300" />
@@ -575,9 +581,14 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
                     <div className="flex items-center gap-3.5 min-w-0">
                       {ord.listing_image ? (
                         <img
-                          src={ord.listing_image}
+                          src={getSafeImageUrl(ord.listing_image)}
                           alt=""
+                          loading="lazy"
                           className="w-14 h-14 rounded-md object-cover flex-shrink-0 border border-gray-200"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.style.display = 'none';
+                          }}
                         />
                       ) : (
                         <div className="w-14 h-14 rounded-md bg-gray-200 flex items-center justify-center text-gray-400 flex-shrink-0">

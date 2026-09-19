@@ -26,6 +26,7 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 import ProtectedRoute from './components/ProtectedRoute';
 import ScrollToTop from './components/common/ScrollToTop';
 import UniversalLoader from './components/common/UniversalLoader';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import ThemeBackground from './components/ThemeBackground';
 import toast, { Toaster } from 'react-hot-toast';
 import { LoadingProvider } from './context/LoadingContext';
@@ -85,80 +86,82 @@ function App() {
               <MaintenanceScreen />
               <SuspendedAccountModal />
 
-              <Suspense
-                fallback={
-                  <div className="flex items-center justify-center min-h-[60vh]">
-                    <UniversalLoader text="Loading CampusXChange..." size="md" />
-                  </div>
-                }
-              >
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route
-                    path="/sell"
-                    element={
-                      <ProtectedRoute>
-                        <CreateListing />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/create-listing"
-                    element={
-                      <ProtectedRoute>
-                        <CreateListing />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/edit-listing/:id"
-                    element={
-                      <ProtectedRoute>
-                        <EditListing />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route path="/listing/:id" element={<ProductDetail />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/guidelines" element={<Guidelines />} />
-                  <Route path="/privacy" element={<Privacy />} />
-                  <Route path="/terms" element={<Terms />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route
-                    path="/my-listings"
-                    element={
-                      <ProtectedRoute>
-                        <MyListings />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/notifications"
-                    element={
-                      <ProtectedRoute>
-                        <Notifications />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/profile"
-                    element={
-                      <ProtectedRoute>
-                        <Profile />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/seller/:id"
-                    element={
-                      <ProtectedRoute>
-                        <SellerProfile />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
+              <ErrorBoundary>
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center min-h-[60vh]">
+                      <UniversalLoader text="Loading CampusXChange..." size="md" />
+                    </div>
+                  }
+                >
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route
+                      path="/sell"
+                      element={
+                        <ProtectedRoute>
+                          <CreateListing />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/create-listing"
+                      element={
+                        <ProtectedRoute>
+                          <CreateListing />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/edit-listing/:id"
+                      element={
+                        <ProtectedRoute>
+                          <EditListing />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route path="/listing/:id" element={<ProductDetail />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/guidelines" element={<Guidelines />} />
+                    <Route path="/privacy" element={<Privacy />} />
+                    <Route path="/terms" element={<Terms />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route
+                      path="/my-listings"
+                      element={
+                        <ProtectedRoute>
+                          <MyListings />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/notifications"
+                      element={
+                        <ProtectedRoute>
+                          <Notifications />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/profile"
+                      element={
+                        <ProtectedRoute>
+                          <Profile />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/seller/:id"
+                      element={
+                        <ProtectedRoute>
+                          <SellerProfile />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
+              </ErrorBoundary>
             </main>
             <Footer />
           </div>

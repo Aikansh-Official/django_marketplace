@@ -21,6 +21,7 @@ import {
 import api, { getPlatformConfig } from '../services/api';
 import CategoryIcon from '../components/CategoryIcon';
 import UniversalLoader from '../components/common/UniversalLoader';
+import { getSafeImageUrl } from '../utils/imageUrl';
 
 export default function MyListings() {
   const navigate = useNavigate();
@@ -287,7 +288,16 @@ export default function MyListings() {
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="w-20 h-20 rounded-md bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200 flex items-center justify-center">
                     {cover ? (
-                      <img src={cover} alt={item.title} className="w-full h-full object-cover" />
+                      <img
+                        src={getSafeImageUrl(cover)}
+                        alt={item.title}
+                        loading="lazy"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
                     ) : (
                       <Package className="w-6 h-6 text-gray-300" />
                     )}

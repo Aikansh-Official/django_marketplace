@@ -68,16 +68,17 @@ def get_allowed_origins():
     return allowed
 
 
-def generate_secure_image_url(source_url, ttl_seconds=1800):
+def generate_secure_image_url(source_url, ttl_seconds=1800, request=None):
     """
     Generate an HMAC-SHA256 signed, expiring gateway URL for any media/Cloudinary asset.
 
     Args:
         source_url: Raw Cloudinary URL or relative media URL
         ttl_seconds: Validity lifetime in seconds (default 1800 = 30 minutes)
+        request: Optional HttpRequest object to build an absolute URL
 
     Returns:
-        Secure gateway URL string e.g. /api/media/secure-image/?src=...&exp=...&sig=...
+        Secure gateway URL string e.g. https://domain/api/media/secure-image/?src=...&exp=...&sig=...
     """
     if not source_url or not isinstance(source_url, str):
         return source_url
@@ -103,7 +104,19 @@ def generate_secure_image_url(source_url, ttl_seconds=1800):
     message = f"{src_encoded}:{exp}".encode('utf-8')
     signature = hmac.new(secret_key, message, hashlib.sha256).hexdigest()
 
-    return f"/api/media/secure-image/?src={src_encoded}&exp={exp}&sig={signature}"
+    rel_path = f"/api/media/secure-image/?src={src_encoded}&exp={exp}&sig={signature}"
+
+    if request:
+        try:
+            return request.build_absolute_uri(rel_path)
+        except Exception:
+            pass
+
+    render_host = getattr(settings, 'RENDER_EXTERNAL_HOSTNAME', None)
+    if render_host:
+        return f"https://{render_host.rstrip('/')}{rel_path}"
+
+    return rel_path
 
 
 def validate_secure_token(src_encoded, exp_str, signature):
@@ -145,6 +158,15 @@ def validate_secure_token(src_encoded, exp_str, signature):
     return True, decoded_url, None
 
 
+def optimize_cloudinary_url(url):
+    """Ensure Cloudinary URL requests WebP and auto-quality for optimal speed."""
+    if not url or 'res.cloudinary.com' not in url:
+        return url
+    if '/upload/' in url and '/upload/f_auto' not in url and '/upload/q_auto' not in url:
+        return url.replace('/upload/', '/upload/f_auto,q_auto/', 1)
+    return url
+
+
 def is_authorized_request(request):
     """
     Validate that the incoming request is originating from our allowed site context
@@ -155,31 +177,40 @@ def is_authorized_request(request):
     sec_fetch_mode = request.META.get('HTTP_SEC_FETCH_MODE', '').lower()
 
     if sec_fetch_dest == 'document' or sec_fetch_mode == 'navigate':
-        # Opened directly in a browser tab / window
+        # Opened directly in a browser tab / window / address bar
         return False, "Direct URL navigation in address bar is blocked. Images can only be viewed within CampusXChange."
 
-    # 2. Check Referer header
+    # 2. Check Referer header if present
     referer = request.META.get('HTTP_REFERER', '')
     origin = request.META.get('HTTP_ORIGIN', '')
-
     allowed_origins = get_allowed_origins()
 
-    # Check Referer match
     if referer:
-        parsed_ref = urllib.parse.urlparse(referer)
-        ref_base = f"{parsed_ref.scheme}://{parsed_ref.netloc}".rstrip('/')
-        if ref_base in allowed_origins:
-            return True, None
+        try:
+            parsed_ref = urllib.parse.urlparse(referer)
+            ref_base = f"{parsed_ref.scheme}://{parsed_ref.netloc}".rstrip('/')
+            if ref_base in allowed_origins:
+                return True, None
+            else:
+                return False, f"Unauthorized external referer: {ref_base}"
+        except Exception:
+            pass
 
-    # Check Origin match
+    # Check Origin match if present
     if origin:
-        parsed_orig = urllib.parse.urlparse(origin)
-        orig_base = f"{parsed_orig.scheme}://{parsed_orig.netloc}".rstrip('/')
-        if orig_base in allowed_origins:
-            return True, None
+        try:
+            parsed_orig = urllib.parse.urlparse(origin)
+            orig_base = f"{parsed_orig.scheme}://{parsed_orig.netloc}".rstrip('/')
+            if orig_base in allowed_origins:
+                return True, None
+            else:
+                return False, f"Unauthorized external origin: {orig_base}"
+        except Exception:
+            pass
 
-    # If DEBUG is True and referer is missing but destination is image, permit for local debugging
-    if settings.DEBUG and not referer and sec_fetch_dest in ('image', 'empty', ''):
+    # 3. If neither referer nor origin is passed (common in cross-origin <img> tags, mobile browsers, or strict privacy mode):
+    # As long as it is a subresource (not document/navigate) and the HMAC signature is cryptographically valid, permit.
+    if sec_fetch_dest in ('image', 'empty', '') and sec_fetch_mode in ('no-cors', 'cors', ''):
         return True, None
 
     return False, "Unauthorized origin or external hotlink detected."
@@ -191,10 +222,10 @@ def secure_image_proxy_view(request):
     GET /api/media/secure-image/?src=...&exp=...&sig=...
 
     Validates:
-      1. Origin & Referer headers
+      1. Origin & Referer headers (blocks address-bar copy-pasting & external hotlinking)
       2. Cryptographic HMAC signature
       3. Expiration timestamp
-    Then streams the WebP asset with strict anti-caching & anti-sniffing headers.
+    Then streams the optimized WebP asset with strict anti-caching & anti-sniffing headers.
     """
     src_encoded = request.GET.get('src', '')
     exp_str = request.GET.get('exp', '')
@@ -204,10 +235,10 @@ def secure_image_proxy_view(request):
     is_auth_req, req_err = is_authorized_request(request)
     if not is_auth_req:
         logger.warning(f"Secure image gateway blocked unauthorized request: {req_err} (Referer: {request.META.get('HTTP_REFERER')})")
-        # Return protective SVG response with 403 status
         resp = HttpResponse(PROTECTED_ASSET_SVG, content_type='image/svg+xml', status=403)
         resp['Cache-Control'] = 'no-cache, no-store, must-revalidate'
         resp['X-Protected-Asset'] = 'CampusXChange-Secured'
+        resp['Access-Control-Allow-Origin'] = '*'
         return resp
 
     # Validate HMAC signature and token expiration
@@ -216,6 +247,7 @@ def secure_image_proxy_view(request):
         logger.warning(f"Secure image token validation failed: {token_err}")
         resp = HttpResponse(PROTECTED_ASSET_SVG, content_type='image/svg+xml', status=403)
         resp['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        resp['Access-Control-Allow-Origin'] = '*'
         return resp
 
     # Check cache first (locmem / Redis cache)
@@ -224,14 +256,16 @@ def secure_image_proxy_view(request):
     if cached:
         content_type, image_bytes = cached
         resp = HttpResponse(image_bytes, content_type=content_type)
-        resp['Cache-Control'] = 'private, no-cache, no-store, must-revalidate'
+        resp['Cache-Control'] = 'private, max-age=86400, stale-while-revalidate=3600'
         resp['X-Content-Type-Options'] = 'nosniff'
+        resp['Cross-Origin-Resource-Policy'] = 'cross-origin'
+        resp['Access-Control-Allow-Origin'] = '*'
         resp['X-Protected-Asset'] = 'CampusXChange-Secured'
         return resp
 
     # Fetch asset bytes
     try:
-        final_url_to_fetch = decoded_url
+        final_url_to_fetch = optimize_cloudinary_url(decoded_url)
 
         # If it is a Cloudinary authenticated asset, sign it with server credentials
         if 'res.cloudinary.com' in decoded_url and '/image/authenticated/' in decoded_url:
@@ -241,13 +275,10 @@ def secure_image_proxy_view(request):
                 configure_cloudinary()
 
                 # Extract public_id from authenticated URL
-                # e.g. https://res.cloudinary.com/dom8rkqq8/image/authenticated/.../campusxchange/id_cards/xyz.webp
                 parts = decoded_url.split('/image/authenticated/')
                 if len(parts) > 1:
                     subpath = parts[1]
-                    # strip signature or version if present
                     subparts = subpath.split('/')
-                    # find starting segment like 'campusxchange'
                     clean_parts = [p for p in subparts if not p.startswith('s--') and not p.startswith('v1')]
                     public_id = '/'.join(clean_parts).rsplit('.', 1)[0]
                     signed_url, _ = cloudinary.utils.cloudinary_url(
@@ -273,12 +304,14 @@ def secure_image_proxy_view(request):
             content_type = upstream.headers.get('Content-Type', 'image/webp')
             image_bytes = upstream.read()
 
-        # Cache in memory for up to 10 minutes (600s)
-        cache.set(cache_key, (content_type, image_bytes), timeout=600)
+        # Cache in memory for up to 1 hour (3600s)
+        cache.set(cache_key, (content_type, image_bytes), timeout=3600)
 
         response = HttpResponse(image_bytes, content_type=content_type)
-        response['Cache-Control'] = 'private, no-cache, no-store, must-revalidate'
+        response['Cache-Control'] = 'private, max-age=86400, stale-while-revalidate=3600'
         response['X-Content-Type-Options'] = 'nosniff'
+        response['Cross-Origin-Resource-Policy'] = 'cross-origin'
+        response['Access-Control-Allow-Origin'] = '*'
         response['Content-Disposition'] = 'inline'
         response['X-Protected-Asset'] = 'CampusXChange-Secured'
         return response

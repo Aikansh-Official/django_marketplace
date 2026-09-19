@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import CategoryIcon from '../components/CategoryIcon';
 import UniversalLoader from '../components/common/UniversalLoader';
+import { getSafeImageUrl } from '../utils/imageUrl';
 
 const TRANSACTION_FILTERS = [
   { value: 'ALL', label: 'All Modes' },
@@ -416,9 +417,14 @@ export default function Home() {
                   <div className="relative h-36 sm:h-44 md:h-48 w-full bg-gray-100 flex items-center justify-center overflow-hidden">
                     {primaryImage ? (
                       <img
-                        src={primaryImage}
+                        src={getSafeImageUrl(primaryImage)}
                         alt={listing.title}
+                        loading="lazy"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.style.display = 'none';
+                        }}
                       />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-100 group-hover:bg-gray-200 transition-colors">

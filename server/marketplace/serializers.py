@@ -71,7 +71,8 @@ class ListingImageSerializer(serializers.ModelSerializer):
 
     def get_image_url(self, obj):
         from .media_security import generate_secure_image_url
-        return generate_secure_image_url(obj.image_url)
+        request = self.context.get('request') if hasattr(self, 'context') else None
+        return generate_secure_image_url(obj.image_url, request=request)
 
 class SellerSerializer(serializers.ModelSerializer):
     """Full seller info — only used in authenticated contexts (e.g. accepted offers)."""
@@ -92,13 +93,15 @@ class SellerSerializer(serializers.ModelSerializer):
 
     def get_profile_picture_url(self, obj):
         from .media_security import generate_secure_image_url
+        request = self.context.get('request') if hasattr(self, 'context') else None
         raw = getattr(obj, 'profile_photo', None) or getattr(obj, 'profile_picture_url', None)
-        return generate_secure_image_url(raw)
+        return generate_secure_image_url(raw, request=request)
 
     def get_profile_photo(self, obj):
         from .media_security import generate_secure_image_url
+        request = self.context.get('request') if hasattr(self, 'context') else None
         raw = getattr(obj, 'profile_photo', None) or getattr(obj, 'profile_picture_url', None)
-        return generate_secure_image_url(raw)
+        return generate_secure_image_url(raw, request=request)
 
 class PublicSellerSerializer(serializers.ModelSerializer):
     """Safe seller info — used in public listing responses. Hides email, phone, and registration number."""
@@ -118,13 +121,15 @@ class PublicSellerSerializer(serializers.ModelSerializer):
 
     def get_profile_picture_url(self, obj):
         from .media_security import generate_secure_image_url
+        request = self.context.get('request') if hasattr(self, 'context') else None
         raw = getattr(obj, 'profile_photo', None) or getattr(obj, 'profile_picture_url', None)
-        return generate_secure_image_url(raw)
+        return generate_secure_image_url(raw, request=request)
 
     def get_profile_photo(self, obj):
         from .media_security import generate_secure_image_url
+        request = self.context.get('request') if hasattr(self, 'context') else None
         raw = getattr(obj, 'profile_photo', None) or getattr(obj, 'profile_picture_url', None)
-        return generate_secure_image_url(raw)
+        return generate_secure_image_url(raw, request=request)
 
 class ListingSerializer(serializers.ModelSerializer):
     images = ListingImageSerializer(many=True, read_only=True)
@@ -151,28 +156,32 @@ class ListingSerializer(serializers.ModelSerializer):
 
     def get_seller(self, obj):
         request = self.context.get('request')
-        if request and request.user and request.user.is_authenticated:
-            return SellerSerializer(obj.seller).data
-        return PublicSellerSerializer(obj.seller).data
+        user = getattr(request, 'user', None)
+        if user and user.is_authenticated:
+            return SellerSerializer(obj.seller, context=self.context).data
+        return PublicSellerSerializer(obj.seller, context=self.context).data
 
     def get_is_seller(self, obj):
         request = self.context.get('request')
-        if request and request.user and request.user.is_authenticated:
-            return obj.seller_id == request.user.id
+        user = getattr(request, 'user', None)
+        if user and user.is_authenticated:
+            return obj.seller_id == user.id
         return False
 
     def get_offers_count(self, obj):
         if hasattr(obj, 'annotated_offers_count'):
             return obj.annotated_offers_count
         request = self.context.get('request')
-        if request and request.user and request.user.is_authenticated and obj.seller_id == request.user.id:
+        user = getattr(request, 'user', None)
+        if user and user.is_authenticated and obj.seller_id == user.id:
             return obj.offers.filter(status='PENDING').count()
         return 0
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
         request = self.context.get('request')
-        is_auth = bool(request and request.user and request.user.is_authenticated)
+        user = getattr(request, 'user', None)
+        is_auth = bool(user and user.is_authenticated)
         if not is_auth:
             data['contact_phone'] = None
             data['contact_whatsapp'] = None

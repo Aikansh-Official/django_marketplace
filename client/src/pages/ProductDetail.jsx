@@ -42,6 +42,7 @@ import HandoverQRModal from '../components/handover/HandoverQRModal';
 import HandoverScannerModal from '../components/handover/HandoverScannerModal';
 import UniversalLoader from '../components/common/UniversalLoader';
 import ChatDrawer from '../components/chat/ChatDrawer';
+import { getSafeImageUrl } from '../utils/imageUrl';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -214,8 +215,13 @@ export default function ProductDetail() {
             const relatedRes = await api.get(
               `/marketplace/listings/?category=${res.data.category.slug}`
             );
+            const list = Array.isArray(relatedRes.data)
+              ? relatedRes.data
+              : Array.isArray(relatedRes.data?.results)
+                ? relatedRes.data.results
+                : [];
             setRelatedListings(
-              relatedRes.data.filter((item) => String(item.id) !== String(id)).slice(0, 4)
+              list.filter((item) => String(item.id) !== String(id)).slice(0, 4)
             );
           } catch (relErr) {
             console.error('Failed to fetch related items', relErr);
@@ -288,7 +294,7 @@ export default function ProductDetail() {
     if (!id) return;
     try {
       const res = await api.get(`/marketplace/listings/${id}/offers/`);
-      setListingOffers(res.data);
+      setListingOffers(Array.isArray(res.data) ? res.data : []);
     } catch (e) {
       // Not owner or error
     }
@@ -301,7 +307,12 @@ export default function ProductDetail() {
       api
         .get('/marketplace/my-offers/')
         .then((res) => {
-          const myOf = res.data.find((o) => String(o.listing) === String(id));
+          const list = Array.isArray(res.data)
+            ? res.data
+            : Array.isArray(res.data?.results)
+              ? res.data.results
+              : [];
+          const myOf = list.find((o) => String(o.listing) === String(id));
           if (myOf) setUserOffer(myOf);
         })
         .catch(() => { });
@@ -539,11 +550,12 @@ export default function ProductDetail() {
     );
   }
 
-  const images = listing.images && listing.images.length > 0
+  const images = Array.isArray(listing.images) && listing.images.length > 0
     ? listing.images
     : [];
 
-  const currentImage = images[activeImageIndex]?.image_url;
+  const rawCurrentImage = images[activeImageIndex]?.image_url || images[0]?.image_url || '';
+  const currentImage = getSafeImageUrl(rawCurrentImage);
 
   // Contact helper URLs
   const rawPhone = listing.contact_phone || listing.seller?.phone_number || '';
@@ -1104,7 +1116,7 @@ export default function ProductDetail() {
                       }`}
                   >
                     <img
-                      src={img.image_url}
+                      src={getSafeImageUrl(img.image_url)}
                       alt={`Thumb ${idx + 1}`}
                       className="w-full h-full object-cover"
                     />
@@ -1446,7 +1458,7 @@ export default function ProductDetail() {
 
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full bg-brand-100 border border-brand-200 text-brand-800 font-bold flex items-center justify-center text-lg shadow-sm">
-                {(listing.seller?.full_name || listing.seller?.username || 'U')[0].toUpperCase()}
+                {(((listing.seller?.full_name || listing.seller?.username) || 'U')[0] || 'U').toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-bold text-sm text-gray-900 truncate flex items-center gap-1.5">
@@ -1515,7 +1527,7 @@ export default function ProductDetail() {
 
             {/* Link to DPDP-Compliant Public Seller Profile */}
             <Link
-              to={`/seller/${listing.seller?.id}`}
+              to={listing.seller?.id ? `/seller/${listing.seller.id}` : '#'}
               className="w-full mt-2 inline-flex items-center justify-center gap-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 hover:text-brand-600 py-2.5 px-3 rounded-md text-xs font-bold border border-gray-200 transition-colors shadow-2xs"
             >
               <UserCheck className="w-3.5 h-3.5 text-brand-500" />
@@ -1552,7 +1564,7 @@ export default function ProductDetail() {
                   <div className="h-40 bg-gray-100 flex items-center justify-center p-2">
                     {img ? (
                       <img
-                        src={img}
+                        src={getSafeImageUrl(img)}
                         alt={rel.title}
                         className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform"
                       />
@@ -1826,7 +1838,7 @@ export default function ProductDetail() {
           buyerName={activeOfferForQR.buyer_name || activeOfferForQR.buyer_reg}
           price={activeOfferForQR.offer_amount || listing.price}
           location={listing.location}
-          image={listing.images?.[0]?.image_url}
+          image={getSafeImageUrl(listing.images?.[0]?.image_url)}
           existingSession={activeOfferForQR.active_handover}
           onClose={() => setShowQRModal(false)}
           onComplete={handleDealCompleted}
@@ -2051,7 +2063,7 @@ export default function ProductDetail() {
                     activeImageIndex === idx ? 'border-brand-500 scale-105' : 'border-white/20 opacity-60 hover:opacity-100'
                   }`}
                 >
-                  <img src={img.image_url} alt="" className="w-full h-full object-cover" />
+                  <img src={getSafeImageUrl(img.image_url)} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

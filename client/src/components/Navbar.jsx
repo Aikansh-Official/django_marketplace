@@ -21,6 +21,7 @@ import SavedItemsDrawer from './SavedItemsDrawer';
 import CampusCommunityModal from './CampusCommunityModal';
 import { getSavedCount } from '../utils/savedStore';
 import { APP_VERSION } from '../config/version';
+import { getSafeImageUrl } from '../utils/imageUrl';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -371,7 +372,15 @@ export default function Navbar() {
                           <div className="flex items-center gap-2.5 min-w-0">
                             <div className="w-9 h-9 rounded bg-gray-100 overflow-hidden shrink-0 border border-gray-200 flex items-center justify-center">
                               {item.image ? (
-                                <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                                <img
+                                  src={getSafeImageUrl(item.image)}
+                                  alt={item.title}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
                               ) : (
                                 <Package className="w-4 h-4 text-gray-400" />
                               )}
@@ -442,9 +451,13 @@ export default function Navbar() {
                         <div className="w-7 h-7 rounded-full bg-gray-900 text-white font-semibold text-xs flex items-center justify-center overflow-hidden">
                           {userProfile?.profile_photo ? (
                             <img
-                              src={userProfile.profile_photo}
+                              src={getSafeImageUrl(userProfile.profile_photo)}
                               alt={displayName}
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.style.display = 'none';
+                              }}
                             />
                           ) : (
                             getUserInitials()

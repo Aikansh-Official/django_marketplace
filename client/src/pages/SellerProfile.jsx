@@ -23,6 +23,7 @@ import {
 import UniversalLoader from '../components/common/UniversalLoader';
 import ChatDrawer from '../components/chat/ChatDrawer';
 import api, { submitReport } from '../services/api';
+import { getSafeImageUrl } from '../utils/imageUrl';
 
 export default function SellerProfile() {
   const { id } = useParams();
@@ -171,7 +172,15 @@ export default function SellerProfile() {
             <div className="relative shrink-0">
               <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-gradient-to-tr from-brand-500 to-orange-400 text-white flex items-center justify-center font-black text-2xl shadow-md border-4 border-white overflow-hidden">
                 {seller.profile_photo ? (
-                  <img src={seller.profile_photo} alt={seller.display_name} className="w-full h-full object-cover" />
+                  <img
+                    src={getSafeImageUrl(seller.profile_photo)}
+                    alt={seller.display_name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
                 ) : (
                   seller.display_name.slice(0, 2).toUpperCase()
                 )}
@@ -306,9 +315,14 @@ export default function SellerProfile() {
                     <Link to={`/listing/${item.id}`} className="relative h-44 bg-gray-100 overflow-hidden block">
                       {cover ? (
                         <img
-                          src={cover}
+                          src={getSafeImageUrl(cover)}
                           alt={item.title}
+                          loading="lazy"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.style.display = 'none';
+                          }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-300">
