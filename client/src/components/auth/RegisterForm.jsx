@@ -67,7 +67,7 @@ export default function RegisterForm({
   onSwitch,
   onSuccess
 }) {
-  const { register, handleSubmit, watch, setError, clearErrors, trigger, formState: { errors } } = useForm({
+  const { register, handleSubmit, watch, setValue, setError, clearErrors, trigger, formState: { errors } } = useForm({
     resolver: customResolver,
     mode: 'onBlur',
     defaultValues: {
@@ -232,6 +232,23 @@ export default function RegisterForm({
   const handleProceedFromDetails = async () => {
     const isValid = await trigger(['full_name', 'username', 'phone_number', 'email']);
     if (!isValid) return;
+
+    const trimmedUsername = usernameValue ? String(usernameValue).trim() : '';
+    const trimmedPhone = phoneValue ? String(phoneValue).trim() : '';
+    const trimmedName = fullNameValue ? String(fullNameValue).trim() : '';
+
+    if (!/^[a-zA-Z\s.'-]+$/.test(trimmedName)) {
+      setError('full_name', { type: 'manual', message: 'Full name can only contain letters and spaces' });
+      return;
+    }
+    if (!/^\d{8}$/.test(trimmedUsername)) {
+      setError('username', { type: 'manual', message: 'Registration number must be exactly 8 digits' });
+      return;
+    }
+    if (!/^\d{10}$/.test(trimmedPhone)) {
+      setError('phone_number', { type: 'manual', message: 'Phone number must be exactly 10 digits' });
+      return;
+    }
 
     if (usernameStatus === 'taken' || phoneStatus === 'taken' || emailStatus === 'taken') {
       toast.error('Please fix the duplicate or already registered fields before continuing.');
@@ -420,14 +437,19 @@ export default function RegisterForm({
 
   // Verify Email OTP
   const handleVerifyOTP = async () => {
-    const isValid = await trigger(['otp']);
-    if (!isValid) return;
+    const rawOtp = watch('otp');
+    const otpValue = rawOtp ? String(rawOtp).trim() : '';
+    if (!otpValue || !/^\d{6}$/.test(otpValue)) {
+      toast.error("Please enter a valid 6-digit numeric OTP code");
+      setError('otp', { type: 'manual', message: 'OTP must be exactly 6 numeric digits' });
+      return;
+    }
 
     setIsLoading(true);
     try {
       await api.post('/auth/verify-otp/', {
         email: emailValue,
-        otp: watch('otp')
+        otp: otpValue
       });
       toast.success("Email verified successfully!");
       // For Buyer: next is step 3 (Password). For Seller: next is step 5 (Password).
@@ -559,6 +581,8 @@ export default function RegisterForm({
         {step === 1 && (
           <RegisterStepDetails
             register={register}
+            setValue={setValue}
+            watch={watch}
             errors={errors}
             usernameStatus={usernameStatus}
             phoneStatus={phoneStatus}
@@ -609,6 +633,8 @@ export default function RegisterForm({
         {((selectedRole === 'BUYER' && step === 2) || (selectedRole === 'SELLER' && step === 4)) && (
           <RegisterStepOtp
             register={register}
+            setValue={setValue}
+            watch={watch}
             errors={errors}
             emailValue={emailValue}
             isLoading={isLoading}

@@ -277,7 +277,7 @@ class ListingListCreateView(generics.ListCreateAPIView):
         return ListingSerializer
 
     def get_queryset(self):
-        queryset = Listing.objects.filter(status='ACTIVE').select_related('seller', 'category')
+        queryset = Listing.objects.filter(status='ACTIVE').select_related('seller', 'category').prefetch_related('images')
 
         # Search query (title, description, location)
         search = self.request.query_params.get('search')
@@ -400,7 +400,7 @@ class ListingListCreateView(generics.ListCreateAPIView):
 
 
 class ListingDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Listing.objects.all().select_related('seller', 'category')
+    queryset = Listing.objects.all().select_related('seller', 'category').prefetch_related('images')
 
     def get_permissions(self):
         if self.request.method in permissions.SAFE_METHODS:
@@ -447,7 +447,7 @@ class ListingDetailView(generics.RetrieveUpdateDestroyAPIView):
             if not cache.get(cache_key):
                 Listing.objects.filter(pk=instance.pk).update(views_count=F('views_count') + 1)
                 cache.set(cache_key, True, 7200)  # 2 hours
-                instance.refresh_from_db()
+                instance.views_count = (instance.views_count or 0) + 1
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
@@ -458,7 +458,7 @@ class MyListingsView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = Listing.objects.filter(seller=user).select_related('seller', 'category').order_by('-created_at')
+        queryset = Listing.objects.filter(seller=user).select_related('seller', 'category').prefetch_related('images').order_by('-created_at')
 
         status_filter = self.request.query_params.get('status')
         if status_filter and status_filter != 'ALL':
@@ -514,14 +514,14 @@ class ToggleListingStatusView(APIView):
 
 
 class AdminListingList(generics.ListAPIView):
-    queryset = Listing.objects.all().select_related('seller', 'category').order_by('-created_at')
+    queryset = Listing.objects.all().select_related('seller', 'category').prefetch_related('images').order_by('-created_at')
     serializer_class = ListingSerializer
     permission_classes = [HasAdminModulePermission('listings')]
 
 
 class AdminListingDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Admin view to retrieve, update any field, or delete any listing."""
-    queryset = Listing.objects.all().select_related('seller', 'category')
+    queryset = Listing.objects.all().select_related('seller', 'category').prefetch_related('images')
     permission_classes = [HasAdminModulePermission('listings')]
 
     def get_serializer_class(self):
@@ -589,7 +589,7 @@ class AdminDashboardStatsView(APIView):
         pending_reports = ListingReport.objects.filter(status='PENDING').count()
 
         # Fetch only the top 5 recent listings and students with minimal fields
-        recent_listings_qs = Listing.objects.select_related('seller', 'category').order_by('-created_at')[:5]
+        recent_listings_qs = Listing.objects.select_related('seller', 'category').prefetch_related('images').order_by('-created_at')[:5]
         recent_students_qs = User.objects.filter(is_staff=False, is_superuser=False).only(
             'id', 'username', 'full_name', 'email', 'is_verified_student', 'trust_score', 'profile_photo'
         ).order_by('-date_joined')[:5]
@@ -1024,7 +1024,7 @@ class PublicSellerProfileView(APIView):
         active_listings = Listing.objects.filter(
             seller=seller,
             status='ACTIVE'
-        ).select_related('category').order_by('-created_at')
+        ).select_related('category').prefetch_related('images').order_by('-created_at')
 
         listings_data = ListingSerializer(active_listings, many=True, context={'request': request}).data
 

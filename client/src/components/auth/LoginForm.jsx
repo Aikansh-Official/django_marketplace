@@ -15,7 +15,7 @@ import { loginSchema } from './authSchemas';
 
 export default function LoginForm({ onSwitch, onForgotPassword, onSuccess }) {
   const [showPassword, setShowPassword] = useState(false);
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
+  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(loginSchema),
   });
 
@@ -60,8 +60,27 @@ export default function LoginForm({ onSwitch, onForgotPassword, onSuccess }) {
             <input
               type="text"
               inputMode="numeric"
+              pattern="[0-9]*"
               maxLength={8}
               {...register('username')}
+              onKeyDown={(e) => {
+                if (!/[0-9]/.test(e.key) && !['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete', 'Enter'].includes(e.key) && !e.ctrlKey && !e.metaKey) {
+                  e.preventDefault();
+                }
+              }}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, '').slice(0, 8);
+                if (setValue) {
+                  setValue('username', digits, { shouldValidate: true });
+                }
+              }}
+              onPaste={(e) => {
+                e.preventDefault();
+                const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 8);
+                if (setValue) {
+                  setValue('username', pasted, { shouldValidate: true });
+                }
+              }}
               className="w-full bg-gray-50/80 hover:bg-white focus:bg-white border border-gray-200 text-gray-900 font-semibold rounded-md pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all placeholder:text-gray-400 placeholder:font-normal"
               placeholder="e.g. 12200000"
             />

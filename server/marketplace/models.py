@@ -65,6 +65,16 @@ class Listing(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', '-created_at']),
+            models.Index(fields=['category', 'status']),
+            models.Index(fields=['seller', 'status']),
+            models.Index(fields=['price', 'status']),
+            models.Index(fields=['-created_at']),
+        ]
+
     def __str__(self):
         return self.title
 
@@ -101,6 +111,15 @@ class Offer(models.Model):
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='PENDING')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['listing', 'status']),
+            models.Index(fields=['buyer', '-created_at']),
+            models.Index(fields=['status']),
+            models.Index(fields=['-created_at']),
+        ]
 
     def __str__(self):
         return f"{self.buyer} requested {self.listing.title} for {self.offer_amount}"
@@ -173,6 +192,10 @@ class Notification(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['recipient', 'is_read', '-created_at']),
+            models.Index(fields=['recipient', '-created_at']),
+        ]
 
     def __str__(self):
         return f"Notification for {self.recipient}: {self.title} ({self.priority})"
@@ -324,6 +347,11 @@ class ChatMessage(models.Model):
 
     class Meta:
         ordering = ['created_at']
+        indexes = [
+            models.Index(fields=['sender', 'recipient', '-created_at']),
+            models.Index(fields=['listing', '-created_at']),
+            models.Index(fields=['recipient', 'is_read']),
+        ]
 
     def __str__(self):
         return f"Msg from #{self.sender_id} to #{self.recipient_id} on Listing #{self.listing_id}"

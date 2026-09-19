@@ -14,6 +14,8 @@ import {
 
 export default function RegisterStepDetails({
   register,
+  setValue,
+  watch,
   errors,
   usernameStatus,
   phoneStatus = 'idle',
@@ -82,8 +84,26 @@ export default function RegisterStepDetails({
           <input
             {...register('full_name')}
             maxLength={50}
+            onKeyDown={(e) => {
+              if (/[0-9!@#$%^&*()_+=[\]{};:"\\|,<>/?]/.test(e.key) && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+              }
+            }}
+            onChange={(e) => {
+              const cleaned = e.target.value.replace(/[^a-zA-Z\s.'-]/g, '').slice(0, 50);
+              if (setValue) {
+                setValue('full_name', cleaned, { shouldValidate: true });
+              }
+            }}
+            onPaste={(e) => {
+              e.preventDefault();
+              const pasted = e.clipboardData.getData('text').replace(/[^a-zA-Z\s.'-]/g, '').slice(0, 50);
+              if (setValue) {
+                setValue('full_name', pasted, { shouldValidate: true });
+              }
+            }}
             className="w-full bg-gray-50/80 hover:bg-white focus:bg-white border border-gray-200 text-gray-900 font-medium rounded-md pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all placeholder:text-gray-400"
-            placeholder="e.g. Anshu"
+            placeholder="e.g. Anshu Sharma"
           />
         </div>
         {errors.full_name && <p className="text-red-500 text-xs font-medium mt-1">{errors.full_name.message}</p>}
@@ -101,15 +121,34 @@ export default function RegisterStepDetails({
             <input
               type="text"
               inputMode="numeric"
+              pattern="[0-9]*"
               maxLength={8}
               {...register('username')}
+              onKeyDown={(e) => {
+                if (!/[0-9]/.test(e.key) && !['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete', 'Enter'].includes(e.key) && !e.ctrlKey && !e.metaKey) {
+                  e.preventDefault();
+                }
+              }}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, '').slice(0, 8);
+                if (setValue) {
+                  setValue('username', digits, { shouldValidate: true });
+                }
+              }}
+              onPaste={(e) => {
+                e.preventDefault();
+                const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 8);
+                if (setValue) {
+                  setValue('username', pasted, { shouldValidate: true });
+                }
+              }}
               className={`w-full border text-gray-900 font-medium rounded-md pl-10 pr-9 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-brand-500 transition-all placeholder:text-gray-400 ${usernameStatus === 'taken'
                 ? 'bg-red-50/80 border-red-200 focus:ring-red-500/20'
                 : usernameStatus === 'available'
                   ? 'bg-emerald-50/80 border-emerald-200 focus:ring-emerald-500/20'
                   : 'bg-gray-50/80 hover:bg-white focus:bg-white border-gray-200 focus:ring-brand-500/20'
                 }`}
-              placeholder="e.g. 12345678"
+              placeholder="e.g. 12200000"
             />
             <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
               {usernameStatus === 'checking' && <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />}
@@ -131,8 +170,27 @@ export default function RegisterStepDetails({
             <input
               type="tel"
               inputMode="numeric"
+              pattern="[0-9]*"
               maxLength={10}
               {...register('phone_number')}
+              onKeyDown={(e) => {
+                if (!/[0-9]/.test(e.key) && !['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete', 'Enter'].includes(e.key) && !e.ctrlKey && !e.metaKey) {
+                  e.preventDefault();
+                }
+              }}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                if (setValue) {
+                  setValue('phone_number', digits, { shouldValidate: true });
+                }
+              }}
+              onPaste={(e) => {
+                e.preventDefault();
+                const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 10);
+                if (setValue) {
+                  setValue('phone_number', pasted, { shouldValidate: true });
+                }
+              }}
               className={`w-full border text-gray-900 font-medium rounded-md pl-10 pr-9 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-brand-500 transition-all placeholder:text-gray-400 ${phoneStatus === 'taken'
                 ? 'bg-red-50/80 border-red-200 focus:ring-red-500/20'
                 : phoneStatus === 'available'
@@ -162,6 +220,12 @@ export default function RegisterStepDetails({
           <input
             type="email"
             {...register('email')}
+            onChange={(e) => {
+              const clean = e.target.value.trim().toLowerCase();
+              if (setValue) {
+                setValue('email', clean, { shouldValidate: true });
+              }
+            }}
             className={`w-full border text-gray-900 font-medium rounded-md pl-10 pr-9 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-brand-500 transition-all placeholder:text-gray-400 ${emailStatus === 'taken'
               ? 'bg-red-50/80 border-red-200 focus:ring-red-500/20'
               : emailStatus === 'available'

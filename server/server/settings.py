@@ -72,6 +72,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'django.middleware.gzip.GZipMiddleware',
     'server.middleware.DataSecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -117,7 +118,16 @@ import certifi
 MONGODB_URI = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/campusxchange')
 MONGODB_NAME = os.environ.get('MONGODB_NAME', 'campusxchange')
 
-_mongo_options = {}
+_mongo_options = {
+    'maxPoolSize': int(os.environ.get('MONGO_MAX_POOL_SIZE', 100)),
+    'minPoolSize': int(os.environ.get('MONGO_MIN_POOL_SIZE', 10)),
+    'maxIdleTimeMS': 45000,
+    'serverSelectionTimeoutMS': 5000,
+    'connectTimeoutMS': 10000,
+    'socketTimeoutMS': 20000,
+    'retryWrites': True,
+    'retryReads': True,
+}
 # Ensure trusted Mozilla CA certificates are used for Atlas TLS handshake
 if 'mongodb+srv' in MONGODB_URI or 'ssl=true' in MONGODB_URI.lower():
     _mongo_options['tlsCAFile'] = certifi.where()
@@ -128,6 +138,7 @@ DATABASES = {
         'HOST': MONGODB_URI,
         'NAME': MONGODB_NAME,
         'OPTIONS': _mongo_options,
+        'CONN_MAX_AGE': int(os.environ.get('CONN_MAX_AGE', 600)),
     }
 }
 
@@ -186,6 +197,8 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage" if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
+WHITENOISE_MAX_AGE = 31536000  # 1 year cache for static assets
+WHITENOISE_MANIFEST_STRICT = False
 
 
 # Resend Email & Service Configuration
@@ -236,6 +249,10 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'campusxchange-locmem-cache',
         'TIMEOUT': 300,
+        'OPTIONS': {
+            'MAX_ENTRIES': 2000,
+            'CULL_FREQUENCY': 3,
+        }
     }
 }
 
@@ -308,6 +325,7 @@ if DEBUG:
 from corsheaders.defaults import default_headers
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-app-security-key',
+    'x-client-type',
 ]
 CORS_PREFLIGHT_MAX_AGE = 86400
 
@@ -342,12 +360,17 @@ if not DEBUG and not is_local_host and RENDER_EXTERNAL_HOSTNAME:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 
-    # Prevent content-type sniffing
+    # Prevent content-type sniffing & clickjacking
     SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 else:
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # ── Structured Production Logging ──────────────────────────────
 LOGGING = {

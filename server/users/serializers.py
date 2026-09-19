@@ -57,6 +57,12 @@ class VerifyOTPSerializer(serializers.Serializer):
     email = serializers.EmailField()
     otp = serializers.CharField(max_length=6)
 
+    def validate_otp(self, value):
+        val = str(value).strip()
+        if not val.isdigit() or len(val) != 6:
+            raise serializers.ValidationError("OTP must be exactly 6 numeric digits.")
+        return val
+
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
     password_confirm = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
@@ -77,6 +83,14 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             validate_password(attrs['password'])
         except DjangoValidationError as e:
             raise serializers.ValidationError({"password": list(e.messages)})
+
+        full_name = attrs.get('full_name', '').strip()
+        if not full_name or len(full_name) < 3:
+            raise serializers.ValidationError({"full_name": "Full name must be at least 3 characters."})
+        if len(full_name) > 50:
+            raise serializers.ValidationError({"full_name": "Full name cannot exceed 50 characters."})
+        if not re.match(r"^[a-zA-Z\s.'-]+$", full_name):
+            raise serializers.ValidationError({"full_name": "Full name can only contain letters and spaces."})
             
         username = attrs.get('username', '')
         if not username.isdigit() or len(username) != 8:

@@ -145,6 +145,13 @@ class CustomUser(AbstractUser):
             self.full_name = f"{self.first_name} {self.last_name}".strip()
         super().save(*args, **kwargs)
 
+    class Meta:
+        ordering = ['-date_joined']
+        indexes = [
+            models.Index(fields=['role', 'is_id_verified']),
+            models.Index(fields=['-date_joined']),
+        ]
+
     def __str__(self):
         return f"{self.full_name or self.username} ({self.college_domain if self.college_domain else 'Unverified'})"
 
