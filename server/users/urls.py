@@ -6,7 +6,8 @@ from .views import (
     SendOTPView, VerifyOTPView, UserAdminDetailView, AuthStatusView,
     CompleteIdVerificationView, UpgradeToSellerView,
     AdminStaffListView, AdminStaffDetailView,
-    ForgotPasswordRequestView, ForgotPasswordResetView
+    ForgotPasswordRequestView, ForgotPasswordResetView,
+    UserActiveSessionsView, RevokeSessionView
 )
 
 urlpatterns = [
@@ -14,6 +15,8 @@ urlpatterns = [
     path('verify-otp/', VerifyOTPView.as_view(), name='verify_otp'),
     path('register/', RegisterView.as_view(), name='auth_register'),
     path('login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('sessions/', UserActiveSessionsView.as_view(), name='user_active_sessions'),
+    path('revoke-session/', RevokeSessionView.as_view(), name='revoke_session'),
     path('forgot-password/', ForgotPasswordRequestView.as_view(), name='forgot_password'),
     path('reset-password/', ForgotPasswordResetView.as_view(), name='reset_password'),
     path('token/refresh/', CustomTokenRefreshView.as_view(), name='token_refresh'),

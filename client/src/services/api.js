@@ -20,6 +20,9 @@ api.interceptors.request.use(
       config.headers['X-App-Security-Key'] = appSecurityKey;
     }
 
+    // Platform identifier for dual-device session isolation (1 Web + 1 Android)
+    config.headers['X-Client-Type'] = 'web';
+
     const token = localStorage.getItem('access');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -141,7 +144,22 @@ api.interceptors.response.use(
         localStorage.removeItem('access');
         localStorage.removeItem('refresh');
         localStorage.removeItem('user');
-        window.dispatchEvent(new Event('auth-expired'));
+
+        const isSessionInvalid = refreshErr.response?.data?.session_invalidated;
+        const errMsg = refreshErr.response?.data?.error;
+
+        if (isSessionInvalid) {
+          window.dispatchEvent(
+            new CustomEvent('session-terminated', {
+              detail: {
+                message: errMsg || 'Your web session was terminated because your account was logged in on another device.',
+              },
+            })
+          );
+        } else {
+          window.dispatchEvent(new Event('auth-expired'));
+        }
+
         return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;

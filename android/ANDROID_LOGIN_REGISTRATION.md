@@ -197,7 +197,12 @@ sequenceDiagram
     VM-->>UI: Navigate to Main Marketplace (Clear Backstack)
 ```
 
-#### B. Direct Login Flow & Silent Token Refresh
+#### B. Direct Login Flow & Silent Token Refresh (90-Day Android Session)
+
+> **Dual-Device Session Isolation**: CampusXChange allows exactly **1 Web Session (30 days)** and **1 Android App Session (90 days)** concurrently per account.
+> - Android requests MUST supply `X-Client-Type: android` header in OkHttpClient interceptor.
+> - If a student logs into a 2nd Android phone, the 1st phone's session is revoked (401 with `session_invalidated: true`).
+> - Logging into Android never terminates an active Web session on a laptop/desktop, and vice-versa!
 
 ```mermaid
 sequenceDiagram
@@ -209,12 +214,12 @@ sequenceDiagram
     participant DS as 💾 DataStore
     participant API as 🐍 Django Backend
 
-    Note over Student,API: Direct Login Flow
+    Note over Student,API: Direct Login Flow (X-Client-Type: android)
     Student->>UI: Enter 8-digit Reg No & Password
     UI->>VM: Tap "Sign in"
-    VM->>API: POST /api/auth/login/ {"username": "12200000", "password": "..."}
-    API-->>VM: 200 OK {"access": "...", "refresh": "...", "user": {...}}
-    VM->>DS: Store Tokens & User Profile
+    VM->>API: POST /api/auth/login/ {"username": "12200000", "password": "..."} (Header: X-Client-Type: android)
+    API-->>VM: 200 OK {"access": "...", "refresh": "...", "expires_in_days": 90, "user": {...}}
+    VM->>DS: Store Tokens (90-day lifetime) & User Profile
     VM-->>UI: Navigate to Main HomeScreen
 
     Note over Student,API: Automatic Silent Token Refresh
@@ -222,16 +227,16 @@ sequenceDiagram
     UI->>API: GET /api/marketplace/listings/ (Header: Bearer <expired_access_token>)
     API-->>OkHttp: 401 Unauthorized
     OkHttp->>DS: Read stored refresh_token
-    OkHttp->>API: POST /api/auth/token/refresh/ {"refresh": "<refresh_token>"}
+    OkHttp->>API: POST /api/auth/token/refresh/ {"refresh": "<refresh_token>"} (Header: X-Client-Type: android)
     alt Refresh Succeeded
         API-->>OkHttp: 200 OK {"access": "<new_access_token>"}
         OkHttp->>DS: Save new access token
         OkHttp->>API: Retry original GET /api/marketplace/listings/ (with new token)
         API-->>UI: 200 OK (Data loaded seamlessly without prompt)
-    else Refresh Token Expired or Blacklisted
-        API-->>OkHttp: 401 Unauthorized
+    else Session Invalidated (Logged in on another Android phone)
+        API-->>OkHttp: 401 Unauthorized {"session_invalidated": true, "error": "Session terminated: Logged in on another Android device."}
         OkHttp->>DS: Clear all tokens & cached user
-        OkHttp-->>UI: Redirect to LoginScreen
+        OkHttp-->>UI: Redirect to LoginScreen with toast: "Session terminated on this device."
     end
 ```
 

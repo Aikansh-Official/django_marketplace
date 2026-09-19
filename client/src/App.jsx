@@ -60,9 +60,30 @@ function App() {
     window.addEventListener('contextmenu', handleContextMenu);
     window.addEventListener('dragstart', handleDragStart);
 
+    // Dual-Device Session Management: notify user if logged in on another device
+    const handleSessionTerminated = (e) => {
+      const msg = e.detail?.message || 'Your web session was terminated because your account was logged in on another web browser/device.';
+      toast.error(msg, {
+        id: 'session-terminated-toast',
+        duration: 7000,
+        icon: '🔒',
+        style: {
+          background: '#0f172a',
+          color: '#f8fafc',
+          border: '1px solid #ef4444',
+          fontSize: '13px',
+          fontWeight: '600',
+        },
+      });
+      window.dispatchEvent(new Event('auth-changed'));
+    };
+
+    window.addEventListener('session-terminated', handleSessionTerminated);
+
     return () => {
       window.removeEventListener('contextmenu', handleContextMenu);
       window.removeEventListener('dragstart', handleDragStart);
+      window.removeEventListener('session-terminated', handleSessionTerminated);
     };
   }, []);
 

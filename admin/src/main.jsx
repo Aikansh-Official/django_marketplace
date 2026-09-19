@@ -11,6 +11,9 @@ axios.interceptors.request.use((config) => {
     config.headers['X-App-Security-Key'] = appSecurityKey;
   }
 
+  // Dual-Device Session Isolation
+  config.headers['X-Client-Type'] = 'web';
+
   const token = localStorage.getItem('admin_access');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

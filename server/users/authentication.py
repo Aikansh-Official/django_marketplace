@@ -18,7 +18,25 @@ class CookieJWTAuthentication(JWTAuthentication):
             
         try:
             validated_token = self.get_validated_token(raw_token)
-            return self.get_user(validated_token), validated_token
+            user = self.get_user(validated_token)
+
+            # Enforce single active session per platform (1 Web + 1 Android)
+            token_session_id = validated_token.get('session_id')
+            client_type = validated_token.get('client_type', 'web')
+
+            if token_session_id:
+                if client_type == 'android':
+                    active_session = getattr(user, 'android_session_id', '')
+                    if not active_session or active_session != token_session_id:
+                        request._session_invalidated = True
+                        raise AuthenticationFailed('Your Android session was terminated because your account was logged in on another Android device or logged out.')
+                else:
+                    active_session = getattr(user, 'web_session_id', '')
+                    if not active_session or active_session != token_session_id:
+                        request._session_invalidated = True
+                        raise AuthenticationFailed('Your web session was terminated because your account was logged in on another web browser/device or logged out.')
+
+            return user, validated_token
         except (InvalidToken, AuthenticationFailed):
             # Invalid or expired token: return None so the request is treated as unauthenticated.
             # Protected views (IsAuthenticated, IsAdminUser) will still reject with 401/403,

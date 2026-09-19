@@ -65,6 +65,15 @@ class CustomUser(AbstractUser):
         help_text="Custom list of allowed admin permission module keys"
     )
 
+    # Dual-Device Session Isolation (1 Web + 1 Android)
+    web_session_id = models.CharField(max_length=64, blank=True, default='', help_text="Active Web session token UUID")
+    web_session_device = models.CharField(max_length=255, blank=True, default='', help_text="Web browser and OS info")
+    web_session_created_at = models.DateTimeField(null=True, blank=True, help_text="Timestamp of latest Web login")
+
+    android_session_id = models.CharField(max_length=64, blank=True, default='', help_text="Active Android app session token UUID")
+    android_session_device = models.CharField(max_length=255, blank=True, default='', help_text="Android device model info")
+    android_session_created_at = models.DateTimeField(null=True, blank=True, help_text="Timestamp of latest Android login")
+
     @property
     def effective_admin_role(self):
         if self.is_superuser:

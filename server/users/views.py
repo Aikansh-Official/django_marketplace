@@ -20,10 +20,72 @@ from .email_service import send_otp_email, send_password_reset_email
 
 logger = logging.getLogger(__name__)
 
+import uuid
+from datetime import timedelta
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
 
 User = get_user_model()
+
+def get_client_type(request):
+    """Detect whether request is originating from 'android' app or 'web'."""
+    # 1. Header takes highest precedence
+    header_val = (request.headers.get('X-Client-Type') or request.META.get('HTTP_X_CLIENT_TYPE', '')).strip().lower()
+    if header_val in ('android', 'app'):
+        return 'android'
+    if header_val == 'web':
+        return 'web'
+
+    # 2. Body parameter
+    body_val = str(getattr(request, 'data', {}).get('client_type', '')).strip().lower()
+    if body_val in ('android', 'app'):
+        return 'android'
+    if body_val == 'web':
+        return 'web'
+
+    # 3. User-Agent heuristic
+    user_agent = (request.META.get('HTTP_USER_AGENT') or '').lower()
+    if 'okhttp' in user_agent or 'campusxchange-android' in user_agent:
+        return 'android'
+
+    return 'web'
+
+
+def get_device_description(request):
+    """Extract a user-friendly description of the client device."""
+    client_type = get_client_type(request)
+    ua = request.META.get('HTTP_USER_AGENT', '')
+    if client_type == 'android':
+        return 'CampusXChange Android App'
+
+    browser = 'Web Browser'
+    if 'Edg/' in ua:
+        browser = 'Microsoft Edge'
+    elif 'Chrome/' in ua and 'Mobile' in ua:
+        browser = 'Chrome Mobile'
+    elif 'Chrome/' in ua:
+        browser = 'Google Chrome'
+    elif 'Firefox/' in ua:
+        browser = 'Mozilla Firefox'
+    elif 'Safari/' in ua:
+        browser = 'Apple Safari'
+
+    os_info = ''
+    if 'Windows' in ua:
+        os_info = ' (Windows)'
+    elif 'Macintosh' in ua or 'Mac OS' in ua:
+        os_info = ' (macOS)'
+    elif 'Linux' in ua and 'Android' not in ua:
+        os_info = ' (Linux)'
+    elif 'iPhone' in ua or 'iPad' in ua:
+        os_info = ' (iOS)'
+    elif 'Android' in ua:
+        os_info = ' (Android Web)'
+
+    return f"{browser}{os_info}"
+
 
 def set_jwt_cookies(response, access_token, refresh_token=None):
     access_cookie_name = getattr(settings, 'SIMPLE_JWT', {}).get('AUTH_COOKIE', 'access_token')
@@ -59,39 +121,139 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     throttle_scope = 'login'
 
     def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        if response.status_code == 200:
-            access_token = response.data.get('access')
-            refresh_token = response.data.get('refresh')
-            set_jwt_cookies(response, access_token, refresh_token)
-            
-            # Attach user details for client convenience
-            try:
-                username = request.data.get('username')
-                user = User.objects.get(username=username)
-                response.data['user'] = UserListSerializer(user).data
-            except Exception:
-                pass
-            response.data['message'] = 'Successfully logged in.'
-            
-        return response
+        serializer = self.get_serializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except TokenError as e:
+            raise InvalidToken(e.args[0])
+
+        user = serializer.user
+        client_type = get_client_type(request)
+        device_desc = get_device_description(request)
+        new_session_id = uuid.uuid4().hex
+
+        # Dual-Device Session Isolation:
+        # Exactly 1 active Web session (30 days) and 1 active Android session (90 days)
+        if client_type == 'android':
+            user.android_session_id = new_session_id
+            user.android_session_device = device_desc
+            user.android_session_created_at = timezone.now()
+            user.save(update_fields=['android_session_id', 'android_session_device', 'android_session_created_at'])
+
+            refresh = RefreshToken.for_user(user)
+            refresh_lifetime = getattr(settings, 'ANDROID_REFRESH_TOKEN_LIFETIME', timedelta(days=90))
+            refresh.set_exp(lifetime=refresh_lifetime)
+            refresh['session_id'] = new_session_id
+            refresh['client_type'] = 'android'
+
+            access = refresh.access_token
+            access['session_id'] = new_session_id
+            access['client_type'] = 'android'
+
+            response_data = {
+                'refresh': str(refresh),
+                'access': str(access),
+                'client_type': 'android',
+                'session_id': new_session_id,
+                'expires_in_days': 90,
+                'user': UserListSerializer(user).data,
+                'message': 'Successfully logged in to Android app.'
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        else:
+            # Web session
+            user.web_session_id = new_session_id
+            user.web_session_device = device_desc
+            user.web_session_created_at = timezone.now()
+            user.save(update_fields=['web_session_id', 'web_session_device', 'web_session_created_at'])
+
+            refresh = RefreshToken.for_user(user)
+            refresh_lifetime = getattr(settings, 'SIMPLE_JWT', {}).get('REFRESH_TOKEN_LIFETIME', timedelta(days=30))
+            refresh.set_exp(lifetime=refresh_lifetime)
+            refresh['session_id'] = new_session_id
+            refresh['client_type'] = 'web'
+
+            access = refresh.access_token
+            access['session_id'] = new_session_id
+            access['client_type'] = 'web'
+
+            response_data = {
+                'refresh': str(refresh),
+                'access': str(access),
+                'client_type': 'web',
+                'session_id': new_session_id,
+                'expires_in_days': 30,
+                'user': UserListSerializer(user).data,
+                'message': 'Successfully logged in to Web.'
+            }
+            response = Response(response_data, status=status.HTTP_200_OK)
+            set_jwt_cookies(response, str(access), str(refresh))
+            return response
 
 class CustomTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
         refresh_cookie_name = getattr(settings, 'SIMPLE_JWT', {}).get('AUTH_COOKIE_REFRESH', 'refresh_token')
         
-        # Inject refresh token from cookie into request data so TokenRefreshSerializer finds it
-        if refresh_cookie_name in request.COOKIES and 'refresh' not in request.data:
-            request.data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
-            request.data['refresh'] = request.COOKIES[refresh_cookie_name]
-            
-        response = super().post(request, *args, **kwargs)
-        if response.status_code == 200:
-            access_token = response.data.get('access')
-            set_jwt_cookies(response, access_token)
-            response.data['message'] = 'Token refreshed successfully.'
-            
-        return response
+        raw_refresh = request.data.get('refresh') or request.COOKIES.get(refresh_cookie_name)
+        if not raw_refresh:
+            return Response({'error': 'Refresh token is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            token = RefreshToken(raw_refresh)
+            user_id = token.payload.get('user_id')
+            token_session_id = token.payload.get('session_id')
+            client_type = token.payload.get('client_type', 'web')
+
+            user = User.objects.get(id=user_id)
+
+            # Check if active session was replaced by another login or logged out
+            if token_session_id:
+                if client_type == 'android':
+                    if not user.android_session_id or user.android_session_id != token_session_id:
+                        return Response({
+                            'error': 'Session terminated: Your account was logged in on another Android device or logged out.',
+                            'session_invalidated': True,
+                            'client_type': 'android'
+                        }, status=status.HTTP_401_UNAUTHORIZED)
+                else:
+                    if not user.web_session_id or user.web_session_id != token_session_id:
+                        resp = Response({
+                            'error': 'Session terminated: Your account was logged in on another web browser/device or logged out.',
+                            'session_invalidated': True,
+                            'client_type': 'web'
+                        }, status=status.HTTP_401_UNAUTHORIZED)
+                        access_cookie = getattr(settings, 'SIMPLE_JWT', {}).get('AUTH_COOKIE', 'access_token')
+                        resp.delete_cookie(access_cookie)
+                        resp.delete_cookie(refresh_cookie_name)
+                        return resp
+
+            # Issue fresh access token carrying session claims
+            access_token = token.access_token
+            if token_session_id:
+                access_token['session_id'] = token_session_id
+                access_token['client_type'] = client_type
+
+            response_data = {
+                'access': str(access_token),
+                'message': 'Token refreshed successfully.'
+            }
+
+            # If token rotation is active, rotate refresh token while maintaining session claims
+            if getattr(settings, 'SIMPLE_JWT', {}).get('ROTATE_REFRESH_TOKENS', False):
+                token.set_jti()
+                token.set_exp()
+                if token_session_id:
+                    token['session_id'] = token_session_id
+                    token['client_type'] = client_type
+                response_data['refresh'] = str(token)
+
+            response = Response(response_data, status=status.HTTP_200_OK)
+            set_jwt_cookies(response, str(access_token), response_data.get('refresh'))
+            return response
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
 
 class LogoutView(APIView):
     permission_classes = (AllowAny,)
@@ -101,19 +263,78 @@ class LogoutView(APIView):
         access_cookie_name = getattr(settings, 'SIMPLE_JWT', {}).get('AUTH_COOKIE', 'access_token')
         refresh_cookie_name = getattr(settings, 'SIMPLE_JWT', {}).get('AUTH_COOKIE_REFRESH', 'refresh_token')
         
-        # Blacklist the refresh token server-side so it can't be reused
+        client_type = get_client_type(request)
+
+        # Clear session for caller platform only (Web does not log out Android and vice-versa)
+        user = getattr(request, 'user', None)
+        if user and user.is_authenticated:
+            try:
+                if client_type == 'android':
+                    user.android_session_id = ''
+                    user.android_session_device = ''
+                    user.save(update_fields=['android_session_id', 'android_session_device'])
+                else:
+                    user.web_session_id = ''
+                    user.web_session_device = ''
+                    user.save(update_fields=['web_session_id', 'web_session_device'])
+            except Exception:
+                pass
+
+        # Blacklist the refresh token server-side if provided
         refresh_token = request.COOKIES.get(refresh_cookie_name) or request.data.get('refresh')
         if refresh_token:
             try:
-                from rest_framework_simplejwt.tokens import RefreshToken
                 token = RefreshToken(refresh_token)
                 token.blacklist()
             except Exception:
-                pass  # Token may already be invalid/expired — safe to ignore
+                pass
         
         response.delete_cookie(access_cookie_name)
         response.delete_cookie(refresh_cookie_name)
         return response
+
+
+class UserActiveSessionsView(APIView):
+    """Returns active session status for Web (30d) and Android (90d)."""
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        user = request.user
+        return Response({
+            'web': {
+                'is_active': bool(user.web_session_id),
+                'device': user.web_session_device or 'Web Browser',
+                'logged_in_at': user.web_session_created_at,
+                'lifetime_days': 30
+            },
+            'android': {
+                'is_active': bool(user.android_session_id),
+                'device': user.android_session_device or 'CampusXChange Android App',
+                'logged_in_at': user.android_session_created_at,
+                'lifetime_days': 90
+            }
+        })
+
+
+class RevokeSessionView(APIView):
+    """Allows remote termination of either Web or Android session."""
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        target = str(request.data.get('target', '')).strip().lower()
+        user = request.user
+        if target == 'android':
+            user.android_session_id = ''
+            user.android_session_device = ''
+            user.save(update_fields=['android_session_id', 'android_session_device'])
+            return Response({'message': 'Android session terminated successfully.'})
+        elif target == 'web':
+            user.web_session_id = ''
+            user.web_session_device = ''
+            user.save(update_fields=['web_session_id', 'web_session_device'])
+            return Response({'message': 'Web session terminated successfully.'})
+        else:
+            return Response({'error': "Invalid target. Specify 'web' or 'android'."}, status=status.HTTP_400_BAD_REQUEST)
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
