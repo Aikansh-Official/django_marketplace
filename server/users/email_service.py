@@ -45,11 +45,6 @@ def _get_base_template(title: str, preheader: str, content_html: str) -> str:
   </style>
 </head>
 <body>
-  <!-- Preheader text preview in mail clients -->
-  <div style="display:none;font-size:1px;color:#333333;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
-    {preheader}
-  </div>
-
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding: 32px 12px; background-color: {BG_PAGE};">
     <tr>
       <td align="center">
@@ -110,7 +105,7 @@ def get_otp_email_template(otp_code: str, email: str) -> tuple[str, str, str]:
     """
     Returns (subject, html_content, text_content) for OTP verification
     """
-    subject = f"{otp_code} is your CampusXChange verification code"
+    subject = f"Your CampusXChange Verification Code: {otp_code}"
     preheader = f"Your verification code is {otp_code}. Valid for 10 minutes."
     
     content = f"""
@@ -295,6 +290,10 @@ def send_email_via_resend(to_email: str, subject: str, html_content: str, text_c
             "subject": subject,
             "html": html_content,
             "text": text_content,
+            "reply_to": "support@cxc.anshuman892494.online",
+            "headers": {
+                "X-Entity-Ref-ID": f"cxc-mail-{to_email}",
+            }
         }
 
         response = resend.Emails.send(params)
