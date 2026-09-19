@@ -19,7 +19,7 @@ def configure_cloudinary():
 
 def upload_image_to_cloudinary(image_file, folder="campusxchange/listings"):
     """
-    Upload an image file to Cloudinary.
+    Upload an image file to Cloudinary in .webp format.
 
     Args:
         image_file: A Django UploadedFile (InMemoryUploadedFile or TemporaryUploadedFile)
@@ -34,8 +34,9 @@ def upload_image_to_cloudinary(image_file, folder="campusxchange/listings"):
         image_file,
         folder=folder,
         resource_type="image",
+        format="webp",
         transformation=[
-            {"width": 1200, "height": 1200, "crop": "limit", "quality": "auto:good"}
+            {"width": 1200, "height": 1200, "crop": "limit", "quality": "auto:good", "fetch_format": "webp"}
         ],
     )
 
@@ -47,7 +48,7 @@ def upload_image_to_cloudinary(image_file, folder="campusxchange/listings"):
 
 def upload_base64_to_cloudinary(base64_data, folder="campusxchange/listings"):
     """
-    Upload a base64-encoded image string to Cloudinary.
+    Upload a base64-encoded image string to Cloudinary in .webp format.
 
     Args:
         base64_data: A base64-encoded image string (data:image/...;base64,...)
@@ -62,8 +63,9 @@ def upload_base64_to_cloudinary(base64_data, folder="campusxchange/listings"):
         base64_data,
         folder=folder,
         resource_type="image",
+        format="webp",
         transformation=[
-            {"width": 1200, "height": 1200, "crop": "limit", "quality": "auto:good"}
+            {"width": 1200, "height": 1200, "crop": "limit", "quality": "auto:good", "fetch_format": "webp"}
         ],
     )
 
@@ -71,6 +73,42 @@ def upload_base64_to_cloudinary(base64_data, folder="campusxchange/listings"):
         "url": result.get("secure_url"),
         "public_id": result.get("public_id"),
     }
+
+
+def upload_user_image_to_cloudinary(image_data, folder="campusxchange/profiles"):
+    """
+    Universal helper to upload user images (profile photos, ID cards) to Cloudinary in .webp format.
+    Accepts base64 data URIs or existing URLs. If already a URL, returns as-is.
+    Returns the secure Cloudinary HTTPS WebP URL.
+    """
+    if not image_data or not isinstance(image_data, str):
+        return image_data
+
+    # If already a hosted URL, return as-is
+    if is_url(image_data):
+        return image_data
+
+    # If it's a base64 string
+    if is_base64_image(image_data) or len(image_data) > 100:
+        try:
+            configure_cloudinary()
+            result = cloudinary.uploader.upload(
+                image_data,
+                folder=folder,
+                resource_type="image",
+                format="webp",
+                transformation=[
+                    {"width": 1200, "height": 1200, "crop": "limit", "quality": "auto:good", "fetch_format": "webp"}
+                ],
+            )
+            secure_url = result.get("secure_url")
+            if secure_url:
+                logger.info(f"Successfully uploaded user image to Cloudinary ({folder}): {secure_url}")
+                return secure_url
+        except Exception as e:
+            logger.error(f"Failed to upload user image to Cloudinary ({folder}): {e}")
+
+    return image_data
 
 
 def extract_cloudinary_public_id(image_url):

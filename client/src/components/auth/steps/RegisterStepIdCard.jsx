@@ -24,6 +24,7 @@ export default function RegisterStepIdCard({
   isLoading,
   extractedCardData,
   rejectionInfo,
+  verificationDetails,
   onScanAndVerify,
   onProceedToOtp,
   onBack,
@@ -85,7 +86,7 @@ export default function RegisterStepIdCard({
               {usernameValue}
             </span>
           </div>
-          {isIdVerified ? (
+          {isIdVerified || verificationDetails?.regMatched ? (
             <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
               <Check className="w-3.5 h-3.5" /> Matched
             </span>
@@ -102,7 +103,7 @@ export default function RegisterStepIdCard({
             <span className="font-bold text-gray-700">Student Name:</span>
             <span className="font-bold text-gray-900">{fullNameValue}</span>
           </div>
-          {isIdVerified ? (
+          {isIdVerified || verificationDetails?.nameMatched ? (
             <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
               <Check className="w-3.5 h-3.5" /> Matched
             </span>
@@ -119,7 +120,7 @@ export default function RegisterStepIdCard({
             <span className="font-bold text-gray-700">University:</span>
             <span className="text-gray-900 font-medium">Lovely Professional University</span>
           </div>
-          {isIdVerified ? (
+          {isIdVerified || verificationDetails?.univMatched ? (
             <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
               <Check className="w-3.5 h-3.5" /> Verified
             </span>

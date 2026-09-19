@@ -4,7 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import Tesseract from 'tesseract.js';
-import { extractLpuCardDetails, checkImageAuthenticity } from '../../utils/idCardVerification';
+import {
+  extractLpuCardDetails,
+  checkImageAuthenticity,
+  preprocessImageForOcr
+} from '../../utils/idCardVerification';
 import { compressImageToDataUrl } from '../../utils/compressImage';
 import { preloadVisionDetectors } from '../../utils/faceLivenessDetector';
 import { registerSchema } from './authSchemas';
@@ -97,6 +101,11 @@ export default function RegisterForm({
   const [isLoading, setIsLoading] = useState(false);
   const [isRegAllowed, setIsRegAllowed] = useState(true);
   const [allowedDomains, setAllowedDomains] = useState('lpu.in');
+  const [verificationDetails, setVerificationDetails] = useState({
+    regMatched: false,
+    nameMatched: false,
+    univMatched: false
+  });
 
   useEffect(() => {
     getPlatformConfig().then((cfg) => {
@@ -316,14 +325,19 @@ export default function RegisterForm({
         return;
       }
 
-      setScanProgress(40);
+      setScanProgress(30);
+      setScanStatus('Optimizing image for fast OCR...');
+
+      // 2. High Accuracy Optical Character Recognition (OCR) with canvas optimization
+      const ocrReadyImage = await preprocessImageForOcr(idFrontImage);
+
+      setScanProgress(50);
       setScanStatus('Reading card text...');
 
-      // 2. High Accuracy Optical Character Recognition (OCR)
-      const { data: { text } } = await Tesseract.recognize(idFrontImage, 'eng', {
+      const { data: { text } } = await Tesseract.recognize(ocrReadyImage, 'eng', {
         logger: (m) => {
           if (m.status === 'recognizing text') {
-            const currentPct = 40 + Math.floor(m.progress * 55);
+            const currentPct = 50 + Math.floor(m.progress * 45);
             setScanProgress(currentPct);
             setScanStatus(`Reading card text (${Math.floor(m.progress * 100)}%)...`);
           }
@@ -335,6 +349,12 @@ export default function RegisterForm({
 
       // 3. Multi-Anchor LPU Validation & Field Extraction
       const result = extractLpuCardDetails(text, usernameValue, fullNameValue);
+
+      setVerificationDetails({
+        regMatched: Boolean(result.regMatched),
+        nameMatched: Boolean(result.nameMatched),
+        univMatched: Boolean(result.univMatched)
+      });
 
       if (result.isValid) {
         // MATCH SUCCESSFUL!
@@ -567,6 +587,7 @@ export default function RegisterForm({
             isLoading={isLoading}
             extractedCardData={extractedCardData}
             rejectionInfo={rejectionInfo}
+            verificationDetails={verificationDetails}
             onScanAndVerify={handleScanAndVerifyId}
             onProceedToOtp={() => setStep(3)}
             onBack={() => setStep(1)}

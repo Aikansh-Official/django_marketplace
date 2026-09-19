@@ -125,6 +125,21 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         domain = email.split('@')[-1] if '@' in email else None
         full_name = validated_data.get('full_name', '')
         
+        # Upload ID card and profile photo to Cloudinary in .webp format
+        from marketplace.cloudinary_upload import upload_user_image_to_cloudinary
+
+        cloudinary_id_card = None
+        if is_id_verified and id_card_image:
+            cloudinary_id_card = upload_user_image_to_cloudinary(
+                id_card_image, folder="campusxchange/id_cards"
+            )
+
+        cloudinary_profile_photo = None
+        if profile_photo and len(str(profile_photo).strip()) > 100:
+            cloudinary_profile_photo = upload_user_image_to_cloudinary(
+                profile_photo, folder="campusxchange/profiles"
+            )
+
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
@@ -136,10 +151,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             role=role,
             is_verified_student=True, # Email verified via OTP
             is_id_verified=is_id_verified,
-            id_card_image=id_card_image if is_id_verified else None,
+            id_card_image=cloudinary_id_card,
             id_card_data=id_card_data if is_id_verified else {},
             trust_score=10 if is_id_verified else 5, # Email (+5) + ID Card (+5)
-            profile_photo=profile_photo if (role == 'SELLER' and profile_photo and len(str(profile_photo).strip()) > 100) else None
+            profile_photo=cloudinary_profile_photo
         )
 
         # Recalculate trust score with selfie bonus

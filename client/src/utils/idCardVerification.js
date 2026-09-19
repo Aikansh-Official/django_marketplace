@@ -18,29 +18,32 @@ export function matchRegistrationNumber(rawText, targetReg) {
     };
   }
 
-  const target = String(targetReg).trim();
+  // Strip leading @ and whitespace
+  const target = String(targetReg).replace(/^@/, '').trim();
   const normalizedRaw = rawText.toUpperCase();
+  const strippedText = normalizedRaw.replace(/[^A-Z0-9]/g, '');
 
   // 1. Direct contains check
-  if (normalizedRaw.includes(target)) {
+  if (normalizedRaw.includes(target) || strippedText.includes(target)) {
     return { matched: true, detected: target };
   }
 
-  // 2. Continuous alphanumeric stripping (removes spaces, hyphens, colons, slashes)
-  const strippedText = normalizedRaw.replace(/[^A-Z0-9]/g, '');
-  if (strippedText.includes(target)) {
+  // 2. Pure digits extraction check
+  const targetDigits = target.replace(/[^0-9]/g, '');
+  const rawDigits = normalizedRaw.replace(/[^0-9]/g, '');
+  if (targetDigits.length >= 6 && rawDigits.includes(targetDigits)) {
     return { matched: true, detected: target };
   }
 
-  // 3. Extract all potential numeric sequences of 7 to 9 digits
-  const numericSequences = normalizedRaw.match(/\b\d{7,9}\b/g) || [];
+  // 3. Extract all potential numeric sequences of 6 to 10 digits
+  const numericSequences = normalizedRaw.match(/\b\d{6,10}\b/g) || [];
   for (const seq of numericSequences) {
-    if (seq === target) {
+    if (seq === target || (targetDigits.length >= 6 && seq === targetDigits)) {
       return { matched: true, detected: target };
     }
   }
 
-  // 4. Fuzzy digit substitution check for common OCR confusions
+  // 4. Fuzzy digit substitution check for common OCR confusions (O <-> 0, I/l <-> 1, S <-> 5, B <-> 8, Z <-> 2)
   const fuzzyClean = normalizedRaw
     .replace(/O/g, '0')
     .replace(/[IL|!]/g, '1')
@@ -49,7 +52,7 @@ export function matchRegistrationNumber(rawText, targetReg) {
     .replace(/B/g, '8')
     .replace(/[^0-9]/g, '');
 
-  if (fuzzyClean.includes(target)) {
+  if (fuzzyClean.includes(target) || (targetDigits.length >= 6 && fuzzyClean.includes(targetDigits))) {
     return { matched: true, detected: target };
   }
 
@@ -59,7 +62,7 @@ export function matchRegistrationNumber(rawText, targetReg) {
     return {
       matched: false,
       detected: foreignNumber,
-      reason: `Registration number (${foreignNumber}) does not match your entered number (${target}).`
+      reason: `Registration number (${foreignNumber}) does not match your account (${target}).`
     };
   }
 
@@ -214,35 +217,70 @@ function levenshteinDistance(a, b) {
   return dp[m][n];
 }
 
+function normalizeOcrText(text) {
+  if (!text) return '';
+  return text
+    .toUpperCase()
+    .replace(/RN/g, 'M')
+    .replace(/VV/g, 'W')
+    .replace(/0/g, 'O')
+    .replace(/1/g, 'I')
+    .replace(/5/g, 'S')
+    .replace(/8/g, 'B');
+}
+
 function matchNamePart(part, normalizedRaw, strippedText) {
   if (!part || part.length < 2) return true;
+  const p = part.toUpperCase();
+  // Calibrated distance: <=3: 0, 4-7: 1, >=8: 2
+  const maxDist = p.length <= 3 ? 0 : p.length <= 7 ? 1 : 2;
 
-  // 1. Exact contains check
-  if (normalizedRaw.includes(part) || strippedText.includes(part)) {
+  // 1. Exact checks
+  if (normalizedRaw.includes(p) || strippedText.includes(p)) {
     return true;
   }
 
-  // 2. Token-level fuzzy match
-  const tokens = normalizedRaw.match(/[A-Z]{2,}/g) || [];
-  const maxDistance = part.length <= 3 ? 0 : part.length <= 5 ? 1 : 2;
+  // 2. Normalized OCR checks (handles RN <-> M, 0 <-> O, etc.)
+  const normRawOcr = normalizeOcrText(normalizedRaw);
+  const normStrippedOcr = normalizeOcrText(strippedText);
+  const normP = normalizeOcrText(p);
+  if (normRawOcr.includes(normP) || normStrippedOcr.includes(normP)) {
+    return true;
+  }
+
+  // 3. Indian vowel variant check (A <-> E, e.g. VARMA <-> VERMA)
+  const pVowelVariant = p.includes('A') ? p.replace(/A/g, 'E') : p.replace(/E/g, 'A');
+  if (normalizedRaw.includes(pVowelVariant) || strippedText.includes(pVowelVariant)) {
+    return true;
+  }
+
+  // 4. Token-level fuzzy match
+  const tokens = (normalizedRaw.match(/[A-Z]{2,}/g) || []).concat(
+    normRawOcr.match(/[A-Z]{2,}/g) || []
+  );
 
   for (const token of tokens) {
-    if (token.includes(part) || (token.length >= 4 && part.includes(token))) {
+    if (token.includes(p) || (token.length >= 4 && p.includes(token))) {
       return true;
     }
-    if (Math.abs(token.length - part.length) <= 1) {
-      if (levenshteinDistance(part, token) <= maxDistance) {
-        return true;
-      }
+    if (Math.abs(token.length - p.length) <= 1) {
+      if (levenshteinDistance(p, token) <= maxDist) return true;
+      if (levenshteinDistance(normP, token) <= maxDist) return true;
     }
   }
 
-  // 3. Sliding window check in strippedText
-  const pLen = part.length;
-  for (let i = 0; i <= strippedText.length - pLen; i++) {
-    const sub = strippedText.slice(i, i + pLen);
-    if (levenshteinDistance(part, sub) <= (maxDistance === 2 ? 1 : 0)) {
-      return true;
+  // 5. Multi-window sliding check on strippedText
+  const windowSizes = [p.length - 1, p.length, p.length + 1].filter((l) => l >= 2);
+  for (const wLen of windowSizes) {
+    for (let i = 0; i <= strippedText.length - wLen; i++) {
+      const sub = strippedText.slice(i, i + wLen);
+      if (levenshteinDistance(p, sub) <= maxDist) return true;
+      if (levenshteinDistance(normP, sub) <= maxDist) return true;
+      if (levenshteinDistance(pVowelVariant, sub) <= 1) return true;
+    }
+    for (let i = 0; i <= normStrippedOcr.length - wLen; i++) {
+      const sub = normStrippedOcr.slice(i, i + wLen);
+      if (levenshteinDistance(normP, sub) <= maxDist) return true;
     }
   }
 
@@ -257,7 +295,10 @@ export function validateLpuIdCard(rawText, targetReg, studentName) {
   if (!rawText || !rawText.trim()) {
     return {
       isValid: false,
-      reason: 'No legible text detected. Please upload a clearer photo.'
+      reason: 'No legible text detected. Please upload a clearer photo.',
+      regMatched: false,
+      nameMatched: false,
+      univMatched: false
     };
   }
 
@@ -282,7 +323,10 @@ export function validateLpuIdCard(rawText, targetReg, studentName) {
   if (!hasOfficialName && !hasLpuAcronym) {
     return {
       isValid: false,
-      reason: 'University credentials not found. Please upload a valid LPU ID card.'
+      reason: 'University credentials not found. Please upload a valid LPU ID card.',
+      regMatched: false,
+      nameMatched: false,
+      univMatched: false
     };
   }
 
@@ -300,7 +344,10 @@ export function validateLpuIdCard(rawText, targetReg, studentName) {
   if (matchedAnchorsCount < requiredAnchors) {
     return {
       isValid: false,
-      reason: 'Card format does not match official LPU student ID.'
+      reason: 'Card format does not match official LPU student ID.',
+      regMatched: false,
+      nameMatched: false,
+      univMatched: true
     };
   }
 
@@ -309,7 +356,10 @@ export function validateLpuIdCard(rawText, targetReg, studentName) {
   if (!regMatch.matched) {
     return {
       isValid: false,
-      reason: regMatch.reason
+      reason: regMatch.reason,
+      regMatched: false,
+      nameMatched: false,
+      univMatched: true
     };
   }
 
@@ -322,17 +372,20 @@ export function validateLpuIdCard(rawText, targetReg, studentName) {
       .split(/\s+/)
       .filter((part) => part.length >= 2);
 
-    const requiredParts =
-      nameParts.length <= 2 ? nameParts : [nameParts[0], nameParts[nameParts.length - 1]];
-
-    const missingParts = requiredParts.filter(
-      (part) => !matchNamePart(part, normalizedRaw, strippedText)
+    const matchedParts = nameParts.filter((part) =>
+      matchNamePart(part, normalizedRaw, strippedText)
     );
 
-    if (missingParts.length > 0) {
+    // Accept student ID if the unique registration number matches and at least 1 significant name part matches (or >= 50% of name parts)
+    const isNameValid = matchedParts.length >= Math.ceil(nameParts.length / 2) || matchedParts.length > 0;
+
+    if (!isNameValid) {
       return {
         isValid: false,
-        reason: 'Student name on card does not match your entered name.'
+        reason: 'Student name on card does not match your entered name.',
+        regMatched: true,
+        nameMatched: false,
+        univMatched: true
       };
     }
     nameMatched = true;
@@ -342,7 +395,8 @@ export function validateLpuIdCard(rawText, targetReg, studentName) {
     isValid: true,
     reason: null,
     regMatched: true,
-    nameMatched
+    nameMatched: true,
+    univMatched: true
   };
 }
 
@@ -432,3 +486,74 @@ export function extractLpuCardDetails(rawText, targetReg, studentName) {
     rawText
   };
 }
+
+/**
+ * Preprocesses a raw image (especially large phone photos 3000x4000+) on an offscreen HTML5 canvas:
+ * 1. Rescales so max dimension <= 1400px (optimal for Tesseract neural nets, reducing processing time 10x).
+ * 2. Applies high-contrast grayscale normalization to make faint or shadowed text sharp.
+ * Returns an optimized Data URL for Tesseract OCR.
+ */
+export async function preprocessImageForOcr(imageSrc) {
+  return new Promise((resolve) => {
+    if (!imageSrc || typeof imageSrc !== 'string') {
+      return resolve(imageSrc);
+    }
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+
+    img.onload = () => {
+      try {
+        const { naturalWidth: w, naturalHeight: h } = img;
+        if (!w || !h) return resolve(imageSrc);
+
+        let targetW = w;
+        let targetH = h;
+        const maxDim = 1400;
+
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            targetW = maxDim;
+            targetH = Math.round((h * maxDim) / w);
+          } else {
+            targetH = maxDim;
+            targetW = Math.round((w * maxDim) / h);
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) return resolve(imageSrc);
+
+        ctx.drawImage(img, 0, 0, targetW, targetH);
+
+        // Apply high-contrast grayscale normalization
+        const imgData = ctx.getImageData(0, 0, targetW, targetH);
+        const d = imgData.data;
+        const contrast = 1.25;
+        const factor = (259 * (contrast * 255 + 255)) / (255 * (259 - contrast * 255));
+
+        for (let i = 0; i < d.length; i += 4) {
+          const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+          const contrasted = factor * (gray - 128) + 128;
+          const clamped = Math.max(0, Math.min(255, contrasted));
+          d[i] = clamped;
+          d[i + 1] = clamped;
+          d[i + 2] = clamped;
+        }
+
+        ctx.putImageData(imgData, 0, 0);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      } catch (e) {
+        console.warn('OCR image preprocessing exception, using raw image:', e);
+        resolve(imageSrc);
+      }
+    };
+
+    img.onerror = () => resolve(imageSrc);
+    img.src = imageSrc;
+  });
+}
+

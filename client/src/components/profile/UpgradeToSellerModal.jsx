@@ -14,10 +14,20 @@ import {
   Store,
   BadgeCheck,
   AlertTriangle,
-  ScanLine
+  ScanLine,
+  ShieldCheck,
+  RefreshCw,
+  GraduationCap,
+  Calendar,
+  Activity,
+  Sparkles
 } from 'lucide-react';
 import Tesseract from 'tesseract.js';
-import { extractLpuCardDetails, checkImageAuthenticity } from '../../utils/idCardVerification';
+import {
+  extractLpuCardDetails,
+  checkImageAuthenticity,
+  preprocessImageForOcr
+} from '../../utils/idCardVerification';
 import { compressImageToDataUrl } from '../../utils/compressImage';
 import { preloadVisionDetectors } from '../../utils/faceLivenessDetector';
 import RegisterStepSelfie from '../auth/steps/RegisterStepSelfie';
@@ -34,6 +44,11 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
   const [isIdVerified, setIsIdVerified] = useState(false);
   const [extractedCardData, setExtractedCardData] = useState(null);
   const [rejectionInfo, setRejectionInfo] = useState(null);
+  const [verificationDetails, setVerificationDetails] = useState({
+    regMatched: false,
+    nameMatched: false,
+    univMatched: false
+  });
   const fileInputRef = useRef(null);
 
   // Step 2: Selfie State
@@ -52,6 +67,7 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
       setIsIdVerified(false);
       setExtractedCardData(null);
       setRejectionInfo(null);
+      setVerificationDetails({ regMatched: false, nameMatched: false, univMatched: false });
       setSelfieImage(null);
       setOtpCode('');
       setOtpSent(false);
@@ -65,7 +81,8 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
 
   if (!isOpen) return null;
 
-  const username = profile?.username || '';
+  // Clean username: remove any leading @ symbol and trim
+  const username = String(profile?.username || '').replace(/^@/, '').trim();
   const fullName = profile?.full_name || profile?.first_name || '';
   const email = profile?.email || '';
 
@@ -85,6 +102,7 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
       setIsIdVerified(false);
       setExtractedCardData(null);
       setRejectionInfo(null);
+      setVerificationDetails({ regMatched: false, nameMatched: false, univMatched: false });
       toast.success('ID photo loaded successfully.');
     };
     reader.onerror = () => {
@@ -115,14 +133,20 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
         return;
       }
 
-      setScanProgress(40);
+      setScanProgress(30);
+      setScanStatus('Optimizing image for fast OCR...');
+
+      // 2. High-speed, high-accuracy offscreen canvas preprocessing
+      const ocrReadyImage = await preprocessImageForOcr(idFrontImage);
+
+      setScanProgress(50);
       setScanStatus('Reading card text...');
 
-      // 2. OCR recognition
-      const { data: { text } } = await Tesseract.recognize(idFrontImage, 'eng', {
+      // 3. OCR recognition on preprocessed image
+      const { data: { text } } = await Tesseract.recognize(ocrReadyImage, 'eng', {
         logger: (m) => {
           if (m.status === 'recognizing text') {
-            const currentPct = 40 + Math.floor(m.progress * 55);
+            const currentPct = 50 + Math.floor(m.progress * 45);
             setScanProgress(currentPct);
             setScanStatus(`Reading card text (${Math.floor(m.progress * 100)}%)...`);
           }
@@ -132,8 +156,14 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
       setScanProgress(100);
       setScanStatus('Matching details...');
 
-      // 3. Match against account
+      // 4. Match against account
       const result = extractLpuCardDetails(text, username, fullName);
+
+      setVerificationDetails({
+        regMatched: Boolean(result.regMatched),
+        nameMatched: Boolean(result.nameMatched),
+        univMatched: Boolean(result.univMatched)
+      });
 
       if (result.isValid) {
         setIsIdVerified(true);
@@ -443,6 +473,105 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
                 onChange={handleImageUpload}
                 className="hidden"
               />
+
+              {/* Details Cross-Matching Checklist */}
+              <div className="bg-gray-50/90 border border-gray-200 rounded-lg p-3.5 space-y-2.5">
+                <span className="text-[10px] font-black uppercase text-gray-400 tracking-wider block">
+                  Details Cross-Matching
+                </span>
+
+                {/* Registration No */}
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-gray-700">Registration No:</span>
+                    <span className="font-mono font-bold text-gray-900 bg-white px-2 py-0.5 rounded border border-gray-200 text-[11px]">
+                      {username}
+                    </span>
+                  </div>
+                  {verificationDetails.regMatched ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                      <Check className="w-3 h-3" /> Matched
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-medium text-gray-400 bg-gray-200/70 px-2 py-0.5 rounded">
+                      Pending Scan
+                    </span>
+                  )}
+                </div>
+
+                {/* Student Name */}
+                <div className="flex items-center justify-between text-xs pt-2 border-t border-gray-200/60">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-gray-700">Student Name:</span>
+                    <span className="font-bold text-gray-900">{fullName}</span>
+                  </div>
+                  {verificationDetails.nameMatched ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                      <Check className="w-3 h-3" /> Matched
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-medium text-gray-400 bg-gray-200/70 px-2 py-0.5 rounded">
+                      Pending Scan
+                    </span>
+                  )}
+                </div>
+
+                {/* University */}
+                <div className="flex items-center justify-between text-xs pt-2 border-t border-gray-200/60">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-gray-700">University:</span>
+                    <span className="text-gray-900 font-medium">Lovely Professional University</span>
+                  </div>
+                  {verificationDetails.univMatched ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                      <Check className="w-3 h-3" /> Verified
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-medium text-gray-400 bg-gray-200/70 px-2 py-0.5 rounded">
+                      Pending Scan
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Extracted Card Badges */}
+              {extractedCardData && (
+                <div className="bg-emerald-50/60 border border-emerald-200 rounded-lg p-3 space-y-2">
+                  <span className="text-[10px] font-black uppercase text-emerald-800 tracking-wider flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                    Extracted Card Information
+                  </span>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    {extractedCardData.program && (
+                      <div className="bg-white/80 p-2 rounded border border-emerald-100 flex items-center gap-1.5 col-span-2">
+                        <GraduationCap className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                        <div>
+                          <span className="text-[10px] text-gray-500 block">Program</span>
+                          <strong className="text-gray-900 font-semibold">{extractedCardData.program}</strong>
+                        </div>
+                      </div>
+                    )}
+                    {extractedCardData.validity && (
+                      <div className="bg-white/80 p-2 rounded border border-emerald-100 flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                        <div>
+                          <span className="text-[10px] text-gray-500 block">Validity</span>
+                          <strong className="text-gray-900 font-semibold">{extractedCardData.validity}</strong>
+                        </div>
+                      </div>
+                    )}
+                    {extractedCardData.bloodGroup && (
+                      <div className="bg-white/80 p-2 rounded border border-emerald-100 flex items-center gap-1.5">
+                        <Activity className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                        <div>
+                          <span className="text-[10px] text-gray-500 block">Blood Group</span>
+                          <strong className="text-gray-900 font-semibold">{extractedCardData.bloodGroup}</strong>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Rejection Alert */}
               {rejectionInfo && (

@@ -401,6 +401,12 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
     def perform_update(self, serializer):
+        from marketplace.cloudinary_upload import upload_user_image_to_cloudinary
+        raw_photo = serializer.validated_data.get('profile_photo', None)
+        if raw_photo and isinstance(raw_photo, str) and (raw_photo.startswith('data:image/') or len(raw_photo) > 100):
+            cloudinary_url = upload_user_image_to_cloudinary(raw_photo, folder="campusxchange/profiles")
+            serializer.validated_data['profile_photo'] = cloudinary_url
+
         user = serializer.save()
         try:
             user.trust_score = user.calculate_trust_score()
@@ -545,22 +551,32 @@ class CompleteIdVerificationView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        if str(user.username).strip() != reg_no:
+        clean_user_reg = str(user.username).strip().lstrip('@')
+        clean_input_reg = str(reg_no).strip().lstrip('@')
+
+        if clean_user_reg != clean_input_reg:
             return Response(
                 {"error": f"Registration number mismatch. Your account is registered with '{user.username}', but '{reg_no}' was submitted."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        from marketplace.cloudinary_upload import upload_user_image_to_cloudinary
+
+        cloudinary_id_card = upload_user_image_to_cloudinary(
+            id_card_image, folder="campusxchange/id_cards"
+        )
+
         user.is_id_verified = True
         user.role = 'SELLER'
-        if id_card_image:
-            user.id_card_image = id_card_image
+        user.id_card_image = cloudinary_id_card
         id_card_data = request.data.get('id_card_data', None)
         if id_card_data and isinstance(id_card_data, dict):
             user.id_card_data = id_card_data
         profile_photo = request.data.get('profile_photo', None)
         if profile_photo and isinstance(profile_photo, str) and len(profile_photo) > 100:
-            user.profile_photo = profile_photo
+            user.profile_photo = upload_user_image_to_cloudinary(
+                profile_photo, folder="campusxchange/profiles"
+            )
         user.trust_score = user.calculate_trust_score()
         user.save()
 
@@ -604,8 +620,11 @@ class UpgradeToSellerView(APIView):
         profile_photo = request.data.get('profile_photo', None)
         otp = str(request.data.get('otp', '')).strip()
 
-        # 1. Match registration number against account
-        if str(user.username).strip() != str(reg_no).strip():
+        # 1. Match registration number against account (ignore leading @)
+        clean_user_reg = str(user.username).strip().lstrip('@')
+        clean_input_reg = str(reg_no).strip().lstrip('@')
+
+        if clean_user_reg != clean_input_reg:
             return Response(
                 {"error": f"Registration number mismatch. Your account is registered as '{user.username}', but '{reg_no}' was submitted."},
                 status=status.HTTP_400_BAD_REQUEST
@@ -632,48 +651,57 @@ class UpgradeToSellerView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        try:
-            record = OTPVerification.objects.get(email=user.email)
-
-            if record.is_locked():
-                return Response(
-                    {"error": "Too many failed OTP attempts. Please request a new code."},
-                    status=status.HTTP_429_TOO_MANY_REQUESTS
-                )
-
-            if not record.is_valid():
-                return Response(
-                    {"error": "Verification code has expired. Please request a new code."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            from server.crypto import decrypt_data
-            stored_otp = decrypt_data(record.otp)
-
-            if stored_otp != otp:
-                record.attempts += 1
-                record.save(update_fields=['attempts'])
-                remaining = max(0, record.MAX_ATTEMPTS - record.attempts)
-                return Response(
-                    {"error": f"Invalid verification code. {remaining} attempt(s) remaining."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            record.is_verified = True
-            record.save()
-        except OTPVerification.DoesNotExist:
+        record = OTPVerification.objects.filter(email__iexact=user.email).order_by('-created_at').first()
+        if not record:
             return Response(
                 {"error": "No verification code was sent to this email. Please request a code first."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 5. Successfully upgrade Buyer to Verified Seller
+        if record.is_locked():
+            return Response(
+                {"error": "Too many failed OTP attempts. Please request a new code."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+
+        if not record.is_valid():
+            return Response(
+                {"error": "Verification code has expired. Please request a new code."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        from server.crypto import decrypt_data
+        stored_otp = decrypt_data(record.otp)
+
+        if stored_otp != otp:
+            record.attempts += 1
+            record.save(update_fields=['attempts'])
+            remaining = max(0, record.MAX_ATTEMPTS - record.attempts)
+            return Response(
+                {"error": f"Invalid verification code. {remaining} attempt(s) remaining."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        record.is_verified = True
+        record.save()
+
+        # 5. Upload student ID and profile photo to Cloudinary in .webp format
+        from marketplace.cloudinary_upload import upload_user_image_to_cloudinary
+
+        cloudinary_id_card = upload_user_image_to_cloudinary(
+            id_card_image, folder="campusxchange/id_cards"
+        )
+        cloudinary_profile_photo = upload_user_image_to_cloudinary(
+            profile_photo, folder="campusxchange/profiles"
+        )
+
+        # 6. Successfully upgrade Buyer to Verified Seller
         user.is_id_verified = True
         user.role = 'SELLER'
-        user.id_card_image = id_card_image
+        user.id_card_image = cloudinary_id_card
         if id_card_data and isinstance(id_card_data, dict):
             user.id_card_data = id_card_data
-        user.profile_photo = profile_photo
+        user.profile_photo = cloudinary_profile_photo
         user.trust_score = user.calculate_trust_score()
         user.save()
 

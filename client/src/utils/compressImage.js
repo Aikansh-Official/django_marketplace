@@ -62,29 +62,42 @@ export async function compressImage(file, options = {}) {
       ctx.fillRect(0, 0, width, height);
       ctx.drawImage(img, 0, 0, width, height);
 
-      // Export as JPEG blob
+      // Export as WebP blob (fallback to JPEG if not supported)
+      const tryFormat = 'image/webp';
       canvas.toBlob(
         (blob) => {
           if (!blob) {
-            reject(new Error('Canvas compression failed.'));
+            // Fallback to JPEG
+            canvas.toBlob(
+              (jpgBlob) => {
+                if (!jpgBlob) {
+                  reject(new Error('Canvas compression failed.'));
+                  return;
+                }
+                const compressedFile = new File(
+                  [jpgBlob],
+                  file.name.replace(/\.\w+$/, '.jpg'),
+                  { type: 'image/jpeg', lastModified: Date.now() }
+                );
+                resolve(compressedFile);
+              },
+              'image/jpeg',
+              quality
+            );
             return;
           }
 
-          // Create a new File from the blob
+          const isWebp = blob.type === 'image/webp';
+          const ext = isWebp ? '.webp' : '.jpg';
           const compressedFile = new File(
             [blob],
-            file.name.replace(/\.\w+$/, '.jpg'),
-            { type: 'image/jpeg', lastModified: Date.now() }
+            file.name.replace(/\.\w+$/, ext),
+            { type: blob.type, lastModified: Date.now() }
           );
-
-          const savedPercent = Math.round(
-            ((file.size - compressedFile.size) / file.size) * 100
-          );
-
 
           resolve(compressedFile);
         },
-        'image/jpeg',
+        tryFormat,
         quality
       );
     };
@@ -100,21 +113,21 @@ export async function compressImage(file, options = {}) {
 }
 
 /**
- * Compress an image file or data URL directly into a compact Base64 Data URL.
+ * Compress an image file or data URL directly into a compact Base64 Data URL (WebP format).
  * Ideal for student ID card uploads and document storage.
  *
  * @param {File|Blob|string} input - File object or data URL string
  * @param {object} options
  * @param {number} options.maxWidth - Max width in px (default: 1000)
  * @param {number} options.maxHeight - Max height in px (default: 700)
- * @param {number} options.quality - JPEG quality 0.0–1.0 (default: 0.75)
- * @returns {Promise<string>} Compressed Base64 data URL
+ * @param {number} options.quality - Quality 0.0–1.0 (default: 0.8)
+ * @returns {Promise<string>} Compressed Base64 WebP data URL
  */
 export async function compressImageToDataUrl(input, options = {}) {
   const {
     maxWidth = 1000,
     maxHeight = 700,
-    quality = 0.75,
+    quality = 0.8,
   } = options;
 
   return new Promise((resolve, reject) => {
@@ -153,7 +166,10 @@ export async function compressImageToDataUrl(input, options = {}) {
       ctx.fillRect(0, 0, width, height);
       ctx.drawImage(img, 0, 0, width, height);
 
-      const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+      let compressedDataUrl = canvas.toDataURL('image/webp', quality);
+      if (!compressedDataUrl.startsWith('data:image/webp')) {
+        compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+      }
       resolve(compressedDataUrl);
     };
 
