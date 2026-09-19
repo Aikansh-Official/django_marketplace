@@ -46,6 +46,52 @@ export default function Home() {
   const [sortBy, setSortBy] = useState('newest');
   const [favorites, setFavorites] = useState({});
 
+  // Current User Profile State
+  const [userProfile, setUserProfile] = useState(() => {
+    try {
+      const stored = localStorage.getItem('user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    const syncUser = async () => {
+      try {
+        const stored = localStorage.getItem('user');
+        if (stored) {
+          setUserProfile(JSON.parse(stored));
+        } else if (localStorage.getItem('access')) {
+          const res = await api.get('/auth/status/');
+          if (res.data?.isAuthenticated && res.data?.user) {
+            setUserProfile(res.data.user);
+            localStorage.setItem('user', JSON.stringify(res.data.user));
+          }
+        }
+      } catch {
+        // ignore
+      }
+    };
+    syncUser();
+    window.addEventListener('auth-changed', syncUser);
+    window.addEventListener('storage', syncUser);
+    return () => {
+      window.removeEventListener('auth-changed', syncUser);
+      window.removeEventListener('storage', syncUser);
+    };
+  }, []);
+
+  const isSeller = Boolean(
+    userProfile && (
+      userProfile.role === 'SELLER' ||
+      userProfile.is_id_verified ||
+      userProfile.is_staff ||
+      userProfile.is_superuser
+    )
+  );
+  const isBuyer = Boolean(userProfile && !isSeller);
+
   // Sync state when URL params change (e.g. from footer links or header navigation)
   useEffect(() => {
     const cat = searchParams.get('category') || 'ALL';
@@ -297,7 +343,9 @@ export default function Home() {
             <p className="text-xs text-gray-500 max-w-sm mx-auto">
               {searchQuery
                 ? 'Try checking for spelling errors, broader keywords, or clear the search filter.'
-                : 'Try adjusting your filters, or be the first student to post this item!'}
+                : isSeller
+                ? 'Try adjusting your filters, or be the first student to post this item!'
+                : 'Try adjusting your filters, or explore other categories to find what you need.'}
             </p>
             {searchQuery && (
               <div className="pt-1">
@@ -310,7 +358,25 @@ export default function Home() {
                 </button>
               </div>
             )}
-            {localStorage.getItem('access') ? (
+            {(selectedCategory !== 'ALL' || transactionType !== 'ALL' || conditionFilter !== 'ALL') && (
+              <div className="pt-1">
+                <button
+                  onClick={() => {
+                    setSelectedCategory('ALL');
+                    setTransactionType('ALL');
+                    setConditionFilter('ALL');
+                    setSearchQuery('');
+                    setSearchParams(new URLSearchParams());
+                  }}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-md text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Repeat className="w-3.5 h-3.5" />
+                  Reset All Filters
+                </button>
+              </div>
+            )}
+            {/* Sell button is strictly for verified Sellers - NEVER shown to Buyers */}
+            {isSeller ? (
               <div className="pt-2">
                 <Link
                   to="/sell"
@@ -320,7 +386,7 @@ export default function Home() {
                   Sell an Item
                 </Link>
               </div>
-            ) : (
+            ) : !userProfile && !localStorage.getItem('access') ? (
               <div className="pt-2">
                 <button
                   onClick={() => window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { mode: 'login' } }))}
@@ -329,7 +395,7 @@ export default function Home() {
                   Login to Sell
                 </button>
               </div>
-            )}
+            ) : null}
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 animate-fade-in-up">

@@ -19,6 +19,7 @@ import {
 import Tesseract from 'tesseract.js';
 import { extractLpuCardDetails, checkImageAuthenticity } from '../../utils/idCardVerification';
 import { compressImageToDataUrl } from '../../utils/compressImage';
+import { preloadVisionDetectors } from '../../utils/faceLivenessDetector';
 import RegisterStepSelfie from '../auth/steps/RegisterStepSelfie';
 
 export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgradeSuccess }) {
@@ -54,6 +55,7 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
       setSelfieImage(null);
       setOtpCode('');
       setOtpSent(false);
+      preloadVisionDetectors();
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';

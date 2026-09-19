@@ -1,9 +1,46 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import logoImg from '../assets/CampusXChange_Logo.jpeg';
 
 export default function Footer() {
   const location = useLocation();
   const currentYear = new Date().getFullYear();
+
+  const [userProfile, setUserProfile] = useState(() => {
+    try {
+      const stored = localStorage.getItem('user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    const syncUser = () => {
+      try {
+        const stored = localStorage.getItem('user');
+        setUserProfile(stored ? JSON.parse(stored) : null);
+      } catch {
+        setUserProfile(null);
+      }
+    };
+    window.addEventListener('auth-changed', syncUser);
+    window.addEventListener('storage', syncUser);
+    return () => {
+      window.removeEventListener('auth-changed', syncUser);
+      window.removeEventListener('storage', syncUser);
+    };
+  }, []);
+
+  const isSeller = Boolean(
+    userProfile && (
+      userProfile.role === 'SELLER' ||
+      userProfile.is_id_verified ||
+      userProfile.is_staff ||
+      userProfile.is_superuser
+    )
+  );
+  const isBuyer = Boolean(userProfile && !isSeller);
 
   // Normalize current pathname (strip trailing slash)
   const pathname = location.pathname.replace(/\/$/, '') || '/';
@@ -58,11 +95,13 @@ export default function Footer() {
                   Explore All Listings
                 </Link>
               </li>
-              <li>
-                <Link to="/sell" className="text-gray-500 hover:text-gray-900 transition-colors">
-                  Post an Item for Sale
-                </Link>
-              </li>
+              {!isBuyer && (
+                <li>
+                  <Link to="/sell" className="text-gray-500 hover:text-gray-900 transition-colors">
+                    Post an Item for Sale
+                  </Link>
+                </li>
+              )}
               <li>
                 <Link to="/?transaction_type=DONATE" className="text-gray-500 hover:text-gray-900 transition-colors">
                   Free Donation Box

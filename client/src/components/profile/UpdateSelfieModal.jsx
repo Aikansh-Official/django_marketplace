@@ -21,11 +21,11 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { compressImageToDataUrl } from '../../utils/compressImage';
-import { analyzeFaceFrame } from '../../utils/faceLivenessDetector';
+import { analyzeFaceFrame, preloadVisionDetectors, onLoadingProgress } from '../../utils/faceLivenessDetector';
 
 const videoConstraints = {
-  width: 480,
-  height: 480,
+  width: { ideal: 480 },
+  height: { ideal: 480 },
   facingMode: 'user',
 };
 
@@ -62,16 +62,37 @@ export default function UpdateSelfieModal({
   const [cameraError, setCameraError] = useState(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [loadingStage, setLoadingStage] = useState('Initializing...');
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [allowDirectCapture, setAllowDirectCapture] = useState(false);
 
-  // Prevent background scrolling when modal is open
+  // Prevent background scrolling and handle detector preloading + progress
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      const unsub = onLoadingProgress((stage, progress) => {
+        setLoadingProgress(progress);
+        if (stage === 'wasm') setLoadingStage('Loading vision engine...');
+        else if (stage === 'face_model') setLoadingStage('Loading face scanner...');
+        else if (stage === 'all_ready') setLoadingStage('Scanner ready!');
+      });
+      preloadVisionDetectors();
+
+      const timer = setTimeout(() => {
+        setAllowDirectCapture(true);
+      }, 6000);
+
+      return () => {
+        unsub();
+        clearTimeout(timer);
+        document.body.style.overflow = 'unset';
+      };
     } else {
       document.body.style.overflow = 'unset';
       setSelfieImage(null);
       setCameraError(null);
       setCameraReady(false);
+      setAllowDirectCapture(false);
     }
     return () => {
       document.body.style.overflow = 'unset';
@@ -425,6 +446,21 @@ export default function UpdateSelfieModal({
                             </svg>
                           </div>
                         )}
+
+                        {!cameraReady && (
+                          <div className="absolute inset-0 bg-gray-900/80 flex flex-col items-center justify-center gap-2">
+                            <Loader2 className="w-8 h-8 text-white animate-spin mb-1" />
+                            <p className="text-xs text-white/90 font-semibold">{loadingStage}</p>
+                            {loadingProgress > 0 && loadingProgress < 100 && (
+                              <div className="w-28 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                                <div
+                                  className="bg-brand-400 h-full rounded-full transition-all duration-500"
+                                  style={{ width: `${loadingProgress}%` }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
@@ -469,7 +505,7 @@ export default function UpdateSelfieModal({
                       type="button"
                       onClick={handleCapture}
                       disabled={
-                        !liveness.fullyVisible ||
+                        (!liveness.fullyVisible && !allowDirectCapture) ||
                         liveness.handDetected ||
                         isCapturing ||
                         isProcessing ||
@@ -477,7 +513,7 @@ export default function UpdateSelfieModal({
                         Boolean(cameraError)
                       }
                       className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-black text-sm tracking-tight transition-all duration-200 ${
-                        liveness.fullyVisible && !liveness.handDetected && cameraReady && !cameraError
+                        (liveness.fullyVisible || allowDirectCapture) && !liveness.handDetected && cameraReady && !cameraError
                           ? 'bg-brand-500 hover:bg-brand-600 text-white shadow-lg shadow-brand-500/25 cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0'
                           : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
                       }`}
@@ -500,7 +536,11 @@ export default function UpdateSelfieModal({
                       ) : (
                         <>
                           <Camera className="w-4 h-4" />
-                          {liveness.fullyVisible ? 'Capture Selfie' : 'Align Face in Circle to Capture'}
+                          {liveness.fullyVisible
+                            ? 'Capture Selfie'
+                            : allowDirectCapture
+                            ? 'Capture Photo (Ready)'
+                            : 'Align Face in Circle to Capture'}
                         </>
                       )}
                     </button>

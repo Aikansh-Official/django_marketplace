@@ -1,7 +1,43 @@
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { ShieldCheck, Sparkles, MapPin, ArrowRight, GraduationCap } from 'lucide-react';
 
 export default function About() {
+  const [userProfile, setUserProfile] = useState(() => {
+    try {
+      const stored = localStorage.getItem('user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    const syncUser = () => {
+      try {
+        const stored = localStorage.getItem('user');
+        setUserProfile(stored ? JSON.parse(stored) : null);
+      } catch {
+        setUserProfile(null);
+      }
+    };
+    window.addEventListener('auth-changed', syncUser);
+    window.addEventListener('storage', syncUser);
+    return () => {
+      window.removeEventListener('auth-changed', syncUser);
+      window.removeEventListener('storage', syncUser);
+    };
+  }, []);
+
+  const isSeller = Boolean(
+    userProfile && (
+      userProfile.role === 'SELLER' ||
+      userProfile.is_id_verified ||
+      userProfile.is_staff ||
+      userProfile.is_superuser
+    )
+  );
+  const isBuyer = Boolean(userProfile && !isSeller);
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -112,12 +148,14 @@ export default function About() {
             >
               Browse Items
             </Link>
-            <Link
-              to="/sell"
-              className="text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 px-4 py-2 rounded-md transition-colors shadow-xs flex items-center gap-1.5"
-            >
-              Post an Item <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+            {!isBuyer && (
+              <Link
+                to="/sell"
+                className="text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 px-4 py-2 rounded-md transition-colors shadow-xs flex items-center gap-1.5"
+              >
+                Post an Item <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            )}
           </div>
         </div>
 

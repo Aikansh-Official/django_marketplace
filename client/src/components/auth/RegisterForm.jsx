@@ -6,6 +6,7 @@ import confetti from 'canvas-confetti';
 import Tesseract from 'tesseract.js';
 import { extractLpuCardDetails, checkImageAuthenticity } from '../../utils/idCardVerification';
 import { compressImageToDataUrl } from '../../utils/compressImage';
+import { preloadVisionDetectors } from '../../utils/faceLivenessDetector';
 import { registerSchema } from './authSchemas';
 import { ShieldAlert } from 'lucide-react';
 import api, { getPlatformConfig } from '../../services/api';
@@ -80,6 +81,14 @@ export default function RegisterForm({
   useEffect(() => {
     clearErrors();
   }, [step, clearErrors]);
+
+  // Preload MediaPipe face/hand models when seller is on ID card step (step 2)
+  // so the scanner is ready by the time they reach the selfie step (step 3)
+  useEffect(() => {
+    if (selectedRole === 'SELLER' && step >= 2) {
+      preloadVisionDetectors();
+    }
+  }, [selectedRole, step]);
 
   const [internalRole, setInternalRole] = useState('BUYER');
   const selectedRole = propSelectedRole !== undefined ? propSelectedRole : internalRole;

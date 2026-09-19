@@ -13,11 +13,11 @@ import {
   Ban
 } from 'lucide-react';
 import { compressImageToDataUrl } from '../../../utils/compressImage';
-import { analyzeFaceFrame } from '../../../utils/faceLivenessDetector';
+import { analyzeFaceFrame, preloadVisionDetectors, onLoadingProgress } from '../../../utils/faceLivenessDetector';
 
 const videoConstraints = {
-  width: 480,
-  height: 480,
+  width: { ideal: 480 },
+  height: { ideal: 480 },
   facingMode: 'user',
 };
 
@@ -49,6 +49,29 @@ export default function RegisterStepSelfie({
   const [cameraError, setCameraError] = useState(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [loadingStage, setLoadingStage] = useState('Initializing...');
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [allowDirectCapture, setAllowDirectCapture] = useState(false);
+
+  // Preload vision models as soon as the selfie component mounts
+  useEffect(() => {
+    const unsub = onLoadingProgress((stage, progress) => {
+      setLoadingProgress(progress);
+      if (stage === 'wasm') setLoadingStage('Loading vision engine...');
+      else if (stage === 'face_model') setLoadingStage('Loading face scanner...');
+      else if (stage === 'all_ready') setLoadingStage('Scanner ready!');
+    });
+    preloadVisionDetectors();
+    return unsub;
+  }, []);
+
+  // Fail-safe: After 6 seconds, allow student to capture directly even if neural net is slow
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAllowDirectCapture(true);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Run face liveness, individual eye & hand detection loop every 260ms
   useEffect(() => {
@@ -306,9 +329,17 @@ export default function RegisterStepSelfie({
                   )}
 
                   {!cameraReady && (
-                    <div className="absolute inset-0 bg-gray-900/80 flex flex-col items-center justify-center">
-                      <Loader2 className="w-8 h-8 text-white animate-spin mb-2" />
-                      <p className="text-xs text-white/80 font-medium">Starting camera...</p>
+                    <div className="absolute inset-0 bg-gray-900/80 flex flex-col items-center justify-center gap-2">
+                      <Loader2 className="w-8 h-8 text-white animate-spin mb-1" />
+                      <p className="text-xs text-white/90 font-semibold">{loadingStage}</p>
+                      {loadingProgress > 0 && loadingProgress < 100 && (
+                        <div className="w-32 bg-white/20 rounded-full h-1.5 overflow-hidden">
+                          <div
+                            className="bg-brand-400 h-full rounded-full transition-all duration-500"
+                            style={{ width: `${loadingProgress}%` }}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </>
@@ -379,9 +410,16 @@ export default function RegisterStepSelfie({
           <button
             type="button"
             onClick={handleCapture}
-            disabled={!liveness.fullyVisible || liveness.handDetected || isCapturing || isProcessing || !cameraReady || cameraError}
+            disabled={
+              (!liveness.fullyVisible && !allowDirectCapture) ||
+              liveness.handDetected ||
+              isCapturing ||
+              isProcessing ||
+              !cameraReady ||
+              cameraError
+            }
             className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-black text-sm tracking-tight transition-all duration-200 ${
-              liveness.fullyVisible && !liveness.handDetected && cameraReady && !cameraError
+              (liveness.fullyVisible || allowDirectCapture) && !liveness.handDetected && cameraReady && !cameraError
                 ? 'bg-brand-500 hover:bg-brand-600 text-white shadow-lg shadow-brand-500/25 cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0'
                 : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
             }`}
@@ -404,7 +442,11 @@ export default function RegisterStepSelfie({
             ) : (
               <>
                 <Camera className="w-4 h-4" />
-                {liveness.fullyVisible ? 'Capture Selfie' : 'Align Face with Open Eyes & Mouth'}
+                {liveness.fullyVisible
+                  ? 'Capture Selfie'
+                  : allowDirectCapture
+                  ? 'Capture Photo (Ready)'
+                  : 'Align Face with Open Eyes & Mouth'}
               </>
             )}
           </button>
