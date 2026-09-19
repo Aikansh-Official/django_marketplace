@@ -139,23 +139,8 @@ export default function ListingCard({
             )}
           </div>
 
-          {/* Right: CXC Trusted Sign & Favorite Button */}
+          {/* Right: Favorite Button */}
           <div className="flex items-center gap-1.5 pointer-events-auto">
-            {listing.is_trusted && (
-              <div
-                className="bg-white/95 backdrop-blur-md border border-blue-200 px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1 text-[9px] sm:text-[10px] font-black text-blue-900"
-                title="Verified CampusXChange Trusted Listing"
-              >
-                <img
-                  src={cxcLogo}
-                  alt="CXC"
-                  className="w-3.5 h-3.5 rounded-full object-cover shrink-0"
-                />
-                <span className="tracking-wide">TRUSTED</span>
-              </div>
-            )}
-
-            {/* Favorite Button */}
             {onToggleFavorite && (
               <button
                 type="button"
@@ -184,27 +169,44 @@ export default function ListingCard({
 
       {/* Content Container */}
       <div className="p-3 sm:p-4 flex flex-col flex-grow">
-        {/* Price & Discount Section */}
-        <div className="flex items-baseline gap-2 mb-1 flex-wrap">
-          <h3 className="font-black text-base sm:text-xl text-gray-900 tracking-tight">
-            {listing.transaction_type === 'DONATE'
-              ? 'Free'
-              : listing.transaction_type === 'EXCHANGE'
-              ? Number(listing.price) > 0
-                ? `₹${listing.price} (Swap)`
-                : 'Item Swap'
-              : `₹${listing.price}`}
-          </h3>
+        {/* Price, Discount & Trusted Sign Section */}
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <h3 className="font-black text-base sm:text-xl text-gray-900 tracking-tight">
+              {listing.transaction_type === 'DONATE'
+                ? 'Free'
+                : listing.transaction_type === 'EXCHANGE'
+                ? Number(listing.price) > 0
+                  ? `₹${listing.price} (Swap)`
+                  : 'Item Swap'
+                : `₹${listing.price}`}
+            </h3>
 
-          {/* Strikethrough Original Price & Discount Badge */}
-          {hasDiscount && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs sm:text-sm text-gray-400 line-through font-semibold">
-                ₹{listing.original_price}
-              </span>
-              <span className="bg-rose-50 text-rose-600 border border-rose-200 text-[10px] font-black px-1.5 py-0.5 rounded-full">
-                -{discountPercent}%
-              </span>
+            {/* Strikethrough Original Price & Discount Badge */}
+            {hasDiscount && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs sm:text-sm text-gray-400 line-through font-semibold">
+                  ₹{listing.original_price}
+                </span>
+                <span className="bg-rose-50 text-rose-600 border border-rose-200 text-[10px] font-black px-1.5 py-0.5 rounded-full">
+                  -{discountPercent}%
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* CXC Trusted Sign (Price ke Right Side me) */}
+          {listing.is_trusted && (
+            <div
+              className="bg-blue-50/90 border border-blue-200 px-2 py-0.5 rounded-full shadow-2xs flex items-center gap-1 text-[9px] sm:text-[10px] font-black text-blue-900 shrink-0"
+              title="Verified CampusXChange Trusted Listing"
+            >
+              <img
+                src={cxcLogo}
+                alt="CXC"
+                className="w-3.5 h-3.5 rounded-full object-cover shrink-0"
+              />
+              <span className="tracking-wide">TRUSTED</span>
             </div>
           )}
         </div>
