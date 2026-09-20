@@ -102,40 +102,32 @@ export default function PersonalInfoTab({ profile, onProfileUpdated, onUpgradeCl
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6">
             {/* Avatar & Name Row */}
             <div className="flex flex-col sm:flex-row sm:items-end gap-3.5 sm:gap-6">
-              {/* Large Avatar with Selfie Retake Trigger */}
+              {/* Large Avatar with Single Clean Selfie Update Badge */}
               <div className="relative group -mt-12 sm:-mt-18 w-24 h-24 sm:w-32 sm:h-32 rounded-md bg-white p-1.5 sm:p-2 shadow-xl ring-4 ring-white flex-shrink-0 z-10">
-                <div className="w-full h-full rounded-md overflow-hidden relative">
+                <div
+                  onClick={handleOpenSelfie}
+                  title="Click to update profile photo"
+                  className="w-full h-full rounded-md overflow-hidden relative cursor-pointer"
+                >
                   {profile?.profile_photo ? (
                     <img
                       src={profile.profile_photo}
                       alt={fullName}
-                      className="w-full h-full object-cover rounded-md shadow-inner"
+                      className="w-full h-full object-cover rounded-md shadow-inner transition-transform duration-200 group-hover:scale-105"
                     />
                   ) : (
                     <div className="w-full h-full rounded-md bg-gradient-to-tr from-brand-500 to-brand-400 text-white flex items-center justify-center text-3xl sm:text-5xl font-black shadow-inner">
                       {firstLetter}
                     </div>
                   )}
-
-                  {/* Hover Overlay Button to retake selfie */}
-                  <button
-                    type="button"
-                    onClick={handleOpenSelfie}
-                    className="absolute inset-0 bg-black/60 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer rounded-md"
-                    title="Click to retake or update your selfie profile photo"
-                  >
-                    <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-white mb-1" />
-                    <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-white">
-                      Retake Selfie
-                    </span>
-                  </button>
                 </div>
 
-                {/* Floating camera badge button */}
+                {/* Floating camera badge button - single clean trigger */}
                 <button
                   type="button"
                   onClick={handleOpenSelfie}
-                  title="Retake Selfie Photo"
+                  title="Update profile photo"
+                  aria-label="Update profile photo"
                   className="absolute -bottom-1 -right-1 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-brand-500 hover:bg-brand-600 text-white flex items-center justify-center shadow-lg border-2 border-white cursor-pointer transition-transform hover:scale-110 z-20"
                 >
                   <Camera className="w-4 h-4" />
@@ -164,18 +156,10 @@ export default function PersonalInfoTab({ profile, onProfileUpdated, onUpgradeCl
               </div>
             </div>
 
-            {/* Action Button: Edit, Save or Retake Selfie */}
+            {/* Action Button: Edit or Save */}
             <div className="pb-1 sm:pb-2 self-start sm:self-end flex-shrink-0">
               {!isEditing ? (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={handleOpenSelfie}
-                    className="inline-flex items-center gap-1.5 bg-brand-50 hover:bg-brand-100 text-brand-600 border border-brand-200 font-bold py-2.5 px-3.5 rounded-md transition-all text-xs shadow-2xs hover:shadow-xs cursor-pointer"
-                  >
-                    <Camera className="w-3.5 h-3.5" />
-                    Retake Selfie
-                  </button>
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setIsEditing(true)}

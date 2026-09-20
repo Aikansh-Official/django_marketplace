@@ -156,7 +156,6 @@ export default function Profile() {
           savedCount={savedCount}
           onLogoutClick={() => setIsLogoutModalOpen(true)}
           onUpgradeClick={() => setIsUpgradeModalOpen(true)}
-          onOpenSelfieModal={() => setIsSelfieModalOpen(true)}
         />
 
         {/* Right Active Tab Content */}

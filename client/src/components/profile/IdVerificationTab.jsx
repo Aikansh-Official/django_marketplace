@@ -332,18 +332,10 @@ export default function IdVerificationTab({ profile, onProfileUpdated, onOpenSel
           {/* Verified Selfie Photo (with Retake/Upload Option) */}
           {profile?.profile_photo ? (
             <div className="pt-2">
-              <div className="flex items-center justify-between mb-1.5">
+              <div className="mb-1.5">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
                   Verified Selfie Photo
                 </span>
-                <button
-                  type="button"
-                  onClick={handleOpenSelfie}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-700 hover:underline cursor-pointer"
-                >
-                  <Camera className="w-3.5 h-3.5" />
-                  Retake Selfie
-                </button>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 p-3 rounded-md bg-gray-50 border border-gray-200/80">
                 <div className="flex items-center gap-3.5 min-w-0">
