@@ -5,9 +5,38 @@
 @tailwind utilities;
 
 @layer base {
+  html,
   body {
     @apply font-sans antialiased bg-gray-50 text-gray-900;
+    overflow-x: hidden;
+    width: 100%;
+    -webkit-text-size-adjust: 100%;
+    touch-action: manipulation;
   }
+
+  #root {
+    overflow-x: hidden;
+    width: 100%;
+    min-height: 100vh;
+  }
+}
+
+/* Safe Area Inset Utilities for Mobile Notches & Bottom Home Bars */
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.pt-safe {
+  padding-top: max(1rem, env(safe-area-inset-top));
+}
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.touch-momentum {
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Glassmorphism utilities */
@@ -298,6 +327,20 @@
 
 .animate-geo-float-reverse {
   animation: geoFloatReverse 13s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes geoSquareBreathe {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(6px, -8px, 0) scale(1.05);
+  }
+}
+
+.animate-geo-breathe {
+  animation: geoSquareBreathe 15s ease-in-out infinite;
   will-change: transform;
 }
 
