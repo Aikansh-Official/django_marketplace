@@ -768,34 +768,21 @@ export default function ProductDetail() {
             </h3>
 
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-brand-100 border border-brand-200 text-brand-800 font-bold flex items-center justify-center text-lg shadow-sm">
+              <div className="w-12 h-12 rounded-full bg-brand-100 border border-brand-200 text-brand-800 font-bold flex items-center justify-center text-lg shadow-sm shrink-0">
                 {(((listing.seller?.full_name || listing.seller?.username) || 'U')[0] || 'U').toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-bold text-sm text-gray-900 truncate flex items-center gap-1.5">
                   <span className="truncate">{listing.seller?.full_name || listing.seller?.username || 'LPU Student'}</span>
                   {listing.seller?.is_id_verified && (
-                    <span
-                      title="Official Student ID Verified"
-                      className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full shrink-0 shadow-2xs"
-                    >
-                      <BadgeCheck className="w-3.5 h-3.5 text-emerald-600" />
-                      ID Verified
-                    </span>
+                    <BadgeCheck
+                      className="w-4 h-4 text-emerald-600 shrink-0"
+                      title="Verified Student Trader"
+                    />
                   )}
                 </div>
-                <div className="flex items-center gap-1 text-[11px] font-semibold mt-0.5">
-                  {listing.seller?.is_id_verified ? (
-                    <span className="text-emerald-700 flex items-center gap-1">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                      Official Student ID Verified
-                    </span>
-                  ) : (
-                    <span className="text-gray-500 flex items-center gap-1">
-                      <Mail className="w-3.5 h-3.5 text-gray-400" />
-                      Email Verified Student
-                    </span>
-                  )}
+                <div className="text-[11px] text-gray-500 truncate mt-0.5">
+                  @{listing.seller?.username || 'student'} • LPU Student
                 </div>
               </div>
             </div>
@@ -818,9 +805,8 @@ export default function ProductDetail() {
 
             <div className="text-[11px] text-gray-500 flex items-center justify-between pt-1">
               <span>Contact Mode:</span>
-              <span className="font-bold text-emerald-700 flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                Verified In-App Chat
+              <span className="font-semibold text-gray-700">
+                In-App Messenger
               </span>
             </div>
 
@@ -828,7 +814,7 @@ export default function ProductDetail() {
               to={`/seller/${listing.seller?.id || ''}`}
               className="w-full bg-gray-50 hover:bg-brand-50 hover:text-brand-600 border border-gray-200 hover:border-brand-200 py-2.5 rounded-md text-xs font-bold text-gray-700 text-center transition-colors block mt-2"
             >
-              <span>View Verified Public Profile →</span>
+              <span>View Seller Profile →</span>
             </Link>
           </div>
 
