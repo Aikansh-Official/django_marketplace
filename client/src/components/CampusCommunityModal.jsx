@@ -59,14 +59,14 @@ export default function CampusCommunityModal({ isOpen, onClose }) {
   return createPortal(
     <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
       <div 
-        className="max-w-2xl w-full bg-white rounded-md shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[90vh]"
+        className="max-w-2xl w-full bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header - Warm Light Theme Matching CampusXChange */}
-        <div className="px-5 sm:px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-orange-50/90 via-amber-50/50 to-white relative flex-shrink-0">
+        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 bg-gradient-to-r from-orange-50/90 via-amber-50/50 to-white relative flex-shrink-0">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center"
             title="Close"
           >
             <X className="w-5 h-5" />
@@ -77,7 +77,7 @@ export default function CampusCommunityModal({ isOpen, onClose }) {
             <span>CampusXChange Community</span>
           </div>
 
-          <h2 className="text-xl sm:text-2xl font-bold font-display text-gray-900 tracking-tight">
+          <h2 className="text-lg sm:text-2xl font-bold font-display text-gray-900 tracking-tight pr-8">
             Campus Hall of Fame & Trading Zones
           </h2>
           <p className="text-gray-500 text-xs sm:text-sm mt-0.5">
@@ -85,45 +85,45 @@ export default function CampusCommunityModal({ isOpen, onClose }) {
           </p>
 
           {/* Quick stats ticker */}
-          <div className="grid grid-cols-3 gap-2.5 mt-4 pt-4 border-t border-orange-100">
-            <div className="bg-white/90 p-2.5 rounded-md border border-orange-100 shadow-2xs text-center">
-              <div className="text-lg sm:text-xl font-bold text-gray-900 font-display">{stats.completed_deals}+</div>
-              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Deals Completed</div>
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-orange-100">
+            <div className="bg-white/90 p-2 sm:p-2.5 rounded-lg border border-orange-100 shadow-2xs text-center">
+              <div className="text-base xs:text-lg sm:text-xl font-bold text-gray-900 font-display">{stats.completed_deals}+</div>
+              <div className="text-[9px] sm:text-[10px] font-semibold text-gray-500 uppercase tracking-wider leading-tight">Deals Done</div>
             </div>
-            <div className="bg-white/90 p-2.5 rounded-md border border-orange-100 shadow-2xs text-center">
-              <div className="text-lg sm:text-xl font-bold text-gray-900 font-display">{stats.total_students}</div>
-              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Registered Students</div>
+            <div className="bg-white/90 p-2 sm:p-2.5 rounded-lg border border-orange-100 shadow-2xs text-center">
+              <div className="text-base xs:text-lg sm:text-xl font-bold text-gray-900 font-display">{stats.total_students}</div>
+              <div className="text-[9px] sm:text-[10px] font-semibold text-gray-500 uppercase tracking-wider leading-tight">Students</div>
             </div>
-            <div className="bg-white/90 p-2.5 rounded-md border border-orange-100 shadow-2xs text-center">
-              <div className="text-lg sm:text-xl font-bold text-gray-900 font-display">{stats.active_listings}</div>
-              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Live Listings</div>
+            <div className="bg-white/90 p-2 sm:p-2.5 rounded-lg border border-orange-100 shadow-2xs text-center">
+              <div className="text-base xs:text-lg sm:text-xl font-bold text-gray-900 font-display">{stats.active_listings}</div>
+              <div className="text-[9px] sm:text-[10px] font-semibold text-gray-500 uppercase tracking-wider leading-tight">Live Items</div>
             </div>
           </div>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex border-b border-gray-100 bg-gray-50/70 px-4 sm:px-6">
+        <div className="flex border-b border-gray-100 bg-gray-50/70 px-3 sm:px-6 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('leaderboard')}
-            className={`py-3 px-4 font-bold text-xs sm:text-sm flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+            className={`py-3 px-3 sm:px-4 font-bold text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'leaderboard'
                 ? 'border-brand-500 text-brand-600 bg-white/60'
                 : 'border-transparent text-gray-500 hover:text-gray-800'
             }`}
           >
-            <Trophy className="w-4 h-4 text-amber-500" />
-            Top Trusted Sellers
+            <Trophy className="w-4 h-4 text-amber-500 shrink-0" />
+            <span>Top Trusted Sellers</span>
           </button>
           <button
             onClick={() => setActiveTab('hotspots')}
-            className={`py-3 px-4 font-bold text-xs sm:text-sm flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+            className={`py-3 px-3 sm:px-4 font-bold text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'hotspots'
                 ? 'border-brand-500 text-brand-600 bg-white/60'
                 : 'border-transparent text-gray-500 hover:text-gray-800'
             }`}
           >
-            <MapPin className="w-4 h-4 text-emerald-500" />
-            Safe Handover Hotspots
+            <MapPin className="w-4 h-4 text-emerald-500 shrink-0" />
+            <span>Safe Handover Hotspots</span>
           </button>
         </div>
 
@@ -250,13 +250,13 @@ export default function CampusCommunityModal({ isOpen, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-gray-50/80 border-t border-gray-100 flex items-center justify-between flex-shrink-0">
-          <span className="text-xs text-gray-500">
+        <div className="p-3.5 sm:p-4 bg-gray-50/80 border-t border-gray-100 flex flex-col-reverse sm:flex-row items-center justify-between gap-2.5 flex-shrink-0">
+          <span className="text-[11px] sm:text-xs text-gray-500 text-center sm:text-left">
             Rankings update dynamically after verified QR transactions.
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-md bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+            className="w-full sm:w-auto px-4 py-2 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold transition-all shadow-xs cursor-pointer min-h-[40px] flex items-center justify-center"
           >
             Close Hub
           </button>

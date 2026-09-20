@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import logoImg from '../assets/CampusXChange_Logo.jpeg';
+import logoImg from '../assets/CampusXChange_Logo.webp';
 import { APP_VERSION } from '../config/version';
 
 export default function Footer() {
@@ -61,32 +61,32 @@ export default function Footer() {
   }
 
   return (
-    <footer className="bg-white border-t border-gray-200 text-gray-600 text-sm mt-auto">
-      <div className="w-full px-4 sm:px-6 lg:px-[5%] py-10">
+    <footer className="bg-white border-t border-gray-200 text-gray-600 mt-auto">
+      <div className="w-full px-4 sm:px-6 lg:px-[5%] py-8 sm:py-10">
 
         {/* Main Columns */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 pb-8 border-b border-gray-100">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8 pb-7 border-b border-gray-100">
 
-          {/* Brand Info */}
-          <div className="space-y-3 sm:col-span-2 md:col-span-1">
-            <Link to="/" className="flex items-center gap-2">
+          {/* Brand Info (Stacked Logo over Name) */}
+          <div className="space-y-3 sm:col-span-2 lg:col-span-4">
+            <Link to="/" className="inline-flex flex-col items-start group" aria-label="CampusXChange">
               <img
                 src={logoImg}
                 alt="CampusXChange"
-                className="h-8 w-8 object-cover rounded-md"
+                className="h-8 sm:h-9 w-auto object-contain mb-1.5 transition-transform duration-200 group-hover:scale-105"
               />
               <div className="flex items-baseline">
-                <span className="text-lg font-bold tracking-tight text-gray-950 font-display">Campus</span>
-                <span className="text-lg font-bold tracking-tight text-brand-500 font-display">XChange</span>
+                <span className="text-lg sm:text-xl font-bold tracking-tight text-gray-950 font-display">Campus</span>
+                <span className="text-lg sm:text-xl font-bold tracking-tight text-brand-500 font-display">XChange</span>
               </div>
             </Link>
-            <p className="text-xs text-gray-500 leading-relaxed">
-              A student project developed by LPU students for the Lovely Professional University campus community. Buy, sell, and donate books, notes, stationery, and daily campus essentials directly with fellow students.
+            <p className="text-xs text-gray-500 leading-relaxed max-w-sm">
+              The trusted student marketplace for Lovely Professional University. Buy, sell, and trade campus essentials easily.
             </p>
           </div>
 
           {/* Quick Links */}
-          <div>
+          <div className="lg:col-span-3">
             <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
               Marketplace
             </h4>
@@ -112,7 +112,7 @@ export default function Footer() {
           </div>
 
           {/* Campus Safety */}
-          <div>
+          <div className="lg:col-span-3">
             <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
               Safety & Handover
             </h4>
@@ -127,7 +127,7 @@ export default function Footer() {
                   Recommended spots: Uni-Mall entrance, Central Library, and Hostel gates.
                 </Link>
               </li>
-              <li className="pt-1">
+              <li className="pt-0.5">
                 <Link to="/guidelines#reporting" className="text-amber-600 hover:text-amber-700 font-medium transition-colors inline-block">
                   Report a Listing or Scam
                 </Link>
@@ -136,7 +136,7 @@ export default function Footer() {
           </div>
 
           {/* About & Legal */}
-          <div>
+          <div className="lg:col-span-2">
             <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
               About & Legal
             </h4>

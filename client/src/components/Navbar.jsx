@@ -11,15 +11,13 @@ import {
   ChevronDown,
   Search,
   ShoppingBag,
-  Trophy,
   MessageSquare
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
-import logoImg from '../assets/CampusXChange_Logo.jpeg';
+import logoImg from '../assets/CampusXChange_Logo.webp';
 import AuthModal from './AuthModal';
 import SavedItemsDrawer from './SavedItemsDrawer';
-import CampusCommunityModal from './CampusCommunityModal';
 import { getSavedCount } from '../utils/savedStore';
 import { APP_VERSION } from '../config/version';
 import { getSafeImageUrl } from '../utils/imageUrl';
@@ -45,7 +43,6 @@ export default function Navbar() {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [suggestions, setSuggestions] = useState({ listings: [], categories: [] });
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isCommunityHubOpen, setIsCommunityHubOpen] = useState(false);
 
   const profileMenuRef = useRef(null);
   const searchContainerRef = useRef(null);
@@ -275,38 +272,26 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-full gap-2 sm:gap-4 lg:gap-6">
 
             {/* Left: Brand Logo & Links */}
-            <div className="flex items-center gap-2.5 sm:gap-3 lg:gap-5 flex-shrink-0">
-              <Link to="/" className="flex items-center gap-2 sm:gap-2.5">
+            <div className="flex items-center gap-3 sm:gap-4 lg:gap-6 flex-shrink-0">
+              <Link to="/" className="flex items-center py-1 group" aria-label="CampusXChange">
                 <img
                   src={logoImg}
                   alt="CampusXChange"
-                  className="h-8 w-8 sm:h-9 sm:w-9 object-cover rounded-md shadow-2xs shrink-0"
+                  className="h-9 sm:h-10 md:h-11 w-auto object-contain shrink-0 transition-transform duration-200 group-hover:scale-105"
                 />
-                <div className="flex items-baseline">
-                  <span className="text-lg sm:text-xl font-bold tracking-tight text-gray-950 font-display">Campus</span>
-                  <span className="text-lg sm:text-xl font-bold tracking-tight text-brand-500 font-display">XChange</span>
-                </div>
               </Link>
 
               {/* Desktop Nav Links */}
-              <div className="hidden lg:flex items-center gap-3 text-xs font-semibold text-gray-600">
+              <div className="hidden lg:flex items-center gap-2 text-xs font-semibold">
                 <Link
                   to="/"
-                  className={`transition-colors py-1.5 px-2.5 rounded-md ${location.pathname === '/' && !location.search.includes('search=')
-                    ? 'text-brand-600 font-bold bg-brand-50'
-                    : 'hover:text-gray-900 hover:bg-gray-100/70'
+                  className={`transition-colors py-1.5 px-3 rounded-full text-xs font-semibold ${location.pathname === '/' && !location.search.includes('search=')
+                    ? 'text-brand-600 font-bold bg-brand-50 border border-brand-200/50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70'
                     }`}
                 >
                   Explore
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => setIsCommunityHubOpen(true)}
-                  className="transition-colors py-1.5 px-2.5 rounded-md hover:text-gray-900 hover:bg-gray-100/70 flex items-center gap-1.5 font-semibold text-xs cursor-pointer text-gray-700"
-                >
-                  <Trophy className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Campus Hub</span>
-                </button>
               </div>
             </div>
 
@@ -638,15 +623,16 @@ export default function Navbar() {
               </div>
 
               {/* Mobile Actions */}
-              <div className="flex sm:hidden items-center gap-1">
+              <div className="flex sm:hidden items-center gap-0.5">
                 {/* Mobile Search Toggle Button */}
                 <button
                   onClick={() => {
                     setIsMobileSearchOpen(!isMobileSearchOpen);
                     if (!isMobileSearchOpen) setIsOpen(false);
                   }}
-                  className={`p-2 rounded-md transition-colors ${isMobileSearchOpen ? 'text-brand-600 bg-brand-50' : 'text-gray-600 hover:text-gray-900'
-                    }`}
+                  className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
+                    isMobileSearchOpen ? 'text-brand-600 bg-brand-50' : 'text-gray-600 hover:text-gray-900 active:bg-gray-100'
+                  }`}
                   aria-label="Search"
                 >
                   <Search className="w-5 h-5" />
@@ -654,7 +640,7 @@ export default function Navbar() {
 
                 <button
                   onClick={() => setIsSavedDrawerOpen(true)}
-                  className="p-2 text-gray-600 hover:text-gray-900"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-600 hover:text-gray-900 active:bg-gray-100 rounded-lg cursor-pointer"
                   aria-label="Wishlist"
                 >
                   <Heart className={`w-5 h-5 ${savedCount > 0 ? 'fill-brand-500 text-brand-500' : 'text-gray-500'}`} />
@@ -663,7 +649,7 @@ export default function Navbar() {
                 {isSeller && (
                   <Link
                     to="/sell"
-                    className="bg-brand-500 text-white text-xs font-semibold py-1.5 px-2.5 rounded-md flex items-center gap-1 shadow-2xs"
+                    className="bg-brand-500 active:bg-brand-600 text-white text-xs font-semibold py-1.5 px-2.5 rounded-lg flex items-center gap-1 shadow-2xs shrink-0 min-h-[36px]"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Sell</span>
@@ -675,7 +661,7 @@ export default function Navbar() {
                     setIsOpen(!isOpen);
                     if (!isOpen) setIsMobileSearchOpen(false);
                   }}
-                  className="p-2 text-gray-600 hover:text-gray-900"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-600 hover:text-gray-900 active:bg-gray-100 rounded-lg cursor-pointer"
                   aria-label="Menu"
                 >
                   {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -688,33 +674,110 @@ export default function Navbar() {
 
         {/* Mobile Expandable Search Row */}
         {isMobileSearchOpen && (
-          <div className="sm:hidden absolute top-16 left-0 right-0 z-50 bg-white border-b border-gray-200 px-4 py-2.5 shadow-md animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="sm:hidden absolute top-16 left-0 right-0 z-50 bg-white border-b border-gray-200 px-4 py-3 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
             <form onSubmit={handleSearchSubmit} className="relative flex items-center">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3 pointer-events-none" />
+              <Search className="w-4 h-4 text-gray-400 absolute left-3.5 pointer-events-none" />
               <input
                 type="text"
                 autoFocus
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search books, notes, campus essentials..."
-                className="w-full pl-9 pr-20 py-2 text-xs bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 font-medium"
+                className="w-full pl-10 pr-20 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 font-medium"
               />
               {searchTerm && (
                 <button
                   type="button"
                   onClick={handleClearSearch}
-                  className="absolute right-14 text-gray-400 p-1"
+                  className="absolute right-14 text-gray-400 hover:text-gray-600 p-1.5 cursor-pointer"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-4 h-4" />
                 </button>
               )}
               <button
                 type="submit"
-                className="absolute right-1 bg-brand-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-2xs"
+                className="absolute right-1.5 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-2xs cursor-pointer"
               >
                 Go
               </button>
             </form>
+
+            {/* Mobile Autocomplete Suggestions Dropdown */}
+            {(suggestions.listings.length > 0 || suggestions.categories.length > 0) && (
+              <div className="mt-2.5 bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden max-h-[60vh] overflow-y-auto divide-y divide-gray-100">
+                {/* Category suggestions */}
+                {suggestions.categories.length > 0 && (
+                  <div className="p-2.5 bg-gray-50/80">
+                    <div className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400 mb-1.5 px-1">
+                      Matching Categories
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {suggestions.categories.map((cat) => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => {
+                            setIsMobileSearchOpen(false);
+                            navigate(`/?category=${encodeURIComponent(cat.slug)}`);
+                          }}
+                          className="inline-flex items-center gap-1 bg-white hover:bg-brand-50 border border-gray-200 text-gray-700 text-xs font-semibold px-2.5 py-1 rounded-full cursor-pointer"
+                        >
+                          <span>{cat.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Listing suggestions */}
+                {suggestions.listings.length > 0 && (
+                  <div className="p-1 space-y-0.5">
+                    <div className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400 py-1 px-2.5">
+                      Matching Items
+                    </div>
+                    {suggestions.listings.map((item) => (
+                      <Link
+                        key={item.id}
+                        to={`/listing/${item.id}`}
+                        onClick={() => setIsMobileSearchOpen(false)}
+                        className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-9 h-9 rounded bg-gray-100 overflow-hidden shrink-0 border border-gray-200 flex items-center justify-center">
+                            {item.image ? (
+                              <img
+                                src={getSafeImageUrl(item.image)}
+                                alt={item.title}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.onerror = null;
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <Package className="w-4 h-4 text-gray-400" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-gray-800 truncate max-w-[200px]">
+                              {item.title}
+                            </div>
+                            <div className="text-[10px] text-gray-400 flex items-center gap-1 truncate">
+                              <span>{item.category || 'Item'}</span>
+                              <span>•</span>
+                              <span>{item.location}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <span className="text-xs font-black text-brand-600 shrink-0 ml-2">
+                          {item.transaction_type === 'DONATE' ? 'Free' : `Rs ${item.price}`}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -738,17 +801,6 @@ export default function Navbar() {
                 >
                   Explore Marketplace
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCommunityHubOpen(true);
-                    setIsOpen(false);
-                  }}
-                  className="flex items-center gap-2 min-h-[44px] px-3 rounded-md hover:bg-gray-100/70 hover:text-brand-600 transition-colors font-semibold text-left w-full text-gray-700"
-                >
-                  <Trophy className="w-4 h-4 text-amber-500" />
-                  <span>Campus Hub & Top Sellers</span>
-                </button>
                 {userProfile && (
                   isSeller ? (
                     <Link
@@ -865,12 +917,6 @@ export default function Navbar() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         initialMode={authModalMode}
-      />
-
-      {/* Campus Community Leaderboard & Hotspots Modal */}
-      <CampusCommunityModal
-        isOpen={isCommunityHubOpen}
-        onClose={() => setIsCommunityHubOpen(false)}
       />
     </>
   );

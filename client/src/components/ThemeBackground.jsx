@@ -1,149 +1,101 @@
 import React, { memo } from 'react';
-import {
-  ShoppingBag,
-  ShoppingCart,
-  Tag,
-  BadgePercent,
-  Sparkles,
-} from 'lucide-react';
 
 /**
  * ThemeBackground
- * 100% Auto-Animated Shopping & Campus Marketplace Themed Background for CampusXChange.
- * Features floating glassmorphic shopping badges, translucent marketplace watermarks,
- * swinging price tags, delivery parcels, savings coins, and twinkling deal sparkles.
- * Zero CPU overhead, fully GPU-accelerated CSS animations.
+ * Auto-animated geometric background for CampusXChange (Admin-style floating cubes & squares).
+ * Carefully positioned strictly within the outer 5% side gutters (empty margin areas),
+ * keeping the center 90% content workspace completely clean, legible, and distraction-free.
+ * Pure GPU-accelerated CSS animations with zero CPU overhead.
  */
 function ThemeBackground({
-  variant = 'default', // 'default' | 'subtle' | 'minimal'
-  intensity = 'normal', // 'normal' | 'soft'
+  intensity = 'normal',
   className = '',
 }) {
-  const opacityMultiplier = intensity === 'soft' ? 'opacity-65' : 'opacity-100';
+  const opacityMultiplier = intensity === 'soft' ? 'opacity-70' : 'opacity-100';
 
   return (
     <aside
       aria-hidden="true"
-      className={`fixed inset-0 w-full h-full pointer-events-none select-none z-0 overflow-hidden bg-[#f8f9fb] ${opacityMultiplier} ${className}`}
+      className={`fixed inset-0 w-full h-full pointer-events-none select-none z-0 overflow-hidden bg-[#f9fafb] ${opacityMultiplier} ${className}`}
       style={{
         backgroundImage: `
-          radial-gradient(circle at 10% 12%, rgba(251, 86, 7, 0.08) 0%, transparent 45%),
-          radial-gradient(circle at 88% 85%, rgba(251, 86, 7, 0.08) 0%, transparent 45%),
-          radial-gradient(circle at 50% 50%, #ffffff 0%, #f6f7f9 100%)
+          radial-gradient(circle at 4% 12%, rgba(251, 86, 7, 0.05) 0%, transparent 40%),
+          radial-gradient(circle at 96% 88%, rgba(251, 86, 7, 0.05) 0%, transparent 40%),
+          radial-gradient(circle at 50% 50%, #ffffff 0%, #f9fafb 100%)
         `,
       }}
     >
       {/* ===================================================================
-          LAYER 1: Compact Corner Orbs with Subtle Shopping Watermarks
+          LEFT 5% EMPTY GUTTER (Admin-Style Floating Geometric Shapes)
           =================================================================== */}
-      <div className="absolute inset-0">
-        {/* Top-Left: Neat Amber Glow Orb with Shopping Bag Contour */}
-        <div
-          className="absolute -top-6 -left-6 sm:-top-8 sm:-left-8 rounded-full bg-gradient-to-br from-[#ffb444] via-[#ff732c] to-[#fb5607] shadow-[0_10px_30px_rgba(251,86,7,0.22)] animate-geo-float-slow flex items-center justify-center overflow-hidden"
-          style={{ width: 'clamp(90px, 10vw, 140px)', height: 'clamp(90px, 10vw, 140px)' }}
-        >
-          <ShoppingBag className="w-1/2 h-1/2 text-white/20 translate-x-1.5 translate-y-1.5" strokeWidth={1.5} />
+      <div className="hidden sm:block absolute top-0 bottom-0 left-0 w-[5%] overflow-visible pointer-events-none">
+        {/* Top Solid Orange Cube */}
+        <div className="absolute top-[8%] left-[10%] animate-geo-float-slow" style={{ animationDelay: '0s' }}>
+          <div className="w-10 sm:w-12 h-10 sm:h-12 bg-brand-500 rounded-md rotate-12 shadow-lg opacity-80" />
         </div>
 
-        {/* Bottom-Right: Neat Glowing Orb with Shopping Cart Contour */}
-        <div
-          className="absolute -bottom-8 -right-8 sm:-bottom-10 sm:-right-10 rounded-full bg-gradient-to-tr from-[#fb5607] via-[#ff732c] to-[#ffa834] shadow-[0_-10px_30px_rgba(251,86,7,0.22)] animate-geo-float-drift flex items-center justify-center overflow-hidden"
-          style={{ width: 'clamp(100px, 11vw, 150px)', height: 'clamp(100px, 11vw, 150px)' }}
-        >
-          <ShoppingCart className="w-1/2 h-1/2 text-white/20 -translate-x-1.5 -translate-y-1.5" strokeWidth={1.5} />
+        {/* Upper-Mid White Cube with Border & Shadow */}
+        <div className="absolute top-[22%] left-[15%] animate-geo-float-reverse" style={{ animationDelay: '1.2s' }}>
+          <div className="w-9 sm:w-11 h-9 sm:h-11 bg-white rounded-md -rotate-6 shadow-[0_4px_20px_rgb(0,0,0,0.06)] border border-gray-100" />
         </div>
 
-        {/* Bottom-Left: Petite Accent Orb */}
-        <div
-          className="absolute bottom-8 left-8 sm:bottom-12 sm:left-12 rounded-full bg-gradient-to-br from-[#ffa62b] to-[#fb5607] shadow-[0_6px_20px_rgba(251,86,7,0.18)] animate-geo-float-reverse flex items-center justify-center"
-          style={{ width: 'clamp(38px, 4.5vw, 56px)', height: 'clamp(38px, 4.5vw, 56px)' }}
-        >
-          <Tag className="w-3.5 h-3.5 text-white/60 rotate-12" strokeWidth={2} />
+        {/* Center Hollow Orange Square Outline */}
+        <div className="absolute top-[42%] left-[12%] animate-geo-breathe" style={{ animationDelay: '0.8s' }}>
+          <div className="w-11 sm:w-13 h-11 sm:h-13 border-2 border-brand-300/60 rounded-md rotate-45 opacity-60" />
         </div>
 
-        {/* Floating Mini Decorative Circles / Bubbles */}
-        <div
-          className="absolute top-[8%] left-[28%] w-5 h-5 rounded-full bg-brand-400/25 border border-brand-300/40 animate-geo-float-slow"
-          style={{ animationDelay: '1.2s' }}
-        />
-        <div
-          className="absolute bottom-[18%] right-[22%] w-4 h-4 rounded-full bg-brand-500/20 border border-brand-400/40 animate-geo-float-reverse"
-          style={{ animationDelay: '2.5s' }}
-        />
-        <div
-          className="absolute top-[52%] left-[4%] w-3.5 h-3.5 rounded-full bg-amber-400/30 animate-geo-dot-pulse"
-          style={{ animationDelay: '0.8s' }}
-        />
+        {/* Lower-Mid Pulsing Accent Dot */}
+        <div className="absolute top-[58%] left-[30%] animate-geo-dot-pulse" style={{ animationDelay: '1.5s' }}>
+          <div className="w-3 h-3 bg-brand-400 rounded-full" />
+        </div>
+
+        {/* Lower Large Solid Orange Cube */}
+        <div className="absolute bottom-[20%] left-[8%] animate-geo-float-slow" style={{ animationDelay: '2.5s' }}>
+          <div className="w-12 sm:w-14 h-12 sm:h-14 bg-brand-600 rounded-md -rotate-12 shadow-xl opacity-85" />
+        </div>
+
+        {/* Bottom Small Hollow Accent Square */}
+        <div className="absolute bottom-[7%] left-[18%] animate-geo-float-drift" style={{ animationDelay: '3s' }}>
+          <div className="w-8 h-8 border-2 border-brand-400/50 rounded-md rotate-12 opacity-50" />
+        </div>
       </div>
 
       {/* ===================================================================
-          LAYER 2: Neat Translucent Marketplace Rings & Wireframes
+          RIGHT 5% EMPTY GUTTER (Admin-Style Floating Geometric Shapes)
           =================================================================== */}
-      <div className="absolute inset-0">
-        {/* Compact Shopping Cart Wireframe Ring (Center-Bottom) */}
-        <div
-          className="absolute -bottom-10 sm:-bottom-14 left-[34%] sm:left-[40%] rounded-full border-2 border-brand-400/35 animate-geo-ring-breathe flex items-center justify-center"
-          style={{ width: 'clamp(130px, 15vw, 190px)', height: 'clamp(130px, 15vw, 190px)', animationDelay: '2s' }}
-        >
-          <ShoppingCart className="w-16 h-16 sm:w-20 sm:h-20 text-brand-500/[0.06] -rotate-6" strokeWidth={1.2} />
+      <div className="hidden sm:block absolute top-0 bottom-0 right-0 w-[5%] overflow-visible pointer-events-none">
+        {/* Top Solid Orange Drift Cube */}
+        <div className="absolute top-[14%] right-[10%] animate-geo-float-drift" style={{ animationDelay: '1s' }}>
+          <div className="w-11 sm:w-13 h-11 sm:h-13 bg-brand-400 rounded-md rotate-45 shadow-lg opacity-75" />
         </div>
 
-        {/* Mid-Right: Compact Floating Shopping Bag Wireframe */}
-        <div
-          className="hidden md:flex absolute top-[46%] -right-8 rounded-full border-2 border-brand-300/35 animate-geo-float-drift items-center justify-center"
-          style={{ width: 'clamp(90px, 10vw, 130px)', height: 'clamp(90px, 10vw, 130px)', animationDelay: '1.5s' }}
-        >
-          <ShoppingBag className="w-12 h-12 text-brand-500/[0.06] rotate-12" strokeWidth={1.2} />
+        {/* Upper-Mid Hollow Square Outline */}
+        <div className="absolute top-[32%] right-[12%] animate-geo-float-reverse" style={{ animationDelay: '2.2s' }}>
+          <div className="w-10 sm:w-12 h-10 sm:h-12 border-2 border-brand-300/60 rounded-md -rotate-12 opacity-55" />
         </div>
 
-        {/* Mid-Left: Compact Price Tag Contour */}
-        <div
-          className="hidden sm:flex absolute top-[24%] -left-6 rounded-full border-2 border-brand-400/30 animate-geo-ring-breathe items-center justify-center"
-          style={{ width: 'clamp(75px, 8vw, 110px)', height: 'clamp(75px, 8vw, 110px)', animationDelay: '0.5s' }}
-        >
-          <BadgePercent className="w-10 h-10 text-brand-500/[0.06] -rotate-12" strokeWidth={1.4} />
+        {/* Center Pulsing Accent Dot */}
+        <div className="absolute top-[50%] right-[30%] animate-geo-dot-pulse" style={{ animationDelay: '0.5s' }}>
+          <div className="w-3.5 h-3.5 bg-brand-500 rounded-full" />
         </div>
 
-        {/* Petite Floating Ring Accent */}
-        <div
-          className="absolute top-[36%] right-[32%] w-10 h-10 rounded-full border border-brand-400/30 animate-geo-ring-spin-slow"
-        />
-        <div
-          className="absolute bottom-[35%] left-[28%] w-8 h-8 rounded-full border border-brand-300/25 animate-geo-float-slow"
-          style={{ animationDelay: '1.8s' }}
-        />
-      </div>
-
-      {/* ===================================================================
-          LAYER 3: Ambient Sparkles & Delicate Shimmer
-          =================================================================== */}
-      <div className="absolute inset-0">
-        {/* Twinkling Deal Sparkle 1 (Near Top Left) */}
-        <div
-          className="absolute top-[26%] left-[26%] text-brand-500/60 animate-geo-dot-pulse"
-          style={{ animationDelay: '0s' }}
-        >
-          <Sparkles className="w-5 h-5 drop-shadow-[0_0_8px_rgba(251,86,7,0.4)]" />
+        {/* Lower-Mid White Cube with Border & Shadow */}
+        <div className="absolute top-[66%] right-[14%] animate-geo-float-slow" style={{ animationDelay: '1.8s' }}>
+          <div className="w-10 sm:w-12 h-10 sm:h-12 bg-white rounded-md rotate-12 shadow-[0_4px_20px_rgb(0,0,0,0.06)] border border-gray-100" />
         </div>
 
-        {/* Twinkling Deal Sparkle 2 (Near Top Right) */}
-        <div
-          className="absolute top-[34%] right-[28%] text-brand-500/60 animate-geo-dot-pulse"
-          style={{ animationDelay: '1.6s' }}
-        >
-          <Sparkles className="w-4 h-4 drop-shadow-[0_0_8px_rgba(251,86,7,0.4)]" />
+        {/* Bottom Large Solid Orange Cube */}
+        <div className="absolute bottom-[16%] right-[8%] animate-geo-breathe" style={{ animationDelay: '2s' }}>
+          <div className="w-13 sm:w-15 h-13 sm:h-15 bg-brand-500 rounded-md rotate-12 shadow-xl opacity-75" />
         </div>
 
-        {/* Twinkling Deal Sparkle 3 (Bottom Center) */}
-        <div
-          className="absolute bottom-[20%] left-[42%] text-amber-500/50 animate-geo-dot-pulse"
-          style={{ animationDelay: '2.8s' }}
-        >
-          <Sparkles className="w-4 h-4 drop-shadow-[0_0_8px_rgba(251,86,7,0.3)]" />
+        {/* Bottom Corner Accent Dot */}
+        <div className="absolute bottom-[6%] right-[22%] animate-geo-dot-pulse" style={{ animationDelay: '2.8s' }}>
+          <div className="w-2.5 h-2.5 bg-brand-300 rounded-full opacity-80" />
         </div>
       </div>
 
-      {/* Subtle bottom-edge ambient gradient line */}
+      {/* Subtle bottom ambient divider line */}
       <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-brand-200/40 to-transparent" />
     </aside>
   );
