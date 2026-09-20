@@ -3,10 +3,11 @@ import random
 import datetime
 import django
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.throttling import ScopedRateThrottle
 from django.db.models import Q, F
 from django.utils import timezone
@@ -16,18 +17,18 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 from .models import (
-    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession, BroadcastLog, AdminAuditLog, Review, ChatMessage
+    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession, BroadcastLog, AdminAuditLog, Review, ChatMessage, Banner
 )
 from .serializers import (
     ListingSerializer, ListingCreateUpdateSerializer, AdminListingUpdateSerializer, CategorySerializer,
     AdminCategorySerializer, OfferSerializer, ListingReportSerializer,
     ListingReportCreateSerializer, PlatformSettingSerializer, NotificationSerializer,
     HandoverSessionSerializer, AdminDealSerializer, BroadcastLogSerializer, AdminAuditLogSerializer,
-    ReviewSerializer, ChatMessageSerializer
+    ReviewSerializer, ChatMessageSerializer, BannerSerializer
 )
 from users.serializers import PublicSellerProfileSerializer
 from users.permissions import HasAdminModulePermission
-from .cloudinary_upload import upload_image_to_cloudinary
+from .cloudinary_upload import upload_image_to_cloudinary, delete_image_from_cloudinary
 
 
 def log_admin_action(request, action, target_type='', target_id='', target_repr='', details=None):
@@ -2665,6 +2666,190 @@ class AdminSystemHealthView(APIView):
                 'environment': 'development' if settings.DEBUG else 'production'
             }
         })
+
+
+# =====================================================================
+# BANNER MANAGEMENT SYSTEM (SLIDESHOW CAROUSEL & ADMIN CONTROLS)
+# =====================================================================
+
+class PublicBannerListView(generics.ListAPIView):
+    """
+    Public API consumed by Client Web & Mobile App for Homepage Slideshow.
+    Returns all active banners ordered by display_order, then newest first.
+    """
+    permission_classes = [permissions.AllowAny]
+    serializer_class = BannerSerializer
+    queryset = Banner.objects.filter(is_active=True).order_by('display_order', '-created_at')
+
+
+class AdminBannerListCreateView(APIView):
+    """
+    Administrative API to view all banners and create new banners.
+    Images uploaded via file or base64 are stored directly to Cloudinary (folder='campusxchange/banners').
+    """
+    permission_classes = [HasAdminModulePermission('banners')]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get(self, request):
+        banners = Banner.objects.all().order_by('display_order', '-created_at')
+        serializer = BannerSerializer(banners, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
+        image_file = request.FILES.get('image') or request.FILES.get('file')
+
+        if image_file:
+            try:
+                upload_res = upload_image_to_cloudinary(image_file, folder="campusxchange/banners")
+                data['image_url'] = upload_res['url']
+            except Exception as e:
+                logger.error(f"Cloudinary banner upload failed: {e}")
+                try:
+                    import uuid
+                    from django.core.files.storage import default_storage
+                    from django.conf import settings
+                    ext = image_file.name.split('.')[-1] if (hasattr(image_file, 'name') and '.' in image_file.name) else 'webp'
+                    filename = f"banners/{uuid.uuid4().hex}.{ext}"
+                    saved_path = default_storage.save(filename, image_file)
+                    data['image_url'] = f"{settings.MEDIA_URL}{saved_path}"
+                except Exception:
+                    return Response({'error': f"Failed to upload image: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+            # Remove file references from data dictionary so serializer doesn't attempt CharField validation
+            data.pop('image', None)
+            data.pop('file', None)
+
+        # Normalize is_active if string
+        if 'is_active' in data:
+            if isinstance(data['is_active'], str):
+                data['is_active'] = data['is_active'].lower() in ('true', '1', 'yes')
+
+        # Normalize display_order
+        if 'display_order' in data:
+            try:
+                data['display_order'] = int(data['display_order'])
+            except (ValueError, TypeError):
+                data['display_order'] = 1
+
+        serializer = BannerSerializer(data=data)
+        if serializer.is_valid():
+            banner = serializer.save()
+            log_admin_action(
+                request,
+                action='BANNER_CREATE',
+                target_type='BANNER',
+                target_id=banner.id,
+                target_repr=banner.title,
+                details={
+                    'title': banner.title,
+                    'image_url': banner.image_url,
+                    'link_url': banner.link_url,
+                    'is_active': banner.is_active,
+                    'display_order': banner.display_order
+                }
+            )
+            return Response(BannerSerializer(banner).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminBannerDetailView(APIView):
+    """
+    Administrative API to inspect, update (with Cloudinary image replacement),
+    toggle active status, or delete a banner.
+    """
+    permission_classes = [HasAdminModulePermission('banners')]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get(self, request, pk):
+        banner = get_object_or_404(Banner, pk=pk)
+        return Response(BannerSerializer(banner).data)
+
+    def put(self, request, pk):
+        return self.patch(request, pk)
+
+    def patch(self, request, pk):
+        banner = get_object_or_404(Banner, pk=pk)
+        data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
+        image_file = request.FILES.get('image') or request.FILES.get('file')
+
+        old_image_url = banner.image_url
+
+        if image_file:
+            try:
+                upload_res = upload_image_to_cloudinary(image_file, folder="campusxchange/banners")
+                data['image_url'] = upload_res['url']
+                if old_image_url and old_image_url != upload_res['url']:
+                    delete_image_from_cloudinary(old_image_url)
+            except Exception as e:
+                logger.error(f"Cloudinary banner replacement failed: {e}")
+                try:
+                    import uuid
+                    from django.core.files.storage import default_storage
+                    from django.conf import settings
+                    ext = image_file.name.split('.')[-1] if (hasattr(image_file, 'name') and '.' in image_file.name) else 'webp'
+                    filename = f"banners/{uuid.uuid4().hex}.{ext}"
+                    saved_path = default_storage.save(filename, image_file)
+                    data['image_url'] = f"{settings.MEDIA_URL}{saved_path}"
+                except Exception:
+                    return Response({'error': f"Failed to upload replacement image: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+            data.pop('image', None)
+            data.pop('file', None)
+
+        if 'is_active' in data:
+            if isinstance(data['is_active'], str):
+                data['is_active'] = data['is_active'].lower() in ('true', '1', 'yes')
+
+        if 'display_order' in data:
+            try:
+                data['display_order'] = int(data['display_order'])
+            except (ValueError, TypeError):
+                data['display_order'] = 1
+
+        serializer = BannerSerializer(banner, data=data, partial=True)
+        if serializer.is_valid():
+            updated_banner = serializer.save()
+            if 'image' in data and updated_banner.image_url != old_image_url and old_image_url:
+                delete_image_from_cloudinary(old_image_url)
+
+            log_admin_action(
+                request,
+                action='BANNER_UPDATE',
+                target_type='BANNER',
+                target_id=banner.id,
+                target_repr=banner.title,
+                details={
+                    'title': updated_banner.title,
+                    'is_active': updated_banner.is_active,
+                    'display_order': updated_banner.display_order,
+                    'updated_fields': list(data.keys())
+                }
+            )
+            return Response(BannerSerializer(updated_banner).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        banner = get_object_or_404(Banner, pk=pk)
+        banner_title = banner.title
+        banner_image_url = banner.image_url
+
+        if banner_image_url:
+            try:
+                delete_image_from_cloudinary(banner_image_url)
+            except Exception as e:
+                logger.warning(f"Failed to delete Cloudinary banner image {banner_image_url}: {e}")
+
+        banner.delete()
+
+        log_admin_action(
+            request,
+            action='BANNER_DELETE',
+            target_type='BANNER',
+            target_id=pk,
+            target_repr=banner_title,
+            details={'deleted_title': banner_title, 'deleted_image_url': banner_image_url}
+        )
+        return Response({'message': 'Banner deleted successfully'}, status=status.HTTP_200_OK)
+
 
 
 

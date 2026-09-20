@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.utils import timezone
 from .models import (
-    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession, BroadcastLog, AdminAuditLog, Review, ChatMessage
+    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession, BroadcastLog, AdminAuditLog, Review, ChatMessage, Banner
 )
 from .cloudinary_upload import (
     upload_base64_to_cloudinary, is_base64_image, is_url
@@ -652,4 +652,65 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         if request and request.user and request.user.is_authenticated:
             return obj.sender_id == request.user.id
         return False
+
+
+class BannerSerializer(serializers.ModelSerializer):
+    image = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
+
+    class Meta:
+        model = Banner
+        fields = [
+            'id', 'title', 'subtitle', 'badge_text',
+            'image_url', 'image', 'link_url', 'button_text',
+            'is_active', 'display_order', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+        extra_kwargs = {
+            'image_url': {'required': False, 'allow_blank': True},
+        }
+
+    def to_internal_value(self, data):
+        # Prevent CharField validation errors when an UploadedFile is passed in 'image'
+        if hasattr(data, 'copy'):
+            mutable_data = data.copy()
+        else:
+            mutable_data = dict(data)
+
+        raw_image = mutable_data.get('image')
+        if raw_image and not isinstance(raw_image, str):
+            mutable_data.pop('image', None)
+
+        return super().to_internal_value(mutable_data)
+
+    def validate(self, attrs):
+        image_input = attrs.pop('image', None)
+        if image_input:
+            if is_base64_image(image_input):
+                try:
+                    result = upload_base64_to_cloudinary(image_input, folder="campusxchange/banners")
+                    attrs['image_url'] = result['url']
+                except Exception:
+                    try:
+                        import base64
+                        import uuid
+                        from django.core.files.base import ContentFile
+                        from django.core.files.storage import default_storage
+                        from django.conf import settings
+
+                        header, data = image_input.split(';base64,')
+                        ext = header.split('/')[-1].split('+')[0]
+                        file_content = base64.b64decode(data)
+                        filename = f"banners/{uuid.uuid4().hex}.{ext}"
+                        saved_path = default_storage.save(filename, ContentFile(file_content))
+                        attrs['image_url'] = f"{settings.MEDIA_URL}{saved_path}"
+                    except Exception:
+                        attrs['image_url'] = image_input
+            elif is_url(image_input):
+                attrs['image_url'] = image_input
+
+        # Verify image_url is populated either from attrs or existing instance
+        if not attrs.get('image_url') and not (self.instance and self.instance.image_url):
+            raise serializers.ValidationError({'image': 'Banner image is required. Please upload an image or provide an image URL.'})
+
+        return attrs
 

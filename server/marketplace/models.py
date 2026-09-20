@@ -310,6 +310,9 @@ class AdminAuditLog(models.Model):
         ('STAFF_ROLE_CHANGE', 'Staff Admin Role Updated'),
         ('STAFF_REVOKE', 'Staff Admin Privileges Revoked'),
         ('SECURITY_ALERT', 'Security Incident / Alert'),
+        ('BANNER_CREATE', 'Banner Created'),
+        ('BANNER_UPDATE', 'Banner Updated'),
+        ('BANNER_DELETE', 'Banner Deleted'),
     )
 
     admin_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='audit_logs')
@@ -369,3 +372,22 @@ class ChatMessage(models.Model):
 
     def __str__(self):
         return f"Msg from #{self.sender_id} to #{self.recipient_id} on Listing #{self.listing_id}"
+
+
+class Banner(models.Model):
+    title = models.CharField(max_length=200, help_text="Headline for the banner slide")
+    subtitle = models.CharField(max_length=300, blank=True, default='', help_text="Short supporting description")
+    badge_text = models.CharField(max_length=60, blank=True, default='Featured', help_text="Tag e.g. Featured, Deal, Event")
+    image_url = models.TextField(help_text="Optimized image URL on Cloudinary or CDN")
+    link_url = models.CharField(max_length=500, blank=True, default='', help_text="Destination route or URL")
+    button_text = models.CharField(max_length=50, blank=True, default='Explore Now')
+    is_active = models.BooleanField(default=True, db_index=True)
+    display_order = models.PositiveIntegerField(default=0, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['display_order', '-created_at']
+
+    def __str__(self):
+        return f"Banner: {self.title or 'Untitled'} (Order: {self.display_order}, Active: {self.is_active})"

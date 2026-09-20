@@ -16,7 +16,8 @@ from .views import (
     UrgentNotificationView, AdminAnalyticsView,
     AdminAuditLogListView, AdminSystemHealthView,
     BuyerCounterRespondView, ReviewCreateView, SellerReviewsListView,
-    PublicSellerProfileView, ChatMessageListCreateView, UserConversationsView, SearchSuggestionsView
+    PublicSellerProfileView, ChatMessageListCreateView, UserConversationsView, SearchSuggestionsView,
+    PublicBannerListView, AdminBannerListCreateView, AdminBannerDetailView
 )
 
 urlpatterns = [
@@ -68,6 +69,9 @@ urlpatterns = [
     path('admin/system-health/', AdminSystemHealthView.as_view(), name='admin-system-health'),
     path('admin/banned-words/', AdminBannedWordsView.as_view(), name='admin-banned-words'),
     path('admin/settings/', AdminPlatformSettingsView.as_view(), name='admin-settings'),
+    path('banners/', PublicBannerListView.as_view(), name='public-banners'),
+    path('admin/banners/', AdminBannerListCreateView.as_view(), name='admin-banners-list-create'),
+    path('admin/banners/<str:pk>/', AdminBannerDetailView.as_view(), name='admin-banners-detail'),
     path('upload-image/', UploadImageView.as_view(), name='upload-image'),
 ]
 

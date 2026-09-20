@@ -11,6 +11,7 @@ ADMIN_PERMISSIONS_CATALOG = [
     {'key': 'listings', 'label': 'Listings & Catalog', 'group': 'Operations', 'description': 'Marketplace catalog, moderation & status management'},
     {'key': 'deals', 'label': 'Deals & Handovers', 'group': 'Operations', 'description': 'Peer transactions, handover QR sessions & dispute actions'},
     {'key': 'categories', 'label': 'Category Management', 'group': 'Operations', 'description': 'Create, edit, organize and delete categories'},
+    {'key': 'banners', 'label': 'Banner Slideshow', 'group': 'Operations', 'description': 'Manage homepage banner carousel, slide images, and call-to-actions'},
     {'key': 'reports', 'label': 'Reports & Moderation', 'group': 'Operations', 'description': 'Student reports, flagged items & banned keyword blacklist'},
     {'key': 'notifications', 'label': 'Campus Broadcasts', 'group': 'Community', 'description': 'Campus-wide announcements & direct notices'},
     {'key': 'audit_logs', 'label': 'Audit Trail', 'group': 'Governance', 'description': 'Immutable admin action history & forensic review'},
@@ -23,7 +24,7 @@ ALL_PERMISSION_KEYS = [p['key'] for p in ADMIN_PERMISSIONS_CATALOG]
 
 DEFAULT_ROLE_PERMISSIONS = {
     'SUPER_ADMIN': ALL_PERMISSION_KEYS,
-    'MODERATOR': ['dashboard', 'listings', 'deals', 'categories', 'reports'],
+    'MODERATOR': ['dashboard', 'listings', 'deals', 'categories', 'banners', 'reports'],
     'ID_VERIFIER': ['dashboard', 'students'],
 }
 

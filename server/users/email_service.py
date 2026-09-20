@@ -16,7 +16,7 @@ BG_PAGE = "#F9FAFB"
 
 
 def _get_base_template(title: str, preheader: str, content_html: str) -> str:
-    logo_url = "https://cxc.anshuman892494.online/CampusXChange_Logo.jpeg"
+    logo_url = "https://cxc.anshuman892494.online/CampusXChange_Logo.png"
     
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -57,7 +57,7 @@ def _get_base_template(title: str, preheader: str, content_html: str) -> str:
                 <tr>
                   <td align="center">
                     <a href="https://cxc.anshuman892494.online" target="_blank" style="text-decoration: none;">
-                      <img src="{logo_url}" width="38" height="38" alt="CampusXChange" style="border-radius: 6px; vertical-align: middle; margin-right: 10px; display: inline-block; border: 1px solid #E5E7EB;" />
+                      <img src="{logo_url}" height="28" alt="CampusXChange" style="height: 28px; width: auto; vertical-align: middle; margin-right: 10px; display: inline-block;" />
                       <span style="font-size: 22px; font-weight: 800; color: {TEXT_DARK}; vertical-align: middle; letter-spacing: -0.5px; display: inline-block;">Campus<span style="color: {BRAND_ORANGE};">XChange</span></span>
                     </a>
                   </td>
