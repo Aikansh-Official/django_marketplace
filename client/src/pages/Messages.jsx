@@ -48,7 +48,7 @@ export default function Messages() {
       try {
         const u = JSON.parse(userStr);
         if (u?.id) setCurrentUserId(u.id);
-      } catch (e) {}
+      } catch (e) { }
     }
   }, []);
 
@@ -84,7 +84,7 @@ export default function Messages() {
                 listing_image: item.images?.[0]?.image_url
               });
             })
-            .catch(() => {});
+            .catch(() => { });
         }
       }
     } catch (err) {
@@ -242,9 +242,8 @@ export default function Messages() {
         {/* LEFT COLUMN: CONVERSATIONS INBOX LIST                         */}
         {/* ============================================================ */}
         <div
-          className={`w-full md:w-80 lg:w-96 border-r border-gray-200 flex flex-col h-full bg-white ${
-            selectedChat ? 'hidden md:flex' : 'flex'
-          }`}
+          className={`w-full md:w-80 lg:w-96 border-r border-gray-200 flex flex-col h-full bg-white ${selectedChat ? 'hidden md:flex' : 'flex'
+            }`}
         >
           {/* Header */}
           <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-orange-50/70 via-amber-50/40 to-white flex items-center justify-between flex-shrink-0">
@@ -309,11 +308,10 @@ export default function Messages() {
                     key={`${conv.listing_id}-${conv.peer_id}`}
                     type="button"
                     onClick={() => handleSelectConversation(conv)}
-                    className={`w-full text-left p-3 sm:p-3.5 transition-colors flex items-start gap-3 cursor-pointer ${
-                      isSelected
+                    className={`w-full text-left p-3 sm:p-3.5 transition-colors flex items-start gap-3 cursor-pointer ${isSelected
                         ? 'bg-brand-50/70 border-l-4 border-brand-500'
                         : 'hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     {/* Product Image Thumbnail with Peer Avatar badge */}
                     <div className="relative flex-shrink-0">
@@ -332,9 +330,8 @@ export default function Messages() {
                           />
                         ) : null}
                         <div
-                          className={`w-full h-full items-center justify-center bg-brand-50/70 text-brand-500 ${
-                            conv.listing_image ? 'hidden' : 'flex'
-                          }`}
+                          className={`w-full h-full items-center justify-center bg-brand-50/70 text-brand-500 ${conv.listing_image ? 'hidden' : 'flex'
+                            }`}
                         >
                           <Package className="w-5 h-5 text-brand-500/70" />
                         </div>
@@ -388,9 +385,8 @@ export default function Messages() {
         {/* RIGHT COLUMN: ACTIVE CONVERSATION THREAD                      */}
         {/* ============================================================ */}
         <div
-          className={`flex-1 flex flex-col h-full bg-gray-50/40 ${
-            !selectedChat ? 'hidden md:flex' : 'flex'
-          }`}
+          className={`flex-1 flex flex-col h-full bg-gray-50/40 ${!selectedChat ? 'hidden md:flex' : 'flex'
+            }`}
         >
           {selectedChat ? (
             <>
@@ -445,9 +441,8 @@ export default function Messages() {
                       />
                     ) : null}
                     <div
-                      className={`w-full h-full items-center justify-center bg-brand-50 text-brand-500 ${
-                        selectedChat.listing_image ? 'hidden' : 'flex'
-                      }`}
+                      className={`w-full h-full items-center justify-center bg-brand-50 text-brand-500 ${selectedChat.listing_image ? 'hidden' : 'flex'
+                        }`}
                     >
                       <Package className="w-5 h-5 text-brand-500/70" />
                     </div>
@@ -468,14 +463,6 @@ export default function Messages() {
                     <ExternalLink className="w-3.5 h-3.5" />
                   </Link>
                 </div>
-              </div>
-
-              {/* DPDP Act 2023 Safety Notice Banner */}
-              <div className="bg-emerald-50/70 border-b border-emerald-100 px-4 py-1.5 text-[11px] text-emerald-900 flex items-center gap-2 flex-shrink-0">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span className="truncate">
-                  🔒 DPDP Safe Campus Mode: Phone numbers are kept private. Inspect items physically in public areas like Uni-Mall or Central Library.
-                </span>
               </div>
 
               {/* Messages Stream */}
@@ -504,21 +491,21 @@ export default function Messages() {
                         onClick={() => handleQuickSuggestion('Hi, is this item still available?')}
                         className="bg-white hover:bg-brand-50 text-gray-700 hover:text-brand-600 text-xs px-3 py-1.5 rounded-full border border-gray-200 transition-colors shadow-2xs"
                       >
-                        👋 Still available?
+                        Still available?
                       </button>
                       <button
                         type="button"
                         onClick={() => handleQuickSuggestion('Can we meet at Uni-Mall today?')}
                         className="bg-white hover:bg-brand-50 text-gray-700 hover:text-brand-600 text-xs px-3 py-1.5 rounded-full border border-gray-200 transition-colors shadow-2xs"
                       >
-                        📍 Meet at Uni-Mall?
+                        Meet at Uni-Mall?
                       </button>
                       <button
                         type="button"
                         onClick={() => handleQuickSuggestion('Are you open to negotiation?')}
                         className="bg-white hover:bg-brand-50 text-gray-700 hover:text-brand-600 text-xs px-3 py-1.5 rounded-full border border-gray-200 transition-colors shadow-2xs"
                       >
-                        🤝 Open to negotiation?
+                        Open to negotiation?
                       </button>
                     </div>
                   </div>
@@ -528,16 +515,14 @@ export default function Messages() {
                     return (
                       <div
                         key={msg.id}
-                        className={`flex flex-col ${
-                          isMine ? 'items-end' : 'items-start'
-                        } max-w-full`}
+                        className={`flex flex-col ${isMine ? 'items-end' : 'items-start'
+                          } max-w-full`}
                       >
                         <div
-                          className={`max-w-[85%] sm:max-w-[70%] px-4 py-2.5 rounded-md text-xs sm:text-sm font-normal shadow-2xs leading-relaxed break-words whitespace-pre-wrap ${
-                            isMine
+                          className={`max-w-[85%] sm:max-w-[70%] px-4 py-2.5 rounded-md text-xs sm:text-sm font-normal shadow-2xs leading-relaxed break-words whitespace-pre-wrap ${isMine
                               ? 'bg-brand-500 text-white rounded-br-xs'
                               : 'bg-white border border-gray-200 text-gray-800 rounded-bl-xs'
-                          }`}
+                            }`}
                         >
                           {msg.message}
                         </div>

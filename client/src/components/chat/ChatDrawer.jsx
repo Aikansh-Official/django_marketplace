@@ -236,14 +236,6 @@ export default function ChatDrawer({
             )}
           </div>
 
-          {/* DPDP Act Safety Notice */}
-          <div className="bg-emerald-50/70 border-b border-emerald-100 px-4 py-1.5 text-[10px] text-emerald-900 flex items-center gap-1.5 flex-shrink-0">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <span className="truncate">
-              🔒 DPDP Act 2023 Protected: Phone numbers are kept private. Coordinate meetup safely in public campus areas.
-            </span>
-          </div>
-
           {/* Messages Stream Container (Scrollable) */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 bg-gray-50/50">
             {loading ? (

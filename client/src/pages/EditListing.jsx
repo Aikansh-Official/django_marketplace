@@ -493,14 +493,14 @@ export default function EditListing() {
                     }}
                   />
                   {primaryIndex === idx ? (
-                    <span className="absolute top-2 left-2 bg-brand-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    <span className="absolute top-2 left-2 bg-brand-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm z-10">
                       Cover
                     </span>
                   ) : (
                     <button
                       type="button"
                       onClick={() => setPrimaryIndex(idx)}
-                      className="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 left-2 bg-black/70 hover:bg-black/90 text-white text-[10px] font-medium px-2 py-1 rounded-full opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-10 cursor-pointer"
                     >
                       Set Cover
                     </button>
@@ -508,7 +508,9 @@ export default function EditListing() {
                   <button
                     type="button"
                     onClick={() => handleRemoveImage(idx)}
-                    className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white p-1.5 min-w-[32px] min-h-[32px] flex items-center justify-center rounded-full opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shadow-sm z-10 cursor-pointer"
+                    title="Remove image"
+                    aria-label="Remove image"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
