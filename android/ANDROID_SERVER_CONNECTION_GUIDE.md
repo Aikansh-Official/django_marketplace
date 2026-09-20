@@ -1,247 +1,346 @@
-# 🔌 CampusXChange — Android to Django Server Connection & Troubleshooting Guide
+# 🔌 CampusXChange — Android Server Connection, Security Headers & Network Architecture Guide
 
-> **Issue:** `failed to connect to /10.0.2.2 (port 8000) from /10.0.2.16 after 15000ms`  
-> **Target:** Android Emulator & Physical Device connecting to local Django backend  
+> **Target Platform:** Android (API 26+ / Android 8.0 to Android 15+)  
+> **Architecture:** Kotlin, Jetpack Compose, Retrofit 2, OkHttp 4, Kotlinx Serialization / Gson  
 > **Last Updated:** September 2026
 
 ---
 
 ## 📑 Table of Contents
-1. [Error Diagnosis: Why It Happens](#1-error-diagnosis-why-it-happens)
-2. [Instant Fix Steps (Do This Right Now)](#2-instant-fix-steps-do-this-right-now)
-3. [The Golden Solution: ADB Reverse Tunnel](#3-the-golden-solution-adb-reverse-tunnel)
-4. [Django Server Configuration (`0.0.0.0:8000` & `ALLOWED_HOSTS`)](#4-django-server-configuration)
-5. [Android App Requirements (`AndroidManifest.xml` & Retrofit)](#5-android-app-requirements)
-6. [Testing Connection Directly from Emulator](#6-testing-connection-directly-from-emulator)
-7. [Physical Phone Testing (Over Campus/Hostel Wi-Fi)](#7-physical-phone-testing-over-campushostel-wi-fi)
+1. [Server Environment Endpoints (Production & Local)](#1-server-environment-endpoints)
+2. [Mandatory Security Headers & Shield Architecture](#2-mandatory-security-headers--shield-architecture)
+3. [OkHttp Security & Auth Interceptor Pipeline](#3-okhttp-security--auth-interceptor-pipeline)
+4. [Automatic JWT Token Refresh (`Authenticator`)](#4-automatic-jwt-token-refresh)
+5. [Complete Kotlin NetworkModule Setup](#5-complete-kotlin-networkmodule-setup)
+6. [Android Manifest & Network Security Config](#6-android-manifest--network-security-config)
+7. [Local Emulator & Physical Device Setup (ADB Tunnel)](#7-local-emulator--physical-device-setup)
+8. [Troubleshooting & Verification Matrix](#8-troubleshooting--verification-matrix)
 
 ---
 
-## 1. Error Diagnosis: Why It Happens
+## 1. Server Environment Endpoints
 
-When running an Android app in an **Android Emulator**, the emulator operates inside a virtual router NAT network:
-- **`10.0.2.16`** = The Android Emulator's own IP address.
-- **`10.0.2.2`** = The virtual alias mapped to your PC host machine's loopback (`127.0.0.1`).
-- **`15000ms (15 seconds)` Timeout** = The socket tried to connect, but packets were silently dropped.
+CampusXChange uses the same unified Django REST backend across Web Client, Admin Panel, and Android App.
 
-### The 3 Causes of this Failure:
-1. **Django bound strictly to `127.0.0.1` instead of `0.0.0.0`:**  
-   If Django runs as `python manage.py runserver`, it only listens on IPv4 loopback. Packets from virtual network adapters (`10.0.2.16`) are dropped by Windows kernel.
-2. **Windows Defender Firewall on Public / Hostel Wi-Fi:**  
-   On university or hostel Wi-Fi (e.g. `Hostel Wi-Fi 3` / `lpu.com`), Windows sets the network profile to **Public**. Windows Firewall blocks all incoming connections on port 8000 unless tunneled or explicitly whitelisted.
-3. **`10.0.2.2` not in Django's `ALLOWED_HOSTS`:**  
-   Django drops requests with `Invalid HTTP_HOST header: '10.0.2.2:8000'`.
+| Environment | Base URL | Usage |
+|---|---|---|
+| **Production Server (Primary)** | `https://cxc.anshuman892494.online/` | Live Android Play Store release / Staging builds |
+| **Production Fallback (Render Backend)** | `https://cxc-marketplace.onrender.com/` | Direct cloud server alias |
+| **Local Emulator (Default)** | `http://10.0.2.2:8000/` | Standard Android Studio Emulator |
+| **Local Device / Emulator (ADB Reverse)** | `http://127.0.0.1:8000/` | USB debugging with `adb reverse tcp:8000 tcp:8000` |
+| **Physical Phone (Campus/Hostel Wi-Fi)** | `http://<PC_LAN_IP>:8000/` | Physical device over same Wi-Fi subnet |
 
----
-
-## 2. Instant Fix Steps (Do This Right Now)
-
-### Step 1: Start Django on `0.0.0.0:8000`
-In your terminal, navigate to the `server/` directory and run:
-
-```powershell
-cd c:\Users\anshu\OneDrive\Desktop\Projects\CampusXChange\server
-python manage.py runserver 0.0.0.0:8000
-```
-> ⚠️ **Important:** Do NOT just write `python manage.py runserver`. Always include `0.0.0.0:8000`.
+> ⚠️ **Important:** Retrofit base URLs **MUST ALWAYS** end with a trailing slash (`/`).
 
 ---
 
-### Step 2: Run ADB Reverse (Bypasses Firewall Completely)
-Open a new PowerShell terminal and run:
+## 2. Mandatory Security Headers & Shield Architecture
 
-```powershell
-& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" reverse tcp:8000 tcp:8000
+The backend implements `DataSecurityMiddleware` which guards all `/api/` endpoints against unauthorized crawlers, bots, and unsigned traffic.
+
+### Required HTTP Headers
+
+```http
+X-App-Security-Key: campusXchange_secure_key_2026_@nshuman892494
+Authorization: Bearer <jwt_access_token>
+Content-Type: application/json
+Accept: application/json
 ```
 
-If you have `adb` in your system PATH, you can simply run:
-```bash
-adb reverse tcp:8000 tcp:8000
-```
+### Header Specification Table
 
-> 💡 **What this does:** It bridges your Android Emulator / USB connected device directly to your PC's port 8000. It works 100% of the time, even on restricted hostel Wi-Fi networks!
+| Header | Value / Format | Scope | Required? |
+|---|---|---|:---:|
+| `X-App-Security-Key` | `campusXchange_secure_key_2026_@nshuman892494` | All `/api/*` endpoints | **YES** (Enforced by Django Shield) |
+| `Authorization` | `Bearer <access_token>` | Authenticated endpoints (`profile`, `create listing`, `offers`, `chat`) | **YES** for logged-in users |
+| `Accept` | `application/json` | All API queries | **YES** |
+| `Content-Type` | `application/json` | `POST`, `PATCH`, `PUT` requests | **YES** |
+
+> 🔒 **Security Best Practice:** Store `X-App-Security-Key` inside Android `local.properties` and inject it into `BuildConfig.APP_SECURITY_KEY` at build time so it is never exposed in plain text in public repositories.
 
 ---
 
-### Step 3: Tap "Retry" on the App!
-Go back to your Android Emulator screen and tap the orange **"Retry"** button. The app will immediately load data!
+## 3. OkHttp Security & Auth Interceptor Pipeline
 
----
+To ensure **every single request** carries the required security keys and Bearer JWT tokens, use an OkHttp `Interceptor`:
 
-## 3. The Golden Solution: ADB Reverse Tunnel
+```kotlin
+package com.campusxchange.app.data.remote.interceptor
 
-`adb reverse` creates a direct TCP tunnel from inside Android to your PC over the ADB bridge:
+import com.campusxchange.app.BuildConfig
+import com.campusxchange.app.data.local.TokenManager
+import kotlinx.coroutines.runBlocking
+import okhttp3.Interceptor
+import okhttp3.Response
 
-```
-[ Android App inside Emulator ]
-             │
-      http://127.0.0.1:8000  OR  http://10.0.2.2:8000
-             │
-      ┌──────▼──────┐
-      │ ADB Tunnel  │ (Bypasses Windows Firewall completely)
-      └──────┬──────┘
-             │
-             ▼
-[ Django Server on PC (Port 8000) ]
-```
+class SecurityHeaderInterceptor(
+    private val tokenManager: TokenManager
+) : Interceptor {
 
-To enable this automatically whenever you start development:
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val original = chain.request()
+        val builder = original.newBuilder()
 
-```powershell
-# PowerShell script to start server & reverse port
-& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" reverse tcp:8000 tcp:8000
-cd c:\Users\anshu\OneDrive\Desktop\Projects\CampusXChange\server
-python manage.py runserver 0.0.0.0:8000
-```
+        // 1. Mandatory Data Security Shield Key
+        builder.addHeader(
+            "X-App-Security-Key",
+            "campusXchange_secure_key_2026_@nshuman892494"
+        )
 
-To verify active reverse tunnels:
-```powershell
-& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" reverse --list
-# Output: (reverse) tcp:8000 tcp:8000
-```
+        // 2. Standard JSON Headers
+        builder.addHeader("Accept", "application/json")
+        if (original.body != null && original.header("Content-Type") == null) {
+            builder.addHeader("Content-Type", "application/json")
+        }
 
----
+        // 3. Attach JWT Bearer token if present and not already specified
+        val accessToken = runBlocking { tokenManager.getAccessToken() }
+        if (!accessToken.isNullOrBlank() && original.header("Authorization") == null) {
+            builder.addHeader("Authorization", "Bearer $accessToken")
+        }
 
-## 4. Django Server Configuration
-
-In `server/server/settings.py`, ensure `ALLOWED_HOSTS` accepts `10.0.2.2` and wildcard in development:
-
-```python
-# server/server/settings.py
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
-
-ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,10.0.2.2').split(',') if h.strip()]
-if DEBUG and '*' not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append('*')
-```
-
-And in `server/.env`:
-```env
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1,10.0.2.2,*
+        return chain.proceed(builder.build())
+    }
+}
 ```
 
 ---
 
-## 5. Android App Requirements
+## 4. Automatic JWT Token Refresh (`Authenticator`)
 
-### 5.1 Android Manifest (`AndroidManifest.xml`)
-Android 9.0+ (API level 28+) blocks non-HTTPS (`http://`) cleartext network traffic by default. You **must** enable cleartext traffic:
+When an access token expires (HTTP 401 Unauthorized), OkHttp's `Authenticator` automatically hits `/api/auth/token/refresh/` using the stored refresh token, updates DataStore, and retries the original request seamlessly without user intervention:
+
+```kotlin
+package com.campusxchange.app.data.remote.authenticator
+
+import com.campusxchange.app.data.local.TokenManager
+import com.campusxchange.app.data.remote.api.AuthApiService
+import kotlinx.coroutines.runBlocking
+import okhttp3.Authenticator
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.Route
+import javax.inject.Inject
+import javax.inject.Provider
+
+class TokenAuthenticator @Inject constructor(
+    private val tokenManager: TokenManager,
+    private val authApiServiceProvider: Provider<AuthApiService>
+) : Authenticator {
+
+    override fun authenticate(route: Route?, response: Response): Request? {
+        // Prevent infinite loops if retry also returns 401
+        if (responseCount(response) >= 2) return null
+
+        val refreshToken = runBlocking { tokenManager.getRefreshToken() } ?: return null
+
+        // Execute synchronous refresh call
+        val refreshResponse = runBlocking {
+            try {
+                authApiServiceProvider.get().refreshToken(mapOf("refresh" to refreshToken))
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        if (refreshResponse != null && refreshResponse.isSuccessful) {
+            val newAccessToken = refreshResponse.body()?.get("access") ?: return null
+            runBlocking {
+                tokenManager.saveAccessToken(newAccessToken)
+            }
+            return response.request.newBuilder()
+                .header("Authorization", "Bearer $newAccessToken")
+                .build()
+        } else {
+            // Refresh token expired -> clear credentials and trigger login event
+            runBlocking { tokenManager.clearTokens() }
+            return null
+        }
+    }
+
+    private fun responseCount(response: Response): Int {
+        var count = 1
+        var prior = response.priorResponse
+        while (prior != null) {
+            count++
+            prior = prior.priorResponse
+        }
+        return count
+    }
+}
+```
+
+---
+
+## 5. Complete Kotlin NetworkModule Setup
+
+```kotlin
+package com.campusxchange.app.di
+
+import com.campusxchange.app.BuildConfig
+import com.campusxchange.app.data.local.TokenManager
+import com.campusxchange.app.data.remote.authenticator.TokenAuthenticator
+import com.campusxchange.app.data.remote.interceptor.SecurityHeaderInterceptor
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+object NetworkModule {
+
+    @Provides
+    @Singleton
+    fun provideBaseUrl(): String {
+        return if (BuildConfig.DEBUG) {
+            // Local dev with 'adb reverse tcp:8000 tcp:8000'
+            "http://127.0.0.1:8000/"
+            // Alternative without adb reverse: "http://10.0.2.2:8000/"
+        } else {
+            // Live Production Server
+            "https://cxc.anshuman892494.online/"
+        }
+    }
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(
+        tokenManager: TokenManager,
+        tokenAuthenticator: TokenAuthenticator
+    ): OkHttpClient {
+        val loggingInterceptor = HttpLoggingInterceptor().apply {
+            level = if (BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BODY
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
+        }
+
+        return OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .addInterceptor(SecurityHeaderInterceptor(tokenManager))
+            .addInterceptor(loggingInterceptor)
+            .authenticator(tokenAuthenticator)
+            .retryOnConnectionFailure(true)
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideRetrofit(baseUrl: String, okHttpClient: OkHttpClient): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+}
+```
+
+---
+
+## 6. Android Manifest & Network Security Config
+
+### 6.1 `res/xml/network_security_config.xml`
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Production: Strict HTTPS Enforcement -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">cxc.anshuman892494.online</domain>
+        <domain includeSubdomains="true">cxc-marketplace.onrender.com</domain>
+        <domain includeSubdomains="true">cloudinary.com</domain>
+    </domain-config>
+
+    <!-- Local Development: Cleartext HTTP Permitted -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+        <domain includeSubdomains="true">localhost</domain>
+    </domain-config>
+</network-security-config>
+```
+
+### 6.2 `AndroidManifest.xml`
 
 ```xml
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.CampusXChange.app">
+    package="com.campusxchange.app">
 
-    <!-- 1. Internet Permission -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <application
+        android:name=".CampusXChangeApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
         android:theme="@style/Theme.CampusXChange"
-        <!-- 2. REQUIRED: Enable HTTP Cleartext Traffic for local dev -->
+        android:networkSecurityConfig="@xml/network_security_config"
         android:usesCleartextTraffic="true">
 
-        <activity android:name=".MainActivity" ... />
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
     </application>
 </manifest>
 ```
 
 ---
 
-### 5.2 Retrofit BASE_URL Configuration
+## 7. Local Emulator & Physical Device Setup (ADB Tunnel)
 
-```kotlin
-// In your NetworkModule.kt or Retrofit builder:
+To connect from Android Emulator or a physical USB-connected device to your PC's Django backend without getting blocked by Windows Firewall:
 
-object NetworkConstants {
-    // Option A: Standard Emulator Alias
-    const val BASE_URL_EMULATOR = "http://10.0.2.2:8000/"
-
-    // Option B: With 'adb reverse tcp:8000 tcp:8000'
-    const val BASE_URL_ADB_REVERSE = "http://127.0.0.1:8000/"
-
-    // Active Base URL
-    const val BASE_URL = BASE_URL_EMULATOR
-}
-
-@Provides
-@Singleton
-fun provideOkHttpClient(): OkHttpClient {
-    return OkHttpClient.Builder()
-        // Increase timeouts during local debugging
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .addInterceptor(HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        })
-        .build()
-}
-
-@Provides
-@Singleton
-fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
-    return Retrofit.Builder()
-        .baseUrl(NetworkConstants.BASE_URL)
-        .client(okHttpClient)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-}
-```
-
----
-
-## 6. Testing Connection Directly from Emulator
-
-You can test whether the emulator can talk to your Django server without rebuilding the app:
-
-### Test via ADB Shell:
-Run this command from your PC terminal:
-
+### Step 1: Start Django on `0.0.0.0:8000`
 ```powershell
-& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" shell "echo -e 'GET /api/marketplace/categories/ HTTP/1.1\r\nHost: 10.0.2.2:8000\r\n\r\n' | toybox nc -4 -w 2 -W 2 10.0.2.2 8000"
+cd server
+python manage.py runserver 0.0.0.0:8000
 ```
 
-If it returns:
-```http
-HTTP/1.1 200 OK
-Content-Type: application/json
-[{"id":1,"name":"Books & Notes"...}]
+### Step 2: Establish ADB Reverse Tunnel
+In a new terminal:
+```powershell
+adb reverse tcp:8000 tcp:8000
 ```
-👉 **The server connection is 100% working and ready!**
+*(Maps the phone's port 8000 directly to your PC's port 8000)*
 
-### Test via Google Chrome Inside Emulator:
-1. Open **Chrome** inside your Android Emulator.
-2. Navigate to:
-   ```
-   http://10.0.2.2:8000/api/marketplace/categories/
-   ```
-3. You will see the JSON response directly on the screen!
+### Step 3: Verify Reverse Tunnel Status
+```powershell
+adb reverse --list
+# Expected output: (reverse) tcp:8000 tcp:8000
+```
+
+Now, in your Android app:
+- `BASE_URL = "http://127.0.0.1:8000/"` connects directly and instantly!
 
 ---
 
-## 7. Physical Phone Testing (Over Campus/Hostel Wi-Fi)
+## 8. Troubleshooting & Verification Matrix
 
-If you connect a physical Android phone via Wi-Fi:
-1. Find your PC's Wi-Fi IP address using `ipconfig`:
-   - e.g., `10.36.102.32`
-2. Connect your phone to the same Wi-Fi (`Hostel Wi-Fi 3`).
-3. Set your Android app's `BASE_URL`:
-   ```kotlin
-   const val BASE_URL = "http://10.36.102.32:8000/"
-   ```
-4. **Better Alternative (via USB Cable):**  
-   Plug your phone via USB with USB Debugging enabled, run `adb reverse tcp:8000 tcp:8000`, and keep `BASE_URL = "http://localhost:8000/"`. This works even if the hostel Wi-Fi isolates devices from each other!
-
----
-
-## 8. Summary Checklist
-
-- [x] Django is running with `0.0.0.0:8000` (NOT just `127.0.0.1:8000`).
-- [x] `ALLOWED_HOSTS` has `10.0.2.2` and `*` in `server/server/settings.py`.
-- [x] `adb reverse tcp:8000 tcp:8000` is active.
-- [x] `AndroidManifest.xml` has `android:usesCleartextTraffic="true"`.
-- [x] `BASE_URL` ends with a trailing slash: `http://10.0.2.2:8000/`.
+| Symptom | Root Cause | Fix |
+|---|---|---|
+| `HTTP 403 Forbidden` (`Missing or invalid X-App-Security-Key`) | Request omitted security shield key | Ensure `SecurityHeaderInterceptor` adds `X-App-Security-Key: campusXchange_secure_key_2026_@nshuman892494`. |
+| `java.net.ConnectException: Failed to connect to /10.0.2.2:8000` | Django listening only on 127.0.0.1 | Start Django with `0.0.0.0:8000` or run `adb reverse tcp:8000 tcp:8000`. |
+| `CLEARTEXT communication to ... not permitted by network security policy` | Android 9+ default cleartext block | Add `android:networkSecurityConfig="@xml/network_security_config"` with 10.0.2.2 whitelisted. |
+| `HTTP 401 Unauthorized` on protected calls | Token expired or missing `Bearer ` prefix | Verify `SecurityHeaderInterceptor` formats as `"Bearer $token"`, check `TokenAuthenticator`. |
+| `SSLHandshakeException` on Production | Device clock out of sync or stale cert | Verify device time settings; check SSL cert on `cxc.anshuman892494.online`. |

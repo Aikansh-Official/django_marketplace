@@ -121,9 +121,19 @@ composable(
 
 ## 5. Complete REST API Contract
 
+> **Base URL:**
+> - Production: `https://cxc.anshuman892494.online/`
+> - Local Emulator: `http://10.0.2.2:8000/` (or `http://127.0.0.1:8000/` via adb reverse)
+>
+> **Mandatory Headers (All Calls):**
+> ```http
+> X-App-Security-Key: campusXchange_secure_key_2026_@nshuman892494
+> Accept: application/json
+> ```
+
 ### 5.1 Fetch Product Details
 - **URL:** `GET /api/marketplace/listings/{id}/`
-- **Auth:** Optional (Returns authenticated user specific offer status if token supplied)
+- **Auth:** Optional (Returns authenticated user specific offer status if `Authorization: Bearer <token>` supplied)
 
 #### Response `200 OK`:
 ```json

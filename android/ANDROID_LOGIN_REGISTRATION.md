@@ -549,16 +549,37 @@ Base URL: `http://<SERVER_IP>:8000/api/auth/`
 
 ### 6.5 Send OTP
 - **URL:** `POST /api/auth/send-otp/`
-- **Request Body:**
+- **Headers:** 
+  ```http
+  X-App-Security-Key: campusXchange_secure_key_2026_@nshuman892494
+  Content-Type: application/json
+  ```
+  *(Optional: `Authorization: Bearer <token>` when called by an authenticated user)*
+- **Request Body (Signup):**
   ```json
   {
-    "email": "student@gmail.com"
+    "email": "student@gmail.com",
+    "purpose": "signup"
   }
   ```
+- **Request Body (Buyer Upgrade to Seller):**
+  ```json
+  {
+    "email": "student@gmail.com",
+    "purpose": "upgrade"
+  }
+  ```
+  > 💡 **Upgrade Safe:** Setting `"purpose": "upgrade"` ensures the backend serializer does NOT reject the request with `"An account with this email already exists."`!
 - **Response 200:**
   ```json
   {
-    "message": "OTP sent successfully."
+    "message": "Verification code sent to your email successfully."
+  }
+  ```
+- **Response 400 (Already Seller / Duplicate Signup):**
+  ```json
+  {
+    "error": "This account is already a verified Seller."
   }
   ```
 
@@ -2138,7 +2159,15 @@ If a student initially registers as a **BUYER**, they can upgrade to a **Verifie
 1. **Trigger:** User taps "Upgrade to Seller" on Android Profile Screen.
 2. **Step 1:** Upload / Capture Physical Student ID Card photo. Run on-device ML Kit OCR to verify name & registration number.
 3. **Step 2:** Open CameraX live selfie modal with oval face guide to capture face photo matching ID card.
-4. **Step 3:** Request 6-digit email OTP via `POST /api/auth/send-otp/`.
+4. **Step 3:** Request 6-digit email OTP via `POST /api/auth/send-otp/` with `purpose = "upgrade"`:
+   ```kotlin
+   val otpRequest = SendOtpRequest(
+       email = currentUser.email,
+       purpose = "upgrade"
+   )
+   authApiService.sendOtp(otpRequest)
+   ```
+   *(Backend accepts existing buyer emails when `purpose == 'upgrade'`, generating the OTP and emailing it via Resend)*
 5. **Step 4:** Submit upgrade request:
    ```kotlin
    val request = UpgradeToSellerRequest(

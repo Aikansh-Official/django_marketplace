@@ -118,9 +118,21 @@ sealed class ListingRoute(val route: String) {
 
 ## 5. Complete REST API Contract
 
+> **Base URL:**
+> - Production: `https://cxc.anshuman892494.online/`
+> - Local Emulator: `http://10.0.2.2:8000/` (or `http://127.0.0.1:8000/` via adb reverse)
+>
+> **Mandatory Headers (All Calls):**
+> ```http
+> X-App-Security-Key: campusXchange_secure_key_2026_@nshuman892494
+> Authorization: Bearer <access_token>
+> Content-Type: application/json
+> Accept: application/json
+> ```
+
 ### 5.1 Create Listing
 - **URL:** `POST /api/marketplace/listings/`
-- **Headers:** `Authorization: Bearer <access_token>`, `Content-Type: application/json`
+- **Headers:** `Authorization: Bearer <access_token>`, `X-App-Security-Key: campusXchange_secure_key_2026_@nshuman892494`, `Content-Type: application/json`
 
 #### Request Body:
 ```json

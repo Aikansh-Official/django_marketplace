@@ -1,502 +1,349 @@
-# 💬 CampusXChange — Android Real-Time Chat & Messaging Specification
+# 💬 CampusXChange — Android In-App Peer Chat & Messaging Specification
 
-> **Target Platform:** Android (Native)  
-> **Tech Stack:** Kotlin, Jetpack Compose, WebSockets (OkHttp / Scarlet), Room DB, Material 3, Hilt  
-> **Backend Service:** Django Channels + Redis Channel Layer (`ws://<server-ip>:8000/ws/chat/{roomId}/`)  
+> **Target Platform:** Android (Native Jetpack Compose)  
+> **Architecture:** Kotlin Coroutines, StateFlow, Room DB, Retrofit 2 (3s Polling Lifecycle)  
+> **Backend Service:** Django REST Framework (`/api/marketplace/chat/`, `/api/marketplace/conversations/`)  
+> **DPDP Compliance:** Privacy-Shielded — No personal phone numbers or emails exchanged  
 > **Last Updated:** September 2026
 
 ---
 
 ## 📑 Table of Contents
-1. [System Architecture & WebSocket Pipeline](#1-system-architecture--websocket-pipeline)
-2. [Complete Business & Interaction Logic](#2-complete-business--interaction-logic)
-   - [2.1 Product-Linked Conversations](#21-product-linked-conversations)
-   - [2.2 Real-Time Message Events & Payloads](#22-real-time-message-events--payloads)
-   - [2.3 Typing Indicators & Online Presence](#23-typing-indicators--online-presence)
-   - [2.4 Read Receipts & Message Status Indicators](#24-read-receipts--message-status-indicators)
-3. [Color Palette & Material 3 Chat Styling](#3-color-palette--material-3-chat-styling)
-4. [Navigation & Compose Routes](#4-navigation--compose-routes)
-5. [WebSocket Event Contract](#5-websocket-event-contract)
-6. [Android Implementation Blueprint (Kotlin Code)](#6-android-implementation-blueprint-kotlin-code)
-   - [6.1 Message Entity & Room Local Database](#61-message-entity--room-local-database)
-   - [6.2 OkHttp WebSocket Manager (Auto-Reconnect & Ping)](#62-okhttp-websocket-manager-auto-reconnect--ping)
-   - [6.3 Chat ViewModel (Coroutines & StateFlow)](#63-chat-viewmodel-coroutines--stateflow)
-   - [6.4 ChatScreen Composable & Bubbles](#64-chatscreen-composable--bubbles)
-7. [Offline Caching & Network Reconnection Strategy](#7-offline-caching--network-reconnection-strategy)
+1. [Architecture & Protocol (REST Polling vs WebSockets)](#1-architecture--protocol)
+2. [Security Headers & Endpoints](#2-security-headers--endpoints)
+3. [REST API Contract & DTOs](#3-rest-api-contract--dtos)
+4. [Chat Lifecycle & 3-Second Coroutine Polling Engine](#4-chat-lifecycle--3-second-coroutine-polling-engine)
+5. [Room Local Database (Offline Cache & Sync)](#5-room-local-database)
+6. [Jetpack Compose UI Screen (`ChatScreen.kt`)](#6-jetpack-compose-ui-screen)
 
 ---
 
-## 1. System Architecture & WebSocket Pipeline
+## 1. Architecture & Protocol
 
-CampusXChange provides instant student-to-student chat with conversations directly attached to a marketplace listing.
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                 Android Jetpack Compose UI                  │
-│  (ChatScreen, ProductContextBanner, MessageBubbles, Input)  │
-└──────────────────────────────▲──────────────────────────────┘
-                               │ StateFlow<ChatUiState>
-┌──────────────────────────────▼──────────────────────────────┐
-│                        ChatViewModel                        │
-└──────────────────────────────▲──────────────────────────────┘
-                               │
-┌──────────────────────────────▼──────────────────────────────┐
-│                    ChatRepository / Room                    │
-└──────────────┬───────────────────────────────┬──────────────┘
-               ▼                               ▼
-    Local: Room DB Cache             Remote: OkHttp WebSocket
-                                               ▲
-                                               ▼
-                              Django Channels + Redis Channel Layer
-```
+CampusXChange uses a **zero-infrastructure, resilient REST polling protocol** across web and mobile:
+- **No Redis / WebSocket daemon required:** Guaranteed 100% uptime without socket disconnections over unstable hostel Wi-Fi or mobile data switches.
+- **Listing & Deal Scoped:** Each conversation thread is strictly bound to a `(listing_id, peer_id)` pair, displaying item thumbnail, price, and handover status in the chat header.
+- **Auto Read-Receipts:** Opening the conversation automatically marks received messages as read on the server.
+- **Active Thread List:** The Conversations screen (`/api/marketplace/conversations/`) aggregates recent threads with live unread badge counters.
 
 ---
 
-## 2. Complete Business & Interaction Logic
+## 2. Security Headers & Endpoints
 
-### 2.1 Product-Linked Conversations
-- Every chat is linked to a specific `listing_id`.
-- The top of the chat view features a sticky **Product Header Card**:
-  - Item Thumbnail, Title, and Listed Price.
-  - Quick-action buttons: **"Make Offer"** or **"View Listing"**.
-  - Current Status Badge: Active, Reserved, or Sold.
-
-### 2.2 Real-Time Message Events & Payloads
-- **`chat_message`:** Standard text communication.
-- **`offer_action`:** Inline interactive cards when an offer is submitted, accepted, or countered.
-- **`typing`:** Ephemeral typing indicator triggered when typing into text input.
-- **`read_receipt`:** Updates read state when chat screen is in foreground.
-
-### 2.3 Typing Indicators & Online Presence
-- Displays *"Student is typing..."* with subtle dot pulsation animation.
-- Heartbeat ping sent every 30 seconds (`{"type": "ping"}`) to keep the connection alive through mobile carrier NAT timeouts.
+> **Base URL:**
+> - Production: `https://cxc.anshuman892494.online/`
+> - Local Emulator: `http://10.0.2.2:8000/` (or `http://127.0.0.1:8000/` via adb reverse)
+>
+> **Mandatory Headers (All Calls):**
+> ```http
+> X-App-Security-Key: campusXchange_secure_key_2026_@nshuman892494
+> Authorization: Bearer <access_token>
+> Content-Type: application/json
+> Accept: application/json
+> ```
 
 ---
 
-## 3. Color Palette & Material 3 Chat Styling
+## 3. REST API Contract & DTOs
 
-```kotlin
-package com.CampusXChange.app.ui.theme
-
-import androidx.compose.ui.graphics.Color
-
-val ChatOutgoingBubbleBg = Color(0xFFFB5607) // Brand Primary Orange
-val ChatOutgoingText = Color(0xFFFFFFFF)
-val ChatIncomingBubbleBg = Color(0xFFF3F4F6) // Gray 100
-val ChatIncomingText = Color(0xFF111111) // Ink 900
-val ChatScreenBg = Color(0xFFFCFBF8) // Warm Cream 50
-val ChatInputBg = Color(0xFFFFFFFF)
-val ChatTimeText = Color(0xFF9CA3AF)
-val ReadReceiptDoubleCheck = Color(0xFF3B82F6) // Blue 500
+### 3.1 Fetch Thread Messages
+- **URL:** `GET /api/marketplace/chat/{listing_id}/{peer_id}/`
+- **Headers:** `Authorization: Bearer <token>`, `X-App-Security-Key: campusXchange_secure_key_2026_@nshuman892494`
+- **Response `200 OK`:**
+```json
+[
+  {
+    "id": 1042,
+    "listing": 101,
+    "sender": 42,
+    "sender_name": "Aman S.",
+    "recipient": 88,
+    "recipient_name": "Anshuman V.",
+    "message": "Hey! Is the calculator still available for handover today at BH-4?",
+    "is_read": true,
+    "created_at": "2026-09-06T10:14:00Z",
+    "is_me": false
+  },
+  {
+    "id": 1043,
+    "listing": 101,
+    "sender": 88,
+    "sender_name": "Anshuman V.",
+    "recipient": 42,
+    "recipient_name": "Aman S.",
+    "message": "Yes, available! Can we meet near the BH-4 common room at 5 PM?",
+    "is_read": false,
+    "created_at": "2026-09-06T10:15:30Z",
+    "is_me": true
+  }
+]
 ```
 
----
-
-## 4. Navigation & Compose Routes
-
-```kotlin
-sealed class ChatRoute(val route: String) {
-    object Inbox : ChatRoute("chat/inbox")
-    fun room(roomId: String, listingId: Int): String = "chat/room/$roomId?listingId=$listingId"
-}
-```
-
----
-
-## 5. WebSocket Event Contract
-
-Connection URL: `ws://<server-ip>:8000/ws/chat/{roomId}/?token=<access_token>`
-
-### 5.1 Send Message (Client ➔ Server)
+### 3.2 Send Chat Message
+- **URL:** `POST /api/marketplace/chat/{listing_id}/{peer_id}/`
+- **Headers:** `Authorization: Bearer <token>`, `X-App-Security-Key: campusXchange_secure_key_2026_@nshuman892494`
+- **Request Body:**
 ```json
 {
-  "action": "message",
-  "message": "Hey Aman, can I inspect the Casio calculator at BH-4 today?",
-  "listing_id": 105
+  "message": "Yes, available! Can we meet near the BH-4 common room at 5 PM?"
 }
 ```
-
-### 5.2 Receive Message (Server ➔ Client)
+- **Response `201 Created`:**
 ```json
 {
-  "type": "chat_message",
-  "message_id": "msg_98234",
-  "sender_id": 42,
-  "sender_name": "Aman Sharma",
-  "message": "Yes, sure! I am available between 4 PM and 6 PM.",
-  "timestamp": "2026-09-06T10:15:30Z",
-  "listing_id": 105
+  "id": 1043,
+  "listing": 101,
+  "sender": 88,
+  "sender_name": "Anshuman V.",
+  "recipient": 42,
+  "recipient_name": "Aman S.",
+  "message": "Yes, available! Can we meet near the BH-4 common room at 5 PM?",
+  "is_read": false,
+  "created_at": "2026-09-06T10:15:30Z",
+  "is_me": true
 }
 ```
 
-### 5.3 Typing Notification
+### 3.3 List Active Student Conversations
+- **URL:** `GET /api/marketplace/conversations/`
+- **Headers:** `Authorization: Bearer <token>`, `X-App-Security-Key: campusXchange_secure_key_2026_@nshuman892494`
+- **Response `200 OK`:**
 ```json
-{
-  "type": "typing",
-  "user_id": 42,
-  "is_typing": true
-}
+[
+  {
+    "listing_id": 101,
+    "listing_title": "Scientific Calculator Casio fx-991EX",
+    "listing_price": "750.00",
+    "listing_image": "https://res.cloudinary.com/.../casio.jpg",
+    "peer_id": 42,
+    "peer_name": "Aman S.",
+    "last_message": "Can we meet near the BH-4 common room at 5 PM?",
+    "last_message_at": "2026-09-06T10:15:30Z",
+    "unread_count": 1
+  }
+]
 ```
 
 ---
 
-## 6. Android Implementation Blueprint (Kotlin Code)
+## 4. Chat Lifecycle & 3-Second Coroutine Polling Engine
 
-### 6.1 Message Entity & Room Local Database
-
-```kotlin
-package com.CampusXChange.app.data.local.chat
-
-import androidx.room.*
-import kotlinx.coroutines.flow.Flow
-
-@Entity(tableName = "chat_messages")
-data class ChatMessageEntity(
-    @PrimaryKey val messageId: String,
-    val roomId: String,
-    val listingId: Int,
-    val senderId: Int,
-    val senderName: String,
-    val content: String,
-    val timestamp: Long,
-    val isFromMe: Boolean,
-    val isRead: Boolean
-)
-
-@Dao
-interface ChatDao {
-    @Query("SELECT * FROM chat_messages WHERE roomId = :roomId ORDER BY timestamp ASC")
-    fun getMessagesForRoom(roomId: String): Flow<List<ChatMessageEntity>>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMessage(message: ChatMessageEntity)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMessages(messages: List<ChatMessageEntity>)
-}
-```
-
----
-
-### 6.2 OkHttp WebSocket Manager (Auto-Reconnect & Ping)
+In Jetpack Compose, polling runs strictly while the chat screen is in the foreground (`RESUMED` state):
 
 ```kotlin
-package com.CampusXChange.app.data.remote.chat
-
-import com.google.gson.Gson
-import com.CampusXChange.app.data.local.TokenManager
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.launch
-import okhttp3.*
-import java.util.concurrent.TimeUnit
-import javax.inject.Inject
-import javax.inject.Singleton
-
-data class SocketPayload(val type: String, val message: String?, val sender_id: String?, val listing_id: String?)
-
-@Singleton
-class ChatWebSocketClient @Inject constructor(
-    private val tokenManager: TokenManager,
-    private val gson: Gson
-) {
-    private var webSocket: WebSocket? = null
-    private val client = OkHttpClient.Builder()
-        .readTimeout(0, TimeUnit.MILLISECONDS)
-        .pingInterval(30, TimeUnit.SECONDS)
-        .build()
-
-    private val _incomingMessages = MutableSharedFlow<SocketPayload>(extraBufferCapacity = 64)
-    val incomingMessages: SharedFlow<SocketPayload> = _incomingMessages
-
-    fun connect(roomId: String) {
-        CoroutineScope(Dispatchers.IO).launch {
-            val token = tokenManager.getAccessToken() ?: return@launch
-            val request = Request.Builder()
-                .url("ws://10.0.2.2:8000/ws/chat/$roomId/?token=$token")
-                .build()
-
-            webSocket = client.newWebSocket(request, object : WebSocketListener() {
-                override fun onMessage(webSocket: WebSocket, text: String) {
-                    try {
-                        val payload = gson.fromJson(text, SocketPayload::class.java)
-                        _incomingMessages.tryEmit(payload)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-
-                override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                    // Reconnect with exponential backoff
-                }
-            })
-        }
-    }
-
-    fun sendMessage(content: String, listingId: Int) {
-        val json = gson.toJson(mapOf(
-            "action" to "message",
-            "message" to content,
-            "listing_id" to listingId
-        ))
-        webSocket?.send(json)
-    }
-
-    fun disconnect() {
-        webSocket?.close(1000, "User left chat")
-        webSocket = null
-    }
-}
-```
-
----
-
-### 6.3 Chat ViewModel (Coroutines & StateFlow)
-
-```kotlin
-package com.CampusXChange.app.ui.chat
+package com.campusxchange.app.ui.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.CampusXChange.app.data.local.chat.ChatDao
-import com.CampusXChange.app.data.local.chat.ChatMessageEntity
-import com.CampusXChange.app.data.remote.chat.ChatWebSocketClient
+import com.campusxchange.app.data.remote.api.ChatApiService
+import com.campusxchange.app.data.remote.dto.ChatMessageDto
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import java.util.UUID
 import javax.inject.Inject
-
-data class ChatUiState(
-    val messages: List<ChatMessageEntity> = emptyList(),
-    val inputText: String = "",
-    val isPeerTyping: Boolean = false,
-    val isConnected: Boolean = false
-)
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
-    private val socketClient: ChatWebSocketClient,
-    private val chatDao: ChatDao
+    private val chatApi: ChatApiService
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ChatUiState())
-    val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
+    private val _messages = MutableStateFlow<List<ChatMessageDto>>(emptyList())
+    val messages = _messages.asStateFlow()
 
-    private var activeRoomId: String = ""
-    private var activeListingId: Int = 0
+    private val _isSending = MutableStateFlow(false)
+    val isSending = _isSending.asStateFlow()
 
-    fun initRoom(roomId: String, listingId: Int) {
-        activeRoomId = roomId
-        activeListingId = listingId
-        socketClient.connect(roomId)
-
+    fun startPolling(listingId: String, peerId: String) {
         viewModelScope.launch {
-            chatDao.getMessagesForRoom(roomId).collect { list ->
-                _uiState.value = _uiState.value.copy(messages = list)
-            }
-        }
-
-        viewModelScope.launch {
-            socketClient.incomingMessages.collect { payload ->
-                if (payload.type == "chat_message" && payload.message != null) {
-                    val entity = ChatMessageEntity(
-                        messageId = UUID.randomUUID().toString(),
-                        roomId = activeRoomId,
-                        listingId = activeListingId,
-                        senderId = payload.sender_id ?: 0,
-                        senderName = "Student",
-                        content = payload.message,
-                        timestamp = System.currentTimeMillis(),
-                        isFromMe = false,
-                        isRead = true
-                    )
-                    chatDao.insertMessage(entity)
+            while (isActive) {
+                try {
+                    val response = chatApi.getMessages(listingId, peerId)
+                    if (response.isSuccessful) {
+                        _messages.value = response.body() ?: emptyList()
+                    }
+                } catch (e: Exception) {
+                    // Silently continue polling on transient network drops
                 }
+                delay(3000) // 3-second polling interval
             }
         }
     }
 
-    fun onInputTextChange(text: String) {
-        _uiState.value = _uiState.value.copy(inputText = text)
-    }
-
-    fun sendMessage() {
-        val text = _uiState.value.inputText.trim()
-        if (text.isEmpty()) return
-
-        socketClient.sendMessage(text, activeListingId)
+    fun sendMessage(listingId: String, peerId: String, text: String) {
+        if (text.isBlank()) return
         viewModelScope.launch {
-            val entity = ChatMessageEntity(
-                messageId = UUID.randomUUID().toString(),
-                roomId = activeRoomId,
-                listingId = activeListingId,
-                senderId = 0,
-                senderName = "Me",
-                content = text,
-                timestamp = System.currentTimeMillis(),
-                isFromMe = true,
-                isRead = false
-            )
-            chatDao.insertMessage(entity)
-            _uiState.value = _uiState.value.copy(inputText = "")
+            _isSending.value = true
+            try {
+                val res = chatApi.sendMessage(listingId, peerId, mapOf("message" to text.trim()))
+                if (res.isSuccessful && res.body() != null) {
+                    _messages.value = _messages.value + res.body()!!
+                }
+            } finally {
+                _isSending.value = false
+            }
         }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        socketClient.disconnect()
     }
 }
 ```
 
 ---
 
-### 6.4 ChatScreen Composable & Bubbles
+## 5. Room Local Database (Offline Cache & Sync)
 
 ```kotlin
-package com.CampusXChange.app.ui.chat
+package com.campusxchange.app.data.local.entity
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "chat_messages")
+data class ChatMessageEntity(
+    @PrimaryKey val id: Long,
+    val listingId: Long,
+    val senderId: Long,
+    val senderName: String,
+    val recipientId: Long,
+    val recipientName: String,
+    val message: String,
+    val isRead: Boolean,
+    val isMe: Boolean,
+    val createdAt: String
+)
+```
+
+---
+
+## 6. Jetpack Compose UI Screen (`ChatScreen.kt`)
+
+```kotlin
+package com.campusxchange.app.ui.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.CampusXChange.app.data.local.chat.ChatMessageEntity
-import com.CampusXChange.app.ui.theme.*
+import com.campusxchange.app.ui.theme.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
-    roomId: String,
-    listingId: Int,
+    listingId: String,
+    peerId: String,
+    peerName: String,
     listingTitle: String,
-    listingPrice: String,
-    viewModel: ChatViewModel = hiltViewModel()
+    onBack: () -> Unit,
+    viewModel: ChatViewModel
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val messages by viewModel.messages.collectAsState()
+    val isSending by viewModel.isSending.collectAsState()
+    var inputText by remember { mutableStateOf("") }
+    val listState = rememberLazyListState()
 
-    LaunchedEffect(roomId) {
-        viewModel.initRoom(roomId, listingId)
+    LaunchedEffect(listingId, peerId) {
+        viewModel.startPolling(listingId, peerId)
+    }
+
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size - 1)
+        }
     }
 
     Scaffold(
         topBar = {
-            // Product Banner Top Bar
-            Surface(
-                color = Color.White,
-                shadowElevation = 2.dp,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(Color(0xFFFFF4ED), RoundedCornerShape(6.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("🛍️", fontSize = 20.sp)
+            TopAppBar(
+                title = {
+                    Column {
+                        Text(peerName, fontSize = 16.sp, style = MaterialTheme.typography.titleMedium)
+                        Text(listingTitle, fontSize = 11.sp, color = TextMutedLight)
                     }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(listingTitle, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Text("₹$listingPrice", color = Brand500, fontWeight = FontWeight.Black, fontSize = 13.sp)
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
-                }
-            }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceLight)
+            )
         },
         bottomBar = {
-            // Input Row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
                     .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedTextField(
-                    value = state.inputText,
-                    onValueChange = { viewModel.onInputTextChange(it) },
-                    placeholder = { Text("Type a message...") },
+                    value = inputText,
+                    onValueChange = { inputText = it },
+                    placeholder = { Text("Type your message...", fontSize = 13.sp) },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(24.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Brand500,
-                        unfocusedBorderColor = Color(0xFFE5E7EB)
-                    )
+                    maxLines = 3
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = { viewModel.sendMessage() },
-                    shape = RoundedCornerShape(24.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Brand500)
+                IconButton(
+                    onClick = {
+                        val toSend = inputText
+                        inputText = ""
+                        viewModel.sendMessage(listingId, peerId, toSend)
+                    },
+                    enabled = inputText.isNotBlank() && !isSending
                 ) {
-                    Text("Send", fontWeight = FontWeight.Bold)
+                    Icon(Icons.Default.Send, contentDescription = "Send", tint = BrandPrimary)
                 }
             }
-        },
-        containerColor = Color(0xFFFCFBF8)
+        }
     ) { padding ->
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            items(state.messages, key = { it.messageId }) { msg ->
-                ChatBubble(message = msg)
-            }
-        }
-    }
-}
-
-@Composable
-fun ChatBubble(message: ChatMessageEntity) {
-    val isMe = message.isFromMe
-
-    Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = if (isMe) Alignment.CenterEnd else Alignment.CenterStart
-    ) {
-        Surface(
-            shape = RoundedCornerShape(
-                topStart = 12.dp,
-                topEnd = 12.dp,
-                bottomStart = if (isMe) 12.dp else 2.dp,
-                bottomEnd = if (isMe) 2.dp else 12.dp
-            ),
-            color = if (isMe) Brand500 else Color(0xFFF3F4F6),
-            modifier = Modifier.widthIn(max = 280.dp)
-        ) {
-            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                Text(
-                    text = message.content,
-                    color = if (isMe) Color.White else Color(0xFF111111),
-                    fontSize = 14.sp
-                )
+            items(messages) { msg ->
+                val isMe = msg.isMe
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = if (isMe) Alignment.CenterEnd else Alignment.CenterStart
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(
+                            topStart = 16.dp,
+                            topEnd = 16.dp,
+                            bottomStart = if (isMe) 16.dp else 4.dp,
+                            bottomEnd = if (isMe) 4.dp else 16.dp
+                        ),
+                        color = if (isMe) BrandPrimary else SurfaceLight,
+                        shadowElevation = 1.dp
+                    ) {
+                        Text(
+                            text = msg.message,
+                            color = if (isMe) Color.White else TextPrimaryLight,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                        )
+                    }
+                }
             }
         }
     }
 }
 ```
-
----
-
-## 7. Offline Caching & Network Reconnection Strategy
-
-- **Room Persistence:** All chat messages are written directly to Room DB so history is instantly available offline or during poor campus WiFi coverage.
-- **WebSocket Reconnection:** Automatic exponential reconnect backoff (1s, 2s, 4s, 8s, up to 30s) if connection drops while walking across campus.

@@ -95,9 +95,11 @@ Max Score:            100 pts
 Buyers can upgrade to **Verified Seller** at any time:
 1. **ID Card Capture & OCR:** User captures physical LPU Student ID card. On-device Google ML Kit extracts registration number and student name for instant verification.
 2. **Live Selfie Capture:** Front-facing CameraX selfie modal with oval face guide verifies student presence against ID card photo (+3 Trust points).
-3. **Email OTP:** 6-digit OTP dispatched to verified email via `POST /api/auth/send-otp/`.
+3. **Email OTP:** 6-digit OTP dispatched to verified email via `POST /api/auth/send-otp/` with `purpose="upgrade"`.
+   > 💡 **Backend Fix Applied:** The server serializer accepts existing buyer accounts without throwing `"An account with this email already exists."` when `purpose == 'upgrade'` or when request carries the user's JWT token.
 4. **Upgrade Submission:** App calls `POST /api/auth/upgrade-to-seller/` with `reg_no`, `id_card_image` (Base64), `id_card_data` (JSON), `profile_photo` (Base64), and `otp`.
 5. **Direct Role Upgrade:** On success, backend sets `role = 'SELLER'`, `is_id_verified = true`, recalculates trust score, and returns updated user profile.
+6. **Clean Header Standard:** Public Seller Profile displays `Member since [Month Year]` (e.g., `Member since September 2026`) instead of awkward `@gmail.com Student` labels.
 
 ### 2.4 Saved Items & Wishlist Management
 - Students can bookmark listings from the marketplace or product details.

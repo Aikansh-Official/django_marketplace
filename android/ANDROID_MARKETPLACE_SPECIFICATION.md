@@ -31,7 +31,12 @@ The Marketplace browsing engine utilizes a **two-column adaptive grid** with pul
 ┌─────────────────────────────────────────────────────────────┐
 │                 HomeScreen / MarketplaceScreen              │
 │       ┌──────────────────────────────────────────────┐      │
+│       │ Top Announcement Bar (Passive Alert / Notice)│      │
+│       ├──────────────────────────────────────────────┤      │
 │       │ Search Bar + Category Horizontal Row Chips   │      │
+│       ├──────────────────────────────────────────────┤      │
+│       │ BannerSlideshow Hero Carousel (Auto-scroll)  │      │
+│       │ → Detailed in ANDROID_BANNER_CAROUSEL_SPEC.md│      │
 │       ├──────────────────────────────────────────────┤      │
 │       │ Transaction (Sell/Rent/Donate) & Sort Filter │      │
 │       ├──────────────────────────────────────────────┤      │
@@ -130,7 +135,17 @@ sealed class MarketplaceRoute(val route: String) {
 
 ## 5. Complete REST API Contract
 
-### 5.1 Fetch Categories
+> **Base URL:**
+> - Production: `https://cxc.anshuman892494.online/`
+> - Local Emulator: `http://10.0.2.2:8000/` (or `http://127.0.0.1:8000/` via adb reverse)
+>
+> **Mandatory Headers (All Calls):**
+> ```http
+> X-App-Security-Key: campusXchange_secure_key_2026_@nshuman892494
+> Accept: application/json
+> ```
+
+### 5.1 Fetch All Categories
 - **URL:** `GET /api/marketplace/categories/`
 - **Auth:** Not required (Guest accessible)
 
