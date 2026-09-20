@@ -193,14 +193,9 @@ export default function SellerProfile() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-gray-500">
-                <span className="flex items-center gap-1 font-semibold text-gray-700">
-                  <ShieldCheck className="w-3.5 h-3.5 text-brand-600 shrink-0" />
-                  <span className="truncate">@{seller.college_domain || 'lpu.in'} Student</span>
-                </span>
-                <span className="hidden sm:inline">•</span>
                 <span className="flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                  {seller.member_since}
+                  <span>Member since {seller.member_since}</span>
                 </span>
               </div>
 

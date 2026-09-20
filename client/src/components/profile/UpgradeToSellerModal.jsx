@@ -81,10 +81,18 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
 
   if (!isOpen) return null;
 
+  const storedUser = React.useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem('user') || '{}');
+    } catch {
+      return {};
+    }
+  }, []);
+
   // Clean username: remove any leading @ symbol and trim
-  const username = String(profile?.username || '').replace(/^@/, '').trim();
-  const fullName = profile?.full_name || profile?.first_name || '';
-  const email = profile?.email || '';
+  const username = String(profile?.username || storedUser?.username || '').replace(/^@/, '').trim();
+  const fullName = profile?.full_name || profile?.first_name || storedUser?.full_name || storedUser?.first_name || '';
+  const email = profile?.email || storedUser?.email || '';
 
   // Handle ID photo upload & compression
   const handleImageUpload = async (e) => {
@@ -203,11 +211,15 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
     }
     setOtpSending(true);
     try {
-      await api.post('/auth/send-otp/', { email });
+      await api.post('/auth/send-otp/', { email, purpose: 'upgrade' });
       setOtpSent(true);
       toast.success(`Verification code sent to ${email}`);
     } catch (e) {
-      const msg = e.response?.data?.error || e.response?.data?.detail || 'Failed to send OTP code.';
+      const msg =
+        e.response?.data?.error ||
+        e.response?.data?.email?.[0] ||
+        e.response?.data?.detail ||
+        'Failed to send OTP code.';
       toast.error(msg);
     } finally {
       setOtpSending(false);
@@ -280,6 +292,7 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
       console.error('Upgrade Error:', err);
       const errMsg =
         err.response?.data?.error ||
+        err.response?.data?.otp?.[0] ||
         err.response?.data?.detail ||
         'Upgrade failed. Please check your verification code.';
       toast.error(errMsg);

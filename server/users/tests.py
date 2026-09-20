@@ -65,3 +65,57 @@ class UserSecurityTests(TestCase):
         # 6th attempt is blocked as locked
         res = self.client.post('/api/auth/verify-otp/', {'email': email, 'otp': '123456'})
         self.assertEqual(res.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+    def test_send_otp_signup_new_user(self):
+        new_email = 'freshstudent123@gmail.com'
+        res = self.client.post('/api/auth/send-otp/', {'email': new_email})
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(OTPVerification.objects.filter(email=new_email).exists())
+
+    def test_send_otp_signup_existing_email_blocked(self):
+        buyer = User.objects.create_user(
+            username='buyer123',
+            email='existingbuyer@gmail.com',
+            password='Password123!',
+            role='BUYER'
+        )
+        res = self.client.post('/api/auth/send-otp/', {'email': buyer.email, 'purpose': 'signup'})
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("already exists", str(res.data))
+
+    def test_send_otp_upgrade_for_buyer(self):
+        buyer = User.objects.create_user(
+            username='buyer456',
+            email='upgrademe@gmail.com',
+            password='Password123!',
+            role='BUYER'
+        )
+        self.client.force_authenticate(user=buyer)
+        res = self.client.post('/api/auth/send-otp/', {'email': buyer.email, 'purpose': 'upgrade'})
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(OTPVerification.objects.filter(email=buyer.email).exists())
+
+    def test_send_otp_upgrade_auto_detect_authenticated(self):
+        buyer = User.objects.create_user(
+            username='buyer789',
+            email='autodetect@gmail.com',
+            password='Password123!',
+            role='BUYER'
+        )
+        self.client.force_authenticate(user=buyer)
+        # Call without purpose, should auto-detect from authenticated user
+        res = self.client.post('/api/auth/send-otp/', {'email': buyer.email})
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(OTPVerification.objects.filter(email=buyer.email).exists())
+
+    def test_send_otp_upgrade_already_seller_blocked(self):
+        seller = User.objects.create_user(
+            username='seller999',
+            email='alreadyseller@gmail.com',
+            password='Password123!',
+            role='SELLER'
+        )
+        self.client.force_authenticate(user=seller)
+        res = self.client.post('/api/auth/send-otp/', {'email': seller.email, 'purpose': 'upgrade'})
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("already a verified Seller", str(res.data))

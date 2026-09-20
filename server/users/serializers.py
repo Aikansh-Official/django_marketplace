@@ -110,13 +110,49 @@ class ForgotPasswordResetSerializer(serializers.Serializer):
 
 class SendOTPSerializer(serializers.Serializer):
     email = serializers.EmailField()
+    purpose = serializers.ChoiceField(
+        choices=['signup', 'upgrade'],
+        default='signup',
+        required=False
+    )
     
     def validate_email(self, value):
-        if not re.match(r'^[\w\.-]+@gmail\.com$', value.lower()):
+        clean_email = value.strip().lower()
+        if not re.match(r'^[\w\.-]+@gmail\.com$', clean_email):
             raise serializers.ValidationError("Only @gmail.com email addresses are allowed.")
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("An account with this email already exists.")
-        return value
+        return clean_email
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        purpose = attrs.get('purpose', 'signup')
+        request = self.context.get('request')
+
+        # Check if user is authenticated with this email
+        is_authenticated_user = (
+            request is not None and
+            hasattr(request, 'user') and
+            request.user.is_authenticated
+        )
+        is_matching_auth_user = (
+            is_authenticated_user and
+            request.user.email.strip().lower() == email
+        )
+
+        # Treat as upgrade/account verification if explicitly requested or authenticated account match
+        if purpose == 'upgrade' or is_matching_auth_user:
+            user = User.objects.filter(email__iexact=email).first()
+            if not user:
+                raise serializers.ValidationError({"email": "No registered account found with this email."})
+            if user.role == 'SELLER':
+                raise serializers.ValidationError({"email": "This account is already a verified Seller."})
+            if is_authenticated_user and not is_matching_auth_user:
+                raise serializers.ValidationError({"email": "Email does not match your logged-in account."})
+        else:
+            # Registration/signup flow
+            if User.objects.filter(email__iexact=email).exists():
+                raise serializers.ValidationError({"email": "An account with this email already exists."})
+
+        return attrs
 
 class VerifyOTPSerializer(serializers.Serializer):
     email = serializers.EmailField()

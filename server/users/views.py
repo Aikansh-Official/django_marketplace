@@ -351,9 +351,20 @@ class SendOTPView(APIView):
 
     def post(self, request):
         try:
-            serializer = SendOTPSerializer(data=request.data)
+            serializer = SendOTPSerializer(data=request.data, context={'request': request})
             if not serializer.is_valid():
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                first_err = None
+                for field, err_list in serializer.errors.items():
+                    if isinstance(err_list, list) and len(err_list) > 0:
+                        first_err = str(err_list[0])
+                        break
+                    elif isinstance(err_list, str):
+                        first_err = err_list
+                        break
+                return Response(
+                    {"error": first_err or "Invalid input provided.", "details": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
             email = serializer.validated_data['email']
             otp = str(random.randint(100000, 999999))
@@ -863,6 +874,14 @@ class UpgradeToSellerView(APIView):
 
     def post(self, request):
         user = request.user
+
+        # 0. Check if user is already a Verified Seller
+        if user.role == 'SELLER':
+            return Response(
+                {"error": "Your account is already a Verified Seller."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         reg_no = str(request.data.get('reg_no', '')).strip() or user.username
         id_card_image = request.data.get('id_card_image', None)
         id_card_data = request.data.get('id_card_data', {})
@@ -953,6 +972,9 @@ class UpgradeToSellerView(APIView):
         user.profile_photo = cloudinary_profile_photo
         user.trust_score = user.calculate_trust_score()
         user.save()
+
+        # Invalidate OTP record so it cannot be reused
+        record.delete()
 
         logger.info(f"User {user.username} successfully upgraded from BUYER to SELLER via UpgradeToSellerView.")
         return Response({
