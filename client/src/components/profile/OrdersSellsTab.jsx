@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
@@ -745,36 +746,38 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {deleteModalId && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-gray-200 rounded-md max-w-sm w-full p-6 shadow-2xl space-y-4">
-            <div className="text-center">
-              <h3 className="text-base font-extrabold text-gray-900">Delete Listing?</h3>
-              <p className="text-xs text-gray-500 mt-1">
-                This item will be permanently deleted and removed from the marketplace.
-              </p>
+      {/* Delete Confirmation Modal - Portal to document.body for full-screen coverage */}
+      {deleteModalId &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+            <div className="bg-white border border-gray-200 rounded-xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+              <div className="text-center">
+                <h3 className="text-base font-extrabold text-gray-900">Delete Listing?</h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  This item will be permanently deleted and removed from the marketplace.
+                </p>
+              </div>
+              <div className="flex gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setDeleteModalId(null)}
+                  className="flex-1 bg-white border border-gray-300 text-gray-700 py-2.5 rounded-md font-bold text-xs hover:bg-gray-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={handleDelete}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-md font-bold text-xs disabled:opacity-50 transition-colors cursor-pointer"
+                >
+                  {deleting ? 'Deleting...' : 'Delete Permanently'}
+                </button>
+              </div>
             </div>
-            <div className="flex gap-2.5 pt-1">
-              <button
-                type="button"
-                onClick={() => setDeleteModalId(null)}
-                className="flex-1 bg-white border border-gray-300 text-gray-700 py-2.5 rounded-md font-bold text-xs hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={deleting}
-                onClick={handleDelete}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-md font-bold text-xs disabled:opacity-50 transition-colors"
-              >
-                {deleting ? 'Deleting...' : 'Delete Permanently'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
       {/* Handover QR Modal (for Seller) */}
       {showQRModal && activeOfferForQR && (

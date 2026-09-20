@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
@@ -155,7 +156,7 @@ export default function MyListings() {
   };
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-[5%] py-8 animate-fade-in-up">
+    <div className="w-full min-h-[calc(100vh-4.5rem)] px-4 sm:px-6 lg:px-[5%] py-8 animate-fade-in-up flex flex-col justify-between pb-12">
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-4 border-b border-gray-200">
         <div>
@@ -407,36 +408,38 @@ export default function MyListings() {
         </div>
       )}
 
-      {/* Delete Modal */}
-      {deleteModalId && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-gray-200 rounded-md max-w-sm w-full p-6 shadow-2xl space-y-4">
-            <div className="text-center">
-              <h3 className="text-base font-bold text-gray-900">Delete this item?</h3>
-              <p className="text-xs text-gray-500 mt-1">
-                This listing will be permanently removed from CampusXChange.
-              </p>
+      {/* Delete Modal - Portal to document.body for full-screen coverage */}
+      {deleteModalId &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+            <div className="bg-white border border-gray-200 rounded-xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+              <div className="text-center">
+                <h3 className="text-base font-bold text-gray-900">Delete this item?</h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  This listing will be permanently removed from CampusXChange.
+                </p>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteModalId(null)}
+                  className="flex-1 bg-white border border-gray-300 text-gray-700 py-2 rounded-md font-medium text-xs hover:bg-gray-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={handleDelete}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-md font-semibold text-xs disabled:opacity-50 cursor-pointer"
+                >
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
             </div>
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setDeleteModalId(null)}
-                className="flex-1 bg-white border border-gray-300 text-gray-700 py-2 rounded-md font-medium text-xs hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={deleting}
-                onClick={handleDelete}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-md font-semibold text-xs disabled:opacity-50"
-              >
-                {deleting ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

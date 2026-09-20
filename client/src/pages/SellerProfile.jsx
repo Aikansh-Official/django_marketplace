@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
@@ -129,7 +130,7 @@ export default function SellerProfile() {
   const trustBadge = getTrustScoreBadge(seller.trust_score);
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-[5%] py-6 sm:py-8 space-y-6 animate-fade-in-up">
+    <div className="w-full min-h-[calc(100vh-4.5rem)] px-4 sm:px-6 lg:px-[5%] py-6 sm:py-8 space-y-6 animate-fade-in-up pb-12">
       {/* Top Breadcrumb & Action Navigation */}
       <div className="flex items-center justify-between gap-3">
         <Link
@@ -447,81 +448,83 @@ export default function SellerProfile() {
         />
       )}
 
-      {/* Report Trader Modal */}
-      {showReportModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white border border-gray-200 rounded-md max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <div className="flex items-center gap-2 text-rose-600 font-bold text-sm">
-                <Flag className="w-4 h-4" />
-                <span>Report Campus Trader</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowReportModal(false)}
-                className="text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="bg-gray-50 border border-gray-200 rounded-md p-3 text-xs flex items-center justify-between">
-              <span className="text-gray-500">Reported Student:</span>
-              <span className="font-bold text-gray-900">{seller.display_name}</span>
-            </div>
-
-            <form onSubmit={handleSubmitReport} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
-                  Reason for Reporting
-                </label>
-                <select
-                  value={reportReason}
-                  onChange={(e) => setReportReason(e.target.value)}
-                  className="w-full text-xs border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-hidden focus:ring-1 focus:ring-brand-500"
-                >
-                  <option value="Demanding Advance / External Payment">Demanding Advance / External Payment</option>
-                  <option value="Suspicious / Fake Trader Profile">Suspicious / Fake Trader Profile</option>
-                  <option value="Harassment / Abusive Behavior">Harassment / Abusive Behavior</option>
-                  <option value="No-Show / Unresponsive Handover">No-Show / Unresponsive Handover</option>
-                  <option value="Selling Counterfeit / Stolen Goods">Selling Counterfeit / Stolen Goods</option>
-                  <option value="Other Guidelines Violation">Other Guidelines Violation</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
-                  Details & Context (Optional)
-                </label>
-                <textarea
-                  rows={3}
-                  value={reportDetails}
-                  onChange={(e) => setReportDetails(e.target.value)}
-                  placeholder="Describe what occurred. Our campus moderation team reviews every report within 12 hours."
-                  className="w-full text-xs border border-gray-300 rounded-md p-2.5 bg-white focus:outline-hidden focus:ring-1 focus:ring-brand-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
+      {/* Report Trader Modal - Portal to document.body for full-screen coverage */}
+      {showReportModal &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+            <div className="bg-white border border-gray-200 rounded-xl max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div className="flex items-center gap-2 text-rose-600 font-bold text-sm">
+                  <Flag className="w-4 h-4" />
+                  <span>Report Campus Trader</span>
+                </div>
                 <button
                   type="button"
                   onClick={() => setShowReportModal(false)}
-                  className="px-3 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
+                  className="text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingReport}
-                  className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-md transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
-                >
-                  {submittingReport ? 'Submitting...' : 'Submit Report'}
+                  <X className="w-4 h-4" />
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+
+              <div className="bg-gray-50 border border-gray-200 rounded-md p-3 text-xs flex items-center justify-between">
+                <span className="text-gray-500">Reported Student:</span>
+                <span className="font-bold text-gray-900">{seller.display_name}</span>
+              </div>
+
+              <form onSubmit={handleSubmitReport} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    Reason for Reporting
+                  </label>
+                  <select
+                    value={reportReason}
+                    onChange={(e) => setReportReason(e.target.value)}
+                    className="w-full text-xs border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-hidden focus:ring-1 focus:ring-brand-500"
+                  >
+                    <option value="Demanding Advance / External Payment">Demanding Advance / External Payment</option>
+                    <option value="Suspicious / Fake Trader Profile">Suspicious / Fake Trader Profile</option>
+                    <option value="Harassment / Abusive Behavior">Harassment / Abusive Behavior</option>
+                    <option value="No-Show / Unresponsive Handover">No-Show / Unresponsive Handover</option>
+                    <option value="Selling Counterfeit / Stolen Goods">Selling Counterfeit / Stolen Goods</option>
+                    <option value="Other Guidelines Violation">Other Guidelines Violation</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    Details & Context (Optional)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={reportDetails}
+                    onChange={(e) => setReportDetails(e.target.value)}
+                    placeholder="Describe what occurred. Our campus moderation team reviews every report within 12 hours."
+                    className="w-full text-xs border border-gray-300 rounded-md p-2.5 bg-white focus:outline-hidden focus:ring-1 focus:ring-brand-500"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowReportModal(false)}
+                    className="px-3 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingReport}
+                    className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-md transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+                  >
+                    {submittingReport ? 'Submitting...' : 'Submit Report'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
