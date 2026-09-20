@@ -189,51 +189,55 @@ export default function ImageGallery({
         >
           {/* Top Controls Bar */}
           <div
-            className="flex items-center justify-between text-white pb-3 border-b border-white/10 shrink-0"
+            className="flex items-center justify-between text-white pb-3 border-b border-white/10 shrink-0 gap-2"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-3 min-w-0 pr-4">
-              <span className="text-sm font-extrabold text-white truncate max-w-xs sm:max-w-md">
+            <div className="flex items-center gap-2 min-w-0 pr-1">
+              <span className="text-xs sm:text-sm font-extrabold text-white truncate max-w-[110px] xs:max-w-[160px] sm:max-w-md">
                 {listing?.title}
               </span>
-              <span className="bg-white/10 text-white/80 text-xs px-2.5 py-0.5 rounded-full font-bold">
-                {activeImageIndex + 1} / {images.length || 1}
+              <span className="bg-white/10 text-white/80 text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold shrink-0">
+                {activeImageIndex + 1}/{images.length || 1}
               </span>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs text-white/60 mr-2 hidden sm:inline">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+              <span className="text-xs text-white/60 mr-1 hidden md:inline">
                 Zoom: {Math.round(lightboxZoom * 100)}%
               </span>
               <button
                 type="button"
                 onClick={() => setLightboxZoom((prev) => Math.min(3, prev + 0.25))}
-                className="p-2 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                className="p-1.5 sm:p-2 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center"
                 title="Zoom In (+)"
+                aria-label="Zoom In"
               >
                 <ZoomIn className="w-4 h-4" />
               </button>
               <button
                 type="button"
                 onClick={() => setLightboxZoom((prev) => Math.max(0.75, prev - 0.25))}
-                className="p-2 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                className="p-1.5 sm:p-2 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center"
                 title="Zoom Out (-)"
+                aria-label="Zoom Out"
               >
                 <ZoomOut className="w-4 h-4" />
               </button>
               <button
                 type="button"
                 onClick={() => setLightboxZoom(1)}
-                className="p-2 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer text-xs font-bold"
+                className="p-1.5 sm:p-2 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center text-xs font-bold"
                 title="Reset Zoom"
+                aria-label="Reset Zoom"
               >
                 <RotateCcw className="w-4 h-4" />
               </button>
               <button
                 type="button"
                 onClick={() => setIsLightboxOpen(false)}
-                className="p-2 rounded-md bg-white/20 hover:bg-red-600 text-white transition-colors ml-2 cursor-pointer"
+                className="p-1.5 sm:p-2 rounded-md bg-white/20 hover:bg-red-600 text-white transition-colors ml-1 cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center"
                 title="Close Full Screen"
+                aria-label="Close Full Screen"
               >
                 <X className="w-5 h-5" />
               </button>

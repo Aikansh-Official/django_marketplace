@@ -651,10 +651,10 @@ export default function ProductDetail() {
         onCancelDeal={handleCancelDeal}
       />
 
-      {/* Main Grid: Gallery on Left (8 cols) & Details on Right (4 cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* Main Grid: Gallery on Left (md: 7 cols / lg: 8 cols) & Details on Right (md: 5 cols / lg: 4 cols) */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8">
         {/* Left Column: Image Gallery & Description */}
-        <div className="lg:col-span-8 space-y-6">
+        <div className="md:col-span-7 lg:col-span-8 space-y-6">
           <ImageGallery
             images={images}
             listing={listing}
@@ -718,7 +718,7 @@ export default function ProductDetail() {
         </div>
 
         {/* Right Column: Pricing, Actions & Seller Profile */}
-        <div className="lg:col-span-4 space-y-6">
+        <div className="md:col-span-5 lg:col-span-4 space-y-6">
           <PriceCard
             listing={listing}
             isOwner={isOwner}
@@ -801,12 +801,10 @@ export default function ProductDetail() {
               </span>
             </div>
 
-            {/* Link to DPDP-Compliant Public Seller Profile */}
             <Link
-              to={listing.seller?.id ? `/seller/${listing.seller.id}` : '#'}
-              className="w-full mt-2 inline-flex items-center justify-center gap-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 hover:text-brand-600 py-2.5 px-3 rounded-md text-xs font-bold border border-gray-200 transition-colors shadow-2xs"
+              to={`/seller/${listing.seller?.id || ''}`}
+              className="w-full bg-gray-50 hover:bg-brand-50 hover:text-brand-600 border border-gray-200 hover:border-brand-200 py-2.5 rounded-md text-xs font-bold text-gray-700 text-center transition-colors block mt-2"
             >
-              <UserCheck className="w-3.5 h-3.5 text-brand-500" />
               <span>View Verified Public Profile →</span>
             </Link>
           </div>
@@ -828,7 +826,7 @@ export default function ProductDetail() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-5">
             {relatedListings.map((rel) => {
               const img = rel.images?.find((i) => i.is_primary)?.image_url || rel.images?.[0]?.image_url;
               return (
