@@ -48,9 +48,9 @@ export default function SellerControlPanel({
   }, [listingOffers]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 items-stretch">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 items-start">
       {/* Left Column: Seller Control Panel */}
-      <div className="bg-white border border-brand-200/90 rounded-md p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3.5">
+      <div className="bg-white border border-brand-200/90 rounded-md p-4 sm:p-5 shadow-xs flex flex-col space-y-3.5">
         {/* Header with Title & Action Buttons */}
         <div className="flex items-center justify-between gap-2 border-b border-gray-100 pb-3">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -183,7 +183,7 @@ export default function SellerControlPanel({
       {/* Right Column: Incoming Student Purchase Requests */}
       <div
         id="seller-offers-panel"
-        className="bg-white border border-brand-200/90 rounded-md p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-3.5"
+        className="bg-white border border-brand-200/90 rounded-md p-4 sm:p-5 shadow-xs flex flex-col space-y-3"
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
@@ -194,7 +194,7 @@ export default function SellerControlPanel({
             <div className="min-w-0">
               <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider flex items-center gap-1.5 truncate">
                 Purchase Requests
-                <span className="bg-brand-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full">
+                <span className="bg-brand-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
                   {listingOffers.length}
                 </span>
               </h4>
@@ -223,11 +223,11 @@ export default function SellerControlPanel({
             </p>
           </div>
         ) : (
-          <div className="space-y-2.5 max-h-[280px] sm:max-h-[320px] overflow-y-auto pr-1 scrollbar-thin">
+          <div className="space-y-2 max-h-[385px] sm:max-h-[400px] overflow-y-auto pr-1.5 overscroll-contain scroll-smooth">
             {sortedOffers.map((off) => (
               <div
                 key={off.id}
-                className="p-3 bg-gray-50/90 rounded-md border border-gray-200/90 text-xs space-y-2 hover:border-brand-200 transition-colors"
+                className="p-2.5 sm:p-3 bg-gray-50/90 rounded-md border border-gray-200/90 text-xs space-y-1.5 hover:border-brand-200 transition-colors"
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 flex-wrap min-w-0">
@@ -339,6 +339,12 @@ export default function SellerControlPanel({
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {sortedOffers.length > 4 && (
+          <div className="pt-2 text-center text-[11px] font-semibold text-gray-400 border-t border-gray-100 flex items-center justify-center gap-1.5 shrink-0">
+            <span>Showing 4 requests • Scroll down to view all ({sortedOffers.length})</span>
           </div>
         )}
       </div>
