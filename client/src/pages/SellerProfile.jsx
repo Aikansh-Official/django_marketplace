@@ -150,20 +150,6 @@ export default function SellerProfile() {
           <span>Report Trader</span>
         </button>
       </div>
-
-      {/* DPDP Act 2023 Compliance Notice Banner */}
-      <div className="bg-emerald-50/80 border border-emerald-200 rounded-md p-3.5 sm:p-4 flex items-start gap-3 text-xs text-emerald-900 shadow-2xs">
-        <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-        <div className="space-y-0.5">
-          <h4 className="font-extrabold text-emerald-950 flex items-center gap-1.5">
-            🔒 Student Privacy & DPDP Act 2023 Protection
-          </h4>
-          <p className="text-emerald-800 text-[11px] leading-relaxed">
-            CampusXChange strictly adheres to the <strong>Digital Personal Data Protection Act, 2023</strong>. Student registration numbers, private mobile numbers, personal college emails, and physical ID cards are confidential and never exposed publicly. All campus trade is safe and reputation-verified.
-          </p>
-        </div>
-      </div>
-
       {/* Seller Header Profile Card */}
       <div className="bg-white border border-gray-200 rounded-md p-5 sm:p-7 shadow-sm">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">

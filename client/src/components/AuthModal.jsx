@@ -87,8 +87,8 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
         }
       `}</style>
 
-      <div className="flex min-h-full p-3 sm:p-6">
-        <div className="m-auto w-full max-w-4xl bg-white rounded-md shadow-2xl flex flex-col md:flex-row overflow-hidden border border-gray-200 animate-in fade-in zoom-in duration-200">
+      <div className="flex min-h-full p-2 sm:p-6 pb-safe">
+        <div className="m-auto w-full max-w-4xl bg-white rounded-xl shadow-2xl flex flex-col md:flex-row overflow-hidden border border-gray-200 max-h-[96dvh] sm:max-h-[92vh] animate-in fade-in zoom-in duration-200">
 
           {/* LEFT SIDE: Branding, Live Scanner & Verified ID Preview */}
           <AuthLeftPanel
@@ -114,20 +114,22 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
           />
 
           {/* RIGHT SIDE: Form Content & Multi-Step Flow */}
-          <div className="w-full md:w-7/12 relative flex flex-col bg-white">
+          <div className="w-full md:w-7/12 relative flex flex-col bg-white overflow-hidden">
 
             {/* Header with Close Button */}
-            <div className="absolute top-4 right-4 z-20">
+            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20">
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md p-2 transition-all cursor-pointer shadow-2xs"
+                className="text-gray-400 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full p-2 min-w-[38px] min-h-[38px] flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                title="Close"
+                aria-label="Close"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Scrollable Content */}
-            <div className="overflow-y-auto px-5 sm:px-10 md:px-12 py-7 sm:py-10 flex-grow flex flex-col justify-center">
+            <div className="overflow-y-auto px-4 sm:px-10 md:px-12 py-6 sm:py-10 flex-grow flex flex-col justify-center touch-momentum">
               {mode === 'login' ? (
                 <LoginForm
                   onSwitch={() => setMode('register')}

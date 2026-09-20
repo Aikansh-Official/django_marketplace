@@ -123,20 +123,21 @@ export default function Profile() {
   return (
     <div className="w-full px-4 sm:px-6 lg:px-[5%] py-4 sm:py-8 animate-fade-in-up">
       {/* Mobile Top Tabs Slider */}
-      <div className="lg:hidden flex items-center gap-2 overflow-x-auto pb-2 mb-4 scrollbar-none touch-pan-x -mx-1 px-1">
+      <div className="lg:hidden flex items-center gap-2 overflow-x-auto pb-2.5 mb-4 scrollbar-none touch-pan-x touch-momentum -mx-1 px-1 pr-6">
         {[
           { id: 'personal-info', label: 'Personal Info' },
           { id: 'orders-sells', label: isSeller ? `Manage Orders (${listingsCount})` : 'My Orders & Trades' },
           ...(isSeller ? [{ id: 'id-verification', label: 'ID Verification' }] : []),
-          { id: 'saved-items', label: `Saved (${savedCount})` }
+          { id: 'saved-items', label: `Saved (${savedCount})` },
+          { id: 'my-reports', label: 'Reports & Disputes' }
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => handleTabChange(tab.id)}
-            className={`px-3.5 py-2 rounded-md text-xs font-bold whitespace-nowrap transition-all ${
+            className={`px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer min-h-[38px] flex items-center justify-center shrink-0 ${
               activeTab === tab.id
                 ? 'bg-brand-500 text-white shadow-xs'
-                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 active:bg-gray-100'
             }`}
           >
             {tab.label}

@@ -352,8 +352,8 @@ export default function Notifications() {
         </div>
       </div>
 
-      {/* Filter Tabs - matching MyListings tabs */}
-      <div className="flex items-center gap-1.5 sm:gap-2 border-b border-gray-200 pb-2 sm:pb-3 mb-6 overflow-x-auto -mx-1 px-1 touch-pan-x scrollbar-none">
+      {/* Filters Strip */}
+      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-2 -mx-1 px-1 touch-pan-x touch-momentum scrollbar-none mb-6">
         {[
           { key: 'ALL', label: `All Alerts (${totalNotifications})` },
           { key: 'UNREAD', label: `Unread (${unreadCount})` },
@@ -363,10 +363,10 @@ export default function Notifications() {
           <button
             key={tab.key}
             onClick={() => setFilter(tab.key)}
-            className={`px-3.5 py-1.5 text-xs font-bold rounded-md whitespace-nowrap transition-all cursor-pointer ${
+            className={`px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer min-h-[38px] flex items-center justify-center shrink-0 ${
               filter === tab.key
-                ? 'bg-brand-500 text-white shadow-sm'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-brand-500 text-white shadow-xs'
+                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 active:bg-gray-100'
             }`}
           >
             {tab.label}
@@ -380,7 +380,7 @@ export default function Notifications() {
           <UniversalLoader text="Loading notifications..." />
         </div>
       ) : filteredNotifications.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-md p-12 text-center shadow-sm animate-fade-in-up">
+        <div className="bg-white border border-gray-200 rounded-lg p-8 sm:p-12 text-center shadow-sm animate-fade-in-up">
           <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <h3 className="text-base font-bold text-gray-800">No notifications found</h3>
           <p className="text-xs text-gray-500 mt-1 mb-6">
@@ -390,7 +390,7 @@ export default function Notifications() {
           </p>
           <Link
             to="/"
-            className="bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2 px-5 rounded-md text-xs inline-flex items-center gap-1.5"
+            className="bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2.5 px-5 rounded-lg text-xs inline-flex items-center gap-1.5 shadow-sm"
           >
             Explore Campus Marketplace
           </Link>
@@ -406,7 +406,7 @@ export default function Notifications() {
               <div
                 key={notif.id}
                 onClick={() => !notif.is_read && handleMarkRead(notif.id)}
-                className={`bg-white border rounded-md p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:border-gray-300 transition-all ${
+                className={`bg-white border rounded-xl p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 shadow-sm hover:border-gray-300 transition-all ${
                   isUrgent
                     ? 'border-l-4 border-l-red-600 bg-red-50/20 border-red-200 shadow-md'
                     : isHigh
@@ -417,8 +417,8 @@ export default function Notifications() {
                 }`}
               >
                 {/* Left Section: Image/Icon + Title + Message + Meta */}
-                <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-md bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200 flex items-center justify-center">
+                <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                  <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200 flex items-center justify-center">
                     {notif.listing_image ? (
                       <img
                         src={notif.listing_image}

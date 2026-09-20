@@ -166,12 +166,6 @@ export default function ReviewModal({ dealId, listingTitle, reviewedUserName, on
               className="w-full border border-gray-300 rounded-md p-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none resize-none font-normal"
             />
           </div>
-
-          {/* DPDP Act 2023 Compliance Notice */}
-          <div className="text-[10px] text-gray-400 leading-tight bg-gray-50 p-2 rounded border border-gray-100">
-            🔒 <strong>DPDP Act 2023 Compliance</strong>: Your review will be displayed with your sanitized name only. Your registration number, email, and phone are never disclosed.
-          </div>
-
           {/* Action Buttons */}
           <div className="flex gap-2.5 pt-1">
             <button

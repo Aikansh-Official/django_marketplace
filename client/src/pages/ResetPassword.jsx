@@ -21,7 +21,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { forgotPasswordSchema, forgotPasswordResetOTPSchema } from '../components/auth/authSchemas';
-import logoImg from '../assets/CampusXChange_Logo.jpeg';
+import logoImg from '../assets/CampusXChange_Logo.webp';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -143,11 +143,11 @@ export default function ResetPassword() {
       <div className="w-full max-w-md bg-white rounded-md shadow-xl border border-gray-100 overflow-hidden">
         {/* Header Ribbon */}
         <div className="bg-gradient-to-r from-brand-600 via-brand-500 to-indigo-600 px-6 py-7 text-center text-white relative">
-          <div className="w-13 h-13 mx-auto mb-2 bg-white rounded-md p-1.5 shadow-md flex items-center justify-center">
-            <img src={logoImg} alt="CampusXChange" className="w-full h-full object-cover rounded-md" />
+          <div className="w-fit px-4 py-2 mx-auto mb-2 bg-white rounded-xl shadow-md flex items-center justify-center">
+            <img src={logoImg} alt="CampusXChange" className="h-8 w-auto object-contain" />
           </div>
           <h1 className="text-2xl font-black tracking-tight font-display text-white">
-            CampusXChange
+            <span>Campus</span><span className="text-brand-100">XChange</span>
           </h1>
           <p className="text-xs text-white/85 uppercase tracking-widest mt-0.5 font-semibold">
             Account Security &bull; OTP Password Reset

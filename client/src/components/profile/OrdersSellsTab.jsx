@@ -669,13 +669,13 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex flex-wrap items-center gap-2 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-200/60 w-full sm:w-auto">
                       {ord.status === 'COUNTERED' && (
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 w-full sm:w-auto">
                           <button
                             onClick={() => handleBuyerCounterRespond(ord.id, 'ACCEPT')}
                             disabled={respondingToCounter}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-1.5 rounded-md shadow-2xs transition-all cursor-pointer"
+                            className="flex-1 sm:flex-initial min-h-[38px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-2xs transition-all cursor-pointer flex items-center justify-center"
                             title="Accept proposed counter-offer"
                           >
                             Accept Rs {ord.counter_amount}
@@ -683,7 +683,7 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
                           <button
                             onClick={() => handleBuyerCounterRespond(ord.id, 'REJECT')}
                             disabled={respondingToCounter}
-                            className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold text-xs px-2 py-1.5 rounded-md transition-all cursor-pointer"
+                            className="flex-1 sm:flex-initial min-h-[38px] bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold text-xs px-2.5 py-2 rounded-lg transition-all cursor-pointer flex items-center justify-center"
                           >
                             Decline
                           </button>
@@ -691,25 +691,25 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
                       )}
 
                       {ord.status === 'ACCEPTED' && (
-                        <>
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
                           <button
                             onClick={() => {
                               setSelectedOrderForScanner(ord);
                               setShowScannerModal(true);
                             }}
-                            className="bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-3 py-2 rounded-md shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                            className="flex-1 sm:flex-initial min-h-[38px] bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                           >
                             <Camera className="w-3.5 h-3.5" />
-                            Complete Handover
+                            <span>Complete Handover</span>
                           </button>
                           <button
                             onClick={() => handleCancelDeal(ord.id)}
-                            className="px-2.5 py-2 rounded-md border border-gray-300 text-xs font-bold text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                            className="min-h-[38px] px-3 py-2 rounded-lg border border-gray-300 text-xs font-bold text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer flex items-center justify-center shrink-0"
                             title="Cancel Deal"
                           >
                             Cancel
                           </button>
-                        </>
+                        </div>
                       )}
 
                       {ord.status === 'COMPLETED' && (
@@ -723,7 +723,7 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
                             });
                             setShowReviewModal(true);
                           }}
-                          className="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-xs px-3 py-2 rounded-md shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                          className="w-full sm:w-auto min-h-[38px] bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-xs px-3 py-2 rounded-lg shadow-2xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                         >
                           <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
                           <span>Review Seller</span>
@@ -732,7 +732,7 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
 
                       <Link
                         to={`/listing/${ord.listing}`}
-                        className="px-3.5 py-2 rounded-md border border-gray-300 text-xs font-bold text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-2xs"
+                        className="w-full sm:w-auto min-h-[38px] px-3.5 py-2 rounded-lg border border-gray-300 text-xs font-bold text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-2xs flex items-center justify-center"
                       >
                         View Listing
                       </Link>
