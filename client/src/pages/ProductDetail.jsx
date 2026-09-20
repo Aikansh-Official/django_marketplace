@@ -26,7 +26,6 @@ import ImageGallery from '../components/product/ImageGallery';
 import StatusBanners from '../components/product/StatusBanners';
 import SellerControlPanel from '../components/product/SellerControlPanel';
 import PriceCard from '../components/product/PriceCard';
-import MobileStickyBar from '../components/product/MobileStickyBar';
 
 // Modular Modals
 import BuyOfferModal from '../components/product/modals/BuyOfferModal';
@@ -166,7 +165,7 @@ export default function ProductDetail() {
         try {
           const parsed = JSON.parse(storedUser);
           if (parsed?.id) setCurrentUserId(parsed.id);
-        } catch (e) {}
+        } catch (e) { }
       }
       try {
         const res = await api.get('/auth/status/');
@@ -236,7 +235,7 @@ export default function ProductDetail() {
     try {
       const res = await api.get(`/marketplace/listings/${id}/offers/`);
       setListingOffers(Array.isArray(res.data) ? res.data : []);
-    } catch (e) {}
+    } catch (e) { }
   }, [id]);
 
   const fetchUserOffer = useCallback(async () => {
@@ -250,7 +249,7 @@ export default function ProductDetail() {
           : [];
       const myOf = list.find((o) => String(o.listing) === String(id));
       if (myOf) setUserOffer(myOf);
-    } catch (e) {}
+    } catch (e) { }
   }, [id, currentUserId]);
 
   const refreshOfferState = useCallback(() => {
@@ -294,7 +293,7 @@ export default function ProductDetail() {
           setListing(res.data);
           refreshOfferState();
         }
-      } catch (e) {}
+      } catch (e) { }
     };
 
     const interval = setInterval(syncPendingListing, 2000);
@@ -465,7 +464,7 @@ export default function ProductDetail() {
       api
         .get(`/marketplace/listings/${id}/`)
         .then((res) => setListing(res.data))
-        .catch(() => {});
+        .catch(() => { });
     }
     window.dispatchEvent(new CustomEvent('notifications-updated'));
   };
@@ -563,7 +562,7 @@ export default function ProductDetail() {
   };
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-[5%] py-4 sm:py-6 pb-24 md:pb-8 animate-fade-in-up">
+    <div className="w-full px-4 sm:px-6 lg:px-[5%] py-4 sm:py-6 pb-8 sm:pb-12 animate-fade-in-up">
       {/* Navigation Breadcrumb */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6">
         <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-gray-500 font-medium overflow-hidden">
@@ -589,11 +588,10 @@ export default function ProductDetail() {
           <button
             type="button"
             onClick={handleToggleSave}
-            className={`flex items-center gap-1.5 border px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-semibold transition-all shadow-xs cursor-pointer ${
-              isSaved
+            className={`flex items-center gap-1.5 border px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-semibold transition-all shadow-xs cursor-pointer ${isSaved
                 ? 'bg-rose-50 border-rose-200 text-rose-600'
                 : 'bg-white border-gray-200 hover:border-brand-500 text-gray-600 hover:text-brand-600'
-            }`}
+              }`}
           >
             <Heart className={`w-3.5 h-3.5 ${isSaved ? 'fill-rose-500 text-rose-500' : ''}`} />
             <span>{isSaved ? 'Saved' : 'Save Item'}</span>
@@ -901,25 +899,6 @@ export default function ProductDetail() {
           </div>
         </div>
       )}
-
-      {/* Mobile Sticky Bottom CTA Bar */}
-      <MobileStickyBar
-        listing={listing}
-        isOwner={isOwner}
-        isAuthenticated={isAuthenticated}
-        userOffer={userOffer}
-        listingOffers={listingOffers}
-        respondingToCounter={respondingToCounter}
-        onTriggerLogin={triggerLogin}
-        onOpenBuyModal={handleOpenBuyModal}
-        onOpenChat={handleOpenChat}
-        onOpenScannerModal={() => setShowScannerModal(true)}
-        onOpenQRModal={(off) => {
-          setActiveOfferForQR(off);
-          setShowQRModal(true);
-        }}
-        onBuyerCounterRespond={handleBuyerCounterRespond}
-      />
 
       {/* Delete Listing Confirmation Modal */}
       <DeleteConfirmModal

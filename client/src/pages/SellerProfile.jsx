@@ -152,17 +152,17 @@ export default function SellerProfile() {
         </button>
       </div>
       {/* Seller Header Profile Card */}
-      <div className="bg-white border border-gray-200 rounded-md p-5 sm:p-7 shadow-sm">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="bg-white border border-gray-200 rounded-md p-4 sm:p-6 shadow-sm">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 sm:gap-6">
           {/* Avatar & Core Identity */}
-          <div className="flex items-center gap-4 sm:gap-5 min-w-0">
-            <div className="relative shrink-0">
-              <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-gradient-to-tr from-brand-500 to-orange-400 text-white flex items-center justify-center font-black text-2xl shadow-md border-4 border-white overflow-hidden">
+          <div className="flex items-center gap-3.5 sm:gap-5 min-w-0 w-full md:w-auto">
+            <div className="relative shrink-0 w-16 h-16 sm:w-20 sm:h-20">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-brand-500 to-orange-400 text-white flex items-center justify-center font-black text-xl sm:text-2xl shadow-md border-2 sm:border-4 border-white overflow-hidden aspect-square">
                 {seller.profile_photo ? (
                   <img
                     src={getSafeImageUrl(seller.profile_photo)}
                     alt={seller.display_name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover aspect-square"
                     onError={(e) => {
                       e.currentTarget.onerror = null;
                       e.currentTarget.style.display = 'none';
@@ -177,37 +177,37 @@ export default function SellerProfile() {
                   className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-1 rounded-full border-2 border-white shadow-xs"
                   title="Physical Student ID Card Verified"
                 >
-                  <ShieldCheck className="w-4 h-4" />
+                  <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
               )}
             </div>
 
-            <div className="min-w-0 space-y-1.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight truncate">
+            <div className="min-w-0 space-y-1 sm:space-y-1.5 flex-1">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <h1 className="text-base sm:text-2xl font-black text-gray-900 tracking-tight truncate">
                   {seller.display_name}
                 </h1>
-                <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border ${trustBadge.color}`}>
+                <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border ${trustBadge.color}`}>
                   {trustBadge.label}
                 </span>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-gray-500">
                 <span className="flex items-center gap-1 font-semibold text-gray-700">
-                  <ShieldCheck className="w-3.5 h-3.5 text-brand-600" />
-                  Verified @{seller.college_domain || 'lpu.in'} Student
+                  <ShieldCheck className="w-3.5 h-3.5 text-brand-600 shrink-0" />
+                  <span className="truncate">@{seller.college_domain || 'lpu.in'} Student</span>
                 </span>
-                <span>•</span>
+                <span className="hidden sm:inline">•</span>
                 <span className="flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                  <Calendar className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                   {seller.member_since}
                 </span>
               </div>
 
               {/* Rating Star Badge */}
               <div className="flex items-center gap-2 pt-0.5">
-                <div className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-900 px-2.5 py-0.5 rounded-md text-xs font-black">
-                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                <div className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-900 px-2 sm:px-2.5 py-0.5 rounded-md text-xs font-black">
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500 shrink-0" />
                   <span>{seller.avg_rating ? `${seller.avg_rating} / 5.0` : 'New Trader'}</span>
                 </div>
                 <span className="text-xs text-gray-400">
@@ -218,30 +218,30 @@ export default function SellerProfile() {
           </div>
 
           {/* Quick Metrics Strip */}
-          <div className="flex items-center gap-3 sm:gap-4 w-full md:w-auto border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6">
-            <div className="flex-1 md:flex-none text-center bg-gray-50/80 border border-gray-200/80 rounded-md px-4 py-2.5 shadow-2xs">
-              <div className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 w-full md:w-auto border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6">
+            <div className="text-center bg-gray-50/80 border border-gray-200/80 rounded-md px-2.5 sm:px-4 py-2 sm:py-2.5 shadow-2xs">
+              <div className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
                 Trust Score
               </div>
-              <div className="text-xl sm:text-2xl font-black text-brand-600 mt-0.5">
+              <div className="text-base sm:text-2xl font-black text-brand-600 mt-0.5">
                 {seller.trust_score}<span className="text-xs text-gray-400 font-bold">/100</span>
               </div>
             </div>
 
-            <div className="flex-1 md:flex-none text-center bg-gray-50/80 border border-gray-200/80 rounded-md px-4 py-2.5 shadow-2xs">
-              <div className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+            <div className="text-center bg-gray-50/80 border border-gray-200/80 rounded-md px-2.5 sm:px-4 py-2 sm:py-2.5 shadow-2xs">
+              <div className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
                 Completed Deals
               </div>
-              <div className="text-xl sm:text-2xl font-black text-gray-900 mt-0.5">
+              <div className="text-base sm:text-2xl font-black text-gray-900 mt-0.5">
                 {seller.completed_trades_count || 0}
               </div>
             </div>
 
-            <div className="flex-1 md:flex-none text-center bg-gray-50/80 border border-gray-200/80 rounded-md px-4 py-2.5 shadow-2xs">
-              <div className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+            <div className="text-center bg-gray-50/80 border border-gray-200/80 rounded-md px-2.5 sm:px-4 py-2 sm:py-2.5 shadow-2xs">
+              <div className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
                 Active Items
               </div>
-              <div className="text-xl sm:text-2xl font-black text-emerald-600 mt-0.5">
+              <div className="text-base sm:text-2xl font-black text-emerald-600 mt-0.5">
                 {data.active_listings_count || 0}
               </div>
             </div>
@@ -288,7 +288,7 @@ export default function SellerProfile() {
               <p className="text-xs text-gray-500 mt-1">This seller currently has no items available for sale.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-5">
               {listings.map((item) => {
                 const cover =
                   item.images?.find((i) => i.is_primary)?.image_url ||
@@ -299,7 +299,7 @@ export default function SellerProfile() {
                     key={item.id}
                     className="bg-white border border-gray-200/90 rounded-md overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col group"
                   >
-                    <Link to={`/listing/${item.id}`} className="relative h-44 bg-gray-100 overflow-hidden block">
+                    <Link to={`/listing/${item.id}`} className="relative h-36 sm:h-44 bg-gray-100 overflow-hidden block">
                       {cover ? (
                         <img
                           src={getSafeImageUrl(cover)}
@@ -321,37 +321,37 @@ export default function SellerProfile() {
                       </div>
                     </Link>
 
-                    <div className="p-3.5 flex flex-col justify-between flex-1 space-y-2.5">
+                    <div className="p-3 sm:p-3.5 flex flex-col justify-between flex-1 space-y-2">
                       <div>
                         <div className="flex items-center justify-between gap-1">
-                          <span className="font-extrabold text-base text-gray-900">
+                          <span className="font-extrabold text-sm sm:text-base text-gray-900">
                             {item.transaction_type === 'DONATE' ? 'Free (Donation)' : `Rs ${item.price}`}
                           </span>
-                          <span className="text-[10px] font-bold text-gray-500 uppercase bg-gray-100 px-1.5 py-0.5 rounded">
+                          <span className="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase bg-gray-100 px-1.5 py-0.5 rounded">
                             {item.condition}
                           </span>
                         </div>
                         <Link
                           to={`/listing/${item.id}`}
-                          className="font-bold text-xs text-gray-800 hover:text-brand-600 block line-clamp-2 mt-1"
+                          className="font-bold text-xs text-gray-800 hover:text-brand-600 block line-clamp-2 mt-1 leading-snug"
                         >
                           {item.title}
                         </Link>
                       </div>
 
                       <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs">
-                        <span className="flex items-center gap-1 text-gray-500 truncate text-[11px]">
+                        <span className="flex items-center gap-1 text-gray-500 truncate text-[10px] sm:text-[11px] max-w-[65%]">
                           <MapPin className="w-3 h-3 text-gray-400 shrink-0" />
-                          {item.location}
+                          <span className="truncate">{item.location}</span>
                         </span>
 
                         <button
                           type="button"
                           onClick={() => setChatListing(item)}
-                          className="inline-flex items-center gap-1 bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold text-xs px-2.5 py-1 rounded transition-colors shadow-2xs cursor-pointer"
+                          className="inline-flex items-center gap-1 bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold text-[11px] sm:text-xs px-2 sm:px-2.5 py-1 rounded transition-colors shadow-2xs cursor-pointer shrink-0"
                         >
                           <MessageCircle className="w-3 h-3" />
-                          Chat
+                          <span>Chat</span>
                         </button>
                       </div>
                     </div>
