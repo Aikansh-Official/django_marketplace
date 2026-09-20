@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Students from './pages/Students';
 import Listings from './pages/Listings';
 import Categories from './pages/Categories';
+import Banners from './pages/Banners';
 import Reports from './pages/Reports';
 import Deals from './pages/Deals';
 import Notifications from './pages/Notifications';
@@ -81,6 +82,7 @@ function App() {
           <Route path="listings" element={<PermissionRoute requiredPermission="listings"><Listings /></PermissionRoute>} />
           <Route path="deals" element={<PermissionRoute requiredPermission="deals"><Deals /></PermissionRoute>} />
           <Route path="categories" element={<PermissionRoute requiredPermission="categories"><Categories /></PermissionRoute>} />
+          <Route path="banners" element={<PermissionRoute requiredPermission="banners"><Banners /></PermissionRoute>} />
           <Route path="reports" element={<PermissionRoute requiredPermission="reports"><Reports /></PermissionRoute>} />
           <Route path="notifications" element={<PermissionRoute requiredPermission="notifications"><Notifications /></PermissionRoute>} />
           <Route path="audit-logs" element={<PermissionRoute requiredPermission="audit_logs"><AuditLogs /></PermissionRoute>} />

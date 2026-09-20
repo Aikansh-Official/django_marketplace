@@ -4,10 +4,10 @@ import axios from 'axios';
 import {
   LayoutDashboard, Users, ShoppingCart, FolderTree, AlertTriangle,
   Settings, LogOut, Clock, Handshake, Bell, TrendingUp,
-  ShieldAlert, Activity, UserCheck, Search, Shield
+  ShieldAlert, Activity, UserCheck, Search, Shield, LayoutTemplate
 } from 'lucide-react';
 import CommandPalette from '../components/CommandPalette';
-import logoImg from '../assets/CampusXChange_Logo.jpeg';
+import logoImg from '../assets/CampusXChange_Logo.webp';
 import { hasModulePermission, getEffectivePermissions } from '../utils/permissions';
 import { APP_VERSION } from '../config/version';
 
@@ -83,6 +83,7 @@ export default function AdminLayout({ setAuth }) {
     { name: 'Listings', path: '/listings', icon: ShoppingCart, permission: 'listings' },
     { name: 'Deals', path: '/deals', icon: Handshake, permission: 'deals' },
     { name: 'Categories', path: '/categories', icon: FolderTree, permission: 'categories' },
+    { name: 'Banners', path: '/banners', icon: LayoutTemplate, permission: 'banners' },
     { name: 'Reports', path: '/reports', icon: AlertTriangle, permission: 'reports' },
     { name: 'Notifications', path: '/notifications', icon: Bell, permission: 'notifications' },
     { name: 'Audit Logs', path: '/audit-logs', icon: ShieldAlert, permission: 'audit_logs' },
@@ -107,13 +108,14 @@ export default function AdminLayout({ setAuth }) {
 
       {/* Sidebar - Simple Solid Design */}
       <aside className="w-64 bg-ink-900 text-white flex flex-col shadow-xl z-30">
-        <div className="h-20 flex items-center gap-3 px-6 border-b border-gray-800">
-          <img src={logoImg} alt="CampusXChange Logo" className="h-9 w-9 object-cover rounded-full ring-2 ring-brand-500" />
-          <div>
-            <h1 className="text-lg font-bold text-white uppercase tracking-wide leading-tight">
-              CampusXChange
-            </h1>
-            <span className="text-[10px] text-brand-400 tracking-wider font-bold">ADMIN PANEL</span>
+        <div className="h-20 flex items-center gap-3 px-5 border-b border-gray-800">
+          <img src={logoImg} alt="CampusXChange Logo" className="h-8 w-auto object-contain shrink-0" />
+          <div className="min-w-0">
+            <div className="flex items-baseline truncate">
+              <span className="text-base font-extrabold text-white tracking-tight">Campus</span>
+              <span className="text-base font-extrabold text-brand-400 tracking-tight">XChange</span>
+            </div>
+            <span className="text-[10px] text-brand-400 tracking-[0.2em] font-bold block">ADMIN PANEL</span>
           </div>
         </div>
         

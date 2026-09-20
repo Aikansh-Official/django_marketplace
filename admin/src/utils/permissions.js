@@ -32,6 +32,12 @@ export const PERMISSION_CATALOG = [
     description: 'Create, reorganize, edit icons, and delete marketplace categories',
   },
   {
+    key: 'banners',
+    label: 'Banner Slideshow',
+    group: 'Marketplace Operations',
+    description: 'Manage homepage banner carousel, slide images, call-to-actions, and order',
+  },
+  {
     key: 'reports',
     label: 'Reports & Content Moderation',
     group: 'Marketplace Operations',
@@ -87,7 +93,7 @@ export const ALL_PERMISSION_KEYS = PERMISSION_CATALOG.map((p) => p.key);
 
 export const DEFAULT_ROLE_PERMISSIONS = {
   SUPER_ADMIN: ALL_PERMISSION_KEYS,
-  MODERATOR: ['dashboard', 'listings', 'deals', 'categories', 'reports'],
+  MODERATOR: ['dashboard', 'listings', 'deals', 'categories', 'banners', 'reports'],
   ID_VERIFIER: ['dashboard', 'students'],
 };
 
