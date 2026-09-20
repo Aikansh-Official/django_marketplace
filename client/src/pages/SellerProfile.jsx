@@ -206,13 +206,22 @@ export default function SellerProfile() {
 
               {/* Rating Star Badge */}
               <div className="flex items-center gap-2 pt-0.5">
-                <div className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-900 px-2 sm:px-2.5 py-0.5 rounded-md text-xs font-black">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('reviews')}
+                  className="inline-flex items-center gap-1 bg-amber-50 hover:bg-amber-100 active:scale-95 border border-amber-200 text-amber-900 px-2 sm:px-2.5 py-0.5 rounded-md text-xs font-black transition-all cursor-pointer"
+                  title="View Verified Reviews"
+                >
                   <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500 shrink-0" />
                   <span>{seller.avg_rating ? `${seller.avg_rating} / 5.0` : 'New Trader'}</span>
-                </div>
-                <span className="text-xs text-gray-400">
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('reviews')}
+                  className="text-xs text-gray-400 hover:text-brand-600 transition-colors cursor-pointer"
+                >
                   ({seller.reviews_count} {seller.reviews_count === 1 ? 'review' : 'reviews'})
-                </span>
+                </button>
               </div>
             </div>
           </div>
@@ -250,30 +259,30 @@ export default function SellerProfile() {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex items-center gap-2 border-b border-gray-200">
+      <div className="flex items-center gap-2 border-b border-gray-200 overflow-x-auto scrollbar-none">
         <button
           type="button"
           onClick={() => setActiveTab('listings')}
-          className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
+          className={`shrink-0 pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
             activeTab === 'listings'
               ? 'border-brand-500 text-brand-600'
               : 'border-transparent text-gray-500 hover:text-gray-900'
           }`}
         >
-          <Package className="w-4 h-4" />
+          <Package className="w-4 h-4 shrink-0" />
           <span>Active Listings ({data.active_listings_count || 0})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('reviews')}
-          className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
+          className={`shrink-0 pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
             activeTab === 'reviews'
               ? 'border-brand-500 text-brand-600'
               : 'border-transparent text-gray-500 hover:text-gray-900'
           }`}
         >
-          <Star className="w-4 h-4" />
+          <Star className="w-4 h-4 shrink-0" />
           <span>Verified Reviews ({seller.reviews_count || 0})</span>
         </button>
       </div>
@@ -367,69 +376,130 @@ export default function SellerProfile() {
       {activeTab === 'reviews' && (
         <div className="space-y-4">
           {recent_reviews.length === 0 ? (
-            <div className="bg-white border border-gray-200 rounded-md p-12 text-center shadow-xs">
-              <Star className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <h3 className="font-bold text-sm text-gray-900">No reviews yet</h3>
-              <p className="text-xs text-gray-500 mt-1">
-                Reviews appear here once campus trades are completed and verified by peers.
+            <div className="bg-white border border-gray-200 rounded-xl p-8 sm:p-12 text-center shadow-xs">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto mb-3 text-amber-500">
+                <Star className="w-6 h-6 sm:w-7 sm:h-7 fill-amber-300 text-amber-500" />
+              </div>
+              <h3 className="font-bold text-sm sm:text-base text-gray-900">No reviews yet</h3>
+              <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
+                Reviews appear here once campus trades are completed and verified by student peers.
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {recent_reviews.map((rev) => (
-                <div
-                  key={rev.id}
-                  className="bg-white border border-gray-200 rounded-md p-4 shadow-2xs space-y-2.5"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 font-bold text-xs flex items-center justify-center">
-                        {rev.reviewer_name?.slice(0, 2).toUpperCase() || 'ST'}
-                      </div>
-                      <div>
-                        <div className="font-bold text-xs text-gray-900">{rev.reviewer_name}</div>
-                        <div className="text-[10px] text-gray-400">Verified Campus Buyer</div>
-                      </div>
-                    </div>
-
-                    {/* Stars */}
-                    <div className="flex items-center gap-0.5">
-                      {[...Array(5)].map((_, i) => (
+            <div className="space-y-3.5 sm:space-y-4">
+              {/* Rating Summary Header Card */}
+              <div className="bg-white border border-gray-200 rounded-xl p-3.5 sm:p-4 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100/70 border border-amber-200 flex flex-col items-center justify-center shrink-0 shadow-2xs">
+                    <span className="text-base sm:text-lg font-black text-amber-900 leading-none">
+                      {seller.avg_rating ? seller.avg_rating : '—'}
+                    </span>
+                    <span className="text-[9px] font-extrabold text-amber-700 mt-0.5">/ 5.0</span>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((s) => (
                         <Star
-                          key={i}
-                          className={`w-3.5 h-3.5 ${
-                            i < rev.rating ? 'fill-amber-400 text-amber-500' : 'text-gray-200'
+                          key={s}
+                          className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${
+                            s <= Math.round(Number(seller.avg_rating || 0))
+                              ? 'fill-amber-400 text-amber-500'
+                              : 'text-gray-200'
                           }`}
                         />
                       ))}
+                      <span className="text-xs sm:text-sm font-bold text-gray-800 ml-1">
+                        {seller.avg_rating ? `${seller.avg_rating} out of 5` : 'Trader Rating'}
+                      </span>
                     </div>
-                  </div>
-
-                  {rev.quick_tags && rev.quick_tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {rev.quick_tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="bg-gray-100 text-gray-700 text-[10px] font-semibold px-2 py-0.5 rounded"
-                        >
-                          ✓ {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {rev.comment && (
-                    <p className="text-xs text-gray-700 leading-relaxed italic bg-gray-50/80 p-2.5 rounded border border-gray-100">
-                      "{rev.comment}"
+                    <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
+                      Based on {seller.reviews_count || 0} verified peer trade {seller.reviews_count === 1 ? 'review' : 'reviews'}
                     </p>
-                  )}
-
-                  <div className="flex items-center justify-between text-[10px] text-gray-400 pt-1 border-t border-gray-50">
-                    <span className="truncate max-w-[200px]">Item: {rev.listing_title}</span>
-                    <span>{new Date(rev.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
-              ))}
+
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 rounded-lg shrink-0">
+                  <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+                  <span>100% Verified LPU Student Reviews</span>
+                </div>
+              </div>
+
+              {/* Reviews Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                {recent_reviews.map((rev) => (
+                  <div
+                    key={rev.id}
+                    className="bg-white border border-gray-200 rounded-xl p-3.5 sm:p-4 shadow-2xs space-y-3 flex flex-col justify-between hover:border-gray-300 transition-colors"
+                  >
+                    <div className="space-y-2.5">
+                      {/* Reviewer identity & stars */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 font-bold text-xs flex items-center justify-center shrink-0">
+                            {rev.reviewer_name?.slice(0, 2).toUpperCase() || 'ST'}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-bold text-xs sm:text-sm text-gray-900 truncate">
+                              {rev.reviewer_name || 'Campus Trader'}
+                            </div>
+                            <div className="text-[10px] text-gray-400 flex items-center gap-1">
+                              <ShieldCheck className="w-3 h-3 text-emerald-500 shrink-0" />
+                              <span className="truncate">Verified Student Buyer</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Stars */}
+                        <div className="flex items-center gap-0.5 shrink-0 bg-amber-50/90 border border-amber-200/70 px-1.5 py-0.5 rounded-md">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${
+                                i < rev.rating ? 'fill-amber-400 text-amber-500' : 'text-gray-200'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Quick Tags */}
+                      {rev.quick_tags && rev.quick_tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-0.5">
+                          {rev.quick_tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="bg-brand-50/80 text-brand-700 border border-brand-200/60 text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-md inline-flex items-center gap-1"
+                            >
+                              <span className="text-[9px]">✓</span> {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Comment */}
+                      {rev.comment && (
+                        <p className="text-xs sm:text-[13px] text-gray-700 leading-relaxed italic bg-gray-50/90 p-2.5 sm:p-3 rounded-lg border border-gray-100 break-words">
+                          "{rev.comment}"
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Footer: Item Title & Date */}
+                    <div className="flex items-center justify-between gap-2 text-[10px] sm:text-[11px] text-gray-400 pt-2 border-t border-gray-100">
+                      <span className="truncate flex-1 min-w-0" title={rev.listing_title}>
+                        <span className="text-gray-500 font-medium">Item:</span> {rev.listing_title || 'Campus Deal'}
+                      </span>
+                      <span className="shrink-0 font-medium">
+                        {new Date(rev.created_at).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
