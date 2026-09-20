@@ -17,6 +17,7 @@ import CategoryIcon from '../components/CategoryIcon';
 import UniversalLoader from '../components/common/UniversalLoader';
 import { getSafeImageUrl } from '../utils/imageUrl';
 import ListingCard from '../components/product/ListingCard';
+import BannerSlideshow from '../components/home/BannerSlideshow';
 
 const TRANSACTION_FILTERS = [
   { value: 'ALL', label: 'All Modes' },
@@ -209,13 +210,13 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-140px)] w-full">
-      {/* Category Pills Bar */}
-      <div className="bg-white/70 backdrop-blur-md border-b border-gray-100 shadow-sm relative z-10">
-        <div className="w-full px-4 sm:px-6 lg:px-[5%] py-2.5 sm:py-3">
-          <div className="flex items-center gap-2 overflow-x-auto py-0.5 scrollbar-none no-scrollbar touch-pan-x pr-4">
+      {/* Category Pills Bar - Sticky with Navbar, Horizontal Scrollable */}
+      <div className="sticky top-16 z-30 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-2xs relative">
+        <div className="w-full px-4 sm:px-6 lg:px-[5%] py-2.5 sm:py-3 relative">
+          <div className="flex items-center gap-2 overflow-x-auto py-0.5 scrollbar-none no-scrollbar touch-pan-x pr-8 touch-momentum">
             <button
               onClick={() => handleCategoryClick('ALL')}
-              className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border shrink-0 ${selectedCategory === 'ALL'
+              className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border shrink-0 cursor-pointer ${selectedCategory === 'ALL'
                 ? 'bg-brand-500 text-white border-brand-500 shadow-sm'
                 : 'bg-white border-gray-200 text-gray-700 hover:border-brand-300'
                 }`}
@@ -229,7 +230,7 @@ export default function Home() {
                 <button
                   key={cat.id}
                   onClick={() => handleCategoryClick(cat.slug)}
-                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap border shrink-0 ${isSelected
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap border shrink-0 cursor-pointer ${isSelected
                     ? 'bg-brand-500 text-white border-brand-500 shadow-sm'
                     : 'bg-white border-gray-200 text-gray-700 hover:border-brand-300'
                     }`}
@@ -244,8 +245,13 @@ export default function Home() {
               );
             })}
           </div>
+          {/* Subtle right-edge scroll hint fade on mobile */}
+          <div className="sm:hidden absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white/90 to-transparent pointer-events-none" />
         </div>
       </div>
+
+      {/* Hero Banner Slideshow (Positioned directly below categories bar) */}
+      <BannerSlideshow />
 
       {/* Main Content Area */}
       <div className="w-full px-4 sm:px-6 lg:px-[5%] py-4 sm:py-6">
@@ -400,7 +406,7 @@ export default function Home() {
             ) : null}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-5 sm:gap-6 animate-fade-in-up">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-5 md:gap-6 animate-fade-in-up">
             {listings.map((listing) => {
               const isFav = favorites[listing.id] !== undefined ? favorites[listing.id] : isItemSaved(listing.id);
               return (
