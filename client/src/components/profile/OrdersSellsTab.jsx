@@ -28,6 +28,7 @@ import {
 import HandoverQRModal from '../handover/HandoverQRModal';
 import HandoverScannerModal from '../handover/HandoverScannerModal';
 import ReviewModal from '../reviews/ReviewModal';
+import { emitTradeEvent, TRADE_ACTIONS } from '../../utils/tradeEvents';
 
 export default function OrdersSellsTab({ onListingsCountChange, profile, isSeller: isSellerProp }) {
   const isSeller = isSellerProp ?? (profile?.role === 'SELLER' || profile?.is_id_verified);
@@ -85,8 +86,9 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
     try {
       await api.post(`/marketplace/offers/${offerId}/cancel/`);
       toast.success('Deal cancelled. Listing restored to Active.');
-      fetchMyOffers();
-      if (isSeller) fetchMyListings();
+      fetchMyOffers(false);
+      if (isSeller) fetchMyListings(false);
+      emitTradeEvent(TRADE_ACTIONS.DEAL_CANCELLED, { offerId });
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to cancel deal.');
     }
@@ -97,7 +99,8 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
     try {
       await api.post(`/marketplace/offers/${offerId}/counter-respond/`, { action });
       toast.success(action === 'ACCEPT' ? 'Counter-offer accepted! Deal is now reserved.' : 'Counter-offer declined.');
-      fetchMyOffers();
+      fetchMyOffers(false);
+      emitTradeEvent(TRADE_ACTIONS.COUNTER_RESPONDED, { offerId, action });
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to respond to counter-offer.');
     } finally {
@@ -108,25 +111,26 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
   const handleHandoverSuccess = () => {
     setShowQRModal(false);
     setShowScannerModal(false);
-    fetchMyOffers();
-    if (isSeller) fetchMyListings();
+    fetchMyOffers(false);
+    if (isSeller) fetchMyListings(false);
+    emitTradeEvent(TRADE_ACTIONS.DEAL_COMPLETED, {});
   };
 
-  const fetchMyOffers = async () => {
-    setLoadingOrders(true);
+  const fetchMyOffers = async (silent = false) => {
+    if (!silent) setLoadingOrders(true);
     try {
       const res = await api.get('/marketplace/my-offers/');
       setOrders(res.data);
     } catch (err) {
       console.error('Failed to load my offers', err);
     } finally {
-      setLoadingOrders(false);
+      if (!silent) setLoadingOrders(false);
     }
   };
 
-  const fetchMyListings = async () => {
+  const fetchMyListings = async (silent = false) => {
     if (!isSeller) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const url =
         statusFilter === 'ALL'
@@ -139,41 +143,73 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
       }
     } catch (err) {
       console.error('Failed to load my listings', err);
-      toast.error('Could not load listings.');
+      if (!silent) toast.error('Could not load listings.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
+  // Initial tab and filter changes load
   useEffect(() => {
     if (!isSeller) {
-      fetchMyOffers();
+      fetchMyOffers(false);
     } else if (subTab === 'selling') {
-      fetchMyListings();
+      fetchMyListings(false);
     } else if (subTab === 'orders') {
-      fetchMyOffers();
+      fetchMyOffers(false);
     }
   }, [statusFilter, subTab, isSeller]);
 
+  // Real-Time Auto-Refresh & Synchronization Engine for Orders & Sells
   useEffect(() => {
-    const handleDealDone = () => {
-      if (isSeller) fetchMyListings();
-      fetchMyOffers();
-    };
+    let isSubscribed = true;
 
-    const handleStorage = (e) => {
-      if (e.key === 'deal_completed_event') {
-        handleDealDone();
+    const performSync = (silent = true) => {
+      if (!isSubscribed || document.visibilityState === 'hidden') return;
+      if (isSeller && subTab === 'selling') {
+        fetchMyListings(silent);
+      } else {
+        fetchMyOffers(silent);
       }
     };
 
-    window.addEventListener('deal-completed', handleDealDone);
-    window.addEventListener('storage', handleStorage);
-    return () => {
-      window.removeEventListener('deal-completed', handleDealDone);
-      window.removeEventListener('storage', handleStorage);
+    // Auto-refresh interval (every 2.5s for real-time buyer-seller updates)
+    const interval = setInterval(() => {
+      performSync(true);
+    }, 2500);
+
+    const handleSyncEvent = () => {
+      performSync(true);
     };
-  }, []);
+
+    const handleStorage = (e) => {
+      if (e.key === 'deal_completed_event' || e.key === 'trade_updated_event') {
+        performSync(true);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        performSync(true);
+      }
+    };
+
+    window.addEventListener('deal-completed', handleSyncEvent);
+    window.addEventListener('trade-updated', handleSyncEvent);
+    window.addEventListener('storage', handleStorage);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
+
+    return () => {
+      isSubscribed = false;
+      clearInterval(interval);
+      window.removeEventListener('deal-completed', handleSyncEvent);
+      window.removeEventListener('trade-updated', handleSyncEvent);
+      window.removeEventListener('storage', handleStorage);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
+    };
+  }, [isSeller, subTab, statusFilter]);
 
   const handleStatusChange = async (listingId, newStatus) => {
     const currentItem = listings.find((l) => l.id === listingId);

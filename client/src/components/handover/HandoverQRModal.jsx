@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import api, { getPlatformConfig } from '../../services/api';
+import { emitTradeEvent, TRADE_ACTIONS } from '../../utils/tradeEvents';
 
 export default function HandoverQRModal({
   offerId,
@@ -127,7 +128,8 @@ export default function HandoverQRModal({
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
     }
-    window.dispatchEvent(new CustomEvent('notifications-updated'));
+    const targetListingId = listingId || session?.listing_id || existingSession?.listing_id;
+    emitTradeEvent(TRADE_ACTIONS.DEAL_COMPLETED, { listingId: targetListingId });
 
     if (onComplete) {
       setTimeout(() => {

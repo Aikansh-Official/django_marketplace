@@ -20,6 +20,7 @@ import HandoverScannerModal from '../components/handover/HandoverScannerModal';
 import UniversalLoader from '../components/common/UniversalLoader';
 import ChatDrawer from '../components/chat/ChatDrawer';
 import { getSafeImageUrl } from '../utils/imageUrl';
+import { emitTradeEvent, TRADE_ACTIONS } from '../utils/tradeEvents';
 
 // Modular Product Components
 import ImageGallery from '../components/product/ImageGallery';
@@ -229,16 +230,23 @@ export default function ProductDetail() {
     listing?.is_seller || (currentUserId && listing?.seller?.id === currentUserId)
   );
 
-  // Offer State Fetchers
-  const fetchListingOffers = useCallback(async () => {
+  // Offer & Listing State Fetchers (Supports Silent Real-Time Auto-Refresh)
+  const fetchListingOffers = useCallback(async (silent = false) => {
     if (!id) return;
     try {
       const res = await api.get(`/marketplace/listings/${id}/offers/`);
-      setListingOffers(Array.isArray(res.data) ? res.data : []);
+      const newOffers = Array.isArray(res.data) ? res.data : [];
+      setListingOffers((prev) => {
+        if (!silent) return newOffers;
+        if (prev.length > 0 && newOffers.length > prev.length) {
+          toast.success('New buyer offer received!', { icon: '🔔', id: 'new-offer-toast' });
+        }
+        return newOffers;
+      });
     } catch (e) { }
   }, [id]);
 
-  const fetchUserOffer = useCallback(async () => {
+  const fetchUserOffer = useCallback(async (silent = false) => {
     if (!id || !currentUserId) return;
     try {
       const res = await api.get('/marketplace/my-offers/');
@@ -248,78 +256,125 @@ export default function ProductDetail() {
           ? res.data.results
           : [];
       const myOf = list.find((o) => String(o.listing) === String(id));
-      if (myOf) setUserOffer(myOf);
+      if (myOf) {
+        setUserOffer((prev) => {
+          if (silent && prev && prev.status !== myOf.status) {
+            if (myOf.status === 'ACCEPTED') {
+              toast.success('Your offer was accepted by the seller! 🎉 Handover ready.', { id: 'offer-accepted-toast' });
+            } else if (myOf.status === 'COUNTERED') {
+              toast('Seller sent you a counter-offer!', { icon: '🤝', id: 'offer-countered-toast' });
+            } else if (myOf.status === 'REJECTED') {
+              toast('Your offer was declined by the seller.', { icon: 'ℹ️', id: 'offer-declined-toast' });
+            }
+          }
+          return myOf;
+        });
+      } else {
+        setUserOffer(null);
+      }
     } catch (e) { }
   }, [id, currentUserId]);
 
-  const refreshOfferState = useCallback(() => {
+  const syncListingData = useCallback(async (silent = false) => {
+    if (!id) return;
+    try {
+      const res = await api.get(`/marketplace/listings/${id}/`);
+      setListing((prev) => {
+        if (!prev) return res.data;
+        if (silent && prev.status !== res.data.status) {
+          if (res.data.status === 'SOLD') {
+            setShowQRModal(false);
+            setShowScannerModal(false);
+            toast.success('Deal verified & completed! Item marked as SOLD! 🎉', { id: 'item-sold-toast' });
+            window.dispatchEvent(new CustomEvent('notifications-updated'));
+          } else if (res.data.status === 'PENDING' && prev.status === 'ACTIVE') {
+            toast('Deal is now reserved / pending handover.', { icon: '🔒', id: 'item-reserved-toast' });
+          } else if (res.data.status === 'ACTIVE' && prev.status === 'PENDING') {
+            toast('Deal was cancelled. Listing is now active again.', { icon: 'ℹ️', id: 'item-reactivated-toast' });
+          }
+        }
+        return res.data;
+      });
+    } catch (e) { }
+  }, [id]);
+
+  const refreshOfferState = useCallback((silent = false) => {
     if (isOwner) {
-      fetchListingOffers();
+      fetchListingOffers(silent);
     } else if (currentUserId) {
-      fetchUserOffer();
+      fetchUserOffer(silent);
     }
   }, [isOwner, currentUserId, fetchListingOffers, fetchUserOffer]);
 
   useEffect(() => {
-    refreshOfferState();
+    refreshOfferState(false);
   }, [refreshOfferState]);
 
-  // Real-Time Buyer Polling: When buyer has an active offer, poll every 5s to pick up seller response
+  // Unified Real-Time Buyer & Seller Auto-Refresh Synchronization Engine
   useEffect(() => {
-    if (isOwner || !currentUserId || !userOffer) return;
-    if (userOffer.status !== 'PENDING' && userOffer.status !== 'COUNTERED') return;
+    if (!id) return;
 
-    const interval = setInterval(() => {
-      fetchUserOffer();
-    }, 5000);
+    let isSubscribed = true;
 
-    return () => clearInterval(interval);
-  }, [isOwner, currentUserId, userOffer?.status, fetchUserOffer]);
+    const performSync = async (silent = true) => {
+      if (!isSubscribed) return;
+      if (document.visibilityState === 'hidden') return;
 
-  // Real-time synchronization for Seller & Buyer when deal is PENDING (Reserved)
-  useEffect(() => {
-    if (!id || listing?.status !== 'PENDING') return;
-
-    const syncPendingListing = async () => {
-      try {
-        const res = await api.get(`/marketplace/listings/${id}/`);
-        if (res.data.status === 'SOLD') {
-          setListing(res.data);
-          refreshOfferState();
-          setShowQRModal(false);
-          setShowScannerModal(false);
-          window.dispatchEvent(new CustomEvent('notifications-updated'));
-        } else if (res.data.status === 'ACTIVE' && listing.status === 'PENDING') {
-          setListing(res.data);
-          refreshOfferState();
-        }
-      } catch (e) { }
+      if (isOwner) {
+        await fetchListingOffers(silent);
+      } else if (currentUserId) {
+        await fetchUserOffer(silent);
+      }
+      await syncListingData(silent);
     };
 
-    const interval = setInterval(syncPendingListing, 2000);
+    // Auto-refresh interval (every 2.5s matching selling complete speed)
+    const interval = setInterval(() => {
+      performSync(true);
+    }, 2500);
 
-    const handleDealCompletedEvent = (e) => {
+    const handleSyncEvent = (e) => {
       const eventListingId = e?.detail?.listingId || e?.detail;
       if (!eventListingId || String(eventListingId) === String(id)) {
-        syncPendingListing();
+        performSync(true);
       }
     };
 
     const handleStorage = (e) => {
-      if (e.key === 'deal_completed_event') {
-        syncPendingListing();
+      if (e.key === 'deal_completed_event' || e.key === 'trade_updated_event') {
+        try {
+          const data = JSON.parse(e.newValue);
+          if (!data?.listingId || String(data.listingId) === String(id)) {
+            performSync(true);
+          }
+        } catch (err) {
+          performSync(true);
+        }
       }
     };
 
-    window.addEventListener('deal-completed', handleDealCompletedEvent);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        performSync(true);
+      }
+    };
+
+    window.addEventListener('trade-updated', handleSyncEvent);
+    window.addEventListener('deal-completed', handleSyncEvent);
     window.addEventListener('storage', handleStorage);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
 
     return () => {
+      isSubscribed = false;
       clearInterval(interval);
-      window.removeEventListener('deal-completed', handleDealCompletedEvent);
+      window.removeEventListener('trade-updated', handleSyncEvent);
+      window.removeEventListener('deal-completed', handleSyncEvent);
       window.removeEventListener('storage', handleStorage);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
     };
-  }, [id, listing?.status, refreshOfferState]);
+  }, [id, isOwner, currentUserId, fetchListingOffers, fetchUserOffer, syncListingData]);
 
   // Status Toggle Handler
   const handleStatusChange = async (newStatus) => {
@@ -376,6 +431,7 @@ export default function ProductDetail() {
       if (action === 'ACCEPT') {
         setListing((prev) => ({ ...prev, status: 'PENDING' }));
       }
+      emitTradeEvent(TRADE_ACTIONS.OFFER_RESPONDED, { listingId: id, offerId, action });
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to update request.');
     }
@@ -404,6 +460,11 @@ export default function ProductDetail() {
       toast.success(`Counter-offer of Rs ${counterAmount} sent to buyer!`, { icon: '🤝' });
       setShowCounterModal(false);
       fetchListingOffers();
+      emitTradeEvent(TRADE_ACTIONS.OFFER_COUNTERED, {
+        listingId: id,
+        offerId: selectedOfferForCounter.id,
+        counterAmount
+      });
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to submit counter-offer.');
     } finally {
@@ -423,6 +484,11 @@ export default function ProductDetail() {
       } else {
         toast('Counter-offer declined.', { icon: 'ℹ️' });
       }
+      emitTradeEvent(TRADE_ACTIONS.COUNTER_RESPONDED, {
+        listingId: id,
+        offerId: userOffer.id,
+        action
+      });
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to respond to counter-offer.');
     } finally {
@@ -444,6 +510,10 @@ export default function ProductDetail() {
       } else {
         setUserOffer((prev) => (prev ? { ...prev, status: 'CANCELLED' } : null));
       }
+      emitTradeEvent(TRADE_ACTIONS.DEAL_CANCELLED, {
+        listingId: id,
+        offerId
+      });
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to cancel deal.');
     } finally {
@@ -466,7 +536,7 @@ export default function ProductDetail() {
         .then((res) => setListing(res.data))
         .catch(() => { });
     }
-    window.dispatchEvent(new CustomEvent('notifications-updated'));
+    emitTradeEvent(TRADE_ACTIONS.DEAL_COMPLETED, { listingId: id });
   };
 
   const handleSubmitBuyRequest = async (e) => {
@@ -493,6 +563,10 @@ export default function ProductDetail() {
       setBuyerMessage('');
       setExchangeItemTitle('');
       setUserOffer(res.data);
+      emitTradeEvent(TRADE_ACTIONS.NEW_OFFER, {
+        listingId: id,
+        offerId: res.data?.id
+      });
     } catch (err) {
       const msg = err.response?.data?.error || 'Failed to submit request. Please log in first.';
       toast.error(msg);

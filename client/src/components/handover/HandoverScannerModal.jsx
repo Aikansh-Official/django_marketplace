@@ -19,6 +19,7 @@ import {
   Check
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { emitTradeEvent, TRADE_ACTIONS } from '../../utils/tradeEvents';
 
 export default function HandoverScannerModal({ listingId, defaultOfferId, onClose, onSuccess }) {
   const [activeTab, setActiveTab] = useState('pin'); // 'pin' | 'scan'
@@ -225,7 +226,7 @@ export default function HandoverScannerModal({ listingId, defaultOfferId, onClos
         );
       } catch (e) {}
       window.dispatchEvent(new CustomEvent('deal-completed', { detail: { listingId: targetListingId } }));
-      window.dispatchEvent(new CustomEvent('notifications-updated'));
+      emitTradeEvent(TRADE_ACTIONS.DEAL_COMPLETED, { listingId: targetListingId });
 
       if (onSuccess) {
         setTimeout(() => {

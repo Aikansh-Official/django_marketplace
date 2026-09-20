@@ -59,8 +59,8 @@ export default function MyListings() {
     }).catch(() => {});
   }, []);
 
-  const fetchMyListings = async () => {
-    setLoading(true);
+  const fetchMyListings = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const url = statusFilter === 'ALL'
         ? '/marketplace/my-listings/'
@@ -70,14 +70,53 @@ export default function MyListings() {
       setListings(res.data);
     } catch (err) {
       console.error('Failed to load my listings', err);
-      toast.error('Could not load your listings.');
+      if (!silent) toast.error('Could not load your listings.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchMyListings();
+    fetchMyListings(false);
+  }, [statusFilter]);
+
+  // Real-Time Auto-Refresh for Seller's My Listings
+  useEffect(() => {
+    let isSubscribed = true;
+
+    const performSync = () => {
+      if (!isSubscribed || document.visibilityState === 'hidden') return;
+      fetchMyListings(true);
+    };
+
+    // Auto-refresh interval (every 3s)
+    const interval = setInterval(performSync, 3000);
+
+    const handleSyncEvent = () => performSync();
+    const handleStorage = (e) => {
+      if (e.key === 'deal_completed_event' || e.key === 'trade_updated_event') {
+        performSync();
+      }
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') performSync();
+    };
+
+    window.addEventListener('deal-completed', handleSyncEvent);
+    window.addEventListener('trade-updated', handleSyncEvent);
+    window.addEventListener('storage', handleStorage);
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleVisibility);
+
+    return () => {
+      isSubscribed = false;
+      clearInterval(interval);
+      window.removeEventListener('deal-completed', handleSyncEvent);
+      window.removeEventListener('trade-updated', handleSyncEvent);
+      window.removeEventListener('storage', handleStorage);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleVisibility);
+    };
   }, [statusFilter]);
 
   const handleStatusChange = async (listingId, newStatus) => {
