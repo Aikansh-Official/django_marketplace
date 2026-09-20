@@ -262,9 +262,9 @@ export default function Notifications() {
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-4.5rem)] px-4 sm:px-6 lg:px-[5%] py-5 sm:py-8 animate-fade-in-up flex flex-col justify-between pb-12">
+    <div className="w-full min-h-[calc(100vh-4.5rem)] px-4 sm:px-6 lg:px-[5%] py-5 sm:py-7 animate-fade-in-up pb-12">
       {/* Top Banner - matching MyListings */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8 pb-4 border-b border-gray-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 sm:mb-6 pb-3.5 border-b border-gray-200">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900">
             Notifications
@@ -323,7 +323,7 @@ export default function Notifications() {
       </div>
 
       {/* Metrics Row - identical to MyListings metrics cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 mb-6 sm:mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 mb-4 sm:mb-5">
         <div className="bg-white border border-gray-200 rounded-md p-3 sm:p-4 shadow-sm">
           <div className="text-[10px] sm:text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
             Total Alerts
@@ -354,7 +354,7 @@ export default function Notifications() {
       </div>
 
       {/* Filters Strip */}
-      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-2 -mx-1 px-1 touch-pan-x touch-momentum scrollbar-none mb-6">
+      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 -mx-1 px-1 touch-pan-x touch-momentum scrollbar-none mb-4 sm:mb-5">
         {[
           { key: 'ALL', label: `All Alerts (${totalNotifications})` },
           { key: 'UNREAD', label: `Unread (${unreadCount})` },

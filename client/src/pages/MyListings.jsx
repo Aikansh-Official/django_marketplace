@@ -195,9 +195,9 @@ export default function MyListings() {
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-4.5rem)] px-4 sm:px-6 lg:px-[5%] py-8 animate-fade-in-up flex flex-col justify-between pb-12">
+    <div className="w-full min-h-[calc(100vh-4.5rem)] px-4 sm:px-6 lg:px-[5%] py-6 sm:py-8 animate-fade-in-up pb-12">
       {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-4 border-b border-gray-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-200">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
             My Listings
