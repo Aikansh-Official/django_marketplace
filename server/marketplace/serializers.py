@@ -240,10 +240,6 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
 
         return attrs
 
-class AdminListingUpdateSerializer(ListingCreateUpdateSerializer):
-    class Meta(ListingCreateUpdateSerializer.Meta):
-        fields = ListingCreateUpdateSerializer.Meta.fields + ['is_trusted']
-
     def _process_image(self, img_data):
         """
         Process a single image entry:
@@ -285,9 +281,10 @@ class AdminListingUpdateSerializer(ListingCreateUpdateSerializer):
 
         # Seller is set by the view (authenticated user required)
         request = self.context.get('request')
-        if not request or not request.user or not request.user.is_authenticated:
-            raise serializers.ValidationError("Authentication required to create a listing.")
-        validated_data['seller'] = request.user
+        if not validated_data.get('seller'):
+            if not request or not request.user or not request.user.is_authenticated:
+                raise serializers.ValidationError("Authentication required to create a listing.")
+            validated_data['seller'] = request.user
 
         # Default fallback contacts from seller profile if left blank
         seller = validated_data['seller']
@@ -329,6 +326,11 @@ class AdminListingUpdateSerializer(ListingCreateUpdateSerializer):
                 )
 
         return instance
+
+
+class AdminListingUpdateSerializer(ListingCreateUpdateSerializer):
+    class Meta(ListingCreateUpdateSerializer.Meta):
+        fields = ListingCreateUpdateSerializer.Meta.fields + ['is_trusted']
 
 
 class HandoverSessionSerializer(serializers.ModelSerializer):
