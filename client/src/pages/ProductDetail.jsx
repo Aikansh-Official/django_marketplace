@@ -651,9 +651,9 @@ export default function ProductDetail() {
         onCancelDeal={handleCancelDeal}
       />
 
-      {/* Main Grid: Gallery on Left (md: 7 cols / lg: 8 cols) & Details on Right (md: 5 cols / lg: 4 cols) */}
+      {/* Main Grid: Gallery on Left & Details on Right for Desktop, Mobile-first flow */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8">
-        {/* Left Column: Image Gallery & Description */}
+        {/* Left Column (Desktop) / Main Flow (Mobile) */}
         <div className="md:col-span-7 lg:col-span-8 space-y-6">
           <ImageGallery
             images={images}
@@ -662,14 +662,36 @@ export default function ProductDetail() {
             setActiveImageIndex={setActiveImageIndex}
           />
 
+          {/* MOBILE ONLY: PriceCard immediately below Image Gallery */}
+          <div className="block md:hidden">
+            <PriceCard
+              listing={listing}
+              isOwner={isOwner}
+              isAuthenticated={isAuthenticated}
+              userOffer={userOffer}
+              listingOffers={listingOffers}
+              cancellingDeal={cancellingDeal}
+              onTriggerLogin={triggerLogin}
+              onOpenBuyModal={handleOpenBuyModal}
+              onOpenExchangeModal={handleOpenExchangeModal}
+              onOpenChat={handleOpenChat}
+              onOpenScannerModal={() => setShowScannerModal(true)}
+              onOpenQRModal={(off) => {
+                setActiveOfferForQR(off);
+                setShowQRModal(true);
+              }}
+              onCancelDeal={handleCancelDeal}
+            />
+          </div>
+
           {/* Description Section */}
-          <div className="bg-white border border-gray-200 rounded-md p-6 shadow-sm space-y-4">
-            <h2 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-3">
+          <div className="bg-white border border-gray-200 rounded-md p-4 sm:p-6 shadow-sm space-y-4">
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 border-b border-gray-100 pb-3">
               Item Details & Description
             </h2>
 
             {/* Structured Specifications Table */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-md text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 p-3.5 sm:p-4 bg-gray-50 rounded-md text-xs">
               <div>
                 <span className="text-gray-400 block mb-0.5">Category</span>
                 <span className="font-bold text-gray-800">{listing.category?.name || 'General'}</span>
@@ -704,8 +726,8 @@ export default function ProductDetail() {
             </div>
           </div>
 
-          {/* Safety & Campus Trade Guidelines */}
-          <div className="bg-amber-50/70 border border-amber-200/90 rounded-md p-5 text-xs text-amber-900 space-y-2">
+          {/* Safety & Campus Trade Guidelines (Desktop Only) */}
+          <div className="hidden md:block bg-amber-50/70 border border-amber-200/90 rounded-md p-5 text-xs text-amber-900 space-y-2">
             <div className="font-bold flex items-center gap-2 text-sm text-amber-950">
               <ShieldCheck className="w-4 h-4 text-amber-700" />
               <span>LPU Student Safety Recommendations</span>
@@ -719,27 +741,30 @@ export default function ProductDetail() {
 
         {/* Right Column: Pricing, Actions & Seller Profile */}
         <div className="md:col-span-5 lg:col-span-4 space-y-6">
-          <PriceCard
-            listing={listing}
-            isOwner={isOwner}
-            isAuthenticated={isAuthenticated}
-            userOffer={userOffer}
-            listingOffers={listingOffers}
-            cancellingDeal={cancellingDeal}
-            onTriggerLogin={triggerLogin}
-            onOpenBuyModal={handleOpenBuyModal}
-            onOpenExchangeModal={handleOpenExchangeModal}
-            onOpenChat={handleOpenChat}
-            onOpenScannerModal={() => setShowScannerModal(true)}
-            onOpenQRModal={(off) => {
-              setActiveOfferForQR(off);
-              setShowQRModal(true);
-            }}
-            onCancelDeal={handleCancelDeal}
-          />
+          {/* DESKTOP ONLY: PriceCard in sidebar */}
+          <div className="hidden md:block">
+            <PriceCard
+              listing={listing}
+              isOwner={isOwner}
+              isAuthenticated={isAuthenticated}
+              userOffer={userOffer}
+              listingOffers={listingOffers}
+              cancellingDeal={cancellingDeal}
+              onTriggerLogin={triggerLogin}
+              onOpenBuyModal={handleOpenBuyModal}
+              onOpenExchangeModal={handleOpenExchangeModal}
+              onOpenChat={handleOpenChat}
+              onOpenScannerModal={() => setShowScannerModal(true)}
+              onOpenQRModal={(off) => {
+                setActiveOfferForQR(off);
+                setShowQRModal(true);
+              }}
+              onCancelDeal={handleCancelDeal}
+            />
+          </div>
 
           {/* Seller Profile Card */}
-          <div className="bg-white border border-gray-200 rounded-md p-6 shadow-sm space-y-4">
+          <div className="bg-white border border-gray-200 rounded-md p-4 sm:p-6 shadow-sm space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">
               Seller Information
             </h3>
@@ -807,6 +832,18 @@ export default function ProductDetail() {
             >
               <span>View Verified Public Profile →</span>
             </Link>
+          </div>
+
+          {/* Safety & Campus Trade Guidelines (Mobile Only: below seller info) */}
+          <div className="block md:hidden bg-amber-50/70 border border-amber-200/90 rounded-md p-4 sm:p-5 text-xs text-amber-900 space-y-2">
+            <div className="font-bold flex items-center gap-2 text-sm text-amber-950">
+              <ShieldCheck className="w-4 h-4 text-amber-700" />
+              <span>LPU Student Safety Recommendations</span>
+            </div>
+            <ul className="list-disc list-inside space-y-1 text-amber-800">
+              <li>Meet in bustling campus public areas such as <strong>Uni-Mall</strong>, <strong>Central Library</strong>, or your hostel entrance.</li>
+              <li>Inspect the product physically before making UPI payments.</li>
+            </ul>
           </div>
         </div>
       </div>

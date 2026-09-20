@@ -20,7 +20,7 @@ export default function PriceCard({
   if (!listing) return null;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-md p-6 shadow-sm space-y-5">
+    <div className="bg-white border border-gray-200 rounded-md p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-5">
       <div>
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
