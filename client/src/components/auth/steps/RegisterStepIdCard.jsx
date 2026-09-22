@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Camera,
   Check,
   Sparkles,
   GraduationCap,
@@ -12,6 +11,8 @@ import {
   ArrowRight,
   ArrowLeft
 } from 'lucide-react';
+import IdCardCamera from '../IdCardCamera';
+import { useIsMobile } from '../../../utils/useIsMobile';
 
 export default function RegisterStepIdCard({
   usernameValue,
@@ -22,14 +23,19 @@ export default function RegisterStepIdCard({
   setIsIdVerified,
   isScanning,
   isLoading,
+  scanStatus,
+  scanProgress,
   extractedCardData,
+  setExtractedCardData,
   rejectionInfo,
+  setRejectionInfo,
   verificationDetails,
   onScanAndVerify,
   onProceedToOtp,
   onBack,
-  onSkip
 }) {
+  const isMobile = useIsMobile();
+
   return (
     <div className="space-y-4">
       <div className="mb-2 text-center">
@@ -37,40 +43,26 @@ export default function RegisterStepIdCard({
           Verify Student ID Card
         </h2>
         <p className="text-sm text-gray-500 mt-1">
-          Upload your front student ID card photo to verify your registration details
+          Capture your front student ID card photo to verify your registration details
         </p>
       </div>
 
-      {/* Mobile-Only ID Card Upload Area (Rendered only on < md screens) */}
-      <div className="md:hidden">
-        <label className="border-2 border-dashed border-gray-300 rounded-md p-4 flex flex-col items-center justify-center cursor-pointer bg-gray-50/50 hover:bg-gray-50 transition-colors">
-          <Camera className="w-6 h-6 text-brand-500 mb-1" />
-          <span className="text-xs font-bold text-gray-800">
-            {idFrontImage ? 'Change ID Card Photo' : 'Upload Front ID Photo'}
-          </span>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                const reader = new FileReader();
-                reader.onload = () => {
-                  setIdFrontImage(reader.result);
-                  setIsIdVerified(false);
-                };
-                reader.readAsDataURL(file);
-              }
-            }}
-            className="hidden"
+      {/* Mobile-Only ID Card Camera Viewport (Rendered only on < md screens) */}
+      {isMobile && (
+        <div className="md:hidden pb-1">
+          <IdCardCamera
+            idFrontImage={idFrontImage}
+            setIdFrontImage={setIdFrontImage}
+            setIsIdVerified={setIsIdVerified}
+            setExtractedCardData={setExtractedCardData}
+            setRejectionInfo={setRejectionInfo}
+            isScanning={isScanning}
+            scanStatus={scanStatus}
+            scanProgress={scanProgress}
+            isIdVerified={isIdVerified}
           />
-        </label>
-        {idFrontImage && (
-          <div className="mt-2 rounded border border-gray-200 p-1 bg-white">
-            <img src={idFrontImage} alt="ID Preview" className="max-h-36 mx-auto object-contain" />
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Verification Checklist */}
       <div className="bg-gray-50/80 border border-gray-200 rounded-md p-4 space-y-3">
@@ -82,7 +74,7 @@ export default function RegisterStepIdCard({
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
             <span className="font-bold text-gray-700">Registration No:</span>
-            <span className="font-mono font-bold text-gray-900 bg-white px-2 py-0.5 rounded border border-gray-200 text-xs">
+            <span className="font-bold text-gray-900">
               {usernameValue}
             </span>
           </div>
@@ -196,7 +188,7 @@ export default function RegisterStepIdCard({
             ) : (
               <>
                 <ScanLine className="w-4 h-4" />
-                <span>{idFrontImage ? 'Scan & Verify Details' : 'Upload ID on Left to Verify'}</span>
+                <span>{idFrontImage ? 'Scan & Verify Details' : 'Capture ID to Verify'}</span>
               </>
             )}
           </button>
@@ -218,7 +210,7 @@ export default function RegisterStepIdCard({
           </button>
         )}
 
-        <div className="flex items-center justify-between text-xs pt-1">
+        <div className="flex items-center justify-start text-xs pt-1">
           <button
             type="button"
             onClick={onBack}
@@ -226,14 +218,6 @@ export default function RegisterStepIdCard({
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             Edit Details
-          </button>
-
-          <button
-            type="button"
-            onClick={onSkip}
-            className="text-xs text-gray-400 hover:text-gray-600 hover:underline cursor-pointer"
-          >
-            Skip for now (verify in profile)
           </button>
         </div>
       </div>

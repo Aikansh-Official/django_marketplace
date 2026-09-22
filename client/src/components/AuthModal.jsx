@@ -21,7 +21,6 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
   const [extractedCardData, setExtractedCardData] = useState(null);
   const [rejectionInfo, setRejectionInfo] = useState(null);
   const [studentInfo, setStudentInfo] = useState({ fullName: '', username: '' });
-  const fileInputRef = useRef(null);
 
   const fullNameValue = studentInfo.fullName;
   const usernameValue = studentInfo.username;
@@ -43,34 +42,6 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
     }
     return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen, initialMode]);
-
-  const handleImageUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload a valid photo (JPG, PNG, or WEBP).');
-      return;
-    }
-
-    if (file.size > 12 * 1024 * 1024) {
-      toast.error('File too large. Maximum size allowed is 12MB.');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setIdFrontImage(reader.result);
-      setIsIdVerified(false);
-      setExtractedCardData(null);
-      setRejectionInfo(null);
-      toast.success('ID photo loaded successfully.');
-    };
-    reader.onerror = () => {
-      toast.error('Failed to read ID photo file.');
-    };
-    reader.readAsDataURL(file);
-  };
 
   if (!isOpen) return null;
 
@@ -109,8 +80,6 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
             setRejectionInfo={setRejectionInfo}
             fullNameValue={fullNameValue}
             usernameValue={usernameValue}
-            fileInputRef={fileInputRef}
-            handleImageUpload={handleImageUpload}
           />
 
           {/* RIGHT SIDE: Form Content & Multi-Step Flow */}

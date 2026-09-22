@@ -807,7 +807,7 @@ class CompleteIdVerificationView(APIView):
 
         if not id_card_image or not isinstance(id_card_image, str) or len(id_card_image) < 100:
             return Response(
-                {"error": "A valid student ID card image must be uploaded."},
+                {"error": "A valid student ID card photo is required."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 

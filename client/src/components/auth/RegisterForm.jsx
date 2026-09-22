@@ -321,7 +321,7 @@ export default function RegisterForm({
   // Step 2 (Seller): Intelligent OCR verification of ID Card
   const handleScanAndVerifyId = async () => {
     if (!idFrontImage) {
-      toast.error('Please upload your physical student ID card photo first.');
+      toast.error('Please capture your student ID card photo first.');
       return;
     }
 
@@ -401,7 +401,7 @@ export default function RegisterForm({
       }
     } catch (ocrErr) {
       console.error('OCR Error:', ocrErr);
-      const errMsg = 'Could not read ID card. Please upload a clearer photo.';
+      const errMsg = 'Could not read ID card. Please retake a clearer photo.';
       toast.error(errMsg);
       setRejectionInfo({ reason: errMsg });
     } finally {
@@ -598,7 +598,7 @@ export default function RegisterForm({
           />
         )}
 
-        {/* STEP 2 FOR SELLER ONLY: STUDENT ID CARD UPLOAD & OCR VERIFICATION */}
+        {/* STEP 2 FOR SELLER ONLY: STUDENT ID CARD CAMERA CAPTURE & OCR VERIFICATION */}
         {selectedRole === 'SELLER' && step === 2 && (
           <RegisterStepIdCard
             usernameValue={usernameValue}
@@ -609,13 +609,16 @@ export default function RegisterForm({
             setIsIdVerified={setIsIdVerified}
             isScanning={isScanning}
             isLoading={isLoading}
+            scanStatus={scanStatus}
+            scanProgress={scanProgress}
             extractedCardData={extractedCardData}
+            setExtractedCardData={setExtractedCardData}
             rejectionInfo={rejectionInfo}
+            setRejectionInfo={setRejectionInfo}
             verificationDetails={verificationDetails}
             onScanAndVerify={handleScanAndVerifyId}
             onProceedToOtp={() => setStep(3)}
             onBack={() => setStep(1)}
-            onSkip={handleSkipIdVerification}
           />
         )}
 

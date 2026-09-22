@@ -218,6 +218,17 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({"email": "Email must be verified with OTP before registering."})
         except OTPVerification.DoesNotExist:
             raise serializers.ValidationError({"email": "Email must be verified with OTP before registering."})
+
+        # Require ID card photo and live selfie verification for Seller accounts
+        role = attrs.get('role', 'BUYER')
+        if role == 'SELLER':
+            id_card_image = attrs.get('id_card_image')
+            if not id_card_image or not isinstance(id_card_image, str) or len(id_card_image.strip()) < 100:
+                raise serializers.ValidationError({"id_card_image": "Student ID card photo is required for Seller registration."})
+
+            profile_photo = attrs.get('profile_photo')
+            if not profile_photo or not isinstance(profile_photo, str) or len(profile_photo.strip()) < 100:
+                raise serializers.ValidationError({"profile_photo": "Live selfie photo is required for Seller registration."})
             
         return attrs
 
@@ -231,7 +242,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         is_id_verified = False
         if role == 'SELLER' and id_card_image and len(str(id_card_image).strip()) > 100:
             is_id_verified = True
-        elif role != 'SELLER':
+        else:
             role = 'BUYER'
             is_id_verified = False
         
