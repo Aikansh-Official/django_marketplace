@@ -41,13 +41,13 @@ The CampusXChange Android App is engineered to mirror **100% of the features, bu
 
 ---
 
-## 📑 Complete Specification Directory (All 15 Modules)
+## 📑 Complete Specification Directory (All 16 Modules)
 
 | # | Specification Document | Key Scope & Coverage |
 |:---:|:---|:---|
 | 01 | [**ANDROID_SERVER_CONNECTION_GUIDE.md**](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/android/ANDROID_SERVER_CONNECTION_GUIDE.md) | **Network & Security**: Production & Dev URLs, OkHttp interceptor with `X-App-Security-Key`, automatic JWT token rotation, ADB tunnel, network security config. |
 | 02 | [**ANDROID_THEME_AND_DESIGN_SYSTEM.md**](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/android/ANDROID_THEME_AND_DESIGN_SYSTEM.md) | **Theme & Background**: Jetpack Compose color palette, Dark/Light modes, Glassmorphism card modifiers, floating particle GPU Canvas animation mirroring `ThemeBackground.jsx`, typography scale. |
-| 03 | [**ANDROID_LOGIN_REGISTRATION.md**](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/android/ANDROID_LOGIN_REGISTRATION.md) | **Onboarding**: 3-step Buyer & 5-step Seller onboarding, on-device ML Kit OCR, CameraX liveness selfie, email OTP fix (`purpose: 'upgrade'`), JWT authentication. |
+| 03 | [**ANDROID_SESSION_LOGIN_REGISTER_SPECIFICATION.md**](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/android/ANDROID_SESSION_LOGIN_REGISTER_SPECIFICATION.md) | **Session, Login & Registration**: Dual-device session isolation (`android_session_id`, 90-day refresh, cross-device termination alerts), hardware Keystore `SessionManager`, thread-safe OkHttp Mutex refresh, Biometric quick login, and 3-step Buyer / 5-step ML Kit Seller onboarding. |
 | 04 | [**ANDROID_PROFILE_SPECIFICATION.md**](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/android/ANDROID_PROFILE_SPECIFICATION.md) | **Student Identity**: Personal info editor, ID card verification tab, trust score, upgrade to seller modal flow, cleaned header (`Member since [Date]`), DPDP compliance. |
 | 05 | [**ANDROID_MARKETPLACE_SPECIFICATION.md**](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/android/ANDROID_MARKETPLACE_SPECIFICATION.md) | **Marketplace**: Dynamic category chips, debounced search, condition & transaction type filters, 2-column listing grid, saved wishlist sync. |
 | 06 | [**ANDROID_PRODUCT_DETAIL_SPECIFICATION.md**](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/android/ANDROID_PRODUCT_DETAIL_SPECIFICATION.md) | **Listing Details**: Multi-image carousel, pinch-to-zoom inspection, buy request modal, seller profile card, related listings, report listing modal. |
@@ -60,6 +60,7 @@ The CampusXChange Android App is engineered to mirror **100% of the features, bu
 | 13 | [**ANDROID_ANNOUNCEMENTS_AND_ALERTS_SPECIFICATION.md**](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/android/ANDROID_ANNOUNCEMENTS_AND_ALERTS_SPECIFICATION.md) | **Banners & Modals**: Campus top announcement banner (4 themes), session dismissal state, full-screen mandatory `UrgentNoticeModal` overlay on login. |
 | 14 | [**ANDROID_BANNER_CAROUSEL_SPECIFICATION.md**](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/android/ANDROID_BANNER_CAROUSEL_SPECIFICATION.md) | **Marketing Banners**: Dynamic hero banner carousel, auto-scroll timer (5s), touch swipe gestures, multi-layer gradient scrims, Coil image loader, deep-link router (internal/external). |
 | 15 | [**ANDROID_LEGAL_AND_SAFETY_SPECIFICATION.md**](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/android/ANDROID_LEGAL_AND_SAFETY_SPECIFICATION.md) | **Compliance**: DPDP Act (2023) privacy protections, campus safety tips, prohibited items checklist, Terms of Service, Guidelines, Trader Report modal. |
+| 16 | [**ANDROID_CURVED_BOTTOM_NAVIGATION_SPECIFICATION.md**](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/android/ANDROID_CURVED_BOTTOM_NAVIGATION_SPECIFICATION.md) | **Navigation & Dashboards**: Floating curved cradle pill bar, Cubic Bezier concave notch, dynamic context-aware hero action (WTB vs. Handover alert), active orange dot (`•`), adaptive TopBar, and live Buyer/Seller dashboards with 100% Web parity. |
 
 ---
 

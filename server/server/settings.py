@@ -278,6 +278,8 @@ CORS_ALLOW_ALL_ORIGINS = DEBUG
 _DEFAULT_FRONTEND_ORIGINS = [
     "https://cxc.anshuman892494.online",
     "http://cxc.anshuman892494.online",
+    "https://cxc-marketplace.vercel.app",
+    "http://cxc-marketplace.vercel.app",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:5174",
@@ -290,20 +292,28 @@ _DEFAULT_FRONTEND_ORIGINS = [
 
 _extra_cors = os.environ.get('CORS_ALLOWED_ORIGINS', '')
 if _extra_cors:
-    CORS_ALLOWED_ORIGINS = _DEFAULT_FRONTEND_ORIGINS + [o.strip() for o in _extra_cors.split(',') if o.strip()]
+    CORS_ALLOWED_ORIGINS = _DEFAULT_FRONTEND_ORIGINS + [o.strip().rstrip('/') for o in _extra_cors.split(',') if o.strip()]
 else:
     CORS_ALLOWED_ORIGINS = _DEFAULT_FRONTEND_ORIGINS
 
+CORS_ALLOWED_ORIGINS = list(dict.fromkeys(CORS_ALLOWED_ORIGINS))
+
 _extra_csrf = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
 if _extra_csrf:
-    CSRF_TRUSTED_ORIGINS = _DEFAULT_FRONTEND_ORIGINS + [o.strip() for o in _extra_csrf.split(',') if o.strip()]
+    CSRF_TRUSTED_ORIGINS = _DEFAULT_FRONTEND_ORIGINS + [o.strip().rstrip('/') for o in _extra_csrf.split(',') if o.strip()]
 else:
     CSRF_TRUSTED_ORIGINS = _DEFAULT_FRONTEND_ORIGINS
+
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(CSRF_TRUSTED_ORIGINS))
 
 if "https://cxc.anshuman892494.online" not in CSRF_TRUSTED_ORIGINS:
     CSRF_TRUSTED_ORIGINS.append("https://cxc.anshuman892494.online")
 if "https://*.anshuman892494.online" not in CSRF_TRUSTED_ORIGINS:
     CSRF_TRUSTED_ORIGINS.append("https://*.anshuman892494.online")
+if "https://cxc-marketplace.vercel.app" not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append("https://cxc-marketplace.vercel.app")
+if "https://*.vercel.app" not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append("https://*.vercel.app")
 
 if RENDER_EXTERNAL_HOSTNAME:
     render_origin = f"https://{RENDER_EXTERNAL_HOSTNAME}"
@@ -312,9 +322,14 @@ if RENDER_EXTERNAL_HOSTNAME:
 if "https://*.onrender.com" not in CSRF_TRUSTED_ORIGINS:
     CSRF_TRUSTED_ORIGINS.append("https://*.onrender.com")
 
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
+    r"^https://.*\.anshuman892494\.online$",
+    r"^https://.*\.onrender\.com$",
+]
 
 if DEBUG:
-    CORS_ALLOWED_ORIGIN_REGEXES = [
+    CORS_ALLOWED_ORIGIN_REGEXES += [
         r"^http://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.\d+\.\d+\.\d+)(:\d+)?$",
     ]
     CSRF_TRUSTED_ORIGINS = CSRF_TRUSTED_ORIGINS + [

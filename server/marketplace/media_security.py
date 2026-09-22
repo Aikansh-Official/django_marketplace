@@ -61,6 +61,8 @@ def get_allowed_origins():
     allowed.add("http://127.0.0.1:3000")
     allowed.add("https://cxc.anshuman892494.online")
     allowed.add("http://cxc.anshuman892494.online")
+    allowed.add("https://cxc-marketplace.vercel.app")
+    allowed.add("http://cxc-marketplace.vercel.app")
 
     render_host = getattr(settings, 'RENDER_EXTERNAL_HOSTNAME', None)
     if render_host:
