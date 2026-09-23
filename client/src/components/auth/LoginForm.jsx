@@ -87,6 +87,8 @@ export default function LoginForm({ onSwitch, onForgotPassword, onSuccess }) {
         toast.error(resData?.error || 'Your student account has been suspended. Please contact administration.');
       } else if (error?.code === 'auth/popup-blocked') {
         toast.error('Google sign-in popup was blocked by your browser. Please allow popups for this site.');
+      } else if (error?.code === 'auth/unauthorized-domain') {
+        toast.error('Domain not authorized. Please add cxc.anshuman892494.online to Firebase Console -> Authentication -> Settings -> Authorized domains.', { duration: 6000 });
       } else {
         console.error('Google login verification failed:', error);
         toast.error(resData?.error || error?.message || 'Google login failed. Please try again.');
