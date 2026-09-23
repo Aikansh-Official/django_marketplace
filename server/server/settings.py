@@ -207,6 +207,9 @@ RESEND_FROM_EMAIL = os.environ.get('RESEND_FROM_EMAIL', 'CampusXChange <noreply@
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://cxc.anshuman892494.online')
 PASSWORD_RESET_TIMEOUT_SECONDS = int(os.environ.get('PASSWORD_RESET_TIMEOUT_SECONDS', '900'))  # 15 minutes
 
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+
 # Email Configuration (Fallback / Django MAILERS)
 MAILERS = {
     'default': {
@@ -430,4 +433,11 @@ LOGGING = {
         },
     },
 }
+
+# ── Firebase & Google OAuth Authentication Settings ────────────
+FIREBASE_API_KEY = os.environ.get('FIREBASE_API_KEY', '')
+FIREBASE_PROJECT_ID = os.environ.get('FIREBASE_PROJECT_ID', '')
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+
+
 

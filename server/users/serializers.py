@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 import re
-from .models import OTPVerification, PasswordResetToken, PasswordResetOTP
+from .models import OTPVerification, PasswordResetToken, PasswordResetOTP, UserLoginHistory
 
 User = get_user_model()
 
@@ -306,6 +306,7 @@ class UserListSerializer(serializers.ModelSerializer):
     has_id_card = serializers.SerializerMethodField()
     profile_photo = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     effective_permissions = serializers.ListField(source='effective_admin_permissions', read_only=True)
+    is_google_linked = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -313,16 +314,21 @@ class UserListSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'full_name', 'phone_number', 'role',
             'is_active', 'is_verified_student', 'is_id_verified', 'has_id_card',
             'college_domain', 'trust_score', 'completed_trades_count', 'profile_photo',
+            'last_login_method', 'last_login', 'is_google_linked',
             'date_joined', 'is_staff', 'is_superuser', 'admin_role', 'admin_permissions',
             'effective_permissions'
         )
         read_only_fields = (
             'id', 'username', 'email', 'role', 'is_active', 'is_verified_student',
             'is_id_verified', 'has_id_card', 'college_domain',
-            'trust_score', 'completed_trades_count', 'date_joined',
+            'trust_score', 'completed_trades_count', 'profile_photo',
+            'last_login_method', 'last_login', 'is_google_linked', 'date_joined',
             'is_staff', 'is_superuser', 'admin_role', 'admin_permissions',
             'effective_permissions'
         )
+
+    def get_is_google_linked(self, obj):
+        return bool(getattr(obj, 'google_id', None))
 
     def get_trust_score(self, obj):
         return getattr(obj, 'trust_score', 0) or 0
@@ -350,6 +356,20 @@ class UserAdminDetailSerializer(UserListSerializer):
     class Meta(UserListSerializer.Meta):
         fields = UserListSerializer.Meta.fields + ('id_card_image', 'id_card_data')
         read_only_fields = UserListSerializer.Meta.read_only_fields + ('id_card_image', 'id_card_data')
+
+
+class UserLoginHistorySerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='user.full_name', read_only=True, default='')
+    reg_no = serializers.CharField(source='user.username', read_only=True, default='')
+
+    class Meta:
+        model = UserLoginHistory
+        fields = (
+            'id', 'student_name', 'reg_no', 'email_attempted', 'reg_no_attempted',
+            'login_method', 'client_type', 'ip_address', 'device_info',
+            'status', 'failure_reason', 'created_at'
+        )
+        read_only_fields = fields
 
 
 class UserDashboardSummarySerializer(serializers.ModelSerializer):

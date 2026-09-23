@@ -75,6 +75,25 @@ class CustomUser(AbstractUser):
     android_session_device = models.CharField(max_length=255, blank=True, default='', help_text="Android device model info")
     android_session_created_at = models.DateTimeField(null=True, blank=True, help_text="Timestamp of latest Android login")
 
+    # Login Method & Social Auth Linking
+    LOGIN_METHOD_CHOICES = (
+        ('PASSWORD', 'Password'),
+        ('GOOGLE', 'Google OAuth'),
+    )
+    last_login_method = models.CharField(
+        max_length=20,
+        choices=LOGIN_METHOD_CHOICES,
+        default='PASSWORD',
+        help_text="Method used for latest login (PASSWORD or GOOGLE)"
+    )
+    google_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        unique=True,
+        help_text="Google OAuth unique subject ID (sub)"
+    )
+
     @property
     def effective_admin_role(self):
         if self.is_superuser:
@@ -222,4 +241,44 @@ class PasswordResetOTP(models.Model):
 
     def __str__(self):
         return f"PasswordResetOTP({self.reg_no} - {self.email})"
+
+
+class UserLoginHistory(models.Model):
+    LOGIN_METHOD_CHOICES = (
+        ('PASSWORD', 'Password'),
+        ('GOOGLE', 'Google OAuth'),
+    )
+    STATUS_CHOICES = (
+        ('SUCCESS', 'Success'),
+        ('FAILED', 'Failed'),
+    )
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='login_histories',
+        null=True,
+        blank=True,
+        help_text="User associated with this login attempt, if account exists"
+    )
+    email_attempted = models.EmailField(blank=True, default='', help_text="Email used during login attempt")
+    reg_no_attempted = models.CharField(max_length=64, blank=True, default='', help_text="Registration number used during login attempt")
+    login_method = models.CharField(max_length=20, choices=LOGIN_METHOD_CHOICES, default='PASSWORD')
+    client_type = models.CharField(max_length=20, default='web', help_text="'web' or 'android'")
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True, default='')
+    device_info = models.CharField(max_length=255, blank=True, default='', help_text="Human-readable device/browser string")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='SUCCESS')
+    failure_reason = models.CharField(max_length=100, blank=True, default='', help_text="e.g. UNREGISTERED_EMAIL, INVALID_CREDENTIALS, ACCOUNT_SUSPENDED")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['login_method', 'status']),
+            models.Index(fields=['-created_at']),
+        ]
+
+    def __str__(self):
+        ident = self.email_attempted or (self.user.email if self.user else self.reg_no_attempted) or 'Unknown'
+        return f"LoginLog({self.login_method} - {ident} - {self.status} at {self.created_at.strftime('%Y-%m-%d %H:%M') if self.created_at else ''})"
 

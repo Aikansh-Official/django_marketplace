@@ -91,6 +91,7 @@ api.interceptors.response.use(
     if (status === 401 && originalRequest && !originalRequest._retry) {
       const isAuthUrl =
         originalRequest.url?.includes('/auth/login/') ||
+        originalRequest.url?.includes('/auth/google/') ||
         originalRequest.url?.includes('/auth/register/') ||
         originalRequest.url?.includes('/auth/forgot-password/') ||
         originalRequest.url?.includes('/auth/reset-password/') ||

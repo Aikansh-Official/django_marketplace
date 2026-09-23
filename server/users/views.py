@@ -1,5 +1,7 @@
 import logging
 import secrets
+import json
+import urllib.request
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -9,13 +11,17 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db import models
 import random
-from .models import OTPVerification, PasswordResetToken, PasswordResetOTP, ADMIN_PERMISSIONS_CATALOG, ALL_PERMISSION_KEYS
+from .models import (
+    OTPVerification, PasswordResetToken, PasswordResetOTP,
+    ADMIN_PERMISSIONS_CATALOG, ALL_PERMISSION_KEYS, UserLoginHistory
+)
 from .permissions import HasAdminModulePermission, IsSuperAdminUser
 from .serializers import (
     UserRegistrationSerializer, UserListSerializer, SendOTPSerializer,
     VerifyOTPSerializer, AdminUserUpdateSerializer, UserAdminDetailSerializer,
     UserDashboardSummarySerializer, StaffUserSerializer,
-    ForgotPasswordRequestSerializer, ForgotPasswordResetSerializer
+    ForgotPasswordRequestSerializer, ForgotPasswordResetSerializer,
+    UserLoginHistorySerializer
 )
 from .email_service import send_otp_email, send_password_reset_email, send_password_reset_otp_email
 
@@ -88,6 +94,37 @@ def get_device_description(request):
     return f"{browser}{os_info}"
 
 
+def get_client_ip(request):
+    """Extract real client IP address considering reverse proxies / CDNs."""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        return x_forwarded_for.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR', '')
+
+
+def record_login_attempt(request, user=None, method='PASSWORD', status='SUCCESS', failure_reason='', email_attempted='', reg_no_attempted=''):
+    """Centralized, fail-safe login history and audit logger."""
+    try:
+        client_type = get_client_type(request)
+        device_desc = get_device_description(request)
+        ip = get_client_ip(request)
+        ua = request.META.get('HTTP_USER_AGENT', '')
+        UserLoginHistory.objects.create(
+            user=user,
+            email_attempted=email_attempted or (user.email if user else ''),
+            reg_no_attempted=reg_no_attempted or (user.username if user else ''),
+            login_method=method,
+            client_type=client_type,
+            ip_address=ip or None,
+            user_agent=ua,
+            device_info=device_desc,
+            status=status,
+            failure_reason=failure_reason
+        )
+    except Exception as e:
+        logger.warning(f"Failed to record login attempt log: {e}")
+
+
 def set_jwt_cookies(response, access_token, refresh_token=None):
     access_cookie_name = getattr(settings, 'SIMPLE_JWT', {}).get('AUTH_COOKIE', 'access_token')
     refresh_cookie_name = getattr(settings, 'SIMPLE_JWT', {}).get('AUTH_COOKIE_REFRESH', 'refresh_token')
@@ -123,12 +160,31 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
+        attempted_identifier = str(request.data.get('username', '')).strip()
+
         try:
             serializer.is_valid(raise_exception=True)
-        except TokenError as e:
-            raise InvalidToken(e.args[0])
+        except Exception as e:
+            # Look up matching student for forensic audit log
+            matched_user = User.objects.filter(
+                models.Q(username__iexact=attempted_identifier) | models.Q(email__iexact=attempted_identifier)
+            ).first()
+            record_login_attempt(
+                request,
+                user=matched_user,
+                method='PASSWORD',
+                status='FAILED',
+                failure_reason='INVALID_CREDENTIALS',
+                reg_no_attempted=attempted_identifier,
+                email_attempted=matched_user.email if matched_user else ''
+            )
+            if isinstance(e, TokenError):
+                raise InvalidToken(e.args[0])
+            raise e
 
         user = serializer.user
+        user.last_login_method = 'PASSWORD'
+        user.last_login = timezone.now()
         client_type = get_client_type(request)
         device_desc = get_device_description(request)
         new_session_id = uuid.uuid4().hex
@@ -139,7 +195,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             user.android_session_id = new_session_id
             user.android_session_device = device_desc
             user.android_session_created_at = timezone.now()
-            user.save(update_fields=['android_session_id', 'android_session_device', 'android_session_created_at'])
+            user.save(update_fields=['last_login_method', 'last_login', 'android_session_id', 'android_session_device', 'android_session_created_at'])
 
             refresh = RefreshToken.for_user(user)
             refresh_lifetime = getattr(settings, 'ANDROID_REFRESH_TOKEN_LIFETIME', timedelta(days=90))
@@ -150,6 +206,15 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             access = refresh.access_token
             access['session_id'] = new_session_id
             access['client_type'] = 'android'
+
+            record_login_attempt(
+                request,
+                user=user,
+                method='PASSWORD',
+                status='SUCCESS',
+                reg_no_attempted=user.username,
+                email_attempted=user.email
+            )
 
             response_data = {
                 'refresh': str(refresh),
@@ -167,7 +232,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             user.web_session_id = new_session_id
             user.web_session_device = device_desc
             user.web_session_created_at = timezone.now()
-            user.save(update_fields=['web_session_id', 'web_session_device', 'web_session_created_at'])
+            user.save(update_fields=['last_login_method', 'last_login', 'web_session_id', 'web_session_device', 'web_session_created_at'])
 
             refresh = RefreshToken.for_user(user)
             refresh_lifetime = getattr(settings, 'SIMPLE_JWT', {}).get('REFRESH_TOKEN_LIFETIME', timedelta(days=30))
@@ -179,6 +244,15 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             access['session_id'] = new_session_id
             access['client_type'] = 'web'
 
+            record_login_attempt(
+                request,
+                user=user,
+                method='PASSWORD',
+                status='SUCCESS',
+                reg_no_attempted=user.username,
+                email_attempted=user.email
+            )
+
             response_data = {
                 'refresh': str(refresh),
                 'access': str(access),
@@ -187,6 +261,266 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 'expires_in_days': 30,
                 'user': UserListSerializer(user).data,
                 'message': 'Successfully logged in to Web.'
+            }
+            response = Response(response_data, status=status.HTTP_200_OK)
+            set_jwt_cookies(response, str(access), str(refresh))
+            return response
+
+
+def extract_google_user_claims(data):
+    """
+    Extract email, email_verified, and subject from either Google OAuth tokeninfo or Firebase identitytoolkit payload.
+    """
+    if not isinstance(data, dict):
+        return None
+
+    # 1. Firebase Identity Toolkit response format:
+    # {"users": [{"localId": "...", "email": "...", "emailVerified": True, ...}]}
+    if 'users' in data and isinstance(data['users'], list) and len(data['users']) > 0:
+        u = data['users'][0]
+        email = u.get('email', '').strip().lower()
+        email_verified = u.get('emailVerified') in [True, 'true', 'True', 1, '1']
+        raw_id = u.get('localId')
+        for p in u.get('providerUserInfo', []):
+            if p.get('rawId'):
+                raw_id = p.get('rawId')
+                break
+        return {
+            'email': email,
+            'email_verified': email_verified,
+            'sub': raw_id,
+            'aud': None,
+            'source': 'firebase'
+        }
+
+    # 2. Google OAuth2 tokeninfo response format:
+    # {"email": "...", "email_verified": "true", "sub": "...", "aud": "..."}
+    if 'email' in data:
+        email = data.get('email', '').strip().lower()
+        email_verified = data.get('email_verified') in [True, 'true', 'True', 1, '1']
+        sub = data.get('sub')
+        aud = data.get('aud')
+        return {
+            'email': email,
+            'email_verified': email_verified,
+            'sub': sub,
+            'aud': aud,
+            'source': 'google_oauth'
+        }
+
+    return None
+
+
+def verify_google_token(credential):
+    """
+    Verifies a Google OAuth ID token or Firebase ID token against Google/Firebase servers.
+    Returns (claims_dict, error_code).
+    """
+    firebase_key = getattr(settings, 'FIREBASE_API_KEY', '').strip()
+
+    # 1. If Firebase API key is available, check Firebase Identity Toolkit first
+    if firebase_key:
+        try:
+            fb_url = f"https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={firebase_key}"
+            req_data = json.dumps({"idToken": credential}).encode('utf-8')
+            req = urllib.request.Request(
+                fb_url,
+                data=req_data,
+                headers={'Content-Type': 'application/json', 'User-Agent': 'CampusXChange-Auth/1.0'}
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                if resp.status == 200:
+                    resp_data = json.loads(resp.read().decode('utf-8'))
+                    claims = extract_google_user_claims(resp_data)
+                    if claims and claims.get('email'):
+                        return claims, None
+        except Exception as e:
+            logger.debug(f"Firebase identity lookup did not match (will test tokeninfo): {e}")
+
+    # 2. Fallback to Google OAuth2 tokeninfo endpoint
+    try:
+        tokeninfo_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={credential}"
+        req = urllib.request.Request(tokeninfo_url, headers={'User-Agent': 'CampusXChange-Auth/1.0'})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            if resp.status == 200:
+                resp_data = json.loads(resp.read().decode('utf-8'))
+                claims = extract_google_user_claims(resp_data)
+                if claims and claims.get('email'):
+                    return claims, None
+                return None, 'INVALID_TOKEN'
+            return None, 'INVALID_TOKEN'
+    except Exception as e:
+        logger.warning(f"Google tokeninfo verification failed: {e}")
+        return None, 'TOKEN_VERIFY_ERROR'
+
+
+class GoogleLoginView(APIView):
+    """
+    Authenticate a student via Google OAuth ID token or Firebase Auth ID token.
+    STRICT POLICY: Account must already be registered and email verified on CampusXChange.
+    New users cannot auto-register through Google.
+    """
+    permission_classes = (AllowAny,)
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'login'
+
+    def post(self, request):
+        credential = request.data.get('credential')
+        client_type = get_client_type(request)
+        device_desc = get_device_description(request)
+
+        if not credential or not str(credential).strip():
+            return Response(
+                {'error': 'Google authentication credential is required.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 1. Verify token with Firebase Identity Toolkit or Google OAuth tokeninfo
+        claims, err_code = verify_google_token(credential)
+        if not claims:
+            fail_reason = 'INVALID_TOKEN' if err_code == 'INVALID_TOKEN' else 'TOKEN_VERIFY_ERROR'
+            record_login_attempt(request, method='GOOGLE', status='FAILED', failure_reason=fail_reason)
+            err_msg = 'Invalid or expired Google token.' if fail_reason == 'INVALID_TOKEN' else 'Unable to verify Google token with Google servers. Please try again.'
+            return Response({'error': err_msg}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 2. Extract and validate claims
+        google_email = claims.get('email', '').strip().lower()
+        email_verified = claims.get('email_verified')
+        google_sub = claims.get('sub')
+
+        if not google_email:
+            record_login_attempt(request, method='GOOGLE', status='FAILED', failure_reason='NO_EMAIL_IN_TOKEN')
+            return Response({'error': 'Google account did not provide a valid email address.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not email_verified:
+            record_login_attempt(request, method='GOOGLE', status='FAILED', failure_reason='EMAIL_NOT_VERIFIED_BY_GOOGLE', email_attempted=google_email)
+            return Response({'error': 'Your Google account email is not verified by Google.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Audience validation if configured in environment and present in token
+        configured_client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '').strip()
+        if configured_client_id and claims.get('aud'):
+            if claims.get('aud') != configured_client_id:
+                logger.warning(f"Google aud mismatch: expected '{configured_client_id}', got '{claims.get('aud')}'")
+                record_login_attempt(request, method='GOOGLE', status='FAILED', failure_reason='AUDIENCE_MISMATCH', email_attempted=google_email)
+                return Response({'error': 'Google authentication client ID mismatch.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 3. Lookup existing student in database by verified college email
+        user = User.objects.filter(email__iexact=google_email).first()
+
+        # STRICT REQUIREMENT: Only registered & verified accounts may log in!
+        if not user:
+            record_login_attempt(
+                request,
+                user=None,
+                method='GOOGLE',
+                status='FAILED',
+                failure_reason='UNREGISTERED_EMAIL',
+                email_attempted=google_email
+            )
+            return Response({
+                'error': f'The email {google_email} is not registered on CampusXChange. Please register your student account first.',
+                'code': 'NOT_REGISTERED',
+                'email': google_email
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Suspended account check
+        if not user.is_active:
+            record_login_attempt(
+                request,
+                user=user,
+                method='GOOGLE',
+                status='FAILED',
+                failure_reason='ACCOUNT_SUSPENDED',
+                email_attempted=google_email,
+                reg_no_attempted=user.username
+            )
+            return Response({
+                'error': 'This student account has been suspended. Please contact campus administration.',
+                'code': 'ACCOUNT_SUSPENDED'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        # 4. Successful login
+        new_session_id = uuid.uuid4().hex
+        user.last_login_method = 'GOOGLE'
+        user.last_login = timezone.now()
+
+        update_fields = ['last_login_method', 'last_login']
+        if google_sub and not user.google_id:
+            user.google_id = str(google_sub)
+            update_fields.append('google_id')
+
+        if client_type == 'android':
+            user.android_session_id = new_session_id
+            user.android_session_device = device_desc
+            user.android_session_created_at = timezone.now()
+            update_fields.extend(['android_session_id', 'android_session_device', 'android_session_created_at'])
+            user.save(update_fields=update_fields)
+
+            refresh = RefreshToken.for_user(user)
+            refresh_lifetime = getattr(settings, 'ANDROID_REFRESH_TOKEN_LIFETIME', timedelta(days=90))
+            refresh.set_exp(lifetime=refresh_lifetime)
+            refresh['session_id'] = new_session_id
+            refresh['client_type'] = 'android'
+
+            access = refresh.access_token
+            access['session_id'] = new_session_id
+            access['client_type'] = 'android'
+
+            record_login_attempt(
+                request,
+                user=user,
+                method='GOOGLE',
+                status='SUCCESS',
+                email_attempted=google_email,
+                reg_no_attempted=user.username
+            )
+
+            response_data = {
+                'refresh': str(refresh),
+                'access': str(access),
+                'client_type': 'android',
+                'session_id': new_session_id,
+                'expires_in_days': 90,
+                'user': UserListSerializer(user).data,
+                'message': f'Welcome back, {user.full_name or user.username}!'
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        else:
+            # Web session
+            user.web_session_id = new_session_id
+            user.web_session_device = device_desc
+            user.web_session_created_at = timezone.now()
+            update_fields.extend(['web_session_id', 'web_session_device', 'web_session_created_at'])
+            user.save(update_fields=update_fields)
+
+            refresh = RefreshToken.for_user(user)
+            refresh_lifetime = getattr(settings, 'SIMPLE_JWT', {}).get('REFRESH_TOKEN_LIFETIME', timedelta(days=30))
+            refresh.set_exp(lifetime=refresh_lifetime)
+            refresh['session_id'] = new_session_id
+            refresh['client_type'] = 'web'
+
+            access = refresh.access_token
+            access['session_id'] = new_session_id
+            access['client_type'] = 'web'
+
+            record_login_attempt(
+                request,
+                user=user,
+                method='GOOGLE',
+                status='SUCCESS',
+                email_attempted=google_email,
+                reg_no_attempted=user.username
+            )
+
+            response_data = {
+                'refresh': str(refresh),
+                'access': str(access),
+                'client_type': 'web',
+                'session_id': new_session_id,
+                'expires_in_days': 30,
+                'user': UserListSerializer(user).data,
+                'message': f'Welcome back, {user.full_name or user.username}!'
             }
             response = Response(response_data, status=status.HTTP_200_OK)
             set_jwt_cookies(response, str(access), str(refresh))
@@ -1158,4 +1492,76 @@ class AdminStaffDetailView(APIView):
         return Response({'message': f"Revoked staff privileges for @{target_user.username}."})
 
 
+class UserLoginHistoryView(APIView):
+    """
+    Retrieve audit history of login attempts for a specific student.
+    Accessible to administrators with 'students' permission.
+    """
+    permission_classes = (HasAdminModulePermission('students'),)
 
+    def get(self, request, user_id):
+        try:
+            target_user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({'error': 'Student not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        logs = UserLoginHistory.objects.filter(
+            models.Q(user=target_user) | models.Q(email_attempted=target_user.email) | models.Q(reg_no_attempted=target_user.username)
+        ).order_by('-created_at')[:30]
+
+        serializer = UserLoginHistorySerializer(logs, many=True)
+        return Response({
+            'user_id': str(target_user.id),
+            'username': target_user.username,
+            'full_name': target_user.full_name,
+            'last_login_method': target_user.last_login_method,
+            'last_login': target_user.last_login,
+            'is_google_linked': bool(target_user.google_id),
+            'logs': serializer.data
+        }, status=status.HTTP_200_OK)
+
+
+class AdminLoginLogsView(APIView):
+    """
+    Global immutable audit log stream of student login sessions.
+    Allows filtering by method (GOOGLE vs PASSWORD), status (SUCCESS vs FAILED), and text search.
+    """
+    permission_classes = (HasAdminModulePermission('students'),)
+
+    def get(self, request):
+        qs = UserLoginHistory.objects.select_related('user').all()
+
+        method = request.query_params.get('method')
+        if method in ['PASSWORD', 'GOOGLE']:
+            qs = qs.filter(login_method=method)
+
+        log_status = request.query_params.get('status')
+        if log_status in ['SUCCESS', 'FAILED']:
+            qs = qs.filter(status=log_status)
+
+        search = request.query_params.get('search', '').strip()
+        if search:
+            qs = qs.filter(
+                models.Q(email_attempted__icontains=search) |
+                models.Q(reg_no_attempted__icontains=search) |
+                models.Q(user__username__icontains=search) |
+                models.Q(user__email__icontains=search) |
+                models.Q(user__full_name__icontains=search) |
+                models.Q(ip_address__icontains=search)
+            )
+
+        total_count = qs.count()
+        recent_logs = qs.order_by('-created_at')[:100]
+        serializer = UserLoginHistorySerializer(recent_logs, many=True)
+
+        google_success = UserLoginHistory.objects.filter(login_method='GOOGLE', status='SUCCESS').count()
+        password_success = UserLoginHistory.objects.filter(login_method='PASSWORD', status='SUCCESS').count()
+        total_failed = UserLoginHistory.objects.filter(status='FAILED').count()
+
+        return Response({
+            'total_count': total_count,
+            'google_logins_count': google_success,
+            'password_logins_count': password_success,
+            'failed_logins_count': total_failed,
+            'logs': serializer.data
+        }, status=status.HTTP_200_OK)
