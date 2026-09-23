@@ -61,6 +61,7 @@ The CampusXChange Android App is engineered to mirror **100% of the features, bu
 | 14 | [**ANDROID_BANNER_CAROUSEL_SPECIFICATION.md**](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/android/ANDROID_BANNER_CAROUSEL_SPECIFICATION.md) | **Marketing Banners**: Dynamic hero banner carousel, auto-scroll timer (5s), touch swipe gestures, multi-layer gradient scrims, Coil image loader, deep-link router (internal/external). |
 | 15 | [**ANDROID_LEGAL_AND_SAFETY_SPECIFICATION.md**](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/android/ANDROID_LEGAL_AND_SAFETY_SPECIFICATION.md) | **Compliance**: DPDP Act (2023) privacy protections, campus safety tips, prohibited items checklist, Terms of Service, Guidelines, Trader Report modal. |
 | 16 | [**ANDROID_CURVED_BOTTOM_NAVIGATION_SPECIFICATION.md**](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/android/ANDROID_CURVED_BOTTOM_NAVIGATION_SPECIFICATION.md) | **Navigation & Dashboards**: Floating curved cradle pill bar, Cubic Bezier concave notch, dynamic context-aware hero action (WTB vs. Handover alert), active orange dot (`•`), adaptive TopBar, and live Buyer/Seller dashboards with 100% Web parity. |
+| 17 | [**ANDROID_GOOGLE_AUTH_SPECIFICATION.md**](file:///c:/Users/anshu/OneDrive/Desktop/Projects/LPUTrade/android/ANDROID_GOOGLE_AUTH_SPECIFICATION.md) | **Google & Firebase Authentication**: AndroidX Credential Manager One-Tap, strict pre-registration enforcement (404 prompt to register first), 90-day Android JWT refresh, SHA-1 setup, and immutable admin audit logging. |
 
 ---
 
