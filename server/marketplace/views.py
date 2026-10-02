@@ -17,15 +17,16 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 from .models import (
-    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession, BroadcastLog, AdminAuditLog, Review, ChatMessage, Banner
+    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, FCMDevice, HandoverSession, BroadcastLog, AdminAuditLog, Review, ChatMessage, Banner
 )
 from .serializers import (
     ListingSerializer, ListingCreateUpdateSerializer, AdminListingUpdateSerializer, CategorySerializer,
     AdminCategorySerializer, OfferSerializer, ListingReportSerializer,
     ListingReportCreateSerializer, PlatformSettingSerializer, NotificationSerializer,
     HandoverSessionSerializer, AdminDealSerializer, BroadcastLogSerializer, AdminAuditLogSerializer,
-    ReviewSerializer, ChatMessageSerializer, BannerSerializer
+    ReviewSerializer, ChatMessageSerializer, BannerSerializer, FCMDeviceSerializer, FCMTokenRegisterSerializer
 )
+from .services.notification_service import NotificationService
 from users.serializers import PublicSellerProfileSerializer
 from users.permissions import HasAdminModulePermission
 from .cloudinary_upload import upload_image_to_cloudinary, delete_image_from_cloudinary
@@ -744,13 +745,15 @@ class CreateOfferView(APIView):
         if buyer_message:
             notif_msg += f' Note: "{buyer_message}"'
 
-        Notification.objects.create(
+        NotificationService.send_notification(
             recipient=listing.seller,
             sender=request.user,
             notification_type='BUY_REQUEST',
+            priority='HIGH',
             title=f"New Purchase Request for '{listing.title}'",
             message=notif_msg,
-            listing=listing
+            listing=listing,
+            link=f"/profile?tab=my-sales&offer={offer.id}"
         )
 
         serializer = OfferSerializer(offer)
@@ -804,13 +807,15 @@ class RespondOfferView(APIView):
             listing.save()
 
             # Notify the accepted buyer
-            Notification.objects.create(
+            NotificationService.send_notification(
                 recipient=offer.buyer,
                 sender=request.user,
                 notification_type='REQUEST_ACCEPTED',
+                priority='HIGH',
                 title=f"Request Accepted for '{listing.title}'!",
                 message=f"{seller_display} accepted your request for '{listing.title}'. Contact the seller to finalize campus pickup.",
-                listing=listing
+                listing=listing,
+                link=f"/profile?tab=my-orders&offer={offer.id}"
             )
 
             # Decline other pending requests for this listing
@@ -818,26 +823,30 @@ class RespondOfferView(APIView):
             for oth in other_offers:
                 oth.status = 'REJECTED'
                 oth.save()
-                Notification.objects.create(
+                NotificationService.send_notification(
                     recipient=oth.buyer,
                     sender=request.user,
                     notification_type='REQUEST_REJECTED',
+                    priority='NORMAL',
                     title=f"Item Reserved: '{listing.title}'",
                     message=f"Another student's request was accepted for '{listing.title}'.",
-                    listing=listing
+                    listing=listing,
+                    link=f"/product/{listing.id}"
                 )
 
         elif action == 'REJECT':
             offer.status = 'REJECTED'
             offer.save()
 
-            Notification.objects.create(
+            NotificationService.send_notification(
                 recipient=offer.buyer,
                 sender=request.user,
                 notification_type='REQUEST_REJECTED',
+                priority='NORMAL',
                 title=f"Request Declined for '{listing.title}'",
                 message=f"{seller_display} declined your purchase request for '{listing.title}'.",
-                listing=listing
+                listing=listing,
+                link=f"/product/{listing.id}"
             )
 
         elif action == 'COUNTER':
@@ -857,13 +866,15 @@ class RespondOfferView(APIView):
             offer.status = 'COUNTERED'
             offer.save()
 
-            Notification.objects.create(
+            NotificationService.send_notification(
                 recipient=offer.buyer,
                 sender=request.user,
                 notification_type='OFFER_COUNTERED',
+                priority='HIGH',
                 title=f"Counter-Offer: Rs {counter_amount} for '{listing.title}'",
                 message=f"{seller_display} proposed a counter price of Rs {counter_amount} for '{listing.title}'.{f' Note: \"{seller_note}\"' if seller_note else ''}",
-                listing=listing
+                listing=listing,
+                link=f"/profile?tab=my-orders&offer={offer.id}"
             )
 
         serializer = OfferSerializer(offer)
@@ -902,13 +913,15 @@ class BuyerCounterRespondView(APIView):
             listing.save()
 
             # Notify seller
-            Notification.objects.create(
+            NotificationService.send_notification(
                 recipient=listing.seller,
                 sender=request.user,
                 notification_type='REQUEST_ACCEPTED',
+                priority='HIGH',
                 title=f"Counter-Offer Accepted for '{listing.title}'!",
                 message=f"{buyer_display} accepted your counter-offer of Rs {offer.offer_amount}. Meet on campus to finalize handover.",
-                listing=listing
+                listing=listing,
+                link=f"/profile?tab=my-sales&offer={offer.id}"
             )
 
             # Decline other pending requests for this listing
@@ -920,13 +933,15 @@ class BuyerCounterRespondView(APIView):
             offer.status = 'REJECTED'
             offer.save()
 
-            Notification.objects.create(
+            NotificationService.send_notification(
                 recipient=listing.seller,
                 sender=request.user,
                 notification_type='REQUEST_REJECTED',
+                priority='NORMAL',
                 title=f"Counter-Offer Declined for '{listing.title}'",
                 message=f"{buyer_display} declined your counter-offer for '{listing.title}'.",
-                listing=listing
+                listing=listing,
+                link=f"/profile?tab=my-sales&offer={offer.id}"
             )
 
         return Response(OfferSerializer(offer).data)
@@ -984,13 +999,15 @@ class ReviewCreateView(APIView):
 
         # Notify reviewed user
         reviewer_display = getattr(request.user, 'full_name', '') or request.user.username
-        Notification.objects.create(
+        NotificationService.send_notification(
             recipient=reviewed_user,
             sender=request.user,
             notification_type='NEW_REVIEW',
+            priority='NORMAL',
             title=f"New {rating}★ Review from {reviewer_display}",
             message=f'{reviewer_display} left a review for "{deal.listing.title}": "{comment or "Great trade!"}"',
-            listing=deal.listing
+            listing=deal.listing,
+            link=f"/profile?tab=reviews"
         )
 
         return Response(ReviewSerializer(review).data, status=status.HTTP_201_CREATED)
@@ -1132,13 +1149,15 @@ class ChatMessageListCreateView(APIView):
         parts = sender_name.strip().split()
         masked_sender = f"{parts[0]} {parts[1][0]}." if len(parts) >= 2 else parts[0]
 
-        Notification.objects.create(
+        NotificationService.send_notification(
             recipient=peer,
             sender=request.user,
             notification_type='NEW_CHAT_MESSAGE',
+            priority='NORMAL',
             title=f"Message from {masked_sender}",
             message=f'Re: "{listing.title}" — {message_text[:80]}',
-            listing=listing
+            listing=listing,
+            link=f"/chat/{listing.id}/{request.user.id}"
         )
 
         return Response(ChatMessageSerializer(msg, context={'request': request}).data, status=status.HTTP_201_CREATED)
@@ -1232,7 +1251,131 @@ class NotificationListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Notification.objects.filter(recipient=self.request.user).select_related('listing').order_by('-created_at')
+        qs = Notification.objects.filter(recipient=self.request.user).select_related('listing', 'sender').order_by('-created_at')
+        tab = self.request.query_params.get('tab', '').upper().strip()
+        search = self.request.query_params.get('search', '').strip()
+
+        if tab == 'UNREAD':
+            qs = qs.filter(is_read=False)
+        elif tab in ['OFFERS', 'DEALS']:
+            qs = qs.filter(notification_type__in=[
+                'BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED',
+                'OFFER_COUNTERED', 'HANDOVER_READY', 'ITEM_SOLD', 'DEAL_CANCELLED'
+            ])
+        elif tab == 'BROADCAST':
+            qs = qs.filter(notification_type__in=['BROADCAST', 'DIRECT_WARNING'])
+        elif tab == 'CHATS':
+            qs = qs.filter(notification_type='NEW_CHAT_MESSAGE')
+
+        if search:
+            qs = qs.filter(models.Q(title__icontains=search) | models.Q(message__icontains=search))
+
+        return qs
+
+
+class UnreadNotificationCountView(APIView):
+    """
+    Lightweight endpoint returning the total unread notifications count for the authenticated user.
+    Used for instant navbar bell badge updates and polling.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        count = Notification.objects.filter(recipient=request.user, is_read=False).count()
+        return Response({'unread_count': count})
+
+
+class RegisterFCMDeviceView(APIView):
+    """
+    Registers or updates an FCM device token for the authenticated student.
+    Compatible with both Web Push VAPID and Android Native FCM payloads.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = FCMTokenRegisterSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        token = serializer.validated_data['token']
+        device_type = serializer.validated_data.get('device_type', 'WEB')
+        device_name = serializer.validated_data.get('name', '')
+
+        device, created = FCMDevice.objects.update_or_create(
+            registration_id=token,
+            defaults={
+                'user': request.user,
+                'device_type': device_type,
+                'device_name': device_name,
+                'is_active': True,
+            }
+        )
+
+        logger.info(f"FCM Device {'registered' if created else 'updated'} for user {request.user.email} ({device_type})")
+        return Response({
+            'success': True,
+            'message': 'FCM device registered successfully.',
+            'device_id': device.id,
+            'device_type': device.device_type,
+            'is_active': device.is_active
+        }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+class UnregisterFCMDeviceView(APIView):
+    """
+    Deactivates an FCM device token (e.g., on logout) so the student
+    does not receive push notifications on a shared/public browser or device.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        token = request.data.get('registration_id') or request.data.get('fcm_token')
+        if token:
+            count = FCMDevice.objects.filter(registration_id=token.strip(), user=request.user).update(is_active=False)
+            return Response({'success': True, 'message': f'FCM device token deactivated ({count} device).'})
+
+        # If no token passed, deactivate all web devices for this user
+        device_type = request.data.get('device_type', 'WEB')
+        count = FCMDevice.objects.filter(user=request.user, device_type=device_type).update(is_active=False)
+        return Response({'success': True, 'message': f'FCM devices deactivated ({count} devices).'})
+
+
+class TestFCMPushView(APIView):
+    """
+    Test endpoint allowing authenticated users to verify their browser FCM push setup.
+    Sends a push notification to all active devices registered for this user.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        from .services.notification_service import get_firebase_app
+        is_ready = get_firebase_app()
+        devices = list(FCMDevice.objects.filter(user=request.user, is_active=True))
+        device_count = len(devices)
+
+        title = request.data.get('title', '🧪 CampusXChange Test Alert')
+        message = request.data.get('message', 'FCM Push Notifications are working properly in your browser!')
+        link = request.data.get('link', '/notifications')
+
+        notif = NotificationService.send_notification(
+            recipient=request.user,
+            title=title,
+            message=message,
+            notification_type='GENERAL',
+            priority='NORMAL',
+            link=link,
+            send_push=True
+        )
+
+        return Response({
+            'success': True,
+            'firebase_admin_initialized': is_ready,
+            'active_devices_count': device_count,
+            'devices': [{'id': d.id, 'device_type': d.device_type, 'name': d.device_name} for d in devices],
+            'notification_id': notif.id if notif else None,
+            'mode': 'REAL_FCM' if is_ready else 'FALLBACK_SIMULATED',
+            'message': 'Test push notification dispatched!' if is_ready else 'Notification saved to DB. Note: Firebase Admin is running in Fallback mode (missing service account credentials).'
+        })
 
 
 class MarkNotificationReadView(APIView):
@@ -2150,20 +2293,15 @@ class AdminBroadcastNotificationView(APIView):
                 recipients_count=recipients_count
             )
 
-            # 2. Bulk create individual in-app notifications
-            notifications = [
-                Notification(
-                    recipient=student,
-                    sender=request.user,
-                    notification_type='BROADCAST',
-                    priority=priority,
-                    title=title,
-                    message=message,
-                    link=link
-                )
-                for student in recipients
-            ]
-            Notification.objects.bulk_create(notifications, batch_size=500)
+            # 2. Bulk create individual in-app notifications and dispatch multicast FCM push
+            NotificationService.send_broadcast(
+                recipients=list(recipients),
+                title=title,
+                message=message,
+                priority=priority,
+                link=link or '/notifications',
+                sender=request.user
+            )
 
         log_admin_action(
             request,
@@ -2210,14 +2348,14 @@ class AdminDirectNotificationView(APIView):
         if priority not in valid_priorities:
             priority = 'HIGH'
 
-        notif = Notification.objects.create(
+        notif = NotificationService.send_notification(
             recipient=student,
             sender=request.user,
             notification_type='DIRECT_WARNING',
             priority=priority,
             title=title,
             message=message,
-            link=link
+            link=link or '/notifications'
         )
 
         log_admin_action(

@@ -20,15 +20,27 @@ import {
   ShieldAlert,
   Radio,
   AlertTriangle,
-  MessageSquare
+  MessageSquare,
+  Search,
+  Loader2
 } from 'lucide-react';
 import api from '../services/api';
 import UniversalLoader from '../components/common/UniversalLoader';
+import {
+  isNotificationSupported,
+  getNotificationPermission,
+  requestNotificationPermissionAndRegister,
+  sendTestPushNotification
+} from '../services/fcmService';
 
 export default function Notifications() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [pushPermission, setPushPermission] = useState(() => getNotificationPermission());
+  const [isEnablingPush, setIsEnablingPush] = useState(false);
+  const [isTestingPush, setIsTestingPush] = useState(false);
   const [deleteModalId, setDeleteModalId] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
@@ -109,27 +121,71 @@ export default function Notifications() {
     }
   };
 
+  const handleEnablePush = async () => {
+    setIsEnablingPush(true);
+    try {
+      const res = await requestNotificationPermissionAndRegister();
+      setPushPermission(getNotificationPermission());
+      if (res.success) {
+        toast.success('🔔 Web push alerts enabled! You will now receive instant trade notifications.');
+      } else if (res.reason === 'PERMISSION_DENIED') {
+        toast.error('Notification permission was blocked in browser settings. Please allow notifications for this site.');
+      } else if (res.reason === 'MISSING_VAPID_KEY') {
+        toast.error('VAPID Key missing in client/.env! Please configure VITE_FIREBASE_VAPID_KEY from Firebase Console.');
+      } else {
+        toast.error(res.reason || 'Could not register push notifications.');
+      }
+    } finally {
+      setIsEnablingPush(false);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    setIsTestingPush(true);
+    try {
+      const res = await sendTestPushNotification();
+      if (res?.mode === 'FALLBACK_SIMULATED') {
+        toast.success('Browser notification triggered! (Server FCM in Fallback Mode - service account key needed for live background push)');
+      } else {
+        toast.success('Test push notification sent successfully to your browser!');
+      }
+    } catch (err) {
+      toast.success('Local test notification displayed! (Backend test push skipped or unavailable)');
+    } finally {
+      setIsTestingPush(false);
+    }
+  };
+
   // Metrics calculation
   const totalNotifications = notifications.length;
   const unreadCount = notifications.filter((n) => !n.is_read).length;
   const dealCount = notifications.filter((n) =>
-    ['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'ITEM_SOLD', 'DEAL_CANCELLED', 'HANDOVER_READY', 'NEW_CHAT_MESSAGE'].includes(
+    ['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'OFFER_COUNTERED', 'ITEM_SOLD', 'DEAL_CANCELLED', 'HANDOVER_READY'].includes(
       n.notification_type
     )
   ).length;
+  const chatCount = notifications.filter((n) => n.notification_type === 'NEW_CHAT_MESSAGE').length;
   const broadcastCount = notifications.filter((n) =>
     ['BROADCAST', 'DIRECT_WARNING'].includes(n.notification_type) || n.priority === 'URGENT'
   ).length;
 
   // Filter list
   const filteredNotifications = notifications.filter((n) => {
-    if (filter === 'UNREAD') return !n.is_read;
-    if (filter === 'TRADE')
-      return ['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'ITEM_SOLD', 'DEAL_CANCELLED', 'HANDOVER_READY', 'NEW_CHAT_MESSAGE'].includes(
-        n.notification_type
-      );
-    if (filter === 'BROADCAST')
-      return ['BROADCAST', 'DIRECT_WARNING'].includes(n.notification_type) || n.priority === 'URGENT';
+    // Tab filter
+    if (filter === 'UNREAD' && n.is_read) return false;
+    if (filter === 'TRADE' && !['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'OFFER_COUNTERED', 'ITEM_SOLD', 'DEAL_CANCELLED', 'HANDOVER_READY'].includes(n.notification_type)) return false;
+    if (filter === 'MESSAGES' && n.notification_type !== 'NEW_CHAT_MESSAGE') return false;
+    if (filter === 'BROADCAST' && !['BROADCAST', 'DIRECT_WARNING'].includes(n.notification_type) && n.priority !== 'URGENT') return false;
+
+    // Search query filter
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase();
+      const matchTitle = n.title?.toLowerCase().includes(q);
+      const matchMsg = n.message?.toLowerCase().includes(q);
+      const matchListing = n.listing_title?.toLowerCase().includes(q);
+      if (!matchTitle && !matchMsg && !matchListing) return false;
+    }
+
     return true;
   });
 
@@ -322,8 +378,84 @@ export default function Notifications() {
         </div>
       </div>
 
-      {/* Metrics Row - identical to MyListings metrics cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 mb-4 sm:mb-5">
+      {/* Web Push Alerts Status & Toggle Banner */}
+      {isNotificationSupported() && (
+        <div className="mb-4 sm:mb-5 p-3.5 sm:p-4 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs bg-gradient-to-r from-orange-50/70 via-white to-amber-50/50 border-orange-200/70">
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-lg ${pushPermission === 'granted'
+              ? 'bg-emerald-500/15 text-emerald-600'
+              : 'bg-orange-500/15 text-orange-600'
+              }`}>
+              {pushPermission === 'granted' ? '🔔' : '🔕'}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm font-bold text-gray-900">
+                  {pushPermission === 'granted' ? 'Real-Time Push Notifications Active' : 'Enable Web Push Alerts'}
+                </span>
+                <span className={`w-2 h-2 rounded-full ${pushPermission === 'granted' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'
+                  }`} />
+              </div>
+              <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
+                {pushPermission === 'granted'
+                  ? 'Your browser is linked to Firebase Cloud Messaging (FCM). You will receive instant alerts for offers, chats, and handovers.'
+                  : 'Never miss an offer or chat ping! Receive native browser notifications even when CampusXChange is running in the background.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-center">
+            {pushPermission !== 'granted' ? (
+              <button
+                type="button"
+                onClick={handleEnablePush}
+                disabled={isEnablingPush}
+                className="bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+              >
+                {isEnablingPush ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Enabling...</span>
+                  </>
+                ) : (
+                  <>
+                    <Bell className="w-3.5 h-3.5" />
+                    <span>Enable Push Alerts</span>
+                  </>
+                )}
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100/70 border border-emerald-300/60 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Push Active
+                </span>
+                <button
+                  type="button"
+                  onClick={handleTestNotification}
+                  disabled={isTestingPush}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  title="Test sending a browser push notification"
+                >
+                  {isTestingPush ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-600" />
+                      <span>Testing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Test Alert</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Metrics Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-4 mb-4 sm:mb-5">
         <div className="bg-white border border-gray-200 rounded-md p-3 sm:p-4 shadow-sm">
           <div className="text-[10px] sm:text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
             Total Alerts
@@ -339,40 +471,71 @@ export default function Notifications() {
         </div>
 
         <div className="bg-white border border-gray-200 rounded-md p-3 sm:p-4 shadow-sm">
-          <div className="text-[10px] sm:text-[11px] font-semibold text-indigo-600 uppercase tracking-wider">
-            Campus Broadcasts
-          </div>
-          <div className="text-xl sm:text-2xl font-extrabold text-indigo-700 mt-1">{broadcastCount}</div>
-        </div>
-
-        <div className="bg-white border border-gray-200 rounded-md p-3 sm:p-4 shadow-sm">
           <div className="text-[10px] sm:text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">
             Purchase Deals
           </div>
           <div className="text-xl sm:text-2xl font-extrabold text-emerald-700 mt-1">{dealCount}</div>
         </div>
+
+        <div className="bg-white border border-gray-200 rounded-md p-3 sm:p-4 shadow-sm">
+          <div className="text-[10px] sm:text-[11px] font-semibold text-indigo-600 uppercase tracking-wider">
+            Chat Messages
+          </div>
+          <div className="text-xl sm:text-2xl font-extrabold text-indigo-700 mt-1">{chatCount}</div>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-md p-3 sm:p-4 shadow-sm">
+          <div className="text-[10px] sm:text-[11px] font-semibold text-amber-600 uppercase tracking-wider">
+            Campus Broadcasts
+          </div>
+          <div className="text-xl sm:text-2xl font-extrabold text-amber-700 mt-1">{broadcastCount}</div>
+        </div>
       </div>
 
-      {/* Filters Strip */}
-      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 -mx-1 px-1 touch-pan-x touch-momentum scrollbar-none mb-4 sm:mb-5">
-        {[
-          { key: 'ALL', label: `All Alerts (${totalNotifications})` },
-          { key: 'UNREAD', label: `Unread (${unreadCount})` },
-          { key: 'BROADCAST', label: `Campus Broadcasts (${broadcastCount})` },
-          { key: 'TRADE', label: `Purchase Requests (${dealCount})` },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setFilter(tab.key)}
-            className={`px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer min-h-[38px] flex items-center justify-center shrink-0 ${
-              filter === tab.key
+      {/* Search & Filter Toolbar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4 sm:mb-5">
+        {/* Filters Strip */}
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 -mx-1 px-1 touch-pan-x touch-momentum scrollbar-none">
+          {[
+            { key: 'ALL', label: `All (${totalNotifications})` },
+            { key: 'UNREAD', label: `Unread (${unreadCount})` },
+            { key: 'TRADE', label: `Deals & Offers (${dealCount})` },
+            { key: 'MESSAGES', label: `Messages (${chatCount})` },
+            { key: 'BROADCAST', label: `Broadcasts (${broadcastCount})` },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={`px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer min-h-[38px] flex items-center justify-center shrink-0 ${filter === tab.key
                 ? 'bg-brand-500 text-white shadow-xs'
                 : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 active:bg-gray-100'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+                }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Search Input Bar */}
+        <div className="relative min-w-[220px] sm:max-w-xs">
+          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search alerts by title or item..."
+            className="w-full bg-white border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-bold p-0.5"
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Notifications List */}
@@ -407,15 +570,14 @@ export default function Notifications() {
               <div
                 key={notif.id}
                 onClick={() => !notif.is_read && handleMarkRead(notif.id)}
-                className={`bg-white border rounded-xl p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 shadow-sm hover:border-gray-300 transition-all ${
-                  isUrgent
-                    ? 'border-l-4 border-l-red-600 bg-red-50/20 border-red-200 shadow-md'
-                    : isHigh
+                className={`bg-white border rounded-xl p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 shadow-sm hover:border-gray-300 transition-all ${isUrgent
+                  ? 'border-l-4 border-l-red-600 bg-red-50/20 border-red-200 shadow-md'
+                  : isHigh
                     ? 'border-l-4 border-l-amber-500 bg-amber-50/15 border-amber-200'
                     : !notif.is_read
-                    ? 'border-l-4 border-l-brand-500 border-gray-200 bg-brand-50/15'
-                    : 'border-gray-200'
-                }`}
+                      ? 'border-l-4 border-l-brand-500 border-gray-200 bg-brand-50/15'
+                      : 'border-gray-200'
+                  }`}
               >
                 {/* Left Section: Image/Icon + Title + Message + Meta */}
                 <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0 flex-1">

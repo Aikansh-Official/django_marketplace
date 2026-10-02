@@ -3,7 +3,8 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
 from django.conf import settings
-from .models import Listing, Category, Offer, PlatformSetting, HandoverSession, AdminAuditLog
+from .models import Listing, Category, Offer, PlatformSetting, HandoverSession, AdminAuditLog, Notification, FCMDevice
+from .services.notification_service import NotificationService
 
 User = get_user_model()
 
@@ -560,8 +561,14 @@ class MarketplaceClientParityTests(TestCase):
             condition='LIKE_NEW',
             location='BH-3',
             seller=self.seller,
-            category=self.category,
             status='ACTIVE'
+        )
+        self.buyer = User.objects.create_user(
+            username='88888888',
+            email='test.buyer@lpu.in',
+            password='Password123!',
+            full_name='Test Buyer',
+            phone_number='9876543288'
         )
 
     def test_public_platform_config_endpoint(self):
@@ -661,4 +668,111 @@ class MarketplaceClientParityTests(TestCase):
         reports = my_reports_res.data
         self.assertEqual(len(reports), 2)
         self.assertTrue(all(r['status'] == 'PENDING' for r in reports))
+
+    def test_fcm_device_registration_and_unregistration(self):
+        self.client.force_authenticate(user=self.buyer)
+
+        # 1. Register Web Push FCM token
+        reg_res = self.client.post('/api/marketplace/notifications/register-device/', {
+            'registration_id': 'test_fcm_web_token_abc123',
+            'device_type': 'WEB',
+            'device_name': 'Chrome on Windows'
+        })
+        self.assertEqual(reg_res.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(reg_res.data['success'])
+
+        device = FCMDevice.objects.get(registration_id='test_fcm_web_token_abc123')
+        self.assertEqual(device.user, self.buyer)
+        self.assertTrue(device.is_active)
+        self.assertEqual(device.device_type, 'WEB')
+
+        # 2. Re-register (update existing token)
+        reg_res2 = self.client.post('/api/marketplace/fcm-token/', {
+            'fcm_token': 'test_fcm_web_token_abc123',
+            'device_model': 'Chrome v120'
+        })
+        self.assertEqual(reg_res2.status_code, status.HTTP_200_OK)
+        device.refresh_from_db()
+        self.assertEqual(device.device_name, 'Chrome v120')
+
+        # 3. Unregister device (logout simulation)
+        unreg_res = self.client.post('/api/marketplace/notifications/unregister-device/', {
+            'registration_id': 'test_fcm_web_token_abc123'
+        })
+        self.assertEqual(unreg_res.status_code, status.HTTP_200_OK)
+        device.refresh_from_db()
+        self.assertFalse(device.is_active)
+
+    def test_notification_unread_count_and_tab_filtering(self):
+        self.client.force_authenticate(user=self.buyer)
+
+        # Create notifications
+        Notification.objects.create(
+            recipient=self.buyer,
+            title='Buy Request Update',
+            message='Your request was accepted',
+            notification_type='REQUEST_ACCEPTED',
+            is_read=False
+        )
+        Notification.objects.create(
+            recipient=self.buyer,
+            title='Campus Broadcast',
+            message='Library hours extended',
+            notification_type='BROADCAST',
+            is_read=False
+        )
+        Notification.objects.create(
+            recipient=self.buyer,
+            title='Old Chat Message',
+            message='Hey is this available?',
+            notification_type='NEW_CHAT_MESSAGE',
+            is_read=True
+        )
+
+        # 1. Test unread count endpoint
+        count_res = self.client.get('/api/marketplace/notifications/unread-count/')
+        self.assertEqual(count_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(count_res.data['unread_count'], 2)
+
+        # 2. Test tab=UNREAD
+        unread_res = self.client.get('/api/marketplace/notifications/?tab=UNREAD')
+        self.assertEqual(unread_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(unread_res.data), 2)
+
+        # 3. Test tab=OFFERS
+        offers_res = self.client.get('/api/marketplace/notifications/?tab=OFFERS')
+        self.assertEqual(offers_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(offers_res.data), 1)
+        self.assertEqual(offers_res.data[0]['notification_type'], 'REQUEST_ACCEPTED')
+
+        # 4. Test tab=BROADCAST
+        bc_res = self.client.get('/api/marketplace/notifications/?tab=BROADCAST')
+        self.assertEqual(bc_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(bc_res.data), 1)
+        self.assertEqual(bc_res.data[0]['notification_type'], 'BROADCAST')
+
+    def test_notification_service_dispatcher(self):
+        # Register an active device for the buyer
+        FCMDevice.objects.create(
+            user=self.buyer,
+            registration_id='test_device_push_token_999',
+            device_type='ANDROID',
+            is_active=True
+        )
+
+        # Send notification via NotificationService
+        notif = NotificationService.send_notification(
+            recipient=self.buyer,
+            sender=self.seller,
+            notification_type='HANDOVER_READY',
+            priority='URGENT',
+            title='Handover OTP Generated',
+            message='Please meet seller at BH-3 to scan QR.',
+            link='/handover/123'
+        )
+
+        self.assertIsNotNone(notif)
+        self.assertEqual(notif.recipient, self.buyer)
+        self.assertEqual(notif.priority, 'URGENT')
+        self.assertEqual(notif.link, '/handover/123')
 

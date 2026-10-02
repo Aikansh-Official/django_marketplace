@@ -215,6 +215,32 @@ class Notification(models.Model):
         return f"Notification for {self.recipient}: {self.title} ({self.priority})"
 
 
+class FCMDevice(models.Model):
+    DEVICE_TYPES = (
+        ('WEB', 'Web Browser'),
+        ('ANDROID', 'Android App'),
+        ('IOS', 'iOS App'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='fcm_devices')
+    registration_id = models.CharField(max_length=512, unique=True, db_index=True)
+    device_type = models.CharField(max_length=10, choices=DEVICE_TYPES, default='WEB')
+    device_name = models.CharField(max_length=150, blank=True, default='')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+        indexes = [
+            models.Index(fields=['user', 'is_active']),
+            models.Index(fields=['registration_id']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.email} - {self.device_type} ({self.device_name or 'Device'})"
+
+
 class BroadcastLog(models.Model):
     AUDIENCE_CHOICES = (
         ('ALL', 'All Students'),

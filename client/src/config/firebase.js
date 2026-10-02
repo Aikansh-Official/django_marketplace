@@ -29,4 +29,20 @@ googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
 
+// Safe async getter for Firebase Cloud Messaging
+export const getFirebaseMessaging = async () => {
+  try {
+    if (typeof window !== "undefined" && 'serviceWorker' in navigator && 'Notification' in window) {
+      const { getMessaging, isSupported } = await import("firebase/messaging");
+      const supported = await isSupported();
+      if (supported) {
+        return getMessaging(app);
+      }
+    }
+  } catch (err) {
+    console.debug("Firebase Messaging initialization check skipped/unsupported:", err);
+  }
+  return null;
+};
+
 export default app;

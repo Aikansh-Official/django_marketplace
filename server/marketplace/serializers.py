@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.utils import timezone
 from .models import (
-    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, HandoverSession, BroadcastLog, AdminAuditLog, Review, ChatMessage, Banner
+    Listing, ListingImage, Category, Offer, Wishlist, ListingReport, PlatformSetting, Notification, FCMDevice, HandoverSession, BroadcastLog, AdminAuditLog, Review, ChatMessage, Banner
 )
 from .cloudinary_upload import (
     upload_base64_to_cloudinary, is_base64_image, is_url
@@ -422,6 +422,30 @@ class NotificationSerializer(serializers.ModelSerializer):
             img = obj.listing.images.filter(is_primary=True).first() or obj.listing.images.first()
             return img.image_url if img else None
         return None
+
+
+class FCMDeviceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FCMDevice
+        fields = ['id', 'registration_id', 'device_type', 'device_name', 'is_active', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class FCMTokenRegisterSerializer(serializers.Serializer):
+    # Support both registration_id and fcm_token parameter names
+    registration_id = serializers.CharField(required=False, allow_blank=True)
+    fcm_token = serializers.CharField(required=False, allow_blank=True)
+    device_type = serializers.ChoiceField(choices=['WEB', 'ANDROID', 'IOS'], default='WEB')
+    device_name = serializers.CharField(required=False, allow_blank=True, default='')
+    device_model = serializers.CharField(required=False, allow_blank=True, default='')
+
+    def validate(self, attrs):
+        token = attrs.get('registration_id') or attrs.get('fcm_token')
+        if not token or not token.strip():
+            raise serializers.ValidationError({"token": "Either 'registration_id' or 'fcm_token' is required."})
+        attrs['token'] = token.strip()
+        attrs['name'] = attrs.get('device_name') or attrs.get('device_model') or ''
+        return attrs
 
 
 class BroadcastLogSerializer(serializers.ModelSerializer):

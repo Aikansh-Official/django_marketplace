@@ -18,9 +18,11 @@ import api from '../services/api';
 import logoImg from '../assets/CampusXChange_Logo.webp';
 import AuthModal from './AuthModal';
 import SavedItemsDrawer from './SavedItemsDrawer';
+import NotificationDropdown from './notifications/NotificationDropdown';
 import { getSavedCount } from '../utils/savedStore';
 import { APP_VERSION } from '../config/version';
 import { getSafeImageUrl } from '../utils/imageUrl';
+import { unregisterFCMDevice } from '../services/fcmService';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -39,12 +41,14 @@ export default function Navbar() {
   const [authModalMode, setAuthModalMode] = useState('login');
   const [isSavedDrawerOpen, setIsSavedDrawerOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [suggestions, setSuggestions] = useState({ listings: [], categories: [] });
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const profileMenuRef = useRef(null);
+  const notificationDropdownRef = useRef(null);
   const searchContainerRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -124,22 +128,24 @@ export default function Navbar() {
     };
   }, []);
 
-  // Fetch notifications
+  // Fetch notifications unread count
   useEffect(() => {
-    if (!userProfile) return;
+    if (!userProfile) {
+      setUnreadCount(0);
+      return;
+    }
 
     const fetchNotifications = async () => {
       try {
-        const res = await api.get('/marketplace/notifications/');
-        const count = res.data.filter((n) => !n.is_read).length;
-        setUnreadCount(count);
+        const res = await api.get('/marketplace/notifications/unread-count/');
+        setUnreadCount(res.data?.unread_count ?? 0);
       } catch {
         // ignore
       }
     };
 
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 20000);
+    const interval = setInterval(fetchNotifications, 15000);
     window.addEventListener('notifications-updated', fetchNotifications);
     return () => {
       clearInterval(interval);
@@ -182,11 +188,14 @@ export default function Navbar() {
     return () => window.removeEventListener('open-auth-modal', handleOpenAuthModal);
   }, []);
 
-  // Close profile dropdown when clicking outside
+  // Close profile and notification dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
         setIsProfileMenuOpen(false);
+      }
+      if (notificationDropdownRef.current && !notificationDropdownRef.current.contains(e.target)) {
+        setIsNotificationDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -197,6 +206,7 @@ export default function Navbar() {
   useEffect(() => {
     setIsOpen(false);
     setIsProfileMenuOpen(false);
+    setIsNotificationDropdownOpen(false);
     setIsMobileSearchOpen(false);
   }, [location.pathname]);
 
@@ -232,6 +242,7 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
+      await unregisterFCMDevice();
       await api.post('/auth/logout/');
     } catch {
       // ignore
@@ -241,6 +252,7 @@ export default function Navbar() {
     localStorage.removeItem('user');
     setUserProfile(null);
     setIsProfileMenuOpen(false);
+    setIsNotificationDropdownOpen(false);
     navigate('/');
   };
 
@@ -456,17 +468,36 @@ export default function Navbar() {
                       )}
                     </Link>
 
-                    {/* Notifications */}
-                    <Link
-                      to="/notifications"
-                      className="relative p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
-                      title="Notifications"
-                    >
-                      <Bell className="w-4 h-4" />
-                      {unreadCount > 0 && (
-                        <span className="absolute top-1.5 right-1.5 flex h-2 w-2 rounded-full bg-brand-500 ring-2 ring-white"></span>
-                      )}
-                    </Link>
+                    {/* Notifications Button & Dropdown */}
+                    <div className="relative" ref={notificationDropdownRef}>
+                      <button
+                        type="button"
+                        onClick={() => setIsNotificationDropdownOpen(!isNotificationDropdownOpen)}
+                        className={`relative p-2 rounded-md transition-colors ${
+                          isNotificationDropdownOpen
+                            ? 'text-brand-600 bg-brand-50'
+                            : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
+                        }`}
+                        title="Notifications"
+                        aria-label="View notifications"
+                      >
+                        <Bell className="w-4 h-4" />
+                        {unreadCount > 0 && (
+                          <span className="absolute top-1 right-1 flex h-4 min-w-4 px-1 items-center justify-center text-[9px] font-black text-white bg-brand-500 rounded-full ring-2 ring-white animate-pulse">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </span>
+                        )}
+                      </button>
+
+                      <NotificationDropdown
+                        isOpen={isNotificationDropdownOpen}
+                        onClose={() => setIsNotificationDropdownOpen(false)}
+                        unreadCount={unreadCount}
+                        onNotificationRead={() => {
+                          setUnreadCount((c) => Math.max(0, c - 1));
+                        }}
+                      />
+                    </div>
 
                     {/* Profile Dropdown */}
                     <div className="relative" ref={profileMenuRef}>

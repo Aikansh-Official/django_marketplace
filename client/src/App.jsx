@@ -31,6 +31,11 @@ import ErrorBoundary from './components/common/ErrorBoundary';
 import ThemeBackground from './components/ThemeBackground';
 import toast, { Toaster } from 'react-hot-toast';
 import { LoadingProvider } from './context/LoadingContext';
+import {
+  setupForegroundNotifications,
+  requestNotificationPermissionAndRegister,
+  getNotificationPermission
+} from './services/fcmService';
 
 function App() {
   // Global Image Protection & Anti-Exfiltration Layer
@@ -81,10 +86,23 @@ function App() {
 
     window.addEventListener('session-terminated', handleSessionTerminated);
 
+    // Initialize real-time FCM foreground listener
+    setupForegroundNotifications();
+
+    // Auto-register FCM device token if student is logged in and permission is granted
+    const checkAndRegisterFCM = () => {
+      if (localStorage.getItem('access') && getNotificationPermission() === 'granted') {
+        requestNotificationPermissionAndRegister().catch(() => {});
+      }
+    };
+    checkAndRegisterFCM();
+    window.addEventListener('auth-changed', checkAndRegisterFCM);
+
     return () => {
       window.removeEventListener('contextmenu', handleContextMenu);
       window.removeEventListener('dragstart', handleDragStart);
       window.removeEventListener('session-terminated', handleSessionTerminated);
+      window.removeEventListener('auth-changed', checkAndRegisterFCM);
     };
   }, []);
 
