@@ -71,6 +71,34 @@ def get_allowed_origins():
     return allowed
 
 
+def extract_raw_source_from_secure_url(url):
+    """
+    Extract the canonical/raw storage URL (e.g. Cloudinary or local /media/... path)
+    from a signed /api/media/secure-image/?src=... gateway URL.
+    Handles absolute URLs (localhost, Render, production) or relative URLs.
+    """
+    if not url or not isinstance(url, str):
+        return url
+
+    clean_url = url.strip()
+    if '/api/media/secure-image/' in clean_url:
+        try:
+            parsed = urllib.parse.urlparse(clean_url)
+            qs = urllib.parse.parse_qs(parsed.query)
+            src_encoded = qs.get('src', [''])[0]
+            if src_encoded:
+                padding = 4 - (len(src_encoded) % 4)
+                if padding != 4:
+                    src_encoded += '=' * padding
+                decoded = base64.urlsafe_b64decode(src_encoded.encode('ascii')).decode('utf-8')
+                if decoded and (decoded.startswith('http://') or decoded.startswith('https://') or decoded.startswith('/media/')):
+                    return decoded
+        except Exception as e:
+            logger.warning(f"Failed to unwrap secure image URL '{clean_url}': {e}")
+
+    return clean_url
+
+
 def generate_secure_image_url(source_url, ttl_seconds=1800, request=None):
     """
     Generate an HMAC-SHA256 signed, expiring gateway URL for any media/Cloudinary asset.
@@ -92,9 +120,9 @@ def generate_secure_image_url(source_url, ttl_seconds=1800, request=None):
     if clean_url.startswith('data:') or clean_url.startswith('blob:'):
         return clean_url
 
-    # Skip if already a secure image gateway URL
-    if '/api/media/secure-image/' in clean_url:
-        return clean_url
+    # If it is already a secure gateway URL, unwrap to its raw canonical source first
+    # This prevents chaining stale/expired signatures or leaking localhost URLs into production
+    clean_url = extract_raw_source_from_secure_url(clean_url)
 
     # Calculate expiration timestamp
     exp = int(time.time()) + int(ttl_seconds)

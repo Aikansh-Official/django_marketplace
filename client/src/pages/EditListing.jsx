@@ -152,7 +152,7 @@ export default function EditListing() {
         setStatus(data.status || 'ACTIVE');
 
         if (data.images && data.images.length > 0) {
-          const imgUrls = data.images.map((img) => img.image_url);
+          const imgUrls = data.images.map((img) => img.raw_url || img.image_url);
           setImages(imgUrls);
           const primIdx = data.images.findIndex((img) => img.is_primary);
           setPrimaryIndex(primIdx >= 0 ? primIdx : 0);

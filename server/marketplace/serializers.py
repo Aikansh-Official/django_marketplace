@@ -64,15 +64,20 @@ class AdminCategorySerializer(serializers.ModelSerializer):
 
 class ListingImageSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
+    raw_url = serializers.SerializerMethodField()
 
     class Meta:
         model = ListingImage
-        fields = ['id', 'image_url', 'is_primary', 'created_at']
+        fields = ['id', 'image_url', 'raw_url', 'is_primary', 'created_at']
 
     def get_image_url(self, obj):
         from .media_security import generate_secure_image_url
         request = self.context.get('request') if hasattr(self, 'context') else None
         return generate_secure_image_url(obj.image_url, ttl_seconds=86400, request=request)
+
+    def get_raw_url(self, obj):
+        from .media_security import extract_raw_source_from_secure_url
+        return extract_raw_source_from_secure_url(obj.image_url)
 
 class SellerSerializer(serializers.ModelSerializer):
     """Full seller info — only used in authenticated contexts (e.g. accepted offers)."""
@@ -269,7 +274,8 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
                     # Store base64 data URI directly if local save fails
                     return img_data
         elif is_url(img_data):
-            return img_data
+            from .media_security import extract_raw_source_from_secure_url
+            return extract_raw_source_from_secure_url(img_data)
         else:
             raise serializers.ValidationError(
                 "Invalid image data. Provide a valid URL or base64 data URI."
@@ -315,13 +321,32 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
         instance.save()
 
         if uploaded_images is not None:
-            # If new images provided, replace existing images
-            instance.images.all().delete()
-            for index, img_data in enumerate(uploaded_images):
-                image_url = self._process_image(img_data)
+            from .media_security import extract_raw_source_from_secure_url
+
+            # 1. Process and un-wrap incoming images to pure canonical URLs
+            canonical_urls = [self._process_image(img_data) for img_data in uploaded_images if img_data]
+            if primary_index >= len(canonical_urls):
+                primary_index = 0
+            retained_url_set = set(canonical_urls)
+
+            # 2. Inspect existing images attached to this listing
+            existing_images = list(instance.images.all())
+
+            # 3. For any image NOT retained by user, delete record (triggers Cloudinary cleanup)
+            #    For retained images, mark them to skip Cloudinary cleanup so the file is preserved!
+            for old_img in existing_images:
+                old_canonical = extract_raw_source_from_secure_url(old_img.image_url)
+                if old_canonical not in retained_url_set:
+                    old_img.delete()
+                else:
+                    old_img._skip_cloudinary_cleanup = True
+                    old_img.delete()
+
+            # 4. Recreate images with canonical URLs and correct primary flag
+            for index, clean_url in enumerate(canonical_urls):
                 ListingImage.objects.create(
                     listing=instance,
-                    image_url=image_url,
+                    image_url=clean_url,
                     is_primary=(index == primary_index)
                 )
 
