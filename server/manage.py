@@ -3,6 +3,16 @@
 import os
 import sys
 
+# Configure resilient public DNS resolver to bypass local/campus Wi-Fi SRV DNS timeouts for MongoDB Atlas
+try:
+    import dns.resolver
+    _resolver = dns.resolver.get_default_resolver()
+    _resolver.nameservers = ['1.1.1.1', '8.8.8.8', '8.8.4.4', '1.0.0.1']
+    _resolver.timeout = 2.0
+    _resolver.lifetime = 4.0
+except Exception:
+    pass
+
 
 def main():
     """Run administrative tasks."""

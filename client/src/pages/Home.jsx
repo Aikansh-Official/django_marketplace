@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { toggleSavedItem, isItemSaved } from '../utils/savedStore';
-import api, { getCategories } from '../services/api';
+import api, { getCategories, getAuthStatus } from '../services/api';
 import {
   MapPin,
   Heart,
@@ -66,10 +66,10 @@ export default function Home() {
         if (stored) {
           setUserProfile(JSON.parse(stored));
         } else if (localStorage.getItem('access')) {
-          const res = await api.get('/auth/status/');
-          if (res.data?.isAuthenticated && res.data?.user) {
-            setUserProfile(res.data.user);
-            localStorage.setItem('user', JSON.stringify(res.data.user));
+          const data = await getAuthStatus();
+          if (data?.isAuthenticated && data?.user) {
+            setUserProfile(data.user);
+            localStorage.setItem('user', JSON.stringify(data.user));
           }
         }
       } catch {
@@ -95,31 +95,35 @@ export default function Home() {
   );
   const isBuyer = Boolean(userProfile && !isSeller);
 
-  // Sync state when URL params change (e.g. from footer links or header navigation)
+  // Sync state when URL params change (guarded against redundant state updates)
   useEffect(() => {
     const cat = searchParams.get('category') || 'ALL';
     const tType = searchParams.get('transaction_type') || 'ALL';
     const q = searchParams.get('search') || '';
-    setSelectedCategory(cat);
-    setTransactionType(tType);
-    setSearchQuery(q);
+    setSelectedCategory((prev) => (prev !== cat ? cat : prev));
+    setTransactionType((prev) => (prev !== tType ? tType : prev));
+    setSearchQuery((prev) => (prev !== q ? q : prev));
   }, [searchParams]);
 
-  // Fetch Categories
+  // Fetch Categories (cached)
   useEffect(() => {
+    let isMounted = true;
     const fetchCategories = async () => {
       try {
         const data = await getCategories();
-        setCategories(data);
+        if (isMounted) setCategories(data);
       } catch (err) {
         console.error('Failed to load categories', err);
       }
     };
     fetchCategories();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // Fetch Listings with Filters
-  const fetchListings = async () => {
+  // Fetch Listings with Filters & AbortController to cancel stale in-flight requests
+  const fetchListings = async (signal) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -140,11 +144,15 @@ export default function Home() {
       }
 
       const response = await api.get(
-        `/marketplace/listings/?${params.toString()}`
+        `/marketplace/listings/?${params.toString()}`,
+        { signal }
       );
       setListings(response.data);
       setError(null);
     } catch (err) {
+      if (err.name === 'CanceledError' || err.code === 'ERR_CANCELED') {
+        return; // Silently ignore cancelled requests
+      }
       console.error('Failed to fetch listings', err);
       setError('Unable to load listings. Please make sure the server is running.');
     } finally {
@@ -153,7 +161,11 @@ export default function Home() {
   };
 
   useEffect(() => {
-    fetchListings();
+    const controller = new AbortController();
+    fetchListings(controller.signal);
+    return () => {
+      controller.abort();
+    };
   }, [selectedCategory, transactionType, conditionFilter, sortBy, searchQuery]);
 
   const handleClearSearch = () => {

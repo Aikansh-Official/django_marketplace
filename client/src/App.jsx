@@ -36,6 +36,7 @@ import {
   requestNotificationPermissionAndRegister,
   getNotificationPermission
 } from './services/fcmService';
+import NotificationOptInBanner from './components/notifications/NotificationOptInBanner';
 
 function App() {
   // Global Image Protection & Anti-Exfiltration Layer
@@ -89,20 +90,34 @@ function App() {
     // Initialize real-time FCM foreground listener
     setupForegroundNotifications();
 
-    // Auto-register FCM device token if student is logged in and permission is granted
-    const checkAndRegisterFCM = () => {
-      if (localStorage.getItem('access') && getNotificationPermission() === 'granted') {
+    // Auto-register FCM device token and request permission by default for logged-in students
+    const checkAndRegisterFCM = async () => {
+      if (!localStorage.getItem('access')) return;
+      const perm = getNotificationPermission();
+      if (perm === 'granted') {
+        requestNotificationPermissionAndRegister().catch(() => {});
+      } else if (perm === 'default') {
+        // Attempt programmatic request (works in many browsers or upon login redirect)
         requestNotificationPermissionAndRegister().catch(() => {});
       }
     };
     checkAndRegisterFCM();
     window.addEventListener('auth-changed', checkAndRegisterFCM);
 
+    // Also prompt on first user gesture anywhere if permission is still default
+    const handleFirstGestureForPush = () => {
+      if (localStorage.getItem('access') && getNotificationPermission() === 'default') {
+        requestNotificationPermissionAndRegister().catch(() => {});
+      }
+    };
+    window.addEventListener('click', handleFirstGestureForPush, { once: true });
+
     return () => {
       window.removeEventListener('contextmenu', handleContextMenu);
       window.removeEventListener('dragstart', handleDragStart);
       window.removeEventListener('session-terminated', handleSessionTerminated);
       window.removeEventListener('auth-changed', checkAndRegisterFCM);
+      window.removeEventListener('click', handleFirstGestureForPush);
     };
   }, []);
 
@@ -122,6 +137,7 @@ function App() {
             <Navbar />
             <main className="flex-grow pt-16">
               <AnnouncementBanner />
+              <NotificationOptInBanner />
               <UrgentNoticeModal />
               <MaintenanceScreen />
               <SuspendedAccountModal />

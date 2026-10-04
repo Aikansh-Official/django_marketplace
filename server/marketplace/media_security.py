@@ -288,7 +288,7 @@ def secure_image_proxy_view(request):
         resp['X-Protected-Asset'] = 'CampusXChange-Secured'
         return resp
 
-    # Fetch asset bytes
+    # Fetch asset bytes or issue fast CDN redirect
     try:
         content_type = None
         image_bytes = None
@@ -296,7 +296,6 @@ def secure_image_proxy_view(request):
         # A. If it's a local media path (e.g. /media/listings/... or http://localhost:8000/media/...)
         if '/media/' in decoded_url or decoded_url.startswith('/media/'):
             rel_media_path = decoded_url.split('/media/', 1)[1]
-            # Strip query params if present
             clean_rel_path = rel_media_path.split('?')[0]
             local_file_path = os.path.join(settings.MEDIA_ROOT, clean_rel_path.replace('/', os.sep))
             if os.path.isfile(local_file_path):
@@ -306,7 +305,7 @@ def secure_image_proxy_view(request):
                 with open(local_file_path, 'rb') as f:
                     image_bytes = f.read()
 
-        # B. If not a local file on disk, fetch via HTTP / Cloudinary
+        # B. If external CDN / Cloudinary URL: Redirect directly to edge CDN (zero WSGI blocking)
         if image_bytes is None:
             # If pointing to localhost on production where local disk file is absent
             if ('localhost:8000' in decoded_url or '127.0.0.1:8000' in decoded_url) and not getattr(settings, 'DEBUG', False):
@@ -324,7 +323,6 @@ def secure_image_proxy_view(request):
                     from .cloudinary_upload import configure_cloudinary
                     configure_cloudinary()
 
-                    # Extract public_id from authenticated URL
                     parts = decoded_url.split('/image/authenticated/')
                     if len(parts) > 1:
                         subpath = parts[1]
@@ -341,23 +339,17 @@ def secure_image_proxy_view(request):
                 except Exception as sign_err:
                     logger.warning(f"Error signing authenticated Cloudinary asset: {sign_err}")
 
-            # Fetch from source
-            req = urllib.request.Request(
-                final_url_to_fetch,
-                headers={'User-Agent': 'CampusXChange-SecureMediaProxy/1.0'}
-            )
-            with urllib.request.urlopen(req, timeout=10) as upstream:
-                status_code = upstream.status
-                if status_code != 200:
-                    resp = HttpResponse(PROTECTED_ASSET_SVG, content_type='image/svg+xml', status=200)
-                    resp['Cache-Control'] = 'public, max-age=300'
-                    resp['Access-Control-Allow-Origin'] = '*'
-                    return resp
+            if final_url_to_fetch.startswith('http://') or final_url_to_fetch.startswith('https://'):
+                from django.http import HttpResponseRedirect
+                redirect_resp = HttpResponseRedirect(final_url_to_fetch)
+                redirect_resp['Cache-Control'] = 'private, max-age=86400, stale-while-revalidate=3600'
+                redirect_resp['X-Content-Type-Options'] = 'nosniff'
+                redirect_resp['Cross-Origin-Resource-Policy'] = 'cross-origin'
+                redirect_resp['Access-Control-Allow-Origin'] = '*'
+                redirect_resp['X-Protected-Asset'] = 'CampusXChange-Secured'
+                return redirect_resp
 
-                content_type = upstream.headers.get('Content-Type', 'image/webp')
-                image_bytes = upstream.read()
-
-        # Cache in memory for up to 1 hour (3600s)
+        # Cache in memory if local disk bytes were loaded
         if content_type and image_bytes:
             cache.set(cache_key, (content_type, image_bytes), timeout=3600)
 

@@ -115,16 +115,27 @@ MIGRATION_MODULES = {
 
 import certifi
 
+# Configure resilient public DNS resolver to prevent local/campus DNS timeouts with MongoDB Atlas SRV
+try:
+    import dns.resolver
+    _default_resolver = dns.resolver.get_default_resolver()
+    _default_resolver.nameservers = ['1.1.1.1', '8.8.8.8', '8.8.4.4', '1.0.0.1']
+    _default_resolver.timeout = 2.0
+    _default_resolver.lifetime = 4.0
+except Exception:
+    pass
+
 MONGODB_URI = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/campusxchange')
 MONGODB_NAME = os.environ.get('MONGODB_NAME', 'campusxchange')
 
 _mongo_options = {
-    'maxPoolSize': int(os.environ.get('MONGO_MAX_POOL_SIZE', 100)),
-    'minPoolSize': int(os.environ.get('MONGO_MIN_POOL_SIZE', 10)),
-    'maxIdleTimeMS': 45000,
-    'serverSelectionTimeoutMS': 5000,
-    'connectTimeoutMS': 10000,
-    'socketTimeoutMS': 20000,
+    'maxPoolSize': int(os.environ.get('MONGO_MAX_POOL_SIZE', 50)),
+    'minPoolSize': int(os.environ.get('MONGO_MIN_POOL_SIZE', 0)),
+    'maxIdleTimeMS': 30000,
+    'serverSelectionTimeoutMS': int(os.environ.get('MONGO_TIMEOUT_MS', 5000)),
+    'connectTimeoutMS': 5000,
+    'socketTimeoutMS': 15000,
+    'waitQueueTimeoutMS': 5000,
     'retryWrites': True,
     'retryReads': True,
 }
@@ -138,7 +149,7 @@ DATABASES = {
         'HOST': MONGODB_URI,
         'NAME': MONGODB_NAME,
         'OPTIONS': _mongo_options,
-        'CONN_MAX_AGE': int(os.environ.get('CONN_MAX_AGE', 600)),
+        'CONN_MAX_AGE': int(os.environ.get('CONN_MAX_AGE', 0)),
     }
 }
 

@@ -246,6 +246,61 @@ export async function getCategories(forceRefresh = false) {
   return categoriesFetchPromise;
 }
 
+// In-memory cached banners fetcher
+let cachedBanners = null;
+let bannersFetchPromise = null;
+
+export async function getBanners(forceRefresh = false) {
+  if (cachedBanners && !forceRefresh) return cachedBanners;
+  if (bannersFetchPromise && !forceRefresh) return bannersFetchPromise;
+
+  bannersFetchPromise = api
+    .get('/marketplace/banners/')
+    .then((res) => {
+      cachedBanners = Array.isArray(res.data) ? res.data : [];
+      bannersFetchPromise = null;
+      return cachedBanners;
+    })
+    .catch((err) => {
+      bannersFetchPromise = null;
+      throw err;
+    });
+
+  return bannersFetchPromise;
+}
+
+// In-memory cached auth status fetcher (deduplicates simultaneous calls across Navbar, Home, FCM)
+let cachedAuthStatus = null;
+let authStatusFetchPromise = null;
+
+export async function getAuthStatus(forceRefresh = false) {
+  if (cachedAuthStatus && !forceRefresh) return cachedAuthStatus;
+  if (authStatusFetchPromise && !forceRefresh) return authStatusFetchPromise;
+
+  authStatusFetchPromise = api
+    .get('/auth/status/')
+    .then((res) => {
+      cachedAuthStatus = res.data;
+      authStatusFetchPromise = null;
+      return cachedAuthStatus;
+    })
+    .catch((err) => {
+      authStatusFetchPromise = null;
+      throw err;
+    });
+
+  return authStatusFetchPromise;
+}
+
+export function invalidateAuthStatusCache() {
+  cachedAuthStatus = null;
+  authStatusFetchPromise = null;
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('auth-changed', invalidateAuthStatusCache);
+}
+
 // In-memory cached community hub data fetcher
 let cachedCommunityHub = null;
 let communityHubFetchPromise = null;

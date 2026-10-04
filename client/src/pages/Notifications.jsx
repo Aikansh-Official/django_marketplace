@@ -62,6 +62,15 @@ export default function Notifications() {
   useEffect(() => {
     fetchNotifications();
     window.scrollTo(0, 0);
+
+    // If permission is default, auto-request registration so FCM is enabled by default
+    if (getNotificationPermission() === 'default' && localStorage.getItem('access')) {
+      requestNotificationPermissionAndRegister()
+        .then((res) => {
+          if (res?.success) setPushPermission('granted');
+        })
+        .catch(() => {});
+    }
   }, []);
 
   const handleMarkRead = async (id) => {

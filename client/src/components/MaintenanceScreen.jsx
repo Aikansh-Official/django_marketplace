@@ -6,10 +6,10 @@ export default function MaintenanceScreen() {
   const [maintenance, setMaintenance] = useState(null);
   const [checking, setChecking] = useState(false);
 
-  const checkStatus = async () => {
+  const checkStatus = async (force = false) => {
     setChecking(true);
     try {
-      const config = await getPlatformConfig(true);
+      const config = await getPlatformConfig(force);
       if (config && config.maintenance_mode) {
         setMaintenance({
           active: true,
@@ -28,7 +28,7 @@ export default function MaintenanceScreen() {
   };
 
   useEffect(() => {
-    checkStatus();
+    checkStatus(false);
 
     const handleMaintenanceEvent = (e) => {
       setMaintenance({
@@ -83,7 +83,7 @@ export default function MaintenanceScreen() {
 
         {/* Refresh button */}
         <button
-          onClick={checkStatus}
+          onClick={() => checkStatus(true)}
           disabled={checking}
           className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-md bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-semibold text-sm shadow-lg shadow-orange-500/20 transition-all disabled:opacity-50"
         >

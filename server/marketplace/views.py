@@ -337,6 +337,35 @@ class ListingListCreateView(generics.ListCreateAPIView):
 
         return queryset
 
+    def list(self, request, *args, **kwargs):
+        from django.core.cache import cache
+        qp = request.query_params
+        is_default_feed = (
+            not qp.get('search') and
+            (not qp.get('category') or qp.get('category') == 'ALL') and
+            (not qp.get('condition') or qp.get('condition') == 'ALL') and
+            (not qp.get('transaction_type') or qp.get('transaction_type') == 'ALL') and
+            (not qp.get('location') or qp.get('location') == 'ALL') and
+            not qp.get('min_price') and
+            not qp.get('max_price') and
+            qp.get('sort', 'newest') == 'newest'
+        )
+
+        cache_key = 'cxc_public_default_active_listings'
+        is_anon = not (request.user and request.user.is_authenticated)
+
+        if is_default_feed and is_anon:
+            cached_data = cache.get(cache_key)
+            if cached_data is not None:
+                return Response(cached_data)
+
+        response = super().list(request, *args, **kwargs)
+
+        if is_default_feed and is_anon and response.status_code == 200:
+            cache.set(cache_key, response.data, 60)
+
+        return response
+
     def post(self, request, *args, **kwargs):
         user = request.user
 
@@ -1688,7 +1717,7 @@ class PublicAnnouncementView(APIView):
             'dismissible': str(settings_map.get('announcement_dismissible', '')).lower() not in ('false', '0'),
         }
         try:
-            cache.set('public_announcement_data', payload, 60)
+            cache.set('public_announcement_data', payload, 300)
         except Exception:
             pass
         return Response(payload)
@@ -1736,7 +1765,7 @@ class PublicPlatformConfigView(APIView):
             }
         }
         try:
-            cache.set('public_platform_config', payload, 60)
+            cache.set('public_platform_config', payload, 300)
         except Exception:
             pass
         return Response(payload)
@@ -2814,10 +2843,23 @@ class PublicBannerListView(generics.ListAPIView):
     """
     Public API consumed by Client Web & Mobile App for Homepage Slideshow.
     Returns all active banners ordered by display_order, then newest first.
+    Cached for high-speed dashboard loading.
     """
     permission_classes = [permissions.AllowAny]
     serializer_class = BannerSerializer
-    queryset = Banner.objects.filter(is_active=True).order_by('display_order', '-created_at')
+
+    def list(self, request, *args, **kwargs):
+        from django.core.cache import cache
+        cache_key = 'cxc_public_active_banners'
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data)
+
+        queryset = Banner.objects.filter(is_active=True).order_by('display_order', '-created_at')
+        serializer = self.get_serializer(queryset, many=True)
+        data = serializer.data
+        cache.set(cache_key, data, 600)  # 10 minutes cache
+        return Response(data)
 
 
 class AdminBannerListCreateView(APIView):
@@ -2987,6 +3029,28 @@ class AdminBannerDetailView(APIView):
             details={'deleted_title': banner_title, 'deleted_image_url': banner_image_url}
         )
         return Response({'message': 'Banner deleted successfully'}, status=status.HTTP_200_OK)
+
+
+# ── Automatic Performance Cache Invalidation Signals ───────────
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+
+@receiver([post_save, post_delete], sender=Banner)
+def invalidate_banner_cache(sender, **kwargs):
+    try:
+        from django.core.cache import cache
+        cache.delete('cxc_public_active_banners')
+    except Exception:
+        pass
+
+@receiver([post_save, post_delete], sender=Listing)
+def invalidate_listing_cache(sender, **kwargs):
+    try:
+        from django.core.cache import cache
+        cache.delete('cxc_public_default_active_listings')
+    except Exception:
+        pass
+
 
 
 

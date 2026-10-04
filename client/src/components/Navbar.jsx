@@ -14,7 +14,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import api from '../services/api';
+import api, { getAuthStatus } from '../services/api';
 import logoImg from '../assets/CampusXChange_Logo.webp';
 import AuthModal from './AuthModal';
 import SavedItemsDrawer from './SavedItemsDrawer';
@@ -101,16 +101,16 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch user profile status
+  // Fetch user profile status (deduplicated & cached)
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await api.get('/auth/status/');
-        if (res.data?.isAuthenticated && res.data?.user) {
-          setUserProfile(res.data.user);
-          localStorage.setItem('user', JSON.stringify(res.data.user));
+        const data = await getAuthStatus();
+        if (data?.isAuthenticated && data?.user) {
+          setUserProfile(data.user);
+          localStorage.setItem('user', JSON.stringify(data.user));
         } else {
-          if (!res.data?.isAuthenticated) {
+          if (!data?.isAuthenticated) {
             localStorage.removeItem('access');
             localStorage.removeItem('refresh');
             localStorage.removeItem('user');

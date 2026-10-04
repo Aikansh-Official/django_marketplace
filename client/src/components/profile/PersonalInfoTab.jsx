@@ -17,9 +17,19 @@ import {
   Building2,
   BadgeCheck,
   Check,
-  Camera
+  Camera,
+  Bell,
+  Send,
+  Loader2,
+  AlertTriangle
 } from 'lucide-react';
 import UpdateSelfieModal from './UpdateSelfieModal';
+import {
+  getNotificationPermission,
+  requestNotificationPermissionAndRegister,
+  sendTestPushNotification,
+  isNotificationSupported
+} from '../../services/fcmService';
 
 export default function PersonalInfoTab({ profile, onProfileUpdated, onUpgradeClick, onOpenSelfieModal }) {
   const isSeller = profile?.role === 'SELLER' || profile?.is_id_verified;
@@ -27,6 +37,9 @@ export default function PersonalInfoTab({ profile, onProfileUpdated, onUpgradeCl
   const [internalSelfieModalOpen, setInternalSelfieModalOpen] = useState(false);
   const handleOpenSelfie = onOpenSelfieModal || (() => setInternalSelfieModalOpen(true));
   const [saving, setSaving] = useState(false);
+  const [pushPerm, setPushPerm] = useState(() => getNotificationPermission());
+  const [enablingPush, setEnablingPush] = useState(false);
+  const [testingPush, setTestingPush] = useState(false);
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || profile?.first_name || '',
     phone_number: profile?.phone_number || ''
@@ -64,6 +77,35 @@ export default function PersonalInfoTab({ profile, onProfileUpdated, onUpgradeCl
       phone_number: profile?.phone_number || ''
     });
     setIsEditing(false);
+  };
+
+  const handleTogglePush = async () => {
+    setEnablingPush(true);
+    try {
+      const res = await requestNotificationPermissionAndRegister();
+      setPushPerm(getNotificationPermission());
+      if (res.success) {
+        toast.success('🔔 Real-time browser notifications enabled!');
+      } else if (res.reason === 'PERMISSION_DENIED') {
+        toast.error('Notification permission is blocked in browser settings. Please reset site permissions in your address bar.');
+      } else {
+        toast.error(res.reason || 'Could not register push notifications.');
+      }
+    } finally {
+      setEnablingPush(false);
+    }
+  };
+
+  const handleTestPush = async () => {
+    setTestingPush(true);
+    try {
+      await sendTestPushNotification();
+      toast.success('Test notification triggered!');
+    } catch (err) {
+      toast.error('Test notification failed.');
+    } finally {
+      setTestingPush(false);
+    }
   };
 
   const fullName = profile?.full_name || profile?.first_name || profile?.username;
@@ -202,109 +244,207 @@ export default function PersonalInfoTab({ profile, onProfileUpdated, onUpgradeCl
 
       {/* Two Column Grid: Details on Left & Trust/Status on Right */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Personal Information Form (7 cols) */}
-        <div className="lg:col-span-7 bg-white rounded-md border border-gray-200/90 p-4 sm:p-6 shadow-sm space-y-5">
-          <div className="border-b border-gray-100 pb-3 flex items-center justify-between">
-            <h3 className="text-xs font-extrabold text-gray-900 uppercase tracking-wider flex items-center gap-2">
-              <User className="w-4 h-4 text-brand-600" />
-              Personal Details
-            </h3>
-            {isEditing && (
-              <span className="text-[11px] font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md">
-                Edit Mode Active
-              </span>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            {/* Full Name */}
-            <div>
-              <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1.5">
-                Full Name
-              </label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  name="full_name"
-                  value={formData.full_name}
-                  onChange={handleInputChange}
-                  placeholder="e.g. Anshuman Sharma"
-                  className="w-full bg-white border border-gray-300 rounded-md px-3.5 py-2.5 text-xs text-gray-900 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none transition-all shadow-xs font-medium"
-                />
-              ) : (
-                <div className="text-xs font-semibold text-gray-900 bg-gray-50 border border-gray-200/80 rounded-md px-3.5 py-2.5">
-                  {profile?.full_name || profile?.first_name || <span className="text-gray-400">Not specified</span>}
-                </div>
+        {/* Left Column: Personal Information Form & Notification Preferences (7 cols) */}
+        <div className="lg:col-span-7 space-y-6">
+          <div className="bg-white rounded-md border border-gray-200/90 p-4 sm:p-6 shadow-sm space-y-5">
+            <div className="border-b border-gray-100 pb-3 flex items-center justify-between">
+              <h3 className="text-xs font-extrabold text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                <User className="w-4 h-4 text-brand-600" />
+                Personal Details
+              </h3>
+              {isEditing && (
+                <span className="text-[11px] font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md">
+                  Edit Mode Active
+                </span>
               )}
             </div>
 
-            {/* Phone Number */}
-            <div>
-              <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1.5">
-                Phone Number (WhatsApp & Trade Calls)
-              </label>
-              {isEditing ? (
-                <div className="relative">
-                  <div className="absolute left-3.5 top-2.5 flex items-center gap-1 text-gray-400 text-xs font-bold pointer-events-none">
-                    <Phone className="w-3.5 h-3.5" />
-                    <span>+91</span>
-                  </div>
+            <div className="space-y-4">
+              {/* Full Name */}
+              <div>
+                <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1.5">
+                  Full Name
+                </label>
+                {isEditing ? (
                   <input
-                    type="tel"
-                    name="phone_number"
-                    value={formData.phone_number}
+                    type="text"
+                    name="full_name"
+                    value={formData.full_name}
                     onChange={handleInputChange}
-                    placeholder="10-digit mobile number"
-                    maxLength={10}
-                    className="w-full bg-white border border-gray-300 rounded-md pl-16 pr-3.5 py-2.5 text-xs text-gray-900 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none transition-all shadow-xs font-medium"
+                    placeholder="e.g. Anshuman Sharma"
+                    className="w-full bg-white border border-gray-300 rounded-md px-3.5 py-2.5 text-xs text-gray-900 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none transition-all shadow-xs font-medium"
                   />
+                ) : (
+                  <div className="text-xs font-semibold text-gray-900 bg-gray-50 border border-gray-200/80 rounded-md px-3.5 py-2.5">
+                    {profile?.full_name || profile?.first_name || <span className="text-gray-400">Not specified</span>}
+                  </div>
+                )}
+              </div>
+
+              {/* Phone Number */}
+              <div>
+                <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1.5">
+                  Phone Number (WhatsApp & Trade Calls)
+                </label>
+                {isEditing ? (
+                  <div className="relative">
+                    <div className="absolute left-3.5 top-2.5 flex items-center gap-1 text-gray-400 text-xs font-bold pointer-events-none">
+                      <Phone className="w-3.5 h-3.5" />
+                      <span>+91</span>
+                    </div>
+                    <input
+                      type="tel"
+                      name="phone_number"
+                      value={formData.phone_number}
+                      onChange={handleInputChange}
+                      placeholder="10-digit mobile number"
+                      maxLength={10}
+                      className="w-full bg-white border border-gray-300 rounded-md pl-16 pr-3.5 py-2.5 text-xs text-gray-900 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:outline-none transition-all shadow-xs font-medium"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2.5 text-xs font-semibold text-gray-900 bg-gray-50 border border-gray-200/80 rounded-md px-3.5 py-2.5">
+                    <Phone className="w-4 h-4 text-emerald-600" />
+                    <span>{profile?.phone_number || <span className="text-gray-400">No phone added</span>}</span>
+                    {profile?.phone_number && (
+                      <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100/60 px-2 py-0.5 rounded-md ml-auto">
+                        Direct WhatsApp Ready
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Email Address */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-[11px] font-bold text-gray-600 uppercase">
+                    Email Address
+                  </label>
+                  <span className="text-[10px] text-gray-400 font-semibold flex items-center gap-1">
+                    <Lock className="w-3 h-3 text-gray-400" /> Verified Account Email
+                  </span>
                 </div>
-              ) : (
+                <div className="flex items-center justify-between text-xs font-semibold text-gray-900 bg-gray-50 border border-gray-200/80 rounded-md px-3.5 py-2.5">
+                  <div className="flex items-center gap-2.5 truncate">
+                    <Mail className="w-4 h-4 text-brand-600 flex-shrink-0" />
+                    <span className="truncate">{profile?.email}</span>
+                  </div>
+                  {(profile?.is_verified_student ?? Boolean(profile?.email)) && (
+                    <CheckCircle2
+                      className="w-4 h-4 text-emerald-600 flex-shrink-0 ml-2"
+                      title="Verified Email"
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Registration Number */}
+              <div>
+                <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1.5">
+                  Registration Number / Username
+                </label>
                 <div className="flex items-center gap-2.5 text-xs font-semibold text-gray-900 bg-gray-50 border border-gray-200/80 rounded-md px-3.5 py-2.5">
-                  <Phone className="w-4 h-4 text-emerald-600" />
-                  <span>{profile?.phone_number || <span className="text-gray-400">No phone added</span>}</span>
-                  {profile?.phone_number && (
-                    <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100/60 px-2 py-0.5 rounded-md ml-auto">
-                      Direct WhatsApp Ready
+                  <School className="w-4 h-4 text-gray-500" />
+                  <span>{profile?.username}</span>
+                  <span className="text-[10px] text-gray-400 font-normal ml-auto">8-digit student UID</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Push Notification & Alerts Setting Card */}
+          <div className="bg-white rounded-md border border-gray-200/90 p-4 sm:p-5 shadow-sm space-y-3.5">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-600 flex-shrink-0">
+                  <Bell className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-extrabold text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                    <span>Browser Push Alerts (FCM)</span>
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full lowercase first-letter:uppercase">
+                      Default ON
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-gray-500">
+                    Real-time popups for buyer requests, deal handovers, and chats
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50/80 border border-gray-200/80 rounded-lg p-3.5">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-gray-800">Status:</span>
+                  {pushPerm === 'granted' ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100/70 border border-emerald-300/60 px-2 py-0.5 rounded-md">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      Active & Enabled
+                    </span>
+                  ) : pushPerm === 'denied' ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-100/70 border border-rose-300/60 px-2 py-0.5 rounded-md">
+                      <AlertTriangle className="w-3 h-3 text-rose-600" />
+                      Blocked in Browser Settings
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-100/70 border border-amber-300/60 px-2 py-0.5 rounded-md">
+                      <Sparkles className="w-3 h-3 text-amber-600" />
+                      Default ON (Click to allow)
                     </span>
                   )}
                 </div>
-              )}
-            </div>
-
-            {/* Email Address */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-[11px] font-bold text-gray-600 uppercase">
-                  Email Address
-                </label>
-                <span className="text-[10px] text-gray-400 font-semibold flex items-center gap-1">
-                  <Lock className="w-3 h-3 text-gray-400" /> Verified Account Email
-                </span>
+                <p className="text-[11px] text-gray-500 mt-1">
+                  {pushPerm === 'granted'
+                    ? 'Your browser is successfully registered with Firebase Cloud Messaging.'
+                    : pushPerm === 'denied'
+                    ? 'Notifications were blocked in your browser. Click the lock/settings icon in the address bar to reset to "Ask" or "Allow".'
+                    : 'CampusXChange activates push by default. Confirm permission in the browser prompt to receive live alerts.'}
+                </p>
               </div>
-              <div className="flex items-center justify-between text-xs font-semibold text-gray-900 bg-gray-50 border border-gray-200/80 rounded-md px-3.5 py-2.5">
-                <div className="flex items-center gap-2.5 truncate">
-                  <Mail className="w-4 h-4 text-brand-600 flex-shrink-0" />
-                  <span className="truncate">{profile?.email}</span>
-                </div>
-                {(profile?.is_verified_student ?? Boolean(profile?.email)) && (
-                  <CheckCircle2
-                    className="w-4 h-4 text-emerald-600 flex-shrink-0 ml-2"
-                    title="Verified Email"
-                  />
+
+              <div className="flex items-center gap-2 self-start sm:self-center flex-shrink-0">
+                {pushPerm !== 'granted' ? (
+                  <button
+                    type="button"
+                    onClick={handleTogglePush}
+                    disabled={enablingPush}
+                    className="bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold px-3.5 py-2 rounded-md shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    {enablingPush ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Enabling...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Bell className="w-3.5 h-3.5" />
+                        <span>Enable Push</span>
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleTestPush}
+                    disabled={testingPush}
+                    className="bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 text-xs font-bold px-3 py-1.5 rounded-md shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    title="Send a live test push notification"
+                  >
+                    {testingPush ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-600" />
+                        <span>Testing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5 text-brand-600" />
+                        <span>Send Test Push</span>
+                      </>
+                    )}
+                  </button>
                 )}
-              </div>
-            </div>
-
-            {/* Registration Number */}
-            <div>
-              <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1.5">
-                Registration Number / Username
-              </label>
-              <div className="flex items-center gap-2.5 text-xs font-semibold text-gray-900 bg-gray-50 border border-gray-200/80 rounded-md px-3.5 py-2.5">
-                <School className="w-4 h-4 text-gray-500" />
-                <span>{profile?.username}</span>
-                <span className="text-[10px] text-gray-400 font-normal ml-auto">8-digit student UID</span>
               </div>
             </div>
           </div>

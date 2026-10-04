@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, ArrowRight, Sparkles, ExternalLink } from 'lucide-react';
-import api from '../../services/api';
+import { getBanners } from '../../services/api';
 
 export default function BannerSlideshow() {
   const [banners, setBanners] = useState([]);
@@ -14,14 +14,14 @@ export default function BannerSlideshow() {
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
-  // Fetch active banners for client homepage
+  // Fetch active banners for client homepage (cached in memory)
   useEffect(() => {
     let isMounted = true;
     const fetchBanners = async () => {
       try {
-        const response = await api.get('/marketplace/banners/');
+        const data = await getBanners();
         if (isMounted) {
-          setBanners(Array.isArray(response.data) ? response.data : []);
+          setBanners(Array.isArray(data) ? data : []);
         }
       } catch (err) {
         console.error('Failed to load homepage banners:', err);
