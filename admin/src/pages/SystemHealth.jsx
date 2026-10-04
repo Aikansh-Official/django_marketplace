@@ -7,6 +7,7 @@ import {
   Terminal, Clock, Globe, Zap, FileText, ArrowRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { APP_VERSION } from '../config/version';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -333,6 +334,12 @@ export default function SystemHealth() {
 
             <div className="grid grid-cols-2 gap-3 mb-4">
               
+              <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Platform Release</span>
+                <p className="font-black text-brand-600 font-mono text-sm mt-0.5">v{APP_VERSION}</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">CampusXChange Unified Core</p>
+              </div>
+
               <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Python Runtime</span>
                 <p className="font-black text-gray-900 font-mono text-sm mt-0.5">v{env.python_version || '3.14'}</p>

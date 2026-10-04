@@ -2,6 +2,7 @@ import logging
 import random
 import datetime
 import django
+from django.conf import settings
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, permissions
@@ -1756,6 +1757,7 @@ class PublicPlatformConfigView(APIView):
             'handover_qr_expiry_minutes': to_int(settings_map.get('handover_qr_expiry_minutes', 30), 30),
             'allowed_domains': settings_map.get('allowed_domains', 'lpu.in'),
             'otp_daily_limit': to_int(settings_map.get('otp_daily_limit', 5), 5),
+            'version': getattr(settings, 'APP_VERSION', '2.4.0'),
             'announcement': {
                 'enabled': str(settings_map.get('announcement_enabled', '')).lower() in ('true', '1'),
                 'text': settings_map.get('announcement_text', ''),
@@ -2827,6 +2829,7 @@ class AdminSystemHealthView(APIView):
                 'recent_admin_actions_24h': recent_admin_actions
             },
             'environment': {
+                'platform_version': getattr(settings, 'APP_VERSION', '2.4.0'),
                 'python_version': sys.version.split()[0],
                 'django_version': django.get_version(),
                 'os_platform': platform.system(),

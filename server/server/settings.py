@@ -35,6 +35,18 @@ DATA_SECURITY_KEY = os.environ.get('DATA_SECURITY_KEY', '')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
+# Unified Platform Version Configuration (Master Source of Truth: version.json)
+APP_VERSION = '2.4.0'
+_root_version_file = BASE_DIR.parent / 'version.json'
+if _root_version_file.is_file():
+    try:
+        import json
+        with open(_root_version_file, 'r', encoding='utf-8') as _vf:
+            APP_VERSION = json.load(_vf).get('version', APP_VERSION)
+    except Exception:
+        pass
+APP_VERSION = os.environ.get('APP_VERSION', APP_VERSION)
+
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,10.0.2.2').split(',') if h.strip()]
 if DEBUG and '*' not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append('*')

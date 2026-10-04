@@ -1,0 +1,14 @@
+{
+  "version": "2.4.0",
+  "name": "CampusXChange",
+  "releaseStage": "Stable",
+  "releaseDate": "October 2026",
+  "client": {
+    "appName": "CampusXChange",
+    "buildName": "CampusXChange v2.4.0"
+  },
+  "admin": {
+    "appName": "CampusXChange Admin Portal",
+    "buildName": "CampusXChange Admin v2.4.0"
+  }
+}
