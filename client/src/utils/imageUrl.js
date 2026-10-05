@@ -70,12 +70,12 @@ export function getSafeImageUrl(url, options = {}) {
 
   // 5. Absolute URLs (already starting with http:// or https://)
   if (processedUrl.startsWith('http://') || processedUrl.startsWith('https://')) {
-    // If page is HTTPS and URL is HTTP to our domain, upgrade to HTTPS to avoid mixed content
+    // If page is HTTPS or domain is Cloudinary/Render/CampusXChange, upgrade to HTTPS to prevent mixed content
     if (
-      typeof window !== 'undefined' &&
-      window.location?.protocol === 'https:' &&
-      processedUrl.startsWith('http://') &&
-      (processedUrl.includes('anshuman892494.online') || processedUrl.includes('onrender.com'))
+      processedUrl.startsWith('http://res.cloudinary.com') ||
+      (typeof window !== 'undefined' &&
+        window.location?.protocol === 'https:' &&
+        processedUrl.startsWith('http://'))
     ) {
       return processedUrl.replace('http://', 'https://');
     }

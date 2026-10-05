@@ -32,9 +32,18 @@ def cleanup_listing_image_on_delete(sender, instance, **kwargs):
     if '/api/media/secure-image/' in clean_url:
         return
 
-    # 4. Verify no other ListingImage record still references this image
+    # 4. Verify no other ListingImage record still references this image or Cloudinary public_id
     try:
-        if ListingImage.objects.filter(image_url=clean_url).exclude(id=instance.id).exists():
+        from .cloudinary_upload import extract_cloudinary_public_id
+        target_pid = extract_cloudinary_public_id(clean_url)
+        if target_pid:
+            for other_img in ListingImage.objects.exclude(id=instance.id):
+                if extract_cloudinary_public_id(other_img.image_url) == target_pid:
+                    logger.info(
+                        f"Skipping Cloudinary deletion for {clean_url}: public_id '{target_pid}' is still referenced by ListingImage #{other_img.id}."
+                    )
+                    return
+        elif ListingImage.objects.filter(image_url=clean_url).exclude(id=instance.id).exists():
             logger.info(
                 f"Skipping Cloudinary deletion for {clean_url}: image is still referenced by another record."
             )

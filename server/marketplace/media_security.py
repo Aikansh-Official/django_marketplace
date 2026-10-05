@@ -381,6 +381,12 @@ def secure_image_proxy_view(request):
         if content_type and image_bytes:
             cache.set(cache_key, (content_type, image_bytes), timeout=3600)
 
+        if not image_bytes:
+            resp = HttpResponse(PROTECTED_ASSET_SVG, content_type='image/svg+xml', status=200)
+            resp['Cache-Control'] = 'public, max-age=300'
+            resp['Access-Control-Allow-Origin'] = '*'
+            return resp
+
         response = HttpResponse(image_bytes, content_type=content_type or 'image/jpeg')
         response['Cache-Control'] = 'private, max-age=86400, stale-while-revalidate=3600'
         response['X-Content-Type-Options'] = 'nosniff'

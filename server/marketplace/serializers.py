@@ -248,8 +248,9 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
     def _process_image(self, img_data):
         """
         Process a single image entry:
-        - If it's a base64 data URI → upload to Cloudinary, return the URL
-        - If it's a regular URL → return as-is
+        - If it's a base64 data URI -> upload to Cloudinary, return the secure URL
+        - If it's a local media URL -> upload existing local disk file to Cloudinary if available
+        - If it's a regular URL -> unwrap secure proxy to canonical URL and return
         """
         if is_base64_image(img_data):
             try:
@@ -274,8 +275,31 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
                     # Store base64 data URI directly if local save fails
                     return img_data
         elif is_url(img_data):
+            import os
+            from django.conf import settings
             from .media_security import extract_raw_source_from_secure_url
-            return extract_raw_source_from_secure_url(img_data)
+            raw_url = extract_raw_source_from_secure_url(img_data)
+
+            # Auto-migrate local /media/ or localhost images to Cloudinary if file exists on disk
+            if ('/media/listings/' in raw_url or 'localhost:8000/media/' in raw_url or '127.0.0.1:8000/media/' in raw_url):
+                try:
+                    from django.core.files.uploadedfile import SimpleUploadedFile
+                    from .cloudinary_upload import upload_image_to_cloudinary
+
+                    rel_path = raw_url.split('/media/', 1)[1].split('?')[0]
+                    local_disk_path = os.path.join(settings.MEDIA_ROOT, rel_path.replace('/', os.sep))
+                    if os.path.isfile(local_disk_path):
+                        with open(local_disk_path, 'rb') as f:
+                            fname = os.path.basename(local_disk_path)
+                            c_type = 'image/png' if fname.endswith('.png') else 'image/webp' if fname.endswith('.webp') else 'image/jpeg'
+                            up_file = SimpleUploadedFile(fname, f.read(), content_type=c_type)
+                            up_res = upload_image_to_cloudinary(up_file)
+                            if up_res and up_res.get('url'):
+                                return up_res['url']
+                except Exception:
+                    pass
+
+            return raw_url
         else:
             raise serializers.ValidationError(
                 "Invalid image data. Provide a valid URL or base64 data URI."
@@ -322,33 +346,64 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
 
         if uploaded_images is not None:
             from .media_security import extract_raw_source_from_secure_url
+            from .cloudinary_upload import extract_cloudinary_public_id
 
-            # 1. Process and un-wrap incoming images to pure canonical URLs
+            # 1. Process and un-wrap incoming images to canonical storage URLs
             canonical_urls = [self._process_image(img_data) for img_data in uploaded_images if img_data]
-            if primary_index >= len(canonical_urls):
+            if not canonical_urls:
+                return instance
+
+            if primary_index >= len(canonical_urls) or primary_index < 0:
                 primary_index = 0
-            retained_url_set = set(canonical_urls)
+
+            def get_image_key(url):
+                """Helper to get unique asset key for comparison (public_id for Cloudinary, normalized path for local)."""
+                if not url:
+                    return ''
+                raw = extract_raw_source_from_secure_url(url)
+                pid = extract_cloudinary_public_id(raw)
+                if pid:
+                    return f"cloudinary:{pid}"
+                clean = raw.split('?')[0].replace('http://', 'https://').rstrip('/')
+                return f"url:{clean}"
+
+            # Map incoming items to keys
+            incoming_keys = [get_image_key(u) for u in canonical_urls]
+            incoming_key_set = set(incoming_keys)
 
             # 2. Inspect existing images attached to this listing
             existing_images = list(instance.images.all())
 
-            # 3. For any image NOT retained by user, delete record (triggers Cloudinary cleanup)
-            #    For retained images, mark them to skip Cloudinary cleanup so the file is preserved!
+            # 3. For any existing image NOT retained by user, delete record (triggers Cloudinary cleanup)
+            #    For retained images: KEEP THEM in database, DO NOT DELETE!
+            retained_existing_by_key = {}
             for old_img in existing_images:
-                old_canonical = extract_raw_source_from_secure_url(old_img.image_url)
-                if old_canonical not in retained_url_set:
+                old_key = get_image_key(old_img.image_url)
+                if old_key not in incoming_key_set:
+                    # User explicitly removed this image
                     old_img.delete()
                 else:
-                    old_img._skip_cloudinary_cleanup = True
-                    old_img.delete()
+                    # Preserve existing record to avoid destructive delete/recreate cycles
+                    retained_existing_by_key[old_key] = old_img
 
-            # 4. Recreate images with canonical URLs and correct primary flag
+            # 4. Synchronize records for incoming images:
+            #    - Retained images: update is_primary and canonical URL in-place
+            #    - Newly added images: create new ListingImage record
             for index, clean_url in enumerate(canonical_urls):
-                ListingImage.objects.create(
-                    listing=instance,
-                    image_url=clean_url,
-                    is_primary=(index == primary_index)
-                )
+                key = incoming_keys[index]
+                is_prim = (index == primary_index)
+                if key in retained_existing_by_key:
+                    existing_record = retained_existing_by_key[key]
+                    existing_record.is_primary = is_prim
+                    existing_record.image_url = clean_url
+                    existing_record.save(update_fields=['is_primary', 'image_url'])
+                else:
+                    new_record = ListingImage.objects.create(
+                        listing=instance,
+                        image_url=clean_url,
+                        is_primary=is_prim
+                    )
+                    retained_existing_by_key[key] = new_record
 
         return instance
 

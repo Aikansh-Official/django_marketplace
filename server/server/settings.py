@@ -387,10 +387,12 @@ is_local_host = not RENDER_EXTERNAL_HOSTNAME and any(
     h in os.environ.get('ALLOWED_HOSTS', '') for h in ('localhost', '127.0.0.1')
 )
 
-if not DEBUG and not is_local_host and RENDER_EXTERNAL_HOSTNAME:
+# Always trust X-Forwarded-Proto header from reverse proxies (Render, AWS, Cloudflare)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+if not DEBUG and not is_local_host:
     # HTTPS / SSL
     SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'True') == 'True'
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
     # HSTS — tell browsers to only use HTTPS for 1 year
     SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '31536000'))
