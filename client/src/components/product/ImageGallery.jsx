@@ -174,7 +174,16 @@ export default function ImageGallery({
                   src={getSafeImageUrl(img.image_url)}
                   alt={`Thumbnail ${idx + 1}`}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.style.display = 'none';
+                    const fb = e.currentTarget.parentElement?.querySelector('.thumb-fallback');
+                    if (fb) fb.style.display = 'flex';
+                  }}
                 />
+                <div className="thumb-fallback hidden w-full h-full items-center justify-center bg-gray-100 text-gray-400">
+                  <Package className="w-4 h-4 opacity-50" />
+                </div>
               </button>
             ))}
           </div>
