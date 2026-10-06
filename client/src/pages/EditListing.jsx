@@ -1,20 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { compressImage } from '../utils/compressImage';
 import {
   UploadCloud,
   X,
-  IndianRupee,
-  MapPin,
-  Phone,
-  MessageSquare,
   ShieldCheck,
-  ChevronRight,
   ArrowLeft,
   Check,
-  Tag,
-  AlertCircle,
   AlertTriangle,
   Repeat,
   Camera,
@@ -22,31 +15,10 @@ import {
 } from 'lucide-react';
 import api, { getCategories } from '../services/api';
 import CategoryIcon from '../components/CategoryIcon';
-import LivePhotoModal from '../components/common/LivePhotoModal';
 import { getSafeImageUrl } from '../utils/imageUrl';
+import { CONDITIONS, LPU_LOCATIONS } from '../constants/listingConfig';
 
-const LPU_LOCATIONS = [
-  'BH-1', 'BH-2', 'BH-3', 'BH-4', 'BH-5', 'BH-6', 'BH-7', 'BH-8',
-  'GH-1', 'GH-2', 'GH-3', 'GH-4', 'GH-5', 'GH-6',
-  'Block 34', 'Block 36', 'Block 38', 'Central Library',
-  'Uni-Mall', 'Law Gate', 'Main Gate', 'Green Valley'
-];
-
-const CONDITIONS = [
-  { value: 'NEW', label: 'Brand New', desc: 'Unopened / with original tags' },
-  { value: 'LIKE_NEW', label: 'Like New', desc: 'Barely used, flawless condition' },
-  { value: 'GOOD', label: 'Good', desc: 'Gently used, fully functional' },
-  { value: 'FAIR', label: 'Fair', desc: 'Visible wear, works fine' },
-  { value: 'POOR', label: 'For Parts / Poor', desc: 'Needs repair or for parts' },
-];
-
-const CONTACT_PREFERENCES = [
-  { value: 'ALL', label: 'All Channels', desc: 'In-app Chat, WhatsApp & Phone Call' },
-  { value: 'WHATSAPP', label: 'WhatsApp Preferred', desc: 'Buyer contacts directly via WhatsApp' },
-  { value: 'CALL', label: 'Phone Call Preferred', desc: 'Direct voice calls' },
-  { value: 'CHAT', label: 'In-App Chat Only', desc: 'Keeps your phone number private' },
-  { value: 'MEETUP', label: 'Campus Meetup Only', desc: 'Coordinate spot on campus' },
-];
+const LivePhotoModal = lazy(() => import('../components/common/LivePhotoModal'));
 
 export default function EditListing() {
   const { id } = useParams();
@@ -889,11 +861,13 @@ export default function EditListing() {
 
       {/* Live Camera Photo Modal */}
       {isCameraOpen && (
-        <LivePhotoModal
-          isOpen={isCameraOpen}
-          onClose={() => setIsCameraOpen(false)}
-          onPhotoCaptured={handleCameraPhotoCaptured}
-        />
+        <Suspense fallback={null}>
+          <LivePhotoModal
+            isOpen={isCameraOpen}
+            onClose={() => setIsCameraOpen(false)}
+            onPhotoCaptured={handleCameraPhotoCaptured}
+          />
+        </Suspense>
       )}
     </div>
   );

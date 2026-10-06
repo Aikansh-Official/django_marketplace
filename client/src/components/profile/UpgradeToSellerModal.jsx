@@ -79,8 +79,6 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
     return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
   const storedUser = React.useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem('user') || '{}');
@@ -93,6 +91,8 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
   const username = String(profile?.username || storedUser?.username || '').replace(/^@/, '').trim();
   const fullName = profile?.full_name || profile?.first_name || storedUser?.full_name || storedUser?.first_name || '';
   const email = profile?.email || storedUser?.email || '';
+
+  if (!isOpen) return null;
 
   // Handle ID photo upload & compression
   const handleImageUpload = async (e) => {

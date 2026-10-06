@@ -144,6 +144,7 @@ class ListingSerializer(serializers.ModelSerializer):
     )
     seller = serializers.SerializerMethodField()
     is_seller = serializers.SerializerMethodField()
+    is_buyer = serializers.SerializerMethodField()
     offers_count = serializers.SerializerMethodField()
 
     discount_percentage = serializers.ReadOnlyField()
@@ -157,10 +158,10 @@ class ListingSerializer(serializers.ModelSerializer):
             'rent_period', 'condition', 'location',
             'contact_preference', 'contact_phone', 'contact_whatsapp',
             'status', 'views_count', 'created_at', 'updated_at',
-            'category', 'category_id', 'images', 'seller', 'is_seller',
+            'category', 'category_id', 'images', 'seller', 'is_seller', 'is_buyer',
             'offers_count'
         ]
-        read_only_fields = ['views_count', 'created_at', 'updated_at', 'seller', 'offers_count', 'discount_percentage', 'is_trusted']
+        read_only_fields = ['views_count', 'created_at', 'updated_at', 'seller', 'is_seller', 'is_buyer', 'offers_count', 'discount_percentage', 'is_trusted']
 
     def get_seller(self, obj):
         request = self.context.get('request')
@@ -174,6 +175,13 @@ class ListingSerializer(serializers.ModelSerializer):
         user = getattr(request, 'user', None)
         if user and user.is_authenticated:
             return obj.seller_id == user.id
+        return False
+
+    def get_is_buyer(self, obj):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        if user and user.is_authenticated:
+            return obj.offers.filter(buyer=user, status__in=['COMPLETED', 'ACCEPTED']).exists()
         return False
 
     def get_offers_count(self, obj):

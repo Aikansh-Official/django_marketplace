@@ -13,6 +13,7 @@ import {
 export default function MobileStickyBar({
   listing,
   isOwner = false,
+  isBuyer = false,
   isAuthenticated = false,
   userOffer = null,
   listingOffers = [],
@@ -141,9 +142,28 @@ export default function MobileStickyBar({
           Reserved for Peer
         </span>
       ) : listing.status === 'SOLD' ? (
-        <span className="text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded-md">
-          Item Sold
-        </span>
+        isBuyer ? (
+          <div className="flex items-center gap-2 shrink-0">
+            {onOpenChat && (
+              <button
+                type="button"
+                onClick={onOpenChat}
+                className="bg-white border border-gray-300 hover:border-emerald-500 text-gray-700 hover:text-emerald-700 p-2.5 rounded-md shadow-xs flex items-center justify-center cursor-pointer"
+                title="Chat with Seller"
+              >
+                <Send className="w-4 h-4 text-emerald-600" />
+              </button>
+            )}
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-md flex items-center gap-1">
+              <Check className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Item Bought</span>
+            </span>
+          </div>
+        ) : (
+          <span className="text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded-md">
+            Item Sold
+          </span>
+        )
       ) : (
         /* Active Listing Buyer CTA */
         <div className="flex items-center gap-2 shrink-0">

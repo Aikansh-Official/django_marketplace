@@ -31,6 +31,7 @@ import ErrorBoundary from './components/common/ErrorBoundary';
 import ThemeBackground from './components/ThemeBackground';
 import toast, { Toaster } from 'react-hot-toast';
 import { LoadingProvider } from './context/LoadingContext';
+import { AuthProvider } from './context/AuthContext';
 import {
   setupForegroundNotifications,
   requestNotificationPermissionAndRegister,
@@ -125,10 +126,11 @@ function App() {
     <BrowserRouter>
       <ScrollToTop />
       <LoadingProvider>
-        <Toaster
-          position="bottom-right"
-          toastOptions={{ className: 'font-sans font-medium rounded-md shadow-lg', duration: 4000 }}
-        />
+        <AuthProvider>
+          <Toaster
+            position="bottom-right"
+            toastOptions={{ className: 'font-sans font-medium rounded-md shadow-lg', duration: 4000 }}
+          />
         <div className="flex flex-col min-h-screen relative font-sans text-gray-900 bg-transparent">
           {/* 100% Auto-Animated Geometric Background */}
           <ThemeBackground />
@@ -238,6 +240,7 @@ function App() {
             <Footer />
           </div>
         </div>
+        </AuthProvider>
       </LoadingProvider>
     </BrowserRouter>
   );

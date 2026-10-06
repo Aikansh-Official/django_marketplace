@@ -4,6 +4,7 @@ import { AlertCircle, Camera, Check, CheckCircle2 } from 'lucide-react';
 export default function StatusBanners({
   listing,
   userOffer,
+  isBuyer = false,
   respondingToCounter = false,
   cancellingDeal = false,
   onBuyerCounterRespond,
@@ -106,19 +107,33 @@ export default function StatusBanners({
         )
       )}
 
-      {/* Item Sold Out Banner */}
+      {/* Item Sold / Bought Banner */}
       {listing.status === 'SOLD' && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4 sm:p-5 flex items-start gap-3 shadow-xs">
-          <div className="w-9 h-9 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0 border border-red-200">
-            <AlertCircle className="w-5 h-5" />
+        isBuyer ? (
+          <div className="bg-emerald-50 border border-emerald-300 rounded-md p-4 sm:p-5 flex items-start gap-3 shadow-xs">
+            <div className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <h4 className="text-sm font-extrabold text-emerald-950">Item Bought</h4>
+              <p className="text-xs text-emerald-800 mt-1">
+                You have successfully bought this item. Handover completed & verified on campus.
+              </p>
+            </div>
           </div>
-          <div>
-            <h4 className="text-sm font-extrabold text-red-950">Item Sold Out</h4>
-            <p className="text-xs text-red-800 mt-1">
-              This item has already been purchased/traded and is no longer available.
-            </p>
+        ) : (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4 sm:p-5 flex items-start gap-3 shadow-xs">
+            <div className="w-9 h-9 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0 border border-red-200">
+              <AlertCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-extrabold text-red-950">Item Sold Out</h4>
+              <p className="text-xs text-red-800 mt-1">
+                This item has already been purchased/traded and is no longer available.
+              </p>
+            </div>
           </div>
-        </div>
+        )
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import confetti from 'canvas-confetti';
@@ -29,7 +29,7 @@ import {
   preprocessImageForOcr
 } from '../../utils/idCardVerification';
 import { compressImageToDataUrl } from '../../utils/compressImage';
-import UpdateSelfieModal from './UpdateSelfieModal';
+const UpdateSelfieModal = lazy(() => import('./UpdateSelfieModal'));
 
 export default function IdVerificationTab({ profile, onProfileUpdated, onOpenSelfieModal }) {
   // Purge any old global localStorage artifact so verification status is strictly read from the user DB model
@@ -400,13 +400,15 @@ export default function IdVerificationTab({ profile, onProfileUpdated, onOpenSel
         </div>
 
         {/* Update Selfie Modal Fallback */}
-        {!onOpenSelfieModal && (
-          <UpdateSelfieModal
-            isOpen={internalSelfieModalOpen}
-            onClose={() => setInternalSelfieModalOpen(false)}
-            profile={profile}
-            onProfileUpdated={onProfileUpdated}
-          />
+        {!onOpenSelfieModal && internalSelfieModalOpen && (
+          <Suspense fallback={null}>
+            <UpdateSelfieModal
+              isOpen={internalSelfieModalOpen}
+              onClose={() => setInternalSelfieModalOpen(false)}
+              profile={profile}
+              onProfileUpdated={onProfileUpdated}
+            />
+          </Suspense>
         )}
       </div>
     );

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { toggleSavedItem, isItemSaved } from '../utils/savedStore';
-import api, { getCategories, getAuthStatus } from '../services/api';
+import api, { getCategories } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import {
   MapPin,
   Heart,
@@ -18,20 +19,7 @@ import UniversalLoader from '../components/common/UniversalLoader';
 import { getSafeImageUrl } from '../utils/imageUrl';
 import ListingCard from '../components/product/ListingCard';
 import BannerSlideshow from '../components/home/BannerSlideshow';
-
-const TRANSACTION_FILTERS = [
-  { value: 'ALL', label: 'All Modes' },
-  { value: 'SELL', label: 'Buy & Sell' },
-  { value: 'EXCHANGE', label: 'Exchange & Barter' },
-  { value: 'DONATE', label: 'Free Donations' },
-];
-
-const SORT_OPTIONS = [
-  { value: 'newest', label: 'Newest First' },
-  { value: 'price_asc', label: 'Price: Low to High' },
-  { value: 'price_desc', label: 'Price: High to Low' },
-  { value: 'popular', label: 'Most Viewed' },
-];
+import { TRANSACTION_FILTERS, SORT_OPTIONS } from '../constants/listingConfig';
 
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -49,51 +37,8 @@ export default function Home() {
   const [sortBy, setSortBy] = useState('newest');
   const [favorites, setFavorites] = useState({});
 
-  // Current User Profile State
-  const [userProfile, setUserProfile] = useState(() => {
-    try {
-      const stored = localStorage.getItem('user');
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
-  });
-
-  useEffect(() => {
-    const syncUser = async () => {
-      try {
-        const stored = localStorage.getItem('user');
-        if (stored) {
-          setUserProfile(JSON.parse(stored));
-        } else if (localStorage.getItem('access')) {
-          const data = await getAuthStatus();
-          if (data?.isAuthenticated && data?.user) {
-            setUserProfile(data.user);
-            localStorage.setItem('user', JSON.stringify(data.user));
-          }
-        }
-      } catch {
-        // ignore
-      }
-    };
-    syncUser();
-    window.addEventListener('auth-changed', syncUser);
-    window.addEventListener('storage', syncUser);
-    return () => {
-      window.removeEventListener('auth-changed', syncUser);
-      window.removeEventListener('storage', syncUser);
-    };
-  }, []);
-
-  const isSeller = Boolean(
-    userProfile && (
-      userProfile.role === 'SELLER' ||
-      userProfile.is_id_verified ||
-      userProfile.is_staff ||
-      userProfile.is_superuser
-    )
-  );
-  const isBuyer = Boolean(userProfile && !isSeller);
+  // Current User Profile & Role from Centralized AuthContext
+  const { user: userProfile, isSeller, isBuyer } = useAuth();
 
   // Sync state when URL params change (guarded against redundant state updates)
   useEffect(() => {

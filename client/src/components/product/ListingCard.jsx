@@ -132,7 +132,7 @@ export default function ListingCard({
 
             {/* Live Sale Countdown Badge */}
             {timeLeft && (
-              <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[8px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1 animate-pulse">
+              <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[8px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
                 <Clock className="w-2.5 h-2.5" />
                 <span className="truncate max-w-[70px] sm:max-w-none">{timeLeft}</span>
               </span>

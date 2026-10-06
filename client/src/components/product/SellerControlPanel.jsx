@@ -27,10 +27,9 @@ export default function SellerControlPanel({
   onOpenQRModal,
   onCancelDeal
 }) {
-  if (!listing) return null;
-
   // Sort offers: PENDING first, then COUNTERED, then ACCEPTED, then COMPLETED/REJECTED
   const sortedOffers = useMemo(() => {
+    if (!listing || !Array.isArray(listingOffers)) return [];
     const priority = {
       PENDING: 1,
       COUNTERED: 2,
@@ -45,7 +44,9 @@ export default function SellerControlPanel({
       if (pA !== pB) return pA - pB;
       return new Date(b.created_at) - new Date(a.created_at);
     });
-  }, [listingOffers]);
+  }, [listing, listingOffers]);
+
+  if (!listing) return null;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 items-start">

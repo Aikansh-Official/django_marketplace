@@ -16,6 +16,7 @@ import { getSafeImageUrl } from '../../utils/imageUrl';
 export default function ImageGallery({
   images = [],
   listing,
+  isBuyer = false,
   activeImageIndex = 0,
   setActiveImageIndex
 }) {
@@ -99,9 +100,15 @@ export default function ImageGallery({
           {/* Status Overlay if Sold or Reserved */}
           {listing?.status === 'SOLD' && (
             <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center">
-              <span className="bg-red-600 text-white font-extrabold text-lg sm:text-xl px-6 py-2 rounded-md tracking-wider shadow-lg border border-red-400 animate-pulse">
-                ITEM SOLD
-              </span>
+              {isBuyer ? (
+                <span className="bg-emerald-600 text-white font-extrabold text-lg sm:text-xl px-6 py-2 rounded-md tracking-wider shadow-lg border border-emerald-400 animate-pulse">
+                  ITEM BOUGHT
+                </span>
+              ) : (
+                <span className="bg-red-600 text-white font-extrabold text-lg sm:text-xl px-6 py-2 rounded-md tracking-wider shadow-lg border border-red-400 animate-pulse">
+                  ITEM SOLD
+                </span>
+              )}
             </div>
           )}
           {listing?.status === 'PENDING' && (

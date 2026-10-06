@@ -57,19 +57,28 @@ export default defineConfig({
     },
   },
   build: {
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 800,
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('tesseract.js')) {
+            if (id.includes('@mediapipe')) {
+              return 'vendor-vision';
+            }
+            if (id.includes('tesseract.js') || id.includes('tesseract.js-core')) {
               return 'vendor-ocr';
             }
             if (id.includes('html5-qrcode')) {
               return 'vendor-scanner';
             }
+            if (id.includes('firebase')) {
+              return 'vendor-firebase';
+            }
             if (id.includes('leaflet')) {
               return 'vendor-maps';
+            }
+            if (id.includes('lucide-react')) {
+              return 'vendor-icons';
             }
           }
         },

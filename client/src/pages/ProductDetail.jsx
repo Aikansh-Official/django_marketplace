@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import api, { submitReport } from '../services/api';
 import toast from 'react-hot-toast';
@@ -8,17 +8,13 @@ import {
   BadgeCheck,
   Flag,
   Heart,
-  Mail,
   Package,
   Share2,
-  ShieldCheck,
-  UserCheck
+  ShieldCheck
 } from 'lucide-react';
 import { toggleSavedItem, isItemSaved } from '../utils/savedStore';
-import HandoverQRModal from '../components/handover/HandoverQRModal';
-import HandoverScannerModal from '../components/handover/HandoverScannerModal';
 import UniversalLoader from '../components/common/UniversalLoader';
-import ChatDrawer from '../components/chat/ChatDrawer';
+import { useAuth } from '../context/AuthContext';
 import { getSafeImageUrl } from '../utils/imageUrl';
 import { emitTradeEvent, TRADE_ACTIONS } from '../utils/tradeEvents';
 
@@ -28,27 +24,30 @@ import StatusBanners from '../components/product/StatusBanners';
 import SellerControlPanel from '../components/product/SellerControlPanel';
 import PriceCard from '../components/product/PriceCard';
 
-// Modular Modals
-import BuyOfferModal from '../components/product/modals/BuyOfferModal';
-import CounterOfferModal from '../components/product/modals/CounterOfferModal';
-import ReportModal from '../components/product/modals/ReportModal';
-import DeleteConfirmModal from '../components/product/modals/DeleteConfirmModal';
+// Lazy Loaded Modals & Drawers (splits html5-qrcode and chat out of initial product view)
+const HandoverQRModal = lazy(() => import('../components/handover/HandoverQRModal'));
+const HandoverScannerModal = lazy(() => import('../components/handover/HandoverScannerModal'));
+const ChatDrawer = lazy(() => import('../components/chat/ChatDrawer'));
+const BuyOfferModal = lazy(() => import('../components/product/modals/BuyOfferModal'));
+const CounterOfferModal = lazy(() => import('../components/product/modals/CounterOfferModal'));
+const ReportModal = lazy(() => import('../components/product/modals/ReportModal'));
+const DeleteConfirmModal = lazy(() => import('../components/product/modals/DeleteConfirmModal'));
 
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+  const currentUserId = user?.id || null;
 
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [relatedListings, setRelatedListings] = useState([]);
-  const [currentUserId, setCurrentUserId] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(localStorage.getItem('access')));
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
+  const [isSaved, setIsSaved] = useState(() => (id ? isItemSaved(id) : false));
 
   // Purchase request state
   const [showBuyModal, setShowBuyModal] = useState(false);
@@ -131,7 +130,8 @@ export default function ProductDetail() {
 
   useEffect(() => {
     if (id) {
-      setIsSaved(isItemSaved(id));
+      const saved = isItemSaved(id);
+      setIsSaved((prev) => (prev !== saved ? saved : prev));
     }
   }, [id]);
 
@@ -150,42 +150,6 @@ export default function ProductDetail() {
       toast.success('Removed from saved items.');
     }
   };
-
-  // Fetch current user & check auth status
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      const token = localStorage.getItem('access');
-      if (!token) {
-        setIsAuthenticated(false);
-        setCurrentUserId(null);
-        return;
-      }
-      setIsAuthenticated(true);
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        try {
-          const parsed = JSON.parse(storedUser);
-          if (parsed?.id) setCurrentUserId(parsed.id);
-        } catch (e) { }
-      }
-      try {
-        const res = await api.get('/auth/status/');
-        if (res.data?.isAuthenticated && res.data?.user?.id) {
-          setIsAuthenticated(true);
-          setCurrentUserId(res.data.user.id);
-        } else {
-          setIsAuthenticated(false);
-          setCurrentUserId(null);
-        }
-      } catch (e) {
-        // guest or expired token
-      }
-    };
-
-    checkAuthStatus();
-    window.addEventListener('auth-changed', checkAuthStatus);
-    return () => window.removeEventListener('auth-changed', checkAuthStatus);
-  }, []);
 
   // Fetch listing data
   useEffect(() => {
@@ -228,6 +192,10 @@ export default function ProductDetail() {
 
   const isOwner = Boolean(
     listing?.is_seller || (currentUserId && listing?.seller?.id === currentUserId)
+  );
+
+  const isBuyer = Boolean(
+    !isOwner && (listing?.is_buyer || userOffer?.status === 'COMPLETED')
   );
 
   // Offer & Listing State Fetchers (Supports Silent Real-Time Auto-Refresh)
@@ -716,6 +684,7 @@ export default function ProductDetail() {
       <StatusBanners
         listing={listing}
         userOffer={userOffer}
+        isBuyer={isBuyer}
         respondingToCounter={respondingToCounter}
         cancellingDeal={cancellingDeal}
         onBuyerCounterRespond={handleBuyerCounterRespond}
@@ -730,6 +699,7 @@ export default function ProductDetail() {
           <ImageGallery
             images={images}
             listing={listing}
+            isBuyer={isBuyer}
             activeImageIndex={activeImageIndex}
             setActiveImageIndex={setActiveImageIndex}
           />
@@ -739,6 +709,7 @@ export default function ProductDetail() {
             <PriceCard
               listing={listing}
               isOwner={isOwner}
+              isBuyer={isBuyer}
               isAuthenticated={isAuthenticated}
               userOffer={userOffer}
               listingOffers={listingOffers}
@@ -818,6 +789,7 @@ export default function ProductDetail() {
             <PriceCard
               listing={listing}
               isOwner={isOwner}
+              isBuyer={isBuyer}
               isAuthenticated={isAuthenticated}
               userOffer={userOffer}
               listingOffers={listingOffers}
@@ -961,93 +933,115 @@ export default function ProductDetail() {
       )}
 
       {/* Delete Listing Confirmation Modal */}
-      <DeleteConfirmModal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        listingTitle={listing?.title}
-        deleting={deleting}
-        onConfirmDelete={handleDelete}
-      />
+      {showDeleteModal && (
+        <Suspense fallback={null}>
+          <DeleteConfirmModal
+            isOpen={showDeleteModal}
+            onClose={() => setShowDeleteModal(false)}
+            listingTitle={listing?.title}
+            deleting={deleting}
+            onConfirmDelete={handleDelete}
+          />
+        </Suspense>
+      )}
 
       {/* Purchase / Exchange Request Modal */}
-      <BuyOfferModal
-        isOpen={showBuyModal}
-        onClose={() => setShowBuyModal(false)}
-        listing={listing}
-        isExchangeProposal={isExchangeProposal}
-        exchangeItemTitle={exchangeItemTitle}
-        setExchangeItemTitle={setExchangeItemTitle}
-        buyerMessage={buyerMessage}
-        setBuyerMessage={setBuyerMessage}
-        offerAmount={offerAmount}
-        setOfferAmount={setOfferAmount}
-        submittingBuyRequest={submittingBuyRequest}
-        onSubmit={handleSubmitBuyRequest}
-      />
+      {showBuyModal && (
+        <Suspense fallback={null}>
+          <BuyOfferModal
+            isOpen={showBuyModal}
+            onClose={() => setShowBuyModal(false)}
+            listing={listing}
+            isExchangeProposal={isExchangeProposal}
+            exchangeItemTitle={exchangeItemTitle}
+            setExchangeItemTitle={setExchangeItemTitle}
+            buyerMessage={buyerMessage}
+            setBuyerMessage={setBuyerMessage}
+            offerAmount={offerAmount}
+            setOfferAmount={setOfferAmount}
+            submittingBuyRequest={submittingBuyRequest}
+            onSubmit={handleSubmitBuyRequest}
+          />
+        </Suspense>
+      )}
 
       {/* Seller Counter-Offer Modal */}
-      <CounterOfferModal
-        isOpen={showCounterModal}
-        onClose={() => setShowCounterModal(false)}
-        listing={listing}
-        selectedOffer={selectedOfferForCounter}
-        counterAmount={counterAmount}
-        setCounterAmount={setCounterAmount}
-        sellerNote={sellerNote}
-        setSellerNote={setSellerNote}
-        submittingCounter={submittingCounter}
-        onSubmit={handleSubmitCounter}
-      />
+      {showCounterModal && (
+        <Suspense fallback={null}>
+          <CounterOfferModal
+            isOpen={showCounterModal}
+            onClose={() => setShowCounterModal(false)}
+            listing={listing}
+            selectedOffer={selectedOfferForCounter}
+            counterAmount={counterAmount}
+            setCounterAmount={setCounterAmount}
+            sellerNote={sellerNote}
+            setSellerNote={setSellerNote}
+            submittingCounter={submittingCounter}
+            onSubmit={handleSubmitCounter}
+          />
+        </Suspense>
+      )}
 
       {/* Report Listing Modal */}
-      <ReportModal
-        isOpen={showReportModal}
-        onClose={() => setShowReportModal(false)}
-        reportReason={reportReason}
-        setReportReason={setReportReason}
-        reportDetails={reportDetails}
-        setReportDetails={setReportDetails}
-        submittingReport={submittingReport}
-        onSubmit={handleSubmitReport}
-      />
+      {showReportModal && (
+        <Suspense fallback={null}>
+          <ReportModal
+            isOpen={showReportModal}
+            onClose={() => setShowReportModal(false)}
+            reportReason={reportReason}
+            setReportReason={setReportReason}
+            reportDetails={reportDetails}
+            setReportDetails={setReportDetails}
+            submittingReport={submittingReport}
+            onSubmit={handleSubmitReport}
+          />
+        </Suspense>
+      )}
 
       {/* Handover QR Modal (for Seller) */}
       {showQRModal && activeOfferForQR && (
-        <HandoverQRModal
-          offerId={activeOfferForQR.id}
-          listingId={listing.id}
-          listingTitle={listing.title}
-          buyerName={activeOfferForQR.buyer_name || activeOfferForQR.buyer_reg}
-          price={activeOfferForQR.offer_amount || listing.price}
-          location={listing.location}
-          image={getSafeImageUrl(listing.images?.[0]?.image_url)}
-          existingSession={activeOfferForQR.active_handover}
-          onClose={() => setShowQRModal(false)}
-          onComplete={handleDealCompleted}
-        />
+        <Suspense fallback={null}>
+          <HandoverQRModal
+            offerId={activeOfferForQR.id}
+            listingId={listing.id}
+            listingTitle={listing.title}
+            buyerName={activeOfferForQR.buyer_name || activeOfferForQR.buyer_reg}
+            price={activeOfferForQR.offer_amount || listing.price}
+            location={listing.location}
+            image={getSafeImageUrl(listing.images?.[0]?.image_url)}
+            existingSession={activeOfferForQR.active_handover}
+            onClose={() => setShowQRModal(false)}
+            onComplete={handleDealCompleted}
+          />
+        </Suspense>
       )}
 
       {/* Handover Scanner & PIN Modal (for Buyer) */}
       {showScannerModal && (
-        <HandoverScannerModal
-          listingId={listing.id}
-          defaultOfferId={userOffer?.id}
-          onClose={() => setShowScannerModal(false)}
-          onSuccess={handleDealCompleted}
-        />
+        <Suspense fallback={null}>
+          <HandoverScannerModal
+            listingId={listing.id}
+            defaultOfferId={userOffer?.id}
+            onClose={() => setShowScannerModal(false)}
+            onSuccess={handleDealCompleted}
+          />
+        </Suspense>
       )}
 
       {/* In-App Student Chat Drawer */}
       {showChatDrawer && (
-        <ChatDrawer
-          listingId={listing.id}
-          peerId={listing.seller?.id}
-          peerName={listing.seller?.full_name || listing.seller?.username}
-          listingTitle={listing.title}
-          listingPrice={listing.price}
-          listingImage={images[0]?.image_url ? getSafeImageUrl(images[0]?.image_url) : ''}
-          onClose={() => setShowChatDrawer(false)}
-        />
+        <Suspense fallback={null}>
+          <ChatDrawer
+            listingId={listing.id}
+            peerId={listing.seller?.id}
+            peerName={listing.seller?.full_name || listing.seller?.username}
+            listingTitle={listing.title}
+            listingPrice={listing.price}
+            listingImage={images[0]?.image_url ? getSafeImageUrl(images[0]?.image_url) : ''}
+            onClose={() => setShowChatDrawer(false)}
+          />
+        </Suspense>
       )}
     </div>
   );

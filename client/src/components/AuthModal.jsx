@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import toast from 'react-hot-toast';
 import { X } from 'lucide-react';
 import AuthLeftPanel from './auth/AuthLeftPanel';
 import LoginForm from './auth/LoginForm';
-import RegisterForm from './auth/RegisterForm';
-import ForgotPasswordForm from './auth/ForgotPasswordForm';
+import UniversalLoader from './common/UniversalLoader';
+
+const RegisterForm = lazy(() => import('./auth/RegisterForm'));
+const ForgotPasswordForm = lazy(() => import('./auth/ForgotPasswordForm'));
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSuccess }) {
   const [mode, setMode] = useState(initialMode); // 'login', 'register', or 'forgot-password'
@@ -106,36 +108,52 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', onSu
                   onSuccess={() => { onClose(); if (onSuccess) onSuccess(); }}
                 />
               ) : mode === 'forgot-password' ? (
-                <ForgotPasswordForm
-                  onBackToLogin={() => setMode('login')}
-                />
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center min-h-[300px]">
+                      <UniversalLoader text="Loading reset password..." size="sm" />
+                    </div>
+                  }
+                >
+                  <ForgotPasswordForm
+                    onBackToLogin={() => setMode('login')}
+                  />
+                </Suspense>
               ) : (
-                <RegisterForm
-                  step={registerStep}
-                  setStep={setRegisterStep}
-                  selectedRole={selectedRole}
-                  setSelectedRole={setSelectedRole}
-                  idFrontImage={idFrontImage}
-                  setIdFrontImage={setIdFrontImage}
-                  selfieImage={selfieImage}
-                  setSelfieImage={setSelfieImage}
-                  isScanning={isScanning}
-                  setIsScanning={setIsScanning}
-                  scanProgress={scanProgress}
-                  setScanProgress={setScanProgress}
-                  scanStatus={scanStatus}
-                  setScanStatus={setScanStatus}
-                  isIdVerified={isIdVerified}
-                  setIsIdVerified={setIsIdVerified}
-                  extractedCardData={extractedCardData}
-                  setExtractedCardData={setExtractedCardData}
-                  rejectionInfo={rejectionInfo}
-                  setRejectionInfo={setRejectionInfo}
-                  studentInfo={studentInfo}
-                  setStudentInfo={setStudentInfo}
-                  onSwitch={() => setMode('login')}
-                  onSuccess={() => { onClose(); if (onSuccess) onSuccess(); }}
-                />
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center min-h-[300px]">
+                      <UniversalLoader text="Loading registration..." size="sm" />
+                    </div>
+                  }
+                >
+                  <RegisterForm
+                    step={registerStep}
+                    setStep={setRegisterStep}
+                    selectedRole={selectedRole}
+                    setSelectedRole={setSelectedRole}
+                    idFrontImage={idFrontImage}
+                    setIdFrontImage={setIdFrontImage}
+                    selfieImage={selfieImage}
+                    setSelfieImage={setSelfieImage}
+                    isScanning={isScanning}
+                    setIsScanning={setIsScanning}
+                    scanProgress={scanProgress}
+                    setScanProgress={setScanProgress}
+                    scanStatus={scanStatus}
+                    setScanStatus={setScanStatus}
+                    isIdVerified={isIdVerified}
+                    setIsIdVerified={setIsIdVerified}
+                    extractedCardData={extractedCardData}
+                    setExtractedCardData={setExtractedCardData}
+                    rejectionInfo={rejectionInfo}
+                    setRejectionInfo={setRejectionInfo}
+                    studentInfo={studentInfo}
+                    setStudentInfo={setStudentInfo}
+                    onSwitch={() => setMode('login')}
+                    onSuccess={() => { onClose(); if (onSuccess) onSuccess(); }}
+                  />
+                </Suspense>
               )}
             </div>
           </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import {
@@ -23,7 +23,7 @@ import {
   Loader2,
   AlertTriangle
 } from 'lucide-react';
-import UpdateSelfieModal from './UpdateSelfieModal';
+const UpdateSelfieModal = lazy(() => import('./UpdateSelfieModal'));
 import {
   getNotificationPermission,
   requestNotificationPermissionAndRegister,
@@ -555,13 +555,15 @@ export default function PersonalInfoTab({ profile, onProfileUpdated, onUpgradeCl
       </div>
 
       {/* Update Selfie Modal Fallback */}
-      {!onOpenSelfieModal && (
-        <UpdateSelfieModal
-          isOpen={internalSelfieModalOpen}
-          onClose={() => setInternalSelfieModalOpen(false)}
-          profile={profile}
-          onProfileUpdated={onProfileUpdated}
-        />
+      {!onOpenSelfieModal && internalSelfieModalOpen && (
+        <Suspense fallback={null}>
+          <UpdateSelfieModal
+            isOpen={internalSelfieModalOpen}
+            onClose={() => setInternalSelfieModalOpen(false)}
+            profile={profile}
+            onProfileUpdated={onProfileUpdated}
+          />
+        </Suspense>
       )}
     </div>
   );

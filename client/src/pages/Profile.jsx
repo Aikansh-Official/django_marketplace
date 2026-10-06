@@ -1,17 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ProfileSidebar from '../components/profile/ProfileSidebar';
 import PersonalInfoTab from '../components/profile/PersonalInfoTab';
 import OrdersSellsTab from '../components/profile/OrdersSellsTab';
-import IdVerificationTab from '../components/profile/IdVerificationTab';
 import SavedItemsTab from '../components/profile/SavedItemsTab';
 import MyReportsTab from '../components/profile/MyReportsTab';
-import LogoutModal from '../components/profile/LogoutModal';
-import UpgradeToSellerModal from '../components/profile/UpgradeToSellerModal';
-import UpdateSelfieModal from '../components/profile/UpdateSelfieModal';
 import { getSavedCount } from '../utils/savedStore';
 import api from '../services/api';
+
+const IdVerificationTab = lazy(() => import('../components/profile/IdVerificationTab'));
+const LogoutModal = lazy(() => import('../components/profile/LogoutModal'));
+const UpgradeToSellerModal = lazy(() => import('../components/profile/UpgradeToSellerModal'));
+const UpdateSelfieModal = lazy(() => import('../components/profile/UpdateSelfieModal'));
 
 import UniversalLoader from '../components/common/UniversalLoader';
 
@@ -178,11 +179,19 @@ export default function Profile() {
           )}
 
           {activeTab === 'id-verification' && isSeller && (
-            <IdVerificationTab
-              profile={profile}
-              onProfileUpdated={fetchProfile}
-              onOpenSelfieModal={() => setIsSelfieModalOpen(true)}
-            />
+            <Suspense
+              fallback={
+                <div className="p-8 flex items-center justify-center">
+                  <UniversalLoader text="Loading ID Verification..." size="sm" />
+                </div>
+              }
+            >
+              <IdVerificationTab
+                profile={profile}
+                onProfileUpdated={fetchProfile}
+                onOpenSelfieModal={() => setIsSelfieModalOpen(true)}
+              />
+            </Suspense>
           )}
 
           {activeTab === 'saved-items' && (
@@ -196,31 +205,43 @@ export default function Profile() {
       </div>
 
       {/* Upgrade to Seller Modal */}
-      <UpgradeToSellerModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-        profile={profile}
-        onUpgradeSuccess={() => {
-          fetchProfile();
-          setIsUpgradeModalOpen(false);
-        }}
-      />
+      {isUpgradeModalOpen && (
+        <Suspense fallback={null}>
+          <UpgradeToSellerModal
+            isOpen={isUpgradeModalOpen}
+            onClose={() => setIsUpgradeModalOpen(false)}
+            profile={profile}
+            onUpgradeSuccess={() => {
+              fetchProfile();
+              setIsUpgradeModalOpen(false);
+            }}
+          />
+        </Suspense>
+      )}
 
       {/* Update Selfie Modal */}
-      <UpdateSelfieModal
-        isOpen={isSelfieModalOpen}
-        onClose={() => setIsSelfieModalOpen(false)}
-        profile={profile}
-        onProfileUpdated={fetchProfile}
-      />
+      {isSelfieModalOpen && (
+        <Suspense fallback={null}>
+          <UpdateSelfieModal
+            isOpen={isSelfieModalOpen}
+            onClose={() => setIsSelfieModalOpen(false)}
+            profile={profile}
+            onProfileUpdated={fetchProfile}
+          />
+        </Suspense>
+      )}
 
       {/* Logout Confirmation Modal */}
-      <LogoutModal
-        isOpen={isLogoutModalOpen}
-        onClose={() => setIsLogoutModalOpen(false)}
-        onConfirm={handleLogoutConfirm}
-        loggingOut={loggingOut}
-      />
+      {isLogoutModalOpen && (
+        <Suspense fallback={null}>
+          <LogoutModal
+            isOpen={isLogoutModalOpen}
+            onClose={() => setIsLogoutModalOpen(false)}
+            onConfirm={handleLogoutConfirm}
+            loggingOut={loggingOut}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

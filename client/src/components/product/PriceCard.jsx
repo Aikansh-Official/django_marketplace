@@ -5,6 +5,7 @@ import BuyerActions from './BuyerActions';
 export default function PriceCard({
   listing,
   isOwner,
+  isBuyer = false,
   isAuthenticated,
   userOffer,
   listingOffers,
@@ -42,9 +43,21 @@ export default function PriceCard({
           </span>
         </div>
 
-        {/* Badges for Negotiable & Exchange */}
+        {/* Badges for Status, Negotiable & Exchange */}
         <div className="flex flex-wrap items-center gap-2 mt-2">
-          {listing.is_negotiable && listing.transaction_type === 'SELL' && (
+          {listing.status === 'SOLD' && (
+            isBuyer ? (
+              <div className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                <Check className="w-3 h-3 text-emerald-600" />
+                <span>Item Bought</span>
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-1 text-[11px] font-bold text-red-800 bg-red-50 border border-red-200 px-2.5 py-0.5 rounded-full">
+                <span>Sold Out</span>
+              </div>
+            )
+          )}
+          {listing.status !== 'SOLD' && listing.is_negotiable && listing.transaction_type === 'SELL' && (
             <div className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-700 bg-brand-50 border border-brand-200 px-2.5 py-0.5 rounded-full">
               <Check className="w-3 h-3" />
               <span>Price is negotiable</span>
@@ -86,6 +99,7 @@ export default function PriceCard({
       <BuyerActions
         listing={listing}
         isOwner={isOwner}
+        isBuyer={isBuyer}
         isAuthenticated={isAuthenticated}
         userOffer={userOffer}
         listingOffers={listingOffers}

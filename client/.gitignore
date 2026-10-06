@@ -25,3 +25,6 @@ dist-ssr
 
 # MediaPipe large binary/wasm files (loaded from CDN at runtime)
 public/mediapipe/
+
+# Tesseract trained data files
+*.traineddata

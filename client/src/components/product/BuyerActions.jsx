@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   Camera,
+  CheckCircle2,
   Clock,
   Edit3,
   Lock,
@@ -17,6 +18,7 @@ import {
 export default function BuyerActions({
   listing,
   isOwner = false,
+  isBuyer = false,
   isAuthenticated = false,
   userOffer = null,
   listingOffers = [],
@@ -263,6 +265,32 @@ export default function BuyerActions({
   }
 
   if (listing.status === 'SOLD') {
+    if (isBuyer) {
+      return (
+        <div className="space-y-3 pt-2">
+          <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-center py-4 px-3 rounded-md space-y-1 shadow-2xs">
+            <div className="flex items-center justify-center gap-1.5 text-xs font-extrabold uppercase">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>Item Bought</span>
+            </div>
+            <p className="text-[11px] font-normal text-emerald-700">
+              You have successfully bought this item. Handover completed & verified on campus.
+            </p>
+          </div>
+          {onOpenChat && (
+            <button
+              type="button"
+              onClick={onOpenChat}
+              className="w-full bg-white hover:bg-emerald-50/70 border border-emerald-300 text-emerald-800 font-semibold py-2.5 px-4 rounded-md transition-all shadow-2xs text-xs flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Send className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Chat with Seller</span>
+            </button>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div className="bg-red-50 border border-red-200 text-red-700 text-center py-4 px-3 rounded-md text-xs font-extrabold uppercase mt-2 space-y-1">
         <div>Item Sold</div>

@@ -1,60 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { compressImage } from '../utils/compressImage';
 import {
   UploadCloud,
   X,
-  Star,
-  Tag,
-  IndianRupee,
   MapPin,
-  Phone,
-  MessageSquare,
   Sparkles,
   Info,
   Check,
   ChevronRight,
   ShieldCheck,
-  Plus,
-  RefreshCw,
-  Eye,
-  SlidersHorizontal,
   Repeat,
   Camera,
   AlertTriangle,
   Lock,
   ShieldAlert,
-  TrendingUp,
-  Clock
+  Clock,
+  Eye
 } from 'lucide-react';
 import api, { getPlatformConfig, getCategories } from '../services/api';
 import CategoryIcon from '../components/CategoryIcon';
-import UpgradeToSellerModal from '../components/profile/UpgradeToSellerModal';
-import LivePhotoModal from '../components/common/LivePhotoModal';
 import { getSafeImageUrl } from '../utils/imageUrl';
+import { useAuth } from '../context/AuthContext';
+import { CONDITIONS, CONTACT_PREFERENCES } from '../constants/listingConfig';
 
-const CONDITIONS = [
-  { value: 'NEW', label: 'Brand New', desc: 'Unopened / with original tags' },
-  { value: 'LIKE_NEW', label: 'Like New', desc: 'Barely used, flawless condition' },
-  { value: 'GOOD', label: 'Good', desc: 'Gently used, fully functional' },
-  { value: 'FAIR', label: 'Fair', desc: 'Visible wear, works fine' },
-  { value: 'POOR', label: 'For Parts / Poor', desc: 'Needs repair or for parts' },
-];
-
-const CONTACT_PREFERENCES = [
-  { value: 'ALL', label: 'All Channels', desc: 'In-app Chat, WhatsApp & Phone Call' },
-  { value: 'WHATSAPP', label: 'WhatsApp Preferred', desc: 'Buyer contacts directly via WhatsApp' },
-  { value: 'CALL', label: 'Phone Call Preferred', desc: 'Direct voice calls' },
-  { value: 'CHAT', label: 'In-App Chat Only', desc: 'Keeps your phone number private' },
-  { value: 'MEETUP', label: 'Campus Meetup Only', desc: 'Coordinate spot on campus' },
-];
+const LivePhotoModal = lazy(() => import('../components/common/LivePhotoModal'));
+const UpgradeToSellerModal = lazy(() => import('../components/profile/UpgradeToSellerModal'));
 
 export default function CreateListing() {
   const navigate = useNavigate();
+  const { user: userProfile, updateUser } = useAuth();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [userProfile, setUserProfile] = useState(null);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   // Form State
@@ -399,15 +377,19 @@ export default function CreateListing() {
             </button>
           </div>
 
-          <UpgradeToSellerModal
-            isOpen={isUpgradeModalOpen}
-            onClose={() => setIsUpgradeModalOpen(false)}
-            profile={userProfile}
-            onUpgradeSuccess={(upgradedUser) => {
-              setUserProfile(upgradedUser);
-              setIsUpgradeModalOpen(false);
-            }}
-          />
+          {isUpgradeModalOpen && (
+            <Suspense fallback={null}>
+              <UpgradeToSellerModal
+                isOpen={isUpgradeModalOpen}
+                onClose={() => setIsUpgradeModalOpen(false)}
+                profile={userProfile}
+                onUpgradeSuccess={(upgradedUser) => {
+                  updateUser(upgradedUser);
+                  setIsUpgradeModalOpen(false);
+                }}
+              />
+            </Suspense>
+          )}
         </div>
       </div>
     );
@@ -1291,11 +1273,13 @@ export default function CreateListing() {
 
       {/* Live Camera Photo Modal */}
       {isCameraOpen && (
-        <LivePhotoModal
-          isOpen={isCameraOpen}
-          onClose={() => setIsCameraOpen(false)}
-          onPhotoCaptured={handleCameraPhotoCaptured}
-        />
+        <Suspense fallback={null}>
+          <LivePhotoModal
+            isOpen={isCameraOpen}
+            onClose={() => setIsCameraOpen(false)}
+            onPhotoCaptured={handleCameraPhotoCaptured}
+          />
+        </Suspense>
       )}
     </div>
   );

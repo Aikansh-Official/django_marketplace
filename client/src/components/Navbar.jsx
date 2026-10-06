@@ -13,11 +13,12 @@ import {
   ShoppingBag,
   MessageSquare
 } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
-import api, { getAuthStatus } from '../services/api';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import logoImg from '../assets/CampusXChange_Logo.webp';
-import AuthModal from './AuthModal';
-import SavedItemsDrawer from './SavedItemsDrawer';
+const AuthModal = lazy(() => import('./AuthModal'));
+const SavedItemsDrawer = lazy(() => import('./SavedItemsDrawer'));
 import NotificationDropdown from './notifications/NotificationDropdown';
 import { getSavedCount } from '../utils/savedStore';
 import { APP_VERSION } from '../config/version';
@@ -26,14 +27,7 @@ import { unregisterFCMDevice } from '../services/fcmService';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [userProfile, setUserProfile] = useState(() => {
-    try {
-      const stored = localStorage.getItem('user');
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
-  });
+  const { user: userProfile, isSeller } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
   const [savedCount, setSavedCount] = useState(() => getSavedCount());
@@ -101,32 +95,7 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch user profile status (deduplicated & cached)
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const data = await getAuthStatus();
-        if (data?.isAuthenticated && data?.user) {
-          setUserProfile(data.user);
-          localStorage.setItem('user', JSON.stringify(data.user));
-        } else {
-          if (!data?.isAuthenticated) {
-            localStorage.removeItem('access');
-            localStorage.removeItem('refresh');
-            localStorage.removeItem('user');
-          }
-          setUserProfile(null);
-        }
-      } catch {
-        setUserProfile(null);
-      }
-    };
-    fetchProfile();
-    window.addEventListener('auth-changed', fetchProfile);
-    return () => {
-      window.removeEventListener('auth-changed', fetchProfile);
-    };
-  }, []);
+
 
   // Fetch notifications unread count
   useEffect(() => {
@@ -267,15 +236,6 @@ export default function Navbar() {
   };
 
   const displayName = userProfile?.full_name || userProfile?.first_name || userProfile?.username || 'Student';
-  const isSeller = Boolean(
-    userProfile && (
-      userProfile.role === 'SELLER' ||
-      userProfile.is_id_verified ||
-      userProfile.is_staff ||
-      userProfile.is_superuser
-    )
-  );
-  const isBuyer = Boolean(userProfile && !isSeller);
 
   return (
     <>
@@ -938,17 +898,25 @@ export default function Navbar() {
       </nav>
 
       {/* Slide-over Saved Wishlist Drawer */}
-      <SavedItemsDrawer
-        isOpen={isSavedDrawerOpen}
-        onClose={() => setIsSavedDrawerOpen(false)}
-      />
+      {isSavedDrawerOpen && (
+        <Suspense fallback={null}>
+          <SavedItemsDrawer
+            isOpen={isSavedDrawerOpen}
+            onClose={() => setIsSavedDrawerOpen(false)}
+          />
+        </Suspense>
+      )}
 
       {/* Auth Modal */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        initialMode={authModalMode}
-      />
+      {isAuthModalOpen && (
+        <Suspense fallback={null}>
+          <AuthModal
+            isOpen={isAuthModalOpen}
+            onClose={() => setIsAuthModalOpen(false)}
+            initialMode={authModalMode}
+          />
+        </Suspense>
+      )}
     </>
   );
 }
