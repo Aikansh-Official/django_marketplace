@@ -16,13 +16,21 @@ const UpdateSelfieModal = lazy(() => import('../components/profile/UpdateSelfieM
 
 import UniversalLoader from '../components/common/UniversalLoader';
 
+const getNormalizedTab = (tab) => {
+  if (!tab) return 'personal-info';
+  if (tab === 'verification') return 'id-verification';
+  if (tab === 'my-sales' || tab === 'my_sales' || tab === 'orders_sells') return 'orders-sells';
+  return tab;
+};
+
 export default function Profile() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const rawTab = searchParams.get('tab');
-  const normalizedTab = rawTab === 'verification' ? 'id-verification' : rawTab;
-  const currentTabParam = normalizedTab || 'personal-info';
+  
+  const normalizedTab = getNormalizedTab(rawTab);
+  const currentTabParam = normalizedTab;
   const [activeTab, setActiveTab] = useState(
     currentTabParam === 'notifications' ? 'personal-info' : currentTabParam
   );
@@ -42,7 +50,8 @@ export default function Profile() {
   // Sync tab with URL query parameter
   useEffect(() => {
     const raw = searchParams.get('tab');
-    const tabFromUrl = raw === 'verification' ? 'id-verification' : raw;
+    const tabFromUrl = getNormalizedTab(raw);
+    
     if (tabFromUrl === 'notifications') {
       navigate('/notifications', { replace: true });
       return;
@@ -50,7 +59,7 @@ export default function Profile() {
     if (tabFromUrl && tabFromUrl !== activeTab) {
       setActiveTab(tabFromUrl);
     }
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, activeTab]);
 
   // If a buyer lands on id-verification, redirect to personal-info and open upgrade modal
   useEffect(() => {
