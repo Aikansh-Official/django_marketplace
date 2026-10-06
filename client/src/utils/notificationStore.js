@@ -1,5 +1,5 @@
 // Utility for managing campus notifications & trade alerts
-const NOTIFICATIONS_STORAGE_KEY = 'campusxchange_notifications';
+const NOTIFICATIONS_STORAGE_KEY = 'campxchange_notifications';
 const LEGACY_NOTIFICATIONS_STORAGE_KEY = 'lputrade_notifications';
 
 export const getNotifications = () => {

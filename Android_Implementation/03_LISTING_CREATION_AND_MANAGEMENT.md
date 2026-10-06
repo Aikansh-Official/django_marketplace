@@ -1,6 +1,6 @@
 # 📦 Module 03: Listing Creation & Management
 
-This document provides the complete, production-ready specification for creating, editing, and managing marketplace listings in the **CampusXChange** native Android application using **Jetpack Compose, Multi-Image Handling, Bitmap Compression, and Dagger Hilt**.
+This document provides the complete, production-ready specification for creating, editing, and managing marketplace listings in the **CampXChange** native Android application using **Jetpack Compose, Multi-Image Handling, Bitmap Compression, and Dagger Hilt**.
 
 ---
 
@@ -25,9 +25,9 @@ Screen Form           (ID Card OCR ➡️ Selfie ➡️ OTP ➡️ Upgraded!)
 ### 2.1 Listing Management Service (`ListingManagementApi.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.remote.api
+package com.campxchange.app.data.remote.api
 
-import com.campusxchange.app.data.remote.dto.*
+import com.campxchange.app.data.remote.dto.*
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.Response
@@ -61,7 +61,7 @@ interface ListingManagementApi {
 ### 2.2 Data Transfer Objects (`ListingDtos.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.remote.dto
+package com.campxchange.app.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
 
@@ -100,7 +100,7 @@ data class MyListingItemDto(
 To prevent mobile network timeouts and reduce server bandwidth, images are downscaled to a max dimension of 1280px and compressed to JPEG (80% quality) before converting to Base64 or MultiPart:
 
 ```kotlin
-package com.campusxchange.app.core.util
+package com.campxchange.app.core.util
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -157,7 +157,7 @@ object BitmapCompressor {
 ### 4.1 Create Listing Screen (`CreateListingScreen.kt`)
 
 ```kotlin
-package com.campusxchange.app.presentation.listing
+package com.campxchange.app.presentation.listing
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -180,7 +180,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.campusxchange.app.core.designsystem.*
+import com.campxchange.app.core.designsystem.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

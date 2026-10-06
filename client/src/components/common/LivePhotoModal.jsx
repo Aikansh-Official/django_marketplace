@@ -319,7 +319,7 @@ export default function LivePhotoModal({ isOpen, onClose, onPhotoCaptured }) {
           {/* Security Tagline */}
           <div className="flex items-center justify-center gap-1.5 text-xs text-gray-500 pt-3 border-t border-gray-100">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>CampusXChange Anti-Fraud: Only real photos accepted</span>
+            <span>CampXChange Anti-Fraud: Only real photos accepted</span>
           </div>
         </div>
       </aside>

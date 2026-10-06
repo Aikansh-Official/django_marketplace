@@ -1,6 +1,6 @@
-# CampusXChange Platform - Design System & UI Guidelines
+# CampXChange Platform - Design System & UI Guidelines
 
-This document outlines the core design tokens and UI components used in the CampusXChange platform. Always reference this guide when creating new components to ensure consistency across the Client and Admin portals.
+This document outlines the core design tokens and UI components used in the CampXChange platform. Always reference this guide when creating new components to ensure consistency across the Client and Admin portals.
 
 > [!IMPORTANT]
 > The platform uses a modern, light-themed geometric aesthetic with orange accents and soft glassmorphism. Avoid using generic flat colors or sharp square corners.

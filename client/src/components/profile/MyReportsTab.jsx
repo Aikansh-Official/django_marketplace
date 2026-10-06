@@ -108,7 +108,7 @@ export default function MyReportsTab() {
             No Reports Submitted
           </h3>
           <p className="text-xs text-gray-500 max-w-md mx-auto">
-            You haven't reported any suspicious listings or traders yet. CampusXChange is maintained safe with peer vigilance.
+            You haven't reported any suspicious listings or traders yet. CampXChange is maintained safe with peer vigilance.
           </p>
         </div>
       ) : (

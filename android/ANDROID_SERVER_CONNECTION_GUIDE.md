@@ -1,4 +1,4 @@
-# 🔌 CampusXChange — Android Server Connection, Security Headers & Network Architecture Guide
+# 🔌 CampXChange — Android Server Connection, Security Headers & Network Architecture Guide
 
 > **Target Platform:** Android (API 26+ / Android 8.0 to Android 15+)  
 > **Architecture:** Kotlin, Jetpack Compose, Retrofit 2, OkHttp 4, Kotlinx Serialization / Gson  
@@ -20,7 +20,7 @@
 
 ## 1. Server Environment Endpoints
 
-CampusXChange uses the same unified Django REST backend across Web Client, Admin Panel, and Android App.
+CampXChange uses the same unified Django REST backend across Web Client, Admin Panel, and Android App.
 
 | Environment | Base URL | Usage |
 |---|---|---|
@@ -65,10 +65,10 @@ Accept: application/json
 To ensure **every single request** carries the required security keys and Bearer JWT tokens, use an OkHttp `Interceptor`:
 
 ```kotlin
-package com.campusxchange.app.data.remote.interceptor
+package com.campxchange.app.data.remote.interceptor
 
-import com.campusxchange.app.BuildConfig
-import com.campusxchange.app.data.local.TokenManager
+import com.campxchange.app.BuildConfig
+import com.campxchange.app.data.local.TokenManager
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
@@ -111,10 +111,10 @@ class SecurityHeaderInterceptor(
 When an access token expires (HTTP 401 Unauthorized), OkHttp's `Authenticator` automatically hits `/api/auth/token/refresh/` using the stored refresh token, updates DataStore, and retries the original request seamlessly without user intervention:
 
 ```kotlin
-package com.campusxchange.app.data.remote.authenticator
+package com.campxchange.app.data.remote.authenticator
 
-import com.campusxchange.app.data.local.TokenManager
-import com.campusxchange.app.data.remote.api.AuthApiService
+import com.campxchange.app.data.local.TokenManager
+import com.campxchange.app.data.remote.api.AuthApiService
 import kotlinx.coroutines.runBlocking
 import okhttp3.Authenticator
 import okhttp3.Request
@@ -175,12 +175,12 @@ class TokenAuthenticator @Inject constructor(
 ## 5. Complete Kotlin NetworkModule Setup
 
 ```kotlin
-package com.campusxchange.app.di
+package com.campxchange.app.di
 
-import com.campusxchange.app.BuildConfig
-import com.campusxchange.app.data.local.TokenManager
-import com.campusxchange.app.data.remote.authenticator.TokenAuthenticator
-import com.campusxchange.app.data.remote.interceptor.SecurityHeaderInterceptor
+import com.campxchange.app.BuildConfig
+import com.campxchange.app.data.local.TokenManager
+import com.campxchange.app.data.remote.authenticator.TokenAuthenticator
+import com.campxchange.app.data.remote.interceptor.SecurityHeaderInterceptor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -275,20 +275,20 @@ object NetworkModule {
 
 ```xml
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.campusxchange.app">
+    package="com.campxchange.app">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CAMERA" />
 
     <application
-        android:name=".CampusXChangeApp"
+        android:name=".CampXChangeApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.CampusXChange"
+        android:theme="@style/Theme.CampXChange"
         android:networkSecurityConfig="@xml/network_security_config"
         android:usesCleartextTraffic="true">
 

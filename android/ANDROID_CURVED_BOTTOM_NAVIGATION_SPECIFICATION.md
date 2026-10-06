@@ -1,10 +1,10 @@
-# 📱 CampusXChange — Android Curved Cradle Navigation, Top Bar & Role Dashboards Specification
+# 📱 CampXChange — Android Curved Cradle Navigation, Top Bar & Role Dashboards Specification
 
 > **Module Identifier:** Module 16  
 > **Target Platform:** Android Native (API Level 26+ / Android 8.0 to Android 15+)  
 > **Tech Stack:** Kotlin 2.x, Jetpack Compose, Material 3, Hilt, Coroutines StateFlow, Room DB, Retrofit 2  
 > **Backend Integration:** Django REST Framework (`/api/auth/status/`, `/api/marketplace/`, `/api/chat/`)  
-> **Design Parity:** 100% Alignment with CampusXChange Web Client (`Navbar.jsx`, `Home.jsx`, `ThemeBackground.jsx`)  
+> **Design Parity:** 100% Alignment with CampXChange Web Client (`Navbar.jsx`, `Home.jsx`, `ThemeBackground.jsx`)  
 > **Primary Brand Palette:** Vibrant Campus Orange (`#FB5607` / `#F97316`), Frosted Glassmorphism (`0xF2FFFFFF` + `blur(16dp)`), Plus Jakarta Sans Typography  
 > **Last Updated:** September 2026
 
@@ -32,7 +32,7 @@
 
 ## 1. Executive Summary & Visual Anatomy
 
-The CampusXChange Android navigation framework provides an immersive, tactile experience designed specifically for university campus commerce. It combines:
+The CampXChange Android navigation framework provides an immersive, tactile experience designed specifically for university campus commerce. It combines:
 1. **Floating Pill Dock:** A detached frosted glassmorphic navigation bar with `32.dp` rounded corners.
 2. **Concave Cradle Cutout:** An organic scoop carved into the top-center of the bar using smooth Cubic Bezier curves.
 3. **Elevated Hero Action Button (FAB):** A solid **Vibrant Campus Orange** (`#FB5607`) circular button half-docked in the cradle scoop.
@@ -68,7 +68,7 @@ To prevent jagged edges, clipping artifacts, or abrupt angles, the cradle notch 
 ### 2.1 Complete `CradleNotchShape.kt` Implementation
 
 ```kotlin
-package com.campusxchange.app.ui.components.navigation
+package com.campxchange.app.ui.components.navigation
 
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Outline
@@ -81,7 +81,7 @@ import androidx.compose.ui.unit.dp
 
 /**
  * Creates the organic concave cradle notch shape with continuous Bezier curvature
- * matching the CampusXChange floating dock design.
+ * matching the CampXChange floating dock design.
  *
  * @param cradleRadius Radius of the central cutout for the FAB
  * @param cradleDepth Depth of the concave scoop into the navigation bar
@@ -177,7 +177,7 @@ Mirroring `client/src/App.jsx` and `client/src/components/Navbar.jsx`, the Andro
 ### 3.1 Data Contracts & State Models
 
 ```kotlin
-package com.campusxchange.app.ui.navigation.state
+package com.campxchange.app.ui.navigation.state
 
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -226,12 +226,12 @@ data class AppSessionUiState(
 ### 3.2 `AppSessionViewModel.kt` Implementation
 
 ```kotlin
-package com.campusxchange.app.ui.navigation.viewmodel
+package com.campxchange.app.ui.navigation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.campusxchange.app.data.repository.SessionRepository
-import com.campusxchange.app.ui.navigation.state.*
+import com.campxchange.app.data.repository.SessionRepository
+import com.campxchange.app.ui.navigation.state.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -312,7 +312,7 @@ The Top Bar dynamically reconfigures its UI based on whether the student is curr
 ### 4.1 Buyer Top Bar (`BuyerTopAppBar.kt`)
 
 ```kotlin
-package com.campusxchange.app.ui.components.topbar
+package com.campxchange.app.ui.components.topbar
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -332,9 +332,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.campusxchange.app.ui.navigation.state.AppSessionUiState
-import com.campusxchange.app.ui.navigation.state.UserRole
-import com.campusxchange.app.ui.theme.*
+import com.campxchange.app.ui.navigation.state.AppSessionUiState
+import com.campxchange.app.ui.navigation.state.UserRole
+import com.campxchange.app.ui.theme.*
 
 @Composable
 fun BuyerTopAppBar(
@@ -653,7 +653,7 @@ fun getSellerRightTabs() = listOf(
 ### 5.3 Complete `CurvedCradleBottomBar.kt` Implementation
 
 ```kotlin
-package com.campusxchange.app.ui.components.navigation
+package com.campxchange.app.ui.components.navigation
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -673,8 +673,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
-import com.campusxchange.app.ui.navigation.state.UserRole
-import com.campusxchange.app.ui.theme.*
+import com.campxchange.app.ui.navigation.state.UserRole
+import com.campxchange.app.ui.theme.*
 
 @Composable
 fun CurvedCradleBottomBar(
@@ -842,7 +842,7 @@ fun CradleNavItem(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // CampusXChange Active Orange Dot Indicator (Matching Design Mockup)
+        // CampXChange Active Orange Dot Indicator (Matching Design Mockup)
         AnimatedVisibility(
             visible = isSelected,
             enter = fadeIn(),
@@ -1031,7 +1031,7 @@ fun SellerDashboardScreen(
 ## 7. Master Navigation Scaffold Integration (`CampusMasterScaffold.kt`)
 
 ```kotlin
-package com.campusxchange.app.ui.navigation
+package com.campxchange.app.ui.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -1041,11 +1041,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
-import com.campusxchange.app.ui.components.navigation.CurvedCradleBottomBar
-import com.campusxchange.app.ui.components.topbar.*
-import com.campusxchange.app.ui.navigation.state.*
-import com.campusxchange.app.ui.navigation.viewmodel.AppSessionViewModel
-import com.campusxchange.app.ui.theme.CanvasBackground
+import com.campxchange.app.ui.components.navigation.CurvedCradleBottomBar
+import com.campxchange.app.ui.components.topbar.*
+import com.campxchange.app.ui.navigation.state.*
+import com.campxchange.app.ui.navigation.viewmodel.AppSessionViewModel
+import com.campxchange.app.ui.theme.CanvasBackground
 
 @Composable
 fun CampusMasterScaffold(

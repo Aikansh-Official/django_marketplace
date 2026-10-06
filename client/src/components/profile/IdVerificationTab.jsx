@@ -29,7 +29,7 @@ const UpdateSelfieModal = lazy(() => import('./UpdateSelfieModal'));
 export default function IdVerificationTab({ profile, onProfileUpdated, onOpenSelfieModal }) {
   // Purge any old global localStorage artifact so verification status is strictly read from the user DB model
   useEffect(() => {
-    localStorage.removeItem('campusxchange_id_verification');
+    localStorage.removeItem('campxchange_id_verification');
     localStorage.removeItem('lputrade_id_verification');
   }, []);
 

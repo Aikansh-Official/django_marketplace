@@ -2,7 +2,7 @@ import React, { memo } from 'react';
 
 /**
  * ThemeBackground
- * Auto-animated geometric background for CampusXChange Admin Portal.
+ * Auto-animated geometric background for CampXChange Admin Portal.
  * Features continuous organic floating solid orange cubes, soft-shadowed white cubes,
  * fine-stroke hollow square outlines, and asynchronous pulsing dots.
  * Pure GPU-accelerated CSS animations with zero CPU overhead.

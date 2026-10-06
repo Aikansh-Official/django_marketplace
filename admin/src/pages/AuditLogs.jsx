@@ -169,7 +169,7 @@ export default function AuditLogs() {
         l.target_repr || '',
         l.ip_address || ''
       ],
-      filename: `campusxchange_audit_logs_${new Date().toISOString().split('T')[0]}.csv`
+      filename: `campxchange_audit_logs_${new Date().toISOString().split('T')[0]}.csv`
     });
   };
 
@@ -199,7 +199,7 @@ export default function AuditLogs() {
         l.user_agent || '',
         new Date(l.created_at).toLocaleString()
       ],
-      filename: `campusxchange_login_security_${new Date().toISOString().split('T')[0]}.csv`
+      filename: `campxchange_login_security_${new Date().toISOString().split('T')[0]}.csv`
     });
   };
 

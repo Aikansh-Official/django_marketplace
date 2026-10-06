@@ -1,6 +1,6 @@
 # 🤝 Module 05: QR Handover & Campus Transaction Verification
 
-This document provides the complete technical specification for the **CampusXChange** peer-to-peer physical meetup verification system using **ZXing vector QR generation, CameraX with Google ML Kit Barcode Scanning, 6-digit OTP PIN fallback, and real-time completion polling**.
+This document provides the complete technical specification for the **CampXChange** peer-to-peer physical meetup verification system using **ZXing vector QR generation, CameraX with Google ML Kit Barcode Scanning, 6-digit OTP PIN fallback, and real-time completion polling**.
 
 ---
 
@@ -52,9 +52,9 @@ The campus meetup verification prevents dispute and fraud by guaranteeing both b
 ### 2.1 Handover Api Service (`HandoverApiService.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.remote.api
+package com.campxchange.app.data.remote.api
 
-import com.campusxchange.app.data.remote.dto.*
+import com.campxchange.app.data.remote.dto.*
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -80,7 +80,7 @@ interface HandoverApiService {
 ### 2.2 Data Transfer Objects (`HandoverDtos.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.remote.dto
+package com.campxchange.app.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
 
@@ -121,7 +121,7 @@ data class HandoverSessionStatusDto(
 Uses **ZXing Core** to render an ultra-sharp vector bitmap inside Jetpack Compose:
 
 ```kotlin
-package com.campusxchange.app.core.util
+package com.campxchange.app.core.util
 
 import android.graphics.Bitmap
 import android.graphics.Color

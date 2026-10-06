@@ -31,13 +31,13 @@ PROTECTED_ASSET_SVG = """<svg xmlns="http://www.w3.org/2000/svg" width="600" hei
   <path d="M293 103 v-5 a7 7 0 0 1 14 0 v5 m-10 0 h16 a2 2 0 0 1 2 2 v12 a2 2 0 0 1 -2 2 h-16 a2 2 0 0 1 -2 -2 v-12 a2 2 0 0 1 2 -2 z" 
         fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
   <text x="300" y="195" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="700" fill="#f8fafc" text-anchor="middle">
-    Protected CampusXChange Asset
+    Protected CampXChange Asset
   </text>
   <text x="300" y="225" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="500" fill="#94a3b8" text-anchor="middle">
     Direct link sharing &amp; external hotlinking are disabled for student privacy.
   </text>
   <text x="300" y="250" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="400" fill="#64748b" text-anchor="middle">
-    This image can only be viewed securely within the CampusXChange application.
+    This image can only be viewed securely within the CampXChange application.
   </text>
 </svg>"""
 
@@ -231,7 +231,7 @@ def is_authorized_request(request):
 
     if sec_fetch_dest == 'document' or sec_fetch_mode == 'navigate':
         # Opened directly in a browser tab / window / address bar
-        return False, "Direct URL navigation in address bar is blocked. Images can only be viewed within CampusXChange."
+        return False, "Direct URL navigation in address bar is blocked. Images can only be viewed within CampXChange."
 
     # 2. Check Referer header if present
     referer = request.META.get('HTTP_REFERER', '')
@@ -290,7 +290,7 @@ def secure_image_proxy_view(request):
         logger.warning(f"Secure image gateway blocked unauthorized request: {req_err} (Referer: {request.META.get('HTTP_REFERER')})")
         resp = HttpResponse(PROTECTED_ASSET_SVG, content_type='image/svg+xml', status=403)
         resp['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        resp['X-Protected-Asset'] = 'CampusXChange-Secured'
+        resp['X-Protected-Asset'] = 'CampXChange-Secured'
         resp['Access-Control-Allow-Origin'] = '*'
         return resp
 
@@ -313,7 +313,7 @@ def secure_image_proxy_view(request):
         resp['X-Content-Type-Options'] = 'nosniff'
         resp['Cross-Origin-Resource-Policy'] = 'cross-origin'
         resp['Access-Control-Allow-Origin'] = '*'
-        resp['X-Protected-Asset'] = 'CampusXChange-Secured'
+        resp['X-Protected-Asset'] = 'CampXChange-Secured'
         return resp
 
     # Fetch asset bytes or issue fast CDN redirect
@@ -374,7 +374,7 @@ def secure_image_proxy_view(request):
                 redirect_resp['X-Content-Type-Options'] = 'nosniff'
                 redirect_resp['Cross-Origin-Resource-Policy'] = 'cross-origin'
                 redirect_resp['Access-Control-Allow-Origin'] = '*'
-                redirect_resp['X-Protected-Asset'] = 'CampusXChange-Secured'
+                redirect_resp['X-Protected-Asset'] = 'CampXChange-Secured'
                 return redirect_resp
 
         # Cache in memory if local disk bytes were loaded
@@ -393,7 +393,7 @@ def secure_image_proxy_view(request):
         response['Cross-Origin-Resource-Policy'] = 'cross-origin'
         response['Access-Control-Allow-Origin'] = '*'
         response['Content-Disposition'] = 'inline'
-        response['X-Protected-Asset'] = 'CampusXChange-Secured'
+        response['X-Protected-Asset'] = 'CampXChange-Secured'
         return response
 
     except Exception as fetch_err:

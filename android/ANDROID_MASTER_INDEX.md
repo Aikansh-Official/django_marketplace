@@ -1,4 +1,4 @@
-# 📱 CampusXChange — Android Native Architecture & Master Specification Index
+# 📱 CampXChange — Android Native Architecture & Master Specification Index
 
 > **Platform:** Android Native (API Level 26+ / Android 8.0 to Android 15+)  
 > **Tech Stack:** Kotlin 2.x, Jetpack Compose, Material 3, Coroutines, StateFlow, Room DB, Retrofit 2, OkHttp 4, Hilt  
@@ -9,7 +9,7 @@
 
 ## 🏛️ System Architecture Overview
 
-The CampusXChange Android App is engineered to mirror **100% of the features, business logic, security protocols, and visual excellence** of the client web application.
+The CampXChange Android App is engineered to mirror **100% of the features, business logic, security protocols, and visual excellence** of the client web application.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐

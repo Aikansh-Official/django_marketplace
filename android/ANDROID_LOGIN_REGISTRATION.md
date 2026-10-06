@@ -1,4 +1,4 @@
-# 📱 CampusXChange — Android Login & Registration Complete Specification
+# 📱 CampXChange — Android Login & Registration Complete Specification
 
 > **Target Platform:** Android (Native)  
 > **Tech Stack:** Kotlin, Jetpack Compose, Material 3, Clean Architecture + MVVM, Retrofit, OkHttp, Jetpack DataStore, Hilt, CameraX, Google ML Kit  
@@ -84,7 +84,7 @@ The Android authentication module is built with **Clean Architecture**, **MVVM (
 
 ### 1.2 Dual-Path Onboarding Overview (Buyer vs Seller)
 
-CampusXChange gives students the flexibility to sign up as a **Buyer** (fast 3-step sign up) or as a **Verified Seller** (complete 5-step sign up with student ID card and selfie verification):
+CampXChange gives students the flexibility to sign up as a **Buyer** (fast 3-step sign up) or as a **Verified Seller** (complete 5-step sign up with student ID card and selfie verification):
 
 ```
                        ┌────────────────────────────┐
@@ -199,7 +199,7 @@ sequenceDiagram
 
 #### B. Direct Login Flow & Silent Token Refresh (90-Day Android Session)
 
-> **Dual-Device Session Isolation**: CampusXChange allows exactly **1 Web Session (30 days)** and **1 Android App Session (90 days)** concurrently per account.
+> **Dual-Device Session Isolation**: CampXChange allows exactly **1 Web Session (30 days)** and **1 Android App Session (90 days)** concurrently per account.
 > - Android requests MUST supply `X-Client-Type: android` header in OkHttpClient interceptor.
 > - If a student logs into a 2nd Android phone, the 1st phone's session is revoked (401 with `session_invalidated: true`).
 > - Logging into Android never terminates an active Web session on a laptop/desktop, and vice-versa!
@@ -336,7 +336,7 @@ Max Score:            100 Points
 
 ## 3. Color Palette & Design Tokens (Material 3)
 
-The Android app adheres strictly to the CampusXChange Design System:
+The Android app adheres strictly to the CampXChange Design System:
 
 | Token Name | Hex Code | Jetpack Compose Color | Role in UI |
 |---|---|---|---|
@@ -389,14 +389,14 @@ AuthNavGraph ("auth_graph")
 ### 5.2 Navigation Implementation (`AuthNavigation.kt`)
 
 ```kotlin
-package com.CampusXChange.app.navigation
+package com.CampXChange.app.navigation
 
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
-import com.CampusXChange.app.ui.auth.login.LoginScreen
-import com.CampusXChange.app.ui.auth.register.*
+import com.CampXChange.app.ui.auth.login.LoginScreen
+import com.CampXChange.app.ui.auth.register.*
 
 sealed class AuthRoute(val route: String) {
     object Login : AuthRoute("auth/login")
@@ -795,7 +795,7 @@ Base URL: `http://<SERVER_IP>:8000/api/auth/`
 #### A. Data Transfer Objects (`AuthModels.kt`)
 
 ```kotlin
-package com.CampusXChange.app.data.remote.dto
+package com.CampXChange.app.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
 
@@ -901,9 +901,9 @@ data class AuthStatusResponse(
 #### B. Retrofit Interface (`AuthApiService.kt`)
 
 ```kotlin
-package com.CampusXChange.app.data.remote
+package com.CampXChange.app.data.remote
 
-import com.CampusXChange.app.data.remote.dto.*
+import com.CampXChange.app.data.remote.dto.*
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -952,13 +952,13 @@ interface AuthApiService {
 ### 7.2 Token Management (Jetpack DataStore)
 
 ```kotlin
-package com.CampusXChange.app.data.local
+package com.CampXChange.app.data.local
 
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
-import com.CampusXChange.app.data.remote.dto.UserDto
+import com.CampXChange.app.data.remote.dto.UserDto
 import com.google.gson.Gson
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -1021,10 +1021,10 @@ class TokenManager @Inject constructor(
 ### 7.3 OkHttp Auth Interceptor & Token Authenticator
 
 ```kotlin
-package com.CampusXChange.app.data.remote
+package com.CampXChange.app.data.remote
 
-import com.CampusXChange.app.data.local.TokenManager
-import com.CampusXChange.app.data.remote.dto.TokenRefreshRequest
+import com.CampXChange.app.data.local.TokenManager
+import com.CampXChange.app.data.remote.dto.TokenRefreshRequest
 import kotlinx.coroutines.runBlocking
 import okhttp3.*
 import javax.inject.Inject
@@ -1116,7 +1116,7 @@ class TokenAuthenticator @Inject constructor(
 ### 7.4 On-Device ID Card OCR Analyzer (Google ML Kit)
 
 ```kotlin
-package com.CampusXChange.app.utils
+package com.CampXChange.app.utils
 
 import android.graphics.Bitmap
 import com.google.mlkit.vision.common.InputImage
@@ -1221,7 +1221,7 @@ object IdCardOcrAnalyzer {
 ### 7.5 Live Selfie Camera Capture Component (CameraX)
 
 ```kotlin
-package com.CampusXChange.app.utils
+package com.CampXChange.app.utils
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -1264,13 +1264,13 @@ suspend fun Context.getCameraProvider(): ProcessCameraProvider = suspendCoroutin
 #### A. Login ViewModel (`LoginViewModel.kt`)
 
 ```kotlin
-package com.CampusXChange.app.ui.auth.login
+package com.CampXChange.app.ui.auth.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.CampusXChange.app.data.local.TokenManager
-import com.CampusXChange.app.data.remote.AuthApiService
-import com.CampusXChange.app.data.remote.dto.LoginRequest
+import com.CampXChange.app.data.local.TokenManager
+import com.CampXChange.app.data.remote.AuthApiService
+import com.CampXChange.app.data.remote.dto.LoginRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -1347,16 +1347,16 @@ class LoginViewModel @Inject constructor(
 #### B. Register ViewModel (`RegisterViewModel.kt`)
 
 ```kotlin
-package com.CampusXChange.app.ui.auth.register
+package com.CampXChange.app.ui.auth.register
 
 import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.CampusXChange.app.data.local.TokenManager
-import com.CampusXChange.app.data.remote.AuthApiService
-import com.CampusXChange.app.data.remote.dto.*
-import com.CampusXChange.app.utils.IdCardOcrAnalyzer
-import com.CampusXChange.app.utils.ImageUtils
+import com.CampXChange.app.data.local.TokenManager
+import com.CampXChange.app.data.remote.AuthApiService
+import com.CampXChange.app.data.remote.dto.*
+import com.CampXChange.app.utils.IdCardOcrAnalyzer
+import com.CampXChange.app.utils.ImageUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -1734,7 +1734,7 @@ class RegisterViewModel @Inject constructor(
 #### A. Stepper Component (`RegisterStepper.kt`)
 
 ```kotlin
-package com.CampusXChange.app.ui.auth.register
+package com.CampXChange.app.ui.auth.register
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
@@ -1750,7 +1750,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.CampusXChange.app.ui.theme.*
+import com.CampXChange.app.ui.theme.*
 
 @Composable
 fun RegisterStepper(
@@ -1829,7 +1829,7 @@ fun RegisterStepper(
 #### B. Step 1: Personal Details & Role Screen (`RegisterDetailsScreen.kt`)
 
 ```kotlin
-package com.CampusXChange.app.ui.auth.register
+package com.CampXChange.app.ui.auth.register
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -1847,7 +1847,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.CampusXChange.app.ui.theme.*
+import com.CampXChange.app.ui.theme.*
 
 @Composable
 fun RegisterDetailsScreen(
@@ -1874,7 +1874,7 @@ fun RegisterDetailsScreen(
             color = TextInkPrimary
         )
         Text(
-            text = "Join CampusXChange to buy, sell, or donate on campus.",
+            text = "Join CampXChange to buy, sell, or donate on campus.",
             fontSize = 13.sp,
             color = TextMutedSecondary
         )
@@ -2033,7 +2033,7 @@ fun RoleCard(
 #### C. Login Screen (`LoginScreen.kt`)
 
 ```kotlin
-package com.CampusXChange.app.ui.auth.login
+package com.CampXChange.app.ui.auth.login
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -2051,7 +2051,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.CampusXChange.app.ui.theme.*
+import com.CampXChange.app.ui.theme.*
 
 @Composable
 fun LoginScreen(

@@ -1,4 +1,4 @@
-# 🤝 CampusXChange — Android Price Negotiation & Counter-Offer Engine Specification
+# 🤝 CampXChange — Android Price Negotiation & Counter-Offer Engine Specification
 
 > **Target Platform:** Android (Native Jetpack Compose)  
 > **Source Component:** `client/src/pages/ProductDetail.jsx` & `client_features_list.md` Section 9.3  
@@ -18,7 +18,7 @@
 
 ## 1. Negotiation Architecture & State Machine
 
-CampusXChange enables students to haggle and agree on fair prices directly inside the app before meeting on campus:
+CampXChange enables students to haggle and agree on fair prices directly inside the app before meeting on campus:
 
 ```
 [Buyer Places Offer: ₹400] ──(Listing Price ₹500)──> Offer Status: PENDING
@@ -134,7 +134,7 @@ When a seller counters, the buyer receives an in-app notification (`OFFER_COUNTE
 ## 5. Jetpack Compose UI Components (`CounterOfferDialog.kt`)
 
 ```kotlin
-package com.campusxchange.app.ui.offers
+package com.campxchange.app.ui.offers
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -147,7 +147,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.campusxchange.app.ui.theme.*
+import com.campxchange.app.ui.theme.*
 
 @Composable
 fun CounterOfferBanner(

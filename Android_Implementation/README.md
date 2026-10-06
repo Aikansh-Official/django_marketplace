@@ -1,6 +1,6 @@
-# 📱 CampusXChange (LPUTrade) — Native Android Implementation Master Suite
+# 📱 CampXChange (LPUTrade) — Native Android Implementation Master Suite
 
-> **Complete Android Developer Blueprint**: Ye directory CampusXChange student marketplace ke native Android client ke liye complete, production-ready implementation specifications provide karti hai. Isme architecture, design system, screens, ViewModels, state management, routes, Retrofit APIs, local caching, on-device ML Kit OCR, CameraX aur Firebase Cloud Messaging (FCM) ko cover kiya gaya hai.
+> **Complete Android Developer Blueprint**: Ye directory CampXChange student marketplace ke native Android client ke liye complete, production-ready implementation specifications provide karti hai. Isme architecture, design system, screens, ViewModels, state management, routes, Retrofit APIs, local caching, on-device ML Kit OCR, CameraX aur Firebase Cloud Messaging (FCM) ko cover kiya gaya hai.
 
 ---
 
@@ -8,7 +8,7 @@
 
 - **Language**: **Kotlin 2.0+**
 - **UI Framework**: **Jetpack Compose + Material 3** (Declarative, Reactive UI)
-- **Design System**: CampusXChange Design System (Brand Orange `#F97316`, soft glassmorphic elevation, pill badges, Outfit & Inter typography)
+- **Design System**: CampXChange Design System (Brand Orange `#F97316`, soft glassmorphic elevation, pill badges, Outfit & Inter typography)
 - **Architecture**: **Clean Architecture + MVVM + Unidirectional Data Flow (UDF)**
 - **Dependency Injection**: **Dagger Hilt**
 - **Networking**: **Retrofit 2 + OkHttp 4** with custom `AuthInterceptor` (JWT injection, `X-Client-Type: android`, `X-App-Security-Key`), and `TokenAuthenticator` (automatic silent token refresh on 401)
@@ -95,7 +95,7 @@ Har feature ke liye separate, high-detail `.md` file banayi gayi hai jo UI Compo
    - **Android SDK 35** installed via SDK Manager
 2. **Project Creation**:
    - Select **"Empty Activity (Compose)"**
-   - Package name: `com.campusxchange.app`
+   - Package name: `com.campxchange.app`
    - Minimum SDK: `24`
    - Build Configuration Language: `Kotlin DSL (build.gradle.kts)` with `libs.versions.toml`
 3. **Configuration**:

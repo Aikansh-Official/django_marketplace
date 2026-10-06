@@ -1,6 +1,6 @@
 # 🔔 Module 08: Notifications, System Alerts & Platform Infrastructure
 
-This document details the complete native Android specification for **CampusXChange** push notifications via **Firebase Cloud Messaging (FCM)**, the in-app notification feed, urgent non-dismissible safety modals, maintenance/suspension interceptors, and dual-device session isolation.
+This document details the complete native Android specification for **CampXChange** push notifications via **Firebase Cloud Messaging (FCM)**, the in-app notification feed, urgent non-dismissible safety modals, maintenance/suspension interceptors, and dual-device session isolation.
 
 ---
 
@@ -35,9 +35,9 @@ This document details the complete native Android specification for **CampusXCha
 ### 2.1 Notifications Api Service (`NotificationsApiService.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.remote.api
+package com.campxchange.app.data.remote.api
 
-import com.campusxchange.app.data.remote.dto.*
+import com.campxchange.app.data.remote.dto.*
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -71,7 +71,7 @@ interface NotificationsApiService {
 ### 2.2 Data Transfer Objects (`NotificationDtos.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.remote.dto
+package com.campxchange.app.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
 
@@ -97,7 +97,7 @@ data class FcmTokenRegistrationDto(
 ## 3. Firebase Cloud Messaging Service (`CXCFirebaseMessagingService.kt`)
 
 ```kotlin
-package com.campusxchange.app.core.notification
+package com.campxchange.app.core.notification
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -106,8 +106,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import com.campusxchange.app.MainActivity
-import com.campusxchange.app.R
+import com.campxchange.app.MainActivity
+import com.campxchange.app.R
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
@@ -121,7 +121,7 @@ class CXCFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
 
-        val title = remoteMessage.data["title"] ?: remoteMessage.notification?.title ?: "CampusXChange"
+        val title = remoteMessage.data["title"] ?: remoteMessage.notification?.title ?: "CampXChange"
         val body = remoteMessage.data["body"] ?: remoteMessage.notification?.body ?: ""
         val priority = remoteMessage.data["priority"] ?: "NORMAL"
         val deepLinkRoute = remoteMessage.data["route"]

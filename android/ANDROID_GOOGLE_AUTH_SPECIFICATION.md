@@ -1,4 +1,4 @@
-# 📱 CampusXChange — Android Google Authentication & Firebase Integration Master Specification
+# 📱 CampXChange — Android Google Authentication & Firebase Integration Master Specification
 
 > **Module Identifier:** Module 17 (Unified Android Google OAuth & Firebase Authentication Specification)  
 > **Target Platform:** Android Native (API Level 26+ / Android 8.0 to Android 15+)  
@@ -34,12 +34,12 @@
 
 ## 1. Architectural Overview & Security Principles
 
-The CampusXChange Android application integrates **Google One-Tap Authentication** powered by the **AndroidX Credential Manager API** (the modern, official Google standard replacing deprecated `GoogleSignInClient` and `SmartLock`).
+The CampXChange Android application integrates **Google One-Tap Authentication** powered by the **AndroidX Credential Manager API** (the modern, official Google standard replacing deprecated `GoogleSignInClient` and `SmartLock`).
 
 ### 🛡️ Core Security Invariants
 1. **Strict Pre-Registration Policy (No Auto-Signup):**
    - Google Authentication on Android **MUST NOT** automatically register a new user.
-   - The student's Google email must correspond to a student account previously registered and verified via email OTP and student ID on CampusXChange.
+   - The student's Google email must correspond to a student account previously registered and verified via email OTP and student ID on CampXChange.
    - If an unregistered Google account is selected, the backend responds with **HTTP 404 `NOT_REGISTERED`**. The Android UI intercepts this response and presents a polite modal routing the student to the Registration flow.
 2. **Dual-Device Session Isolation (90-Day Android Session):**
    - Successful Google Sign-In issues a dedicated Android session UUID (`android_session_id`), setting `last_login_method = 'GOOGLE'`.
@@ -158,12 +158,12 @@ SHA-256: 8D:12:F4:3B:...:99:A2
 ```
 
 ### 3.2 Firebase Console Android App Setup
-1. Open the [Firebase Console](https://console.firebase.google.com/) and navigate to project **`campusxchange-auth`**.
+1. Open the [Firebase Console](https://console.firebase.google.com/) and navigate to project **`campxchange-auth`**.
 2. Click **Project Settings** (gear icon) > **General** tab.
 3. Under **Your apps**, click **Add app** > Select **Android** icon.
 4. Fill in the parameters:
-   - **Android package name:** `com.campusxchange.app` (must match `applicationId` in `app/build.gradle.kts`)
-   - **App nickname:** `CampusXChange Android`
+   - **Android package name:** `com.campxchange.app` (must match `applicationId` in `app/build.gradle.kts`)
+   - **App nickname:** `CampXChange Android`
    - **Debug signing certificate SHA-1:** Paste your SHA-1 copied from Step 3.1.
 5. Click **Register app**.
 6. Download the generated **`google-services.json`** file and place it inside your Android project at:
@@ -199,11 +199,11 @@ plugins {
 }
 
 android {
-    namespace = "com.campusxchange.app"
+    namespace = "com.campxchange.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.campusxchange.app"
+        applicationId = "com.campxchange.app"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
@@ -263,8 +263,8 @@ dependencies {
 ### 5.1 DTOs & Retrofit Contract (`AuthDtos.kt` & `AuthApiService.kt`)
 
 ```kotlin
-// com/campusxchange/app/data/remote/dto/GoogleAuthDtos.kt
-package com.campusxchange.app.data.remote.dto
+// com/campxchange/app/data/remote/dto/GoogleAuthDtos.kt
+package com.campxchange.app.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
 
@@ -321,11 +321,11 @@ data class ErrorResponseDto(
 ```
 
 ```kotlin
-// com/campusxchange/app/data/remote/api/AuthApiService.kt
-package com.campusxchange.app.data.remote.api
+// com/campxchange/app/data/remote/api/AuthApiService.kt
+package com.campxchange.app.data.remote.api
 
-import com.campusxchange.app.data.remote.dto.AuthResponseDto
-import com.campusxchange.app.data.remote.dto.GoogleLoginRequestDto
+import com.campxchange.app.data.remote.dto.AuthResponseDto
+import com.campxchange.app.data.remote.dto.GoogleLoginRequestDto
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.Header
@@ -346,8 +346,8 @@ interface AuthApiService {
 ### 5.2 AndroidX Credential Manager Engine (`GoogleAuthManager.kt`)
 
 ```kotlin
-// com/campusxchange/app/data/auth/GoogleAuthManager.kt
-package com.campusxchange.app.data.auth
+// com/campxchange/app/data/auth/GoogleAuthManager.kt
+package com.campxchange.app.data.auth
 
 import android.content.Context
 import androidx.credentials.CredentialManager
@@ -355,7 +355,7 @@ import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
-import com.campusxchange.app.BuildConfig
+import com.campxchange.app.BuildConfig
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -431,14 +431,14 @@ sealed interface GoogleSignInResult {
 ### 5.3 Authentication Repository (`AuthRepository.kt`)
 
 ```kotlin
-// com/campusxchange/app/data/repository/AuthRepository.kt
-package com.campusxchange.app.data.repository
+// com/campxchange/app/data/repository/AuthRepository.kt
+package com.campxchange.app.data.repository
 
-import com.campusxchange.app.data.local.SessionManager
-import com.campusxchange.app.data.remote.api.AuthApiService
-import com.campusxchange.app.data.remote.dto.AuthResponseDto
-import com.campusxchange.app.data.remote.dto.ErrorResponseDto
-import com.campusxchange.app.data.remote.dto.GoogleLoginRequestDto
+import com.campxchange.app.data.local.SessionManager
+import com.campxchange.app.data.remote.api.AuthApiService
+import com.campxchange.app.data.remote.dto.AuthResponseDto
+import com.campxchange.app.data.remote.dto.ErrorResponseDto
+import com.campxchange.app.data.remote.dto.GoogleLoginRequestDto
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -485,10 +485,10 @@ class AuthRepository @Inject constructor(
 
                 when (response.code()) {
                     404 -> {
-                        // Strict Pre-Registration Enforcement: Email not registered on CampusXChange
+                        // Strict Pre-Registration Enforcement: Email not registered on CampXChange
                         GoogleAuthBackendResult.NotRegistered(
                             email = parsedError?.email,
-                            message = parsedError?.error ?: "This Google email is not registered on CampusXChange. Please register your student account first!"
+                            message = parsedError?.error ?: "This Google email is not registered on CampXChange. Please register your student account first!"
                         )
                     }
                     403 -> {
@@ -515,16 +515,16 @@ class AuthRepository @Inject constructor(
 ### 5.4 Login ViewModel & State Machine (`LoginViewModel.kt`)
 
 ```kotlin
-// com/campusxchange/app/presentation/auth/login/LoginViewModel.kt
-package com.campusxchange.app.presentation.auth.login
+// com/campxchange/app/presentation/auth/login/LoginViewModel.kt
+package com.campxchange.app.presentation.auth.login
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.campusxchange.app.data.auth.GoogleAuthManager
-import com.campusxchange.app.data.auth.GoogleSignInResult
-import com.campusxchange.app.data.repository.AuthRepository
-import com.campusxchange.app.data.repository.GoogleAuthBackendResult
+import com.campxchange.app.data.auth.GoogleAuthManager
+import com.campxchange.app.data.auth.GoogleSignInResult
+import com.campxchange.app.data.repository.AuthRepository
+import com.campxchange.app.data.repository.GoogleAuthBackendResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -598,8 +598,8 @@ class LoginViewModel @Inject constructor(
 ### 5.5 Jetpack Compose Branded Button (`GoogleSignInButton.kt`)
 
 ```kotlin
-// com/campusxchange/app/presentation/auth/components/GoogleSignInButton.kt
-package com.campusxchange.app.presentation.auth.components
+// com/campxchange/app/presentation/auth/components/GoogleSignInButton.kt
+package com.campxchange.app.presentation.auth.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
@@ -688,8 +688,8 @@ fun GoogleLogoIcon(modifier: Modifier = Modifier) {
 ### 5.6 Login Screen Integration & Unregistered Student Dialog (`LoginScreen.kt`)
 
 ```kotlin
-// com/campusxchange/app/presentation/auth/login/LoginScreen.kt
-package com.campusxchange.app.presentation.auth.login
+// com/campxchange/app/presentation/auth/login/LoginScreen.kt
+package com.campxchange.app.presentation.auth.login
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
@@ -705,7 +705,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.campusxchange.app.presentation.auth.components.GoogleSignInButton
+import com.campxchange.app.presentation.auth.components.GoogleSignInButton
 
 @Composable
 fun LoginScreen(
@@ -822,14 +822,14 @@ fun LoginScreen(
 ### 5.7 Encrypted Session Manager Storage (`SessionManager.kt`)
 
 ```kotlin
-// com/campusxchange/app/data/local/SessionManager.kt
-package com.campusxchange.app.data.local
+// com/campxchange/app/data/local/SessionManager.kt
+package com.campxchange.app.data.local
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.campusxchange.app.data.remote.dto.UserProfileDto
+import com.campxchange.app.data.remote.dto.UserProfileDto
 import com.google.gson.Gson
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -933,5 +933,5 @@ Every Android Google attempt is visible in the Admin Dashboard:
 
 ---
 
-> **Specification Authority:** CampusXChange Mobile Engineering Team  
+> **Specification Authority:** CampXChange Mobile Engineering Team  
 > **Backend Verification:** Validated with Django REST backend & MongoDB Atlas (14 Automated Tests Passing).

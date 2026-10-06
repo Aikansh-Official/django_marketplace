@@ -75,7 +75,7 @@ export default function LoginForm({ onSwitch, onForgotPassword, onSuccess }) {
       // STRICT USER RULE: Only registered student emails can login with Google
       if (resData?.code === 'NOT_REGISTERED' || error.response?.status === 404) {
         toast.error(
-          resData?.error || 'This Google email is not registered on CampusXChange. Please register your student account first!',
+          resData?.error || 'This Google email is not registered on CampXChange. Please register your student account first!',
           { duration: 5500 }
         );
         if (onSwitch) {

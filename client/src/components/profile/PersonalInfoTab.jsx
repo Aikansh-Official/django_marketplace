@@ -400,7 +400,7 @@ export default function PersonalInfoTab({ profile, onProfileUpdated, onUpgradeCl
                     ? 'Your browser is successfully registered with Firebase Cloud Messaging.'
                     : pushPerm === 'denied'
                     ? 'Notifications were blocked in your browser. Click the lock/settings icon in the address bar to reset to "Ask" or "Allow".'
-                    : 'CampusXChange activates push by default. Confirm permission in the browser prompt to receive live alerts.'}
+                    : 'CampXChange activates push by default. Confirm permission in the browser prompt to receive live alerts.'}
                 </p>
               </div>
 

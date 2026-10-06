@@ -17,7 +17,7 @@ def configure_cloudinary():
     )
 
 
-def upload_image_to_cloudinary(image_file, folder="campusxchange/listings"):
+def upload_image_to_cloudinary(image_file, folder="campxchange/listings"):
     """
     Upload an image file to Cloudinary in .webp format.
 
@@ -46,7 +46,7 @@ def upload_image_to_cloudinary(image_file, folder="campusxchange/listings"):
     }
 
 
-def upload_base64_to_cloudinary(base64_data, folder="campusxchange/listings"):
+def upload_base64_to_cloudinary(base64_data, folder="campxchange/listings"):
     """
     Upload a base64-encoded image string to Cloudinary in .webp format.
 
@@ -75,7 +75,7 @@ def upload_base64_to_cloudinary(base64_data, folder="campusxchange/listings"):
     }
 
 
-def upload_user_image_to_cloudinary(image_data, folder="campusxchange/profiles", is_private=False):
+def upload_user_image_to_cloudinary(image_data, folder="campxchange/profiles", is_private=False):
     """
     Universal helper to upload user images (profile photos, ID cards) to Cloudinary in .webp format.
     Accepts base64 data URIs or existing URLs. If already a URL, returns as-is.
@@ -121,7 +121,7 @@ def extract_cloudinary_public_id(image_url):
     """
     Extract public_id from a Cloudinary URL, including folder path and excluding version/transformations/extension.
     Example:
-    https://res.cloudinary.com/cloud/image/upload/v12345/campusxchange/listings/abc123.jpg -> 'campusxchange/listings/abc123'
+    https://res.cloudinary.com/cloud/image/upload/v12345/campxchange/listings/abc123.jpg -> 'campxchange/listings/abc123'
     """
     if not image_url or not isinstance(image_url, str):
         return None
@@ -145,10 +145,10 @@ def extract_cloudinary_public_id(image_url):
         if version_idx != -1:
             public_id_segments = segments[version_idx + 1:]
         else:
-            # Check for folder 'campusxchange'
+            # Check for folder 'campxchange'
             folder_idx = -1
             for idx, seg in enumerate(segments):
-                if seg in ('campusxchange',):
+                if seg in ('campxchange',):
                     folder_idx = idx
                     break
             if folder_idx != -1:

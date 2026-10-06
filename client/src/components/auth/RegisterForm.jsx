@@ -509,8 +509,8 @@ export default function RegisterForm({
 
       toast.success(
         selectedRole === 'BUYER'
-          ? 'Welcome to CampusXChange! Buyer account created successfully.'
-          : 'Welcome to CampusXChange! Verified Seller account created successfully.'
+          ? 'Welcome to CampXChange! Buyer account created successfully.'
+          : 'Welcome to CampXChange! Verified Seller account created successfully.'
       );
       onSuccess();
       window.location.reload();

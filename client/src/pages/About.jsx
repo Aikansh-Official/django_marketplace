@@ -53,7 +53,7 @@ export default function About() {
 
         {/* Page Title */}
         <h1 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight font-display mb-3">
-          About CampusXChange
+          About CampXChange
         </h1>
         <p className="text-base text-gray-600 leading-relaxed max-w-2xl mb-8">
           A peer-to-peer campus exchange developed by students of Lovely Professional University as a project, built exclusively for the LPU student community.
@@ -101,13 +101,13 @@ export default function About() {
             </div>
             <h2 className="text-lg font-bold text-gray-900 mb-2">Our Story & Mission</h2>
             <p className="text-gray-600 leading-relaxed">
-              We are students currently studying at <strong>Lovely Professional University (LPU)</strong>, and we are developing <strong>CampusXChange</strong> as our project. Living on campus, we experienced firsthand how difficult it can be for students to conveniently buy, sell, or pass on essential items semester after semester.
+              We are students currently studying at <strong>Lovely Professional University (LPU)</strong>, and we are developing <strong>CampXChange</strong> as our project. Living on campus, we experienced firsthand how difficult it can be for students to conveniently buy, sell, or pass on essential items semester after semester.
             </p>
             <p className="text-gray-600 leading-relaxed mt-2">
               At the start of every semester, thousands of LPU students buy books, notes, stationery, and daily campus essentials. At the end of the semester or when graduating, these same essentials often go to waste or are sold for pennies to outside scrap dealers.
             </p>
             <p className="text-gray-600 leading-relaxed mt-2">
-              We built <strong>CampusXChange</strong> as our campus project to bridge this gap by creating an authentic, localized student-to-student circular marketplace. Seniors can pass down their essentials and study materials to juniors, saving money for both sides while reducing campus waste.
+              We built <strong>CampXChange</strong> as our campus project to bridge this gap by creating an authentic, localized student-to-student circular marketplace. Seniors can pass down their essentials and study materials to juniors, saving money for both sides while reducing campus waste.
             </p>
           </div>
 

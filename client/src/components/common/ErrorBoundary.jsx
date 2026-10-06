@@ -23,7 +23,7 @@ export class ErrorBoundary extends Component {
 
   componentDidCatch(error, errorInfo) {
     this.setState({ errorInfo });
-    console.error('[CampusXChange ErrorBoundary caught an unhandled error]:', error, errorInfo);
+    console.error('[CampXChange ErrorBoundary caught an unhandled error]:', error, errorInfo);
   }
 
   handleReset = () => {

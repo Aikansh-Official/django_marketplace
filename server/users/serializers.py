@@ -257,13 +257,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         cloudinary_id_card = None
         if is_id_verified and id_card_image:
             cloudinary_id_card = upload_user_image_to_cloudinary(
-                id_card_image, folder="campusxchange/id_cards"
+                id_card_image, folder="campxchange/id_cards"
             )
 
         cloudinary_profile_photo = None
         if profile_photo and len(str(profile_photo).strip()) > 100:
             cloudinary_profile_photo = upload_user_image_to_cloudinary(
-                profile_photo, folder="campusxchange/profiles"
+                profile_photo, folder="campxchange/profiles"
             )
 
         user = User.objects.create_user(

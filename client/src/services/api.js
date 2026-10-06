@@ -61,7 +61,7 @@ api.interceptors.response.use(
       window.dispatchEvent(
         new CustomEvent('platform-maintenance', {
           detail: {
-            message: data?.error || 'CampusXChange is currently undergoing maintenance.',
+            message: data?.error || 'CampXChange is currently undergoing maintenance.',
             maintenance_mode: true,
           },
         })

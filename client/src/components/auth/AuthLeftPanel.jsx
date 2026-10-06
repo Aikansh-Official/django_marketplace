@@ -5,7 +5,7 @@ import {
   BadgeCheck,
   CheckCircle2
 } from 'lucide-react';
-import logoImg from '../../assets/CampusXChange_Logo.webp';
+import logoImg from '../../assets/CampXChange_Logo.webp';
 import IdCardCamera from './IdCardCamera';
 import { useIsMobile } from '../../utils/useIsMobile';
 
@@ -38,11 +38,11 @@ export default function AuthLeftPanel({
         <div className="h-full w-full bg-gradient-to-br from-brand-500 to-brand-600 p-8 sm:p-10 flex flex-col justify-center items-center text-center text-white">
           <div className="flex flex-col items-center">
             <div className="px-5 py-3 rounded-2xl bg-white shadow-md mb-4 flex items-center justify-center">
-              <img src={logoImg} alt="CampusXChange Logo" className="h-10 w-auto object-contain" />
+              <img src={logoImg} alt="CampXChange Logo" className="h-10 w-auto object-contain" />
             </div>
 
             <div className="flex items-baseline">
-              <span className="text-3xl sm:text-4xl font-black tracking-tight text-white font-display">Campus</span>
+              <span className="text-3xl sm:text-4xl font-black tracking-tight text-white font-display">Camp</span>
               <span className="text-3xl sm:text-4xl font-black tracking-tight text-brand-100 font-display">XChange</span>
             </div>
 

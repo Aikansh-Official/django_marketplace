@@ -148,7 +148,7 @@ function App() {
                 <Suspense
                   fallback={
                     <div className="flex items-center justify-center min-h-[60vh]">
-                      <UniversalLoader text="Loading CampusXChange..." size="md" />
+                      <UniversalLoader text="Loading CampXChange..." size="md" />
                     </div>
                   }
                 >

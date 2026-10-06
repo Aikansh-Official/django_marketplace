@@ -1,4 +1,4 @@
-# 📱 CampusXChange — Android Session Management, Login & Registration Master Specification
+# 📱 CampXChange — Android Session Management, Login & Registration Master Specification
 
 > **Module Identifier:** Module 03 (Unified Master Auth & Session Specification)  
 > **Target Platform:** Android Native (API Level 26+ / Android 8.0 to Android 15+)  
@@ -47,7 +47,7 @@
 
 ## 1. System Architecture & Session Lifecycle Overview
 
-CampusXChange Android implements an enterprise-grade authentication and session governance framework. Unlike standard consumer apps that permit uncoordinated logins, CampusXChange enforces **Dual-Device Session Isolation** to protect student identities, campus transactions, and peer-to-peer escrow handovers.
+CampXChange Android implements an enterprise-grade authentication and session governance framework. Unlike standard consumer apps that permit uncoordinated logins, CampXChange enforces **Dual-Device Session Isolation** to protect student identities, campus transactions, and peer-to-peer escrow handovers.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -86,7 +86,7 @@ CampusXChange Android implements an enterprise-grade authentication and session 
 
 ### 2.1 The `android_session_id` Architecture
 
-CampusXChange permits **exactly one active Android device session (90 days)** and **one active Web browser session (30 days)** per student account.
+CampXChange permits **exactly one active Android device session (90 days)** and **one active Web browser session (30 days)** per student account.
 
 1. **Session UUID Issuance:**
    When a student logs in or registers via Android, the backend (`CustomTokenObtainPairView` in `server/users/views.py`) generates a cryptographically random UUID (`new_session_id = uuid.uuid4().hex`).
@@ -230,7 +230,7 @@ To prevent students from filling out multi-step forms only to fail at the last s
 
 ## 5. Token Storage & Cryptographic Security (`SessionManager.kt`)
 
-CampusXChange uses **AndroidX EncryptedSharedPreferences** backed by the **Android Keystore System**:
+CampXChange uses **AndroidX EncryptedSharedPreferences** backed by the **Android Keystore System**:
 - Master key generated with `KeyGenParameterSpec` (`PURPOSE_ENCRYPT | PURPOSE_DECRYPT`, `BLOCK_MODE_GCM`, `ENCRYPTION_PADDING_NONE`).
 - Tokens stored on disk are encrypted using **AES-256 GCM**.
 - Keys are hardware-isolated (TEE or StrongBox Keymaster) and cannot be extracted even on rooted devices.
@@ -248,9 +248,9 @@ private const val SECURE_PREFS_NAME = "cxc_secure_session_store"
 ### 6.1 DTOs & Retrofit Auth Service (`AuthApiService.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.remote
+package com.campxchange.app.data.remote
 
-import com.campusxchange.app.data.remote.dto.*
+import com.campxchange.app.data.remote.dto.*
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.Response
@@ -312,10 +312,10 @@ interface AuthApiService {
 ### 6.2 Token Interceptor & Authenticator (`AuthInterceptor.kt` & `TokenAuthenticator.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.remote
+package com.campxchange.app.data.remote
 
-import com.campusxchange.app.data.local.SessionManager
-import com.campusxchange.app.data.remote.dto.RefreshTokenRequestDto
+import com.campxchange.app.data.local.SessionManager
+import com.campxchange.app.data.remote.dto.RefreshTokenRequestDto
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -326,7 +326,7 @@ import javax.inject.Provider
 import javax.inject.Singleton
 
 /**
- * Attaches Mandatory CampusXChange Security Headers to every outgoing request.
+ * Attaches Mandatory CampXChange Security Headers to every outgoing request.
  */
 @Singleton
 class AuthInterceptor @Inject constructor(
@@ -435,7 +435,7 @@ class TokenAuthenticator @Inject constructor(
 ### 6.3 Hardware Keystore Session Manager (`SessionManager.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.local
+package com.campxchange.app.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -521,7 +521,7 @@ sealed class SessionEvent {
 ### 6.4 Biometric Prompt Handler (`BiometricPromptManager.kt`)
 
 ```kotlin
-package com.campusxchange.app.ui.auth.biometrics
+package com.campxchange.app.ui.auth.biometrics
 
 import android.content.Context
 import androidx.biometric.BiometricManager
@@ -537,7 +537,7 @@ class BiometricPromptManager(private val activity: FragmentActivity) {
     val promptResults = resultChannel.receiveAsFlow()
 
     fun showBiometricPrompt(
-        title: String = "CampusXChange Quick Login",
+        title: String = "CampXChange Quick Login",
         subtitle: String = "Verify your fingerprint or face to sign in"
     ) {
         val manager = BiometricManager.from(activity)
@@ -592,7 +592,7 @@ class BiometricPromptManager(private val activity: FragmentActivity) {
 ### 6.5 Compose Login Screen (`LoginScreen.kt`)
 
 ```kotlin
-package com.campusxchange.app.ui.auth
+package com.campxchange.app.ui.auth
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -617,7 +617,7 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.campusxchange.app.ui.theme.*
+import com.campxchange.app.ui.theme.*
 
 @Composable
 fun LoginScreen(
@@ -802,7 +802,7 @@ fun LoginScreen(
 
                 // Navigate to Register
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "New to CampusXChange? ", fontSize = 12.sp, color = TextSecondary)
+                    Text(text = "New to CampXChange? ", fontSize = 12.sp, color = TextSecondary)
                     Text(
                         text = "Create Account",
                         fontSize = 12.sp,
@@ -822,7 +822,7 @@ fun LoginScreen(
 ### 6.6 Session Terminated Alert Modal (`SessionTerminatedDialog.kt`)
 
 ```kotlin
-package com.campusxchange.app.ui.components.dialogs
+package com.campxchange.app.ui.components.dialogs
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -842,7 +842,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.campusxchange.app.ui.theme.*
+import com.campxchange.app.ui.theme.*
 
 @Composable
 fun SessionTerminatedDialog(

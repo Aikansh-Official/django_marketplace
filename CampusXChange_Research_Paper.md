@@ -1,11 +1,11 @@
-# CampusXChange: A Secure, High-Trust Peer-to-Peer Micro-Marketplace Platform with Biometric Verification, Time-Bound QR Handover, and Dual-Device Session Isolation for Academic Campuses
+# CampXChange: A Secure, High-Trust Peer-to-Peer Micro-Marketplace Platform with Biometric Verification, Time-Bound QR Handover, and Dual-Device Session Isolation for Academic Campuses
 
 
 ## Abstract
 
 The rapid proliferation of digital commerce within academic environments has highlighted significant shortcomings in general-purpose classified platforms such as OLX, Quikr, and Facebook Marketplace. These platforms lack micro-campus proximity filtering, institutional identity verification, safe exchange protocols, and student-centric transaction workflows, exposing college students to scams, impersonation, physical meetup hazards, and fraudulent transactions. 
 
-This paper presents **CampusXChange** (internally designated **LocalTrade**), an enterprise-grade, full-stack micro-marketplace designed exclusively for verified college and university students. The platform is architected as a distributed system comprising:
+This paper presents **CampXChange** (internally designated **LocalTrade**), an enterprise-grade, full-stack micro-marketplace designed exclusively for verified college and university students. The platform is architected as a distributed system comprising:
 1. A reactive Single Page Application (SPA) frontend built on **React 19, Vite, and Tailwind CSS**;
 2. A native mobile client developed in **Kotlin and Jetpack Compose** utilizing Android CameraX and Google ML Kit on-device Text Recognition;
 3. A scalable **Django REST Framework (DRF)** backend interfacing with a high-performance **MongoDB Atlas** document database via `django-mongodb-backend`;
@@ -35,8 +35,8 @@ Although general-purpose classifieds platforms (e.g., OLX, Facebook Marketplace,
 2. **Lack of Hyper-Local Proximity:** Commercial classifieds filter by entire cities or postal codes. Within large universities (such as Lovely Professional University with 35,000+ residents across dozens of residential hostels and academic blocks), students need micro-location filtering (e.g., *BH-1 to BH-8, GH-1 to GH-6, Block 34, Central Library, Uni-Mall*).
 3. **Transaction Inefficiency in Informal Groups:** WhatsApp/Telegram groups lack structured search, price indexing, availability states, image galleries, and moderation. Crucial listings are buried under spam chats within hours.
 
-### 1.2 The CampusXChange Solution
-CampusXChange addresses these challenges through a specialized, closed-community micro-commerce platform. Access and transactions are strictly gated by institutional domain verification (`lpu.in`, `*.edu`) and biometric student identity verification. The platform replaces informal deals with a structured state machine covering listing lifecycle, price negotiations, buyer-seller counter-offers, time-expiring digital QR handovers, and mutual reviews.
+### 1.2 The CampXChange Solution
+CampXChange addresses these challenges through a specialized, closed-community micro-commerce platform. Access and transactions are strictly gated by institutional domain verification (`lpu.in`, `*.edu`) and biometric student identity verification. The platform replaces informal deals with a structured state machine covering listing lifecycle, price negotiations, buyer-seller counter-offers, time-expiring digital QR handovers, and mutual reviews.
 
 ### 1.3 Key Contributions
 The primary contributions of this paper and project are:
@@ -50,7 +50,7 @@ The primary contributions of this paper and project are:
 The remainder of this paper is organized as follows:
 - **Section II** surveys related work and existing classified systems.
 - **Section III** highlights existing research gaps and platform deficiencies.
-- **Section IV** details the proposed CampusXChange architectural innovations.
+- **Section IV** details the proposed CampXChange architectural innovations.
 - **Section V** presents the system architecture across presentation, application, data, and external service tiers.
 - **Section VI** formalizes the algorithmic designs and state machines.
 - **Section VII** outlines the technical implementation, database models, and security protocols.
@@ -79,7 +79,7 @@ Ad-hoc messaging groups represent the status quo inside many university campuses
 
 ### E. Comparative Feature Matrix
 
-| Feature / Dimension | OLX | FB Marketplace | WhatsApp Groups | **CampusXChange** |
+| Feature / Dimension | OLX | FB Marketplace | WhatsApp Groups | **CampXChange** |
 |:---|:---:|:---:|:---:|:---:|
 | **Institutional Email Verification** | ❌ No | ❌ No | ❌ No | ✅ **Enforced (`.edu`, `lpu.in`)** |
 | **Physical Student ID OCR Verification** | ❌ No | ❌ No | ❌ No | ✅ **Automated (ML Kit / Tesseract)** |
@@ -108,11 +108,11 @@ A systematic analysis of existing marketplace implementations reveals six critic
 
 ## IV. PROPOSED SYSTEM
 
-CampusXChange resolves these challenges through a cohesive, multi-layered micro-marketplace architecture.
+CampXChange resolves these challenges through a cohesive, multi-layered micro-marketplace architecture.
 
 ```
 +-------------------------------------------------------------------------+
-|                       CAMPUSXCHANGE ECOSYSTEM                           |
+|                       CAMPXCHANGE ECOSYSTEM                           |
 +-------------------------------------------------------------------------+
      │                                                     │
      ▼                                                     ▼
@@ -140,7 +140,7 @@ CampusXChange resolves these challenges through a cohesive, multi-layered micro-
 ```
 
 ### A. Dual-Path Student Onboarding & Role Architecture
-To reconcile low friction for casual buyers with high security for sellers, CampusXChange implements two distinct registration pipelines:
+To reconcile low friction for casual buyers with high security for sellers, CampXChange implements two distinct registration pipelines:
 - **Buyer Tier (Rapid Onboarding):** Requires Full Name, Student Registration Number, Institutional College Email (`@lpu.in`), and Phone Number. The system validates the university domain, issues a 6-digit cryptographic email OTP, verifies the OTP against brute-force attacks, and activates the buyer account with auto-login JWT generation.
 - **Seller Tier (Identity-Enforced Onboarding):** In addition to buyer requirements, prospective sellers must undergo mandatory physical ID card scanning and live biometric capture. The user uploads or captures their institutional ID card; client-side/server-side OCR extracts student identity parameters; and a live selfie is captured with face angle/liveness checks to prevent static photo spoofs.
 
@@ -159,7 +159,7 @@ Listings support three transaction modes:
 Every user profile features a transparent, real-time trust rating (0 to 100 points) governed by an objective scoring algorithm. Positive actions (verified email, verified student ID card, live selfie, completed handovers, high peer ratings) increment trust; cancellations, unresolved reports, or poor review ratings directly degrade score metrics.
 
 ### D. Time-Bound QR Code & PIN Handover Protocol
-To replace risky unverified cash drops, CampusXChange introduces a digital handover ceremony:
+To replace risky unverified cash drops, CampXChange introduces a digital handover ceremony:
 1. Buyer submits an offer; seller accepts.
 2. The platform generates an ephemeral `HandoverSession` containing a cryptographically random UUID token and a 6-digit numeric PIN with a 48-hour expiration timer.
 3. Upon meeting at a designated campus location, the buyer presents the dynamic QR code (or PIN).
@@ -176,7 +176,7 @@ To prevent shared accounts and token leaks across multiple computers:
 
 ## V. SYSTEM ARCHITECTURE
 
-The CampusXChange platform follows a decoupled, three-tier enterprise architecture engineered for high concurrency, horizontal scalability, and low-latency interaction.
+The CampXChange platform follows a decoupled, three-tier enterprise architecture engineered for high concurrency, horizontal scalability, and low-latency interaction.
 
 ```mermaid
 graph TD
@@ -526,7 +526,7 @@ During a multi-week staging deployment across 120 volunteer university students:
 ## IX. CONCLUSION AND FUTURE WORK
 
 ### 9.1 Conclusion
-This paper presented **CampusXChange**, a smart, high-trust student marketplace platform engineered to overcome the systemic safety, trust, and proximity deficits of general-purpose classifieds. By combining:
+This paper presented **CampXChange**, a smart, high-trust student marketplace platform engineered to overcome the systemic safety, trust, and proximity deficits of general-purpose classifieds. By combining:
 - Student-only authentication gated by institutional domains and on-device ID OCR;
 - Live biometric selfie verification;
 - Micro-location filtering tuned to university residence halls;
@@ -534,10 +534,10 @@ This paper presented **CampusXChange**, a smart, high-trust student marketplace 
 - A time-expiring cryptographic QR/PIN physical handover protocol; and
 - A modern, distributed stack leveraging React 19, Kotlin Compose, Django REST Framework, and MongoDB Atlas,
 
-CampusXChange establishes a reproducible standard for academic micro-commerce. Empirical testing confirms high performance, robust security, and seamless usability across web and native mobile clients, directly fostering student financial savings, resource circularity, and campus community engagement.
+CampXChange establishes a reproducible standard for academic micro-commerce. Empirical testing confirms high performance, robust security, and seamless usability across web and native mobile clients, directly fostering student financial savings, resource circularity, and campus community engagement.
 
 ### 9.2 Future Work
-Future iterations of CampusXChange will focus on three key directions:
+Future iterations of CampXChange will focus on three key directions:
 1. **AI-Driven Academic Price Estimator:** Implementing a machine-learning regression model trained on historical textbook editions, condition tags, and semester demand curves to suggest optimal fair-market prices to sellers automatically.
 2. **Campus Micro-Escrow with UPI Integration:** Integrating campus wallet and UPI deep-linking with automated escrow hold, releasing funds automatically upon successful cryptographic QR scan during in-person delivery.
 3. **Cross-University Federated Marketplace Network:** Extending the tenant architecture to support federated inter-college networks within regional university clusters, enabling inter-campus resource exchange while maintaining institutional security boundaries.

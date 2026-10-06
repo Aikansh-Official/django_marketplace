@@ -1,8 +1,8 @@
-# 🏪 CampusXChange — Complete Technology Stack
+# 🏪 CampXChange — Complete Technology Stack
 
 ## 1. Project Overview
 
-**CampusXChange** is a private college marketplace designed exclusively for verified students of a college/university.
+**CampXChange** is a private college marketplace designed exclusively for verified students of a college/university.
 
 Students can buy, sell, rent, or request items such as:
 
@@ -159,7 +159,7 @@ Website ─────┼──→ Django REST API
 
 ### Why MongoDB?
 
-CampusXChange uses MongoDB with the official `django-mongodb-backend` (Django 6.1):
+CampXChange uses MongoDB with the official `django-mongodb-backend` (Django 6.1):
 
 - Document data model with BSON `ObjectId` primary keys
 - Flexible schema for rich marketplace documents and nested media
@@ -261,7 +261,7 @@ Database stores image URLs and metadata while Cloudinary stores and serves the a
 
 ## College Email Verification
 
-The major USP of CampusXChange is that only verified college students can use the marketplace.
+The major USP of CampXChange is that only verified college students can use the marketplace.
 
 Flow:
 
@@ -481,7 +481,7 @@ Matching Sellers
 FCM Notification 🔔
 ```
 
-This is one of the key differentiating features of CampusXChange.
+This is one of the key differentiating features of CampXChange.
 
 ---
 
@@ -513,7 +513,7 @@ This makes it easier for graduating students to sell multiple items before leavi
 
 # 19. ⭐ Student Trust Score
 
-CampusXChange will rate the **student/seller**, not only the product.
+CampXChange will rate the **student/seller**, not only the product.
 
 Possible factors:
 
@@ -844,7 +844,7 @@ for configuration and secrets.
 
 # 30. 🎯 Why This Stack?
 
-This stack is selected because CampusXChange needs:
+This stack is selected because CampXChange needs:
 
 - A relational database
 - Strong authentication
@@ -865,7 +865,7 @@ The combination of **Django + PostgreSQL + React + Kotlin** provides a clean and
 
 ---
 
-# 🏆 CampusXChange USP
+# 🏆 CampXChange USP
 
 The project is not intended to be a generic marketplace like a traditional e-commerce platform.
 

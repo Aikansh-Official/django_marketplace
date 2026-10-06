@@ -1,4 +1,4 @@
-# 📢 CampusXChange — Android Announcements & Urgent Alerts Specification
+# 📢 CampXChange — Android Announcements & Urgent Alerts Specification
 
 > **Target Platform:** Android (Native Jetpack Compose)  
 > **Source Components:** `client/src/components/AnnouncementBanner.jsx` & `client/src/components/UrgentNoticeModal.jsx`  
@@ -18,7 +18,7 @@
 
 ## 1. Overview & Visual Hierarchy
 
-CampusXChange features a dual-layer alert infrastructure:
+CampXChange features a dual-layer alert infrastructure:
 1. **Passive Ambient Banner:** Sticky top banner for campus announcements, holiday notices, and seasonal student deals.
 2. **Active Full-Screen Modal (`URGENT`):** Non-dismissible overlay forced immediately upon login when an administrator issues a critical compliance or safety alert (e.g., student ID re-upload request, university moderation warning).
 
@@ -96,7 +96,7 @@ CampusXChange features a dual-layer alert infrastructure:
 ## 5. Jetpack Compose UI Implementations
 
 ```kotlin
-package com.campusxchange.app.ui.components
+package com.campxchange.app.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -113,7 +113,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.campusxchange.app.ui.theme.*
+import com.campxchange.app.ui.theme.*
 
 @Composable
 fun AnnouncementBanner(

@@ -1,4 +1,4 @@
-# 🛡️ CampusXChange Admin Panel — Master Implementation Roadmap
+# 🛡️ CampXChange Admin Panel — Master Implementation Roadmap
 
 > **Master Execution Plan**: Har phase ko number wise divide kiya gaya hai. Jaise-jaise ek-ek phase complete hota jayega, is file mein uska status, endpoints, aur controls update hote rahenge.
 
@@ -147,7 +147,7 @@
   - Recalculates and awards +5 Peer Trade Trust Score points to both buyer and seller.
   - Dispatches official transaction completion and purchase receipt notifications to both parties.
 - **Export Deal Records (CSV)**:
-  - 1-click automated CSV exporter generating `campusxchange_deals_<date>.csv` with comprehensive columns: Deal ID, Date, Listing Title, Listing Price, Agreed Price, Status, Buyer Reg No, Buyer Name, Buyer Email, Seller Reg No, Seller Name, Seller Email, Handover Status, Handover PIN, and Meetup Location.
+  - 1-click automated CSV exporter generating `campxchange_deals_<date>.csv` with comprehensive columns: Deal ID, Date, Listing Title, Listing Price, Agreed Price, Status, Buyer Reg No, Buyer Name, Buyer Email, Seller Reg No, Seller Name, Seller Email, Handover Status, Handover PIN, and Meetup Location.
 - **Backend Endpoints**:
   - `GET /api/marketplace/admin/deals/` (Filter by `status`, search by query).
   - `POST /api/marketplace/admin/deals/<pk>/action/` (Intervention with `FORCE_CANCEL` and `FORCE_COMPLETE`).
@@ -239,7 +239,7 @@
   - Multi-filter toolbar: Instant keyword search, action category filter (`ALL`, `AUTH`, `LISTINGS`, `DEALS`, `MODERATION`, `NOTICES`, `CONFIG`), specific action dropdown, and start/end date range filters.
   - Interactive Action Badges: Color-coded visual badges categorized by operational severity (Red for deletions/bans, Amber for warnings/takedowns, Emerald for approvals/activations, Indigo for configuration updates).
   - Detailed Payload Inspector Modal: Shows actor details, target entity, client IP, User-Agent, and full JSON metadata diff.
-  - Automated CSV Export: 1-Click download generating `campusxchange_audit_logs_<date>.csv` for compliance and record-keeping.
+  - Automated CSV Export: 1-Click download generating `campxchange_audit_logs_<date>.csv` for compliance and record-keeping.
 
 ### 7.2 System Health & Security Diagnostics (`admin/src/pages/SystemHealth.jsx`)
 - **Real-Time Performance Latency Meter**:

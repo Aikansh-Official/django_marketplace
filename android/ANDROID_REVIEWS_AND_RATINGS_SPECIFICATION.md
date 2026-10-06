@@ -1,4 +1,4 @@
-# ⭐ CampusXChange — Android Verified Peer Reviews & Ratings Specification
+# ⭐ CampXChange — Android Verified Peer Reviews & Ratings Specification
 
 > **Target Platform:** Android (Native Jetpack Compose)  
 > **Source Component:** `client/src/components/reviews/ReviewModal.jsx` & `client_features_list.md` Section 9.1  
@@ -18,7 +18,7 @@
 
 ## 1. Overview & Trust Architecture
 
-CampusXChange prevents fake and bot-manipulated reviews by enforcing **strict deal-gated peer ratings**:
+CampXChange prevents fake and bot-manipulated reviews by enforcing **strict deal-gated peer ratings**:
 - **Verified Deals Only:** A student can **only** submit a review after a transaction is successfully completed via QR code or OTP PIN handover (`deal.status == 'COMPLETED'`).
 - **Mutual Reviewing:** Both the Buyer and Seller can review each other once per deal.
 - **Dynamic Trust Score Recalculation:** High ratings boost the student's campus trust score; poor ratings trigger automated trust penalties.
@@ -101,7 +101,7 @@ CampusXChange prevents fake and bot-manipulated reviews by enforcing **strict de
 ## 4. Jetpack Compose UI Screen (`ReviewModalSheet.kt`)
 
 ```kotlin
-package com.campusxchange.app.ui.reviews
+package com.campxchange.app.ui.reviews
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -119,7 +119,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.campusxchange.app.ui.theme.*
+import com.campxchange.app.ui.theme.*
 
 val PRESET_QUICK_TAGS = listOf(
     "Punctual",

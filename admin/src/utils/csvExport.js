@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
  * @param {Function} rowMapper Function that converts each item to an array of cell values
  * @param {string} filename Output file name
  */
-export function exportToCSV({ data, headers, rowMapper, filename = 'campusxchange_export.csv' }) {
+export function exportToCSV({ data, headers, rowMapper, filename = 'campxchange_export.csv' }) {
   if (!data || data.length === 0) {
     toast.error('No data available to export.');
     return;

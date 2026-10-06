@@ -455,7 +455,7 @@ export default function MyListings() {
               <div className="text-center">
                 <h3 className="text-base font-bold text-gray-900">Delete this item?</h3>
                 <p className="text-xs text-gray-500 mt-1">
-                  This listing will be permanently removed from CampusXChange.
+                  This listing will be permanently removed from CampXChange.
                 </p>
               </div>
               <div className="flex gap-3 pt-2">

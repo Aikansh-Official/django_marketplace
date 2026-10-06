@@ -148,7 +148,7 @@ export default function UrgentNoticeModal() {
         {/* Modal Footer Buttons */}
         <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-3">
           <span className="text-[11px] text-gray-500 font-medium">
-            CampusXChange Security Shield
+            CampXChange Security Shield
           </span>
           <button
             onClick={handleAcknowledge}

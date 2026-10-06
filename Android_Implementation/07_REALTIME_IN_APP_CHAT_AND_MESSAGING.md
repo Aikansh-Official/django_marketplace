@@ -1,6 +1,6 @@
 # 💬 Module 07: Real-Time In-App Student Chat & Messaging
 
-This document defines the native Android implementation for the **CampusXChange** listing-scoped messaging engine, conversations list, lifecycle-aware polling engine, message bubble UI, privacy contact filter, and offline Room database caching.
+This document defines the native Android implementation for the **CampXChange** listing-scoped messaging engine, conversations list, lifecycle-aware polling engine, message bubble UI, privacy contact filter, and offline Room database caching.
 
 ---
 
@@ -41,9 +41,9 @@ This document defines the native Android implementation for the **CampusXChange*
 ### 2.1 Chat Api Service (`ChatApiService.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.remote.api
+package com.campxchange.app.data.remote.api
 
-import com.campusxchange.app.data.remote.dto.*
+import com.campxchange.app.data.remote.dto.*
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -70,7 +70,7 @@ interface ChatApiService {
 ### 2.2 Data Transfer Objects (`ChatDtos.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.remote.dto
+package com.campxchange.app.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
 
@@ -106,7 +106,7 @@ data class SendMessageRequestDto(
 ## 3. Offline Room Database Caching (`ChatDao.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.local
+package com.campxchange.app.data.local
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
@@ -318,13 +318,13 @@ fun MessageBubble(
 ## 5. Lifecycle-Aware Polling Engine (`ChatViewModel.kt`)
 
 ```kotlin
-package com.campusxchange.app.presentation.chat
+package com.campxchange.app.presentation.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.campusxchange.app.data.remote.api.ChatApiService
-import com.campusxchange.app.data.remote.dto.ChatMessageDto
-import com.campusxchange.app.data.remote.dto.SendMessageRequestDto
+import com.campxchange.app.data.remote.api.ChatApiService
+import com.campxchange.app.data.remote.dto.ChatMessageDto
+import com.campxchange.app.data.remote.dto.SendMessageRequestDto
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*

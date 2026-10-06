@@ -48,7 +48,7 @@ def seed():
     from django.contrib.auth import get_user_model
     User = get_user_model()
     admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
-    admin_email = os.environ.get('ADMIN_EMAIL', 'admin@campusxchange.com')
+    admin_email = os.environ.get('ADMIN_EMAIL', 'admin@campxchange.com')
     admin_password = os.environ.get('ADMIN_PASSWORD', 'Admin@123456')
 
     admin_user, created = User.objects.get_or_create(

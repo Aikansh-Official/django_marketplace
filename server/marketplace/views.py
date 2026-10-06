@@ -374,7 +374,7 @@ class ListingListCreateView(generics.ListCreateAPIView):
         setting_maint = PlatformSetting.objects.filter(key='maintenance_mode').first()
         if setting_maint and setting_maint.value.lower() in ('true', '1') and not (user.is_staff or user.is_superuser):
             msg_setting = PlatformSetting.objects.filter(key='maintenance_message').first()
-            msg = msg_setting.value if msg_setting else 'CampusXChange is currently undergoing scheduled maintenance. Please check back shortly.'
+            msg = msg_setting.value if msg_setting else 'CampXChange is currently undergoing scheduled maintenance. Please check back shortly.'
             return Response({'error': msg, 'maintenance_mode': True}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
         # 2. Strict Seller Verification Check (Forbid Buyers)
@@ -397,7 +397,7 @@ class ListingListCreateView(generics.ListCreateAPIView):
         min_score = int(setting_min_score.value) if (setting_min_score and setting_min_score.value.isdigit()) else 0
         if min_score > 0 and getattr(user, 'trust_score', 0) < min_score and not (user.is_staff or user.is_superuser):
             return Response({
-                'error': f'A minimum trust score of {min_score} is required to post listings on CampusXChange. Your current trust score is {getattr(user, "trust_score", 0)}.',
+                'error': f'A minimum trust score of {min_score} is required to post listings on CampXChange. Your current trust score is {getattr(user, "trust_score", 0)}.',
                 'current_trust_score': getattr(user, 'trust_score', 0),
                 'min_required': min_score
             }, status=status.HTTP_403_FORBIDDEN)
@@ -1383,7 +1383,7 @@ class TestFCMPushView(APIView):
         devices = list(FCMDevice.objects.filter(user=request.user, is_active=True))
         device_count = len(devices)
 
-        title = request.data.get('title', '🧪 CampusXChange Test Alert')
+        title = request.data.get('title', '🧪 CampXChange Test Alert')
         message = request.data.get('message', 'FCM Push Notifications are working properly in your browser!')
         link = request.data.get('link', '/notifications')
 
@@ -1497,7 +1497,7 @@ class AdminListingReportUpdateView(APIView):
         if action == 'WARN_SELLER':
             if report.listing and report.listing.seller:
                 warn_msg = request.data.get('warning_message') or (
-                    f"CampusXChange Moderation Notice: Your listing '{report.listing.title}' received a community violation report "
+                    f"CampXChange Moderation Notice: Your listing '{report.listing.title}' received a community violation report "
                     f"for: '{report.reason}'. Please review university guidelines to keep your selling privileges active."
                 )
                 Notification.objects.create(
@@ -1647,7 +1647,7 @@ class AdminPlatformSettingsView(APIView):
 
     DEFAULT_SETTINGS = {
         'maintenance_mode': 'false',
-        'maintenance_message': 'CampusXChange is currently undergoing scheduled campus maintenance. Please check back shortly.',
+        'maintenance_message': 'CampXChange is currently undergoing scheduled campus maintenance. Please check back shortly.',
         'allow_registrations': 'true',
         'allowed_domains': '',
         'max_active_listings_per_student': '10',
@@ -1750,7 +1750,7 @@ class PublicPlatformConfigView(APIView):
 
         payload = {
             'maintenance_mode': str(settings_map.get('maintenance_mode', '')).lower() in ('true', '1'),
-            'maintenance_message': settings_map.get('maintenance_message', 'CampusXChange is currently undergoing scheduled campus maintenance. Please check back shortly.'),
+            'maintenance_message': settings_map.get('maintenance_message', 'CampXChange is currently undergoing scheduled campus maintenance. Please check back shortly.'),
             'allow_registrations': str(settings_map.get('allow_registrations', 'true')).lower() in ('true', '1'),
             'max_active_listings_per_student': to_int(settings_map.get('max_active_listings_per_student', 10), 10),
             'min_trust_score_to_sell': to_int(settings_map.get('min_trust_score_to_sell', 0), 0),
@@ -2458,7 +2458,7 @@ class UrgentNotificationView(APIView):
 
 class AdminAnalyticsView(APIView):
     """
-    Consolidated Business Intelligence & Analytics Engine for CampusXChange Admins.
+    Consolidated Business Intelligence & Analytics Engine for CampXChange Admins.
     Provides KPIs, dual-metric time-series (GMV turnover & deal count),
     student acquisition curve, category breakdown, sell vs donation ratio,
     campus location hotspots, price benchmarks, and top sellers leaderboard.
@@ -2868,7 +2868,7 @@ class PublicBannerListView(generics.ListAPIView):
 class AdminBannerListCreateView(APIView):
     """
     Administrative API to view all banners and create new banners.
-    Images uploaded via file or base64 are stored directly to Cloudinary (folder='campusxchange/banners').
+    Images uploaded via file or base64 are stored directly to Cloudinary (folder='campxchange/banners').
     """
     permission_classes = [HasAdminModulePermission('banners')]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
@@ -2884,7 +2884,7 @@ class AdminBannerListCreateView(APIView):
 
         if image_file:
             try:
-                upload_res = upload_image_to_cloudinary(image_file, folder="campusxchange/banners")
+                upload_res = upload_image_to_cloudinary(image_file, folder="campxchange/banners")
                 data['image_url'] = upload_res['url']
             except Exception as e:
                 logger.error(f"Cloudinary banner upload failed: {e}")
@@ -2959,7 +2959,7 @@ class AdminBannerDetailView(APIView):
 
         if image_file:
             try:
-                upload_res = upload_image_to_cloudinary(image_file, folder="campusxchange/banners")
+                upload_res = upload_image_to_cloudinary(image_file, folder="campxchange/banners")
                 data['image_url'] = upload_res['url']
                 if old_image_url and old_image_url != upload_res['url']:
                     delete_image_from_cloudinary(old_image_url)

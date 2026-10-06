@@ -15,7 +15,7 @@ export default function MaintenanceScreen() {
           active: true,
           message:
             config.maintenance_message ||
-            'CampusXChange is currently undergoing scheduled campus maintenance. Please check back shortly.',
+            'CampXChange is currently undergoing scheduled campus maintenance. Please check back shortly.',
         });
       } else {
         setMaintenance(null);
@@ -35,7 +35,7 @@ export default function MaintenanceScreen() {
         active: true,
         message:
           e.detail?.message ||
-          'CampusXChange is currently undergoing scheduled campus maintenance. Please check back shortly.',
+          'CampXChange is currently undergoing scheduled campus maintenance. Please check back shortly.',
       });
     };
 
@@ -65,7 +65,7 @@ export default function MaintenanceScreen() {
         </div>
 
         <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-3">
-          CampusXChange Under Maintenance
+          CampXChange Under Maintenance
         </h1>
 
         <p className="text-gray-400 text-sm leading-relaxed mb-6">

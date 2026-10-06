@@ -546,7 +546,7 @@ export default function HandoverScannerModal({ listingId, defaultOfferId, onClos
           {/* Drawer Footer Actions */}
           <div className="p-4 border-t border-gray-100 bg-gray-50/80 flex items-center justify-between gap-3 shrink-0 pb-safe">
             <span className="text-[11px] text-gray-400">
-              CampusXChange Handover
+              CampXChange Handover
             </span>
             <button
               onClick={() => {

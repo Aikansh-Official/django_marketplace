@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-CampusXChange - Unified Version Management Tool
+CampXChange - Unified Version Management Tool
 Single command to check and synchronize version numbers across:
 - Root (version.json)
 - Client (package.json, src/config/version.js)
@@ -105,7 +105,7 @@ def check_versions():
     """Print status table of current versions across the project."""
     versions = get_current_versions()
     print("=" * 65)
-    print("🏷️  CampusXChange Platform Version Audit")
+    print("🏷️  CampXChange Platform Version Audit")
     print("=" * 65)
     
     unique_versions = set(v for v in versions.values() if not v.startswith("ERROR"))
@@ -131,7 +131,7 @@ def update_versions(new_version: str):
         print(f"❌ Invalid version format: '{new_version}'. Expected semver (e.g., 2.4.0, 2.5.0)")
         sys.exit(1)
 
-    print(f"🚀 Updating CampusXChange version to v{new_version} across all files...\n")
+    print(f"🚀 Updating CampXChange version to v{new_version} across all files...\n")
 
     # 1. Update version.json
     if VERSION_JSON_FILE.exists():
@@ -140,9 +140,9 @@ def update_versions(new_version: str):
                 data = json.load(f)
                 data["version"] = new_version
                 if "client" in data:
-                    data["client"]["buildName"] = f"CampusXChange v{new_version}"
+                    data["client"]["buildName"] = f"CampXChange v{new_version}"
                 if "admin" in data:
-                    data["admin"]["buildName"] = f"CampusXChange Admin v{new_version}"
+                    data["admin"]["buildName"] = f"CampXChange Admin v{new_version}"
                 f.seek(0)
                 json.dump(data, f, indent=2)
                 f.truncate()

@@ -18,7 +18,7 @@ password = os.environ.get('ADMIN_PASSWORD', '')
 
 if not email or not username or not password:
     print("ERROR: Set ADMIN_EMAIL, ADMIN_USERNAME, and ADMIN_PASSWORD environment variables.")
-    print("Example: ADMIN_EMAIL=admin@campusxchange.com ADMIN_USERNAME=admin ADMIN_PASSWORD=<strong-password> python create_admin.py")
+    print("Example: ADMIN_EMAIL=admin@campxchange.com ADMIN_USERNAME=admin ADMIN_PASSWORD=<strong-password> python create_admin.py")
     sys.exit(1)
 
 if not User.objects.filter(username=username).exists():

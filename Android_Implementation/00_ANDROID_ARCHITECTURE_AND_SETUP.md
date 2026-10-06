@@ -1,6 +1,6 @@
 # 🏛️ Module 00: Android Architecture, Tooling & Base Infrastructure
 
-This document establishes the architectural foundation, dependency management, network stack, design system tokens, local storage, and navigation framework for the **CampusXChange** native Android application.
+This document establishes the architectural foundation, dependency management, network stack, design system tokens, local storage, and navigation framework for the **CampXChange** native Android application.
 
 ---
 
@@ -9,7 +9,7 @@ This document establishes the architectural foundation, dependency management, n
 The project adheres to Google's recommended Clean Architecture pattern with distinct layers:
 
 ```text
-com.campusxchange.app/
+com.campxchange.app/
 ├── core/
 │   ├── common/
 │   │   ├── Constants.kt
@@ -76,7 +76,7 @@ com.campusxchange.app/
 │   ├── DatabaseModule.kt
 │   └── RepositoryModule.kt
 ├── MainActivity.kt
-└── CampusXChangeApp.kt
+└── CampXChangeApp.kt
 ```
 
 ---
@@ -184,13 +184,13 @@ google-services = { id = "com.google.gms.google-services", version = "4.4.2" }
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
     <application
-        android:name=".CampusXChangeApp"
+        android:name=".CampXChangeApp"
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
-        android:label="CampusXChange"
+        android:label="CampXChange"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.CampusXChange"
+        android:theme="@style/Theme.CampXChange"
         android:usesCleartextTraffic="true"> <!-- Allowed for local dev emulator 10.0.2.2 -->
 
         <activity
@@ -224,7 +224,7 @@ google-services = { id = "com.google.gms.google-services", version = "4.4.2" }
 ### 4.1 Color Tokens (`Color.kt`)
 
 ```kotlin
-package com.campusxchange.app.core.designsystem
+package com.campxchange.app.core.designsystem
 
 import androidx.compose.ui.graphics.Color
 
@@ -255,7 +255,7 @@ val InfoBlue = Color(0xFF3B82F6)
 ### 4.2 Shapes & Glassmorphic Elevation (`Shape.kt` & Modifiers)
 
 ```kotlin
-package com.campusxchange.app.core.designsystem
+package com.campxchange.app.core.designsystem
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -299,9 +299,9 @@ fun Modifier.cxcGlassmorphicCard(): Modifier = this
 Injects the JWT token, platform identifier `X-Client-Type: android`, and optional `X-App-Security-Key`:
 
 ```kotlin
-package com.campusxchange.app.core.network
+package com.campxchange.app.core.network
 
-import com.campusxchange.app.core.storage.TokenManager
+import com.campxchange.app.core.storage.TokenManager
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
@@ -334,9 +334,9 @@ class AuthInterceptor @Inject constructor(
 Handles automatic silent refresh upon `401 Unauthorized` without interrupting user experience:
 
 ```kotlin
-package com.campusxchange.app.core.network
+package com.campxchange.app.core.network
 
-import com.campusxchange.app.core.storage.TokenManager
+import com.campxchange.app.core.storage.TokenManager
 import com.google.gson.JsonObject
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -418,7 +418,7 @@ class TokenAuthenticator @Inject constructor(
 ## 6. Local Token Storage (`TokenManager.kt` with DataStore)
 
 ```kotlin
-package com.campusxchange.app.core.storage
+package com.campxchange.app.core.storage
 
 import android.content.Context
 import androidx.datastore.preferences.core.*
@@ -475,7 +475,7 @@ class TokenManager @Inject constructor(
 ### 7.1 Screen Route Catalog (`Screen.kt`)
 
 ```kotlin
-package com.campusxchange.app.core.navigation
+package com.campxchange.app.core.navigation
 
 sealed class Screen(val route: String) {
     object Splash : Screen("splash")

@@ -1,6 +1,6 @@
 # 🔐 Module 01: Authentication, Student Onboarding & ID Verification
 
-This document provides the complete, production-ready specification for implementing authentication and onboarding in the **CampusXChange** native Android application using **Kotlin, Jetpack Compose, Google ML Kit Text Recognition, CameraX, and Dagger Hilt**.
+This document provides the complete, production-ready specification for implementing authentication and onboarding in the **CampXChange** native Android application using **Kotlin, Jetpack Compose, Google ML Kit Text Recognition, CameraX, and Dagger Hilt**.
 
 ---
 
@@ -36,9 +36,9 @@ The application features a **Role-Aware Dual-Path Registration Pipeline**:
 ### 2.1 Retrofit Service (`AuthApiService.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.remote.api
+package com.campxchange.app.data.remote.api
 
-import com.campusxchange.app.data.remote.dto.*
+import com.campxchange.app.data.remote.dto.*
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -97,7 +97,7 @@ interface AuthApiService {
 ### 2.2 Data Transfer Objects (`AuthDtos.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.remote.dto
+package com.campxchange.app.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
 
@@ -272,7 +272,7 @@ fun RegisterStepDetailsScreen(
 Uses **Google ML Kit Text Recognition** completely on-device without cloud API dependencies:
 
 ```kotlin
-package com.campusxchange.app.presentation.auth.ocr
+package com.campxchange.app.presentation.auth.ocr
 
 import android.content.Context
 import android.graphics.Bitmap

@@ -1,4 +1,4 @@
-# 🎨 CampusXChange — Android Theme, Background & Design System Specification
+# 🎨 CampXChange — Android Theme, Background & Design System Specification
 
 > **Target Platform:** Android (Jetpack Compose / Material 3)  
 > **Source Component:** `client/src/components/ThemeBackground.jsx` & `client/src/index.css`  
@@ -11,7 +11,7 @@
 2. [Color Palette & Theme Tokens (`Color.kt`)](#2-color-palette--theme-tokens)
 3. [Typography Scale (`Type.kt`)](#3-typography-scale)
 4. [Shapes & Glassmorphic Modifiers (`Shape.kt` & Extensions)](#4-shapes--glassmorphic-modifiers)
-5. [Native Animated Background (`CampusXChangeBackground.kt`)](#5-native-animated-background)
+5. [Native Animated Background (`CampXChangeBackground.kt`)](#5-native-animated-background)
 6. [Material 3 Theme Setup (`Theme.kt`)](#6-material-3-theme-setup)
 7. [Component Design Standards (Cards, Badges, Trust Chips)](#7-component-design-standards)
 
@@ -19,7 +19,7 @@
 
 ## 1. Design Philosophy & Visual Language
 
-CampusXChange uses a vibrant, student-centric marketplace aesthetic:
+CampXChange uses a vibrant, student-centric marketplace aesthetic:
 - **Brand Identity:** High-energy Warm Amber/Orange (`#FB5607` / `#F97316`) representing campus hustle, creativity, and student commerce.
 - **Surface Elevation:** Clean white and light-slate surfaces with soft ambient drop-shadows and frosted glassmorphism (`blur(16dp)` + `rgba(255,255,255,0.85)`).
 - **Geometric Ambient Background:** Subtle floating geometric cubes, rotated accent squares, and pulsing dots kept strictly in the outer side gutters (margins), keeping the center content clean and readable.
@@ -30,7 +30,7 @@ CampusXChange uses a vibrant, student-centric marketplace aesthetic:
 ## 2. Color Palette & Theme Tokens (`Color.kt`)
 
 ```kotlin
-package com.campusxchange.app.ui.theme
+package com.campxchange.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
@@ -89,7 +89,7 @@ val InfoBg = Color(0xFFEFF6FF)
 Using Google's **Plus Jakarta Sans** or **Inter** font family for a modern tech feel:
 
 ```kotlin
-package com.campusxchange.app.ui.theme
+package com.campxchange.app.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
@@ -151,7 +151,7 @@ val CampusTypography = Typography(
 ## 4. Shapes & Glassmorphic Modifiers
 
 ```kotlin
-package com.campusxchange.app.ui.theme
+package com.campxchange.app.ui.theme
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -191,12 +191,12 @@ fun Modifier.glassmorphic(
 
 ---
 
-## 5. Native Animated Background (`CampusXChangeBackground.kt`)
+## 5. Native Animated Background (`CampXChangeBackground.kt`)
 
 This Jetpack Compose component renders the exact ambient floating geometric cubes, squares, and dots from `ThemeBackground.jsx` using `Canvas` and `rememberInfiniteTransition()`:
 
 ```kotlin
-package com.campusxchange.app.ui.components
+package com.campxchange.app.ui.components
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
@@ -214,10 +214,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.unit.dp
-import com.campusxchange.app.ui.theme.*
+import com.campxchange.app.ui.theme.*
 
 @Composable
-fun CampusXChangeBackground(
+fun CampXChangeBackground(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
@@ -376,7 +376,7 @@ fun CampusXChangeBackground(
 ## 6. Material 3 Theme Setup (`Theme.kt`)
 
 ```kotlin
-package com.campusxchange.app.ui.theme
+package com.campxchange.app.ui.theme
 
 import android.app.Activity
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -414,7 +414,7 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 @Composable
-fun CampusXChangeTheme(
+fun CampXChangeTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {

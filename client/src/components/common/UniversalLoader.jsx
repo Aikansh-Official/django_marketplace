@@ -2,7 +2,7 @@ import React from 'react';
 
 /**
  * UniversalLoader
- * A clean, minimal, and fast buffering indicator for CampusXChange.
+ * A clean, minimal, and fast buffering indicator for CampXChange.
  * 
  * Props:
  * - fullScreen: boolean (renders centered in full-screen overlay)

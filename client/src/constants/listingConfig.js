@@ -1,6 +1,6 @@
 /**
  * listingConfig.js
- * Centralized marketplace constants for CampusXChange.
+ * Centralized marketplace constants for CampXChange.
  * Eliminates duplication across CreateListing, EditListing, ProductDetail, and Home pages.
  */
 

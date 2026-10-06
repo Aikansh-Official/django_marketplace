@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { api } from '../config/api';
 import CommandPalette from '../components/CommandPalette';
-import logoImg from '../assets/CampusXChange_Logo.webp';
+import logoImg from '../assets/CampXChange_Logo.webp';
 import { hasModulePermission, getEffectivePermissions } from '../utils/permissions';
 import { APP_VERSION } from '../config/version';
 
@@ -121,10 +121,10 @@ export default function AdminLayout({ setAuth }) {
       >
         <div className="h-20 flex items-center justify-between px-5 border-b border-gray-800">
           <div className="flex items-center gap-3">
-            <img src={logoImg} alt="CampusXChange Logo" className="h-8 w-auto object-contain shrink-0" />
+            <img src={logoImg} alt="CampXChange Logo" className="h-8 w-auto object-contain shrink-0" />
             <div className="min-w-0">
               <div className="flex items-baseline truncate">
-                <span className="text-base font-extrabold text-white tracking-tight">Campus</span>
+                <span className="text-base font-extrabold text-white tracking-tight">Camp</span>
                 <span className="text-base font-extrabold text-brand-400 tracking-tight">XChange</span>
               </div>
               <span className="text-[10px] text-brand-400 tracking-[0.2em] font-bold block">ADMIN PANEL</span>
@@ -250,7 +250,7 @@ export default function AdminLayout({ setAuth }) {
 
         {/* Admin Footer */}
         <footer className="h-11 bg-white/70 backdrop-blur-sm border-t border-gray-200/80 px-4 sm:px-8 flex items-center justify-between text-xs text-gray-500 shrink-0">
-          <p>© {new Date().getFullYear()} CampusXChange Enterprise Admin Portal</p>
+          <p>© {new Date().getFullYear()} CampXChange Enterprise Admin Portal</p>
           <p>Version {APP_VERSION}</p>
         </footer>
       </div>

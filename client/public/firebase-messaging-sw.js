@@ -1,4 +1,4 @@
-// Firebase Cloud Messaging Service Worker for CampusXChange
+// Firebase Cloud Messaging Service Worker for CampXChange
 // Runs in the background to receive push alerts even when the app/tab is closed.
 
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js");
@@ -25,13 +25,13 @@ if (firebaseConfig.apiKey && firebaseConfig.projectId) {
     // Background push handler via Firebase SDK
     messaging.onBackgroundMessage((payload) => {
       console.log('[firebase-messaging-sw.js] Background message received:', payload);
-      const title = payload.notification?.title || payload.data?.title || 'CampusXChange Notification';
-      const body = payload.notification?.body || payload.data?.body || 'You have a new update on CampusXChange.';
+      const title = payload.notification?.title || payload.data?.title || 'CampXChange Notification';
+      const body = payload.notification?.body || payload.data?.body || 'You have a new update on CampXChange.';
       const link = payload.data?.link || payload.data?.route || '/notifications';
 
       const notificationOptions = {
         body: body,
-        icon: '/CampusXChange_Logo.webp',
+        icon: '/CampXChange_Logo.webp',
         badge: '/favicon.png',
         data: { link: link },
         tag: payload.data?.type || 'cxc-notification',
@@ -54,13 +54,13 @@ self.addEventListener('push', (event) => {
 
   try {
     const data = event.data.json();
-    const title = data.notification?.title || data.data?.title || 'CampusXChange Notification';
+    const title = data.notification?.title || data.data?.title || 'CampXChange Notification';
     const body = data.notification?.body || data.data?.body || '';
     const link = data.data?.link || data.data?.route || '/notifications';
 
     const options = {
       body: body,
-      icon: '/CampusXChange_Logo.webp',
+      icon: '/CampXChange_Logo.webp',
       badge: '/favicon.png',
       data: { link: link },
       tag: data.data?.type || 'cxc-push',

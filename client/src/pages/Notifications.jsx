@@ -408,7 +408,7 @@ export default function Notifications() {
               <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
                 {pushPermission === 'granted'
                   ? 'Your browser is linked to Firebase Cloud Messaging (FCM). You will receive instant alerts for offers, chats, and handovers.'
-                  : 'Never miss an offer or chat ping! Receive native browser notifications even when CampusXChange is running in the background.'}
+                  : 'Never miss an offer or chat ping! Receive native browser notifications even when CampXChange is running in the background.'}
               </p>
             </div>
           </div>

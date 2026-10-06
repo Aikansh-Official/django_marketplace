@@ -81,7 +81,7 @@ def get_firebase_app():
 
 class NotificationService:
     """
-    Centralized Notification Service for CampusXChange.
+    Centralized Notification Service for CampXChange.
     Handles:
     - In-App Notification persistence in database (Notification model)
     - Real-time Multi-platform Push delivery via Firebase Cloud Messaging (Web + Android)
@@ -282,7 +282,7 @@ class NotificationService:
                 notification=messaging.WebpushNotification(
                     title=title,
                     body=message,
-                    icon='/CampusXChange_Logo.png',
+                    icon='/CampXChange_Logo.png',
                     badge='/favicon.png',
                     data={'link': link or '/notifications'}
                 ),

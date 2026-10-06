@@ -1,4 +1,4 @@
-# 💬 CampusXChange — Android In-App Peer Chat & Messaging Specification
+# 💬 CampXChange — Android In-App Peer Chat & Messaging Specification
 
 > **Target Platform:** Android (Native Jetpack Compose)  
 > **Architecture:** Kotlin Coroutines, StateFlow, Room DB, Retrofit 2 (3s Polling Lifecycle)  
@@ -20,7 +20,7 @@
 
 ## 1. Architecture & Protocol
 
-CampusXChange uses a **zero-infrastructure, resilient REST polling protocol** across web and mobile:
+CampXChange uses a **zero-infrastructure, resilient REST polling protocol** across web and mobile:
 - **No Redis / WebSocket daemon required:** Guaranteed 100% uptime without socket disconnections over unstable hostel Wi-Fi or mobile data switches.
 - **Listing & Deal Scoped:** Each conversation thread is strictly bound to a `(listing_id, peer_id)` pair, displaying item thumbnail, price, and handover status in the chat header.
 - **Auto Read-Receipts:** Opening the conversation automatically marks received messages as read on the server.
@@ -131,12 +131,12 @@ CampusXChange uses a **zero-infrastructure, resilient REST polling protocol** ac
 In Jetpack Compose, polling runs strictly while the chat screen is in the foreground (`RESUMED` state):
 
 ```kotlin
-package com.campusxchange.app.ui.chat
+package com.campxchange.app.ui.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.campusxchange.app.data.remote.api.ChatApiService
-import com.campusxchange.app.data.remote.dto.ChatMessageDto
+import com.campxchange.app.data.remote.api.ChatApiService
+import com.campxchange.app.data.remote.dto.ChatMessageDto
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -194,7 +194,7 @@ class ChatViewModel @Inject constructor(
 ## 5. Room Local Database (Offline Cache & Sync)
 
 ```kotlin
-package com.campusxchange.app.data.local.entity
+package com.campxchange.app.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -219,7 +219,7 @@ data class ChatMessageEntity(
 ## 6. Jetpack Compose UI Screen (`ChatScreen.kt`)
 
 ```kotlin
-package com.campusxchange.app.ui.chat
+package com.campxchange.app.ui.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -237,7 +237,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.campusxchange.app.ui.theme.*
+import com.campxchange.app.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

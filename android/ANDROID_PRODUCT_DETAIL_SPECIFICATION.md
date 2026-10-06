@@ -1,4 +1,4 @@
-# 🔍 CampusXChange — Android Product Detail & Actions Specification
+# 🔍 CampXChange — Android Product Detail & Actions Specification
 
 > **Target Platform:** Android (Native)  
 > **Tech Stack:** Kotlin, Jetpack Compose, Material 3, MVVM, Retrofit, Coil, Hilt  
@@ -84,7 +84,7 @@ Sellers configure how students should reach them:
 ## 3. Color Palette & Material 3 Styling
 
 ```kotlin
-package com.CampusXChange.app.ui.theme
+package com.CampXChange.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
@@ -106,7 +106,7 @@ val MeetupLocationBg = Color(0xFFF3F4F6)
 composable(
     route = "marketplace/detail/{listingId}",
     arguments = listOf(navArgument("listingId") { type = NavType.IntType }),
-    deepLinks = listOf(navDeepLink { uriPattern = "https://CampusXChange.com/product/{listingId}" })
+    deepLinks = listOf(navDeepLink { uriPattern = "https://CampXChange.com/product/{listingId}" })
 ) { backStackEntry ->
     val listingId = backStackEntry.arguments?.getInt("listingId") ?: 0
     ProductDetailScreen(
@@ -232,7 +232,7 @@ composable(
 ### 6.1 DTOs & Retrofit Product Detail Service
 
 ```kotlin
-package com.CampusXChange.app.data.remote
+package com.CampXChange.app.data.remote
 
 import com.google.gson.annotations.SerializedName
 import retrofit2.Response
@@ -278,15 +278,15 @@ interface ProductDetailApiService {
 ### 6.2 Product Detail ViewModel
 
 ```kotlin
-package com.CampusXChange.app.ui.product
+package com.CampXChange.app.ui.product
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.CampusXChange.app.data.local.TokenManager
-import com.CampusXChange.app.data.remote.CreateOfferRequest
-import com.CampusXChange.app.data.remote.CreateReportRequest
-import com.CampusXChange.app.data.remote.ListingDto
-import com.CampusXChange.app.data.remote.ProductDetailApiService
+import com.CampXChange.app.data.local.TokenManager
+import com.CampXChange.app.data.remote.CreateOfferRequest
+import com.CampXChange.app.data.remote.CreateReportRequest
+import com.CampXChange.app.data.remote.ListingDto
+import com.CampXChange.app.data.remote.ProductDetailApiService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -378,7 +378,7 @@ class ProductDetailViewModel @Inject constructor(
 ### 6.3 Image Carousel & Zoom Component
 
 ```kotlin
-package com.CampusXChange.app.ui.product.components
+package com.CampXChange.app.ui.product.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -397,7 +397,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.CampusXChange.app.data.remote.ListingImageDto
+import com.CampXChange.app.data.remote.ListingImageDto
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -455,7 +455,7 @@ fun ProductImageGallery(
 ### 6.4 Make Offer BottomSheet & Report Dialog
 
 ```kotlin
-package com.CampusXChange.app.ui.product.components
+package com.CampXChange.app.ui.product.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -468,7 +468,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.CampusXChange.app.ui.theme.MarketplacePrimaryOrange
+import com.CampXChange.app.ui.theme.MarketplacePrimaryOrange
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -551,7 +551,7 @@ fun MakeOfferBottomSheet(
 ## 7. Android System Intents (Call, WhatsApp, Share)
 
 ```kotlin
-package com.CampusXChange.app.utils
+package com.CampXChange.app.utils
 
 import android.content.Context
 import android.content.Intent
@@ -567,7 +567,7 @@ object IntentUtils {
 
     fun openWhatsAppChat(context: Context, phoneNumber: String, productTitle: String) {
         val formattedNumber = if (!phoneNumber.startsWith("+91")) "+91$phoneNumber" else phoneNumber
-        val url = "https://api.whatsapp.com/send?phone=$formattedNumber&text=Hi,%20I%20am%20interested%20in%20your%20CampusXChange%20listing:%20$productTitle"
+        val url = "https://api.whatsapp.com/send?phone=$formattedNumber&text=Hi,%20I%20am%20interested%20in%20your%20CampXChange%20listing:%20$productTitle"
         val intent = Intent(Intent.ACTION_VIEW).apply {
             data = Uri.parse(url)
         }
@@ -577,8 +577,8 @@ object IntentUtils {
     fun shareListing(context: Context, title: String, price: String, listingId: Int) {
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_SUBJECT, "Check out this item on CampusXChange!")
-            putExtra(Intent.EXTRA_TEXT, "Hey, check out '$title' for $price on CampusXChange!\nhttps://CampusXChange.com/product/$listingId")
+            putExtra(Intent.EXTRA_SUBJECT, "Check out this item on CampXChange!")
+            putExtra(Intent.EXTRA_TEXT, "Hey, check out '$title' for $price on CampXChange!\nhttps://CampXChange.com/product/$listingId")
         }
         context.startActivity(Intent.createChooser(shareIntent, "Share Listing via"))
     }

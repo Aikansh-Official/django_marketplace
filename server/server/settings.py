@@ -137,8 +137,8 @@ try:
 except Exception:
     pass
 
-MONGODB_URI = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/campusxchange')
-MONGODB_NAME = os.environ.get('MONGODB_NAME', 'campusxchange')
+MONGODB_URI = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/campxchange')
+MONGODB_NAME = os.environ.get('MONGODB_NAME', 'campxchange')
 
 _mongo_options = {
     'maxPoolSize': int(os.environ.get('MONGO_MAX_POOL_SIZE', 50)),
@@ -226,7 +226,7 @@ WHITENOISE_MANIFEST_STRICT = False
 
 # Resend Email & Service Configuration
 RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
-RESEND_FROM_EMAIL = os.environ.get('RESEND_FROM_EMAIL', 'CampusXChange <noreply@cxc.anshuman892494.online>')
+RESEND_FROM_EMAIL = os.environ.get('RESEND_FROM_EMAIL', 'CampXChange <noreply@cxc.anshuman892494.online>')
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://cxc.anshuman892494.online')
 PASSWORD_RESET_TIMEOUT_SECONDS = int(os.environ.get('PASSWORD_RESET_TIMEOUT_SECONDS', '900'))  # 15 minutes
 
@@ -273,7 +273,7 @@ REST_FRAMEWORK = {
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'campusxchange-locmem-cache',
+        'LOCATION': 'campxchange-locmem-cache',
         'TIMEOUT': 300,
         'OPTIONS': {
             'MAX_ENTRIES': 2000,

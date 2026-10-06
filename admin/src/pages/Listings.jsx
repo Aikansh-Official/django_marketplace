@@ -259,7 +259,7 @@ export default function Listings() {
         `@${l.seller?.username || ''}`,
         new Date(l.created_at).toLocaleDateString()
       ],
-      filename: `campusxchange_listings_${new Date().toISOString().split('T')[0]}.csv`
+      filename: `campxchange_listings_${new Date().toISOString().split('T')[0]}.csv`
     });
   };
 

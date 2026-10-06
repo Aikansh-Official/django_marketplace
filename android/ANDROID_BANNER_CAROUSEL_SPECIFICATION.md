@@ -1,4 +1,4 @@
-# 🖼️ CampusXChange — Android Promotional Banner Slideshow & Carousel Specification
+# 🖼️ CampXChange — Android Promotional Banner Slideshow & Carousel Specification
 
 > **Target Platform:** Android Native (API 26+ / Android 8.0 to Android 15+)  
 > **Source Component:** `client/src/components/home/BannerSlideshow.jsx`  
@@ -22,7 +22,7 @@
 
 ## 1. Overview & Visual Architecture
 
-The **Promotional Banner Slideshow** is a critical hero component positioned at the very top of the CampusXChange Marketplace Home screen (directly below the Top Announcement Bar and Search Bar). It is configured dynamically from the Django Admin / Web Admin dashboard to feature campus events, seasonal clearance sales, safety guidelines, and spotlighted categories.
+The **Promotional Banner Slideshow** is a critical hero component positioned at the very top of the CampXChange Marketplace Home screen (directly below the Top Announcement Bar and Search Bar). It is configured dynamically from the Django Admin / Web Admin dashboard to feature campus events, seasonal clearance sales, safety guidelines, and spotlighted categories.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -64,7 +64,7 @@ The **Promotional Banner Slideshow** is a critical hero component positioned at 
     "title": "Mega Semester Book Exchange 📚",
     "subtitle": "Exchange or buy 2nd-hand engineering & management textbooks directly from seniors.",
     "badge_text": "FEATURED",
-    "image_url": "https://res.cloudinary.com/campusxchange/image/upload/v1710000000/banners/books_promo.jpg",
+    "image_url": "https://res.cloudinary.com/campxchange/image/upload/v1710000000/banners/books_promo.jpg",
     "link_url": "/marketplace?category=books",
     "button_text": "Explore Books",
     "is_active": true,
@@ -77,7 +77,7 @@ The **Promotional Banner Slideshow** is a critical hero component positioned at 
     "title": "Safe In-Person QR Handovers 🛡️",
     "subtitle": "Always verify items and scan QR code inside campus daylight zones.",
     "badge_text": "SAFETY TIP",
-    "image_url": "https://res.cloudinary.com/campusxchange/image/upload/v1710000000/banners/safety_handover.jpg",
+    "image_url": "https://res.cloudinary.com/campxchange/image/upload/v1710000000/banners/safety_handover.jpg",
     "link_url": "/safety-guidelines",
     "button_text": "Read Guidelines",
     "is_active": true,
@@ -90,8 +90,8 @@ The **Promotional Banner Slideshow** is a critical hero component positioned at 
     "title": "Official Student Community WhatsApp",
     "subtitle": "Join 5,000+ peers for instant trade alerts and campus updates.",
     "badge_text": "COMMUNITY",
-    "image_url": "https://res.cloudinary.com/campusxchange/image/upload/v1710000000/banners/community_join.jpg",
-    "link_url": "https://chat.whatsapp.com/campusxchange_community",
+    "image_url": "https://res.cloudinary.com/campxchange/image/upload/v1710000000/banners/community_join.jpg",
+    "link_url": "https://chat.whatsapp.com/campxchange_community",
     "button_text": "Join Group",
     "is_active": true,
     "display_order": 2,
@@ -106,7 +106,7 @@ The **Promotional Banner Slideshow** is a critical hero component positioned at 
 ## 3. Data Models & DTOs (Kotlin)
 
 ```kotlin
-package com.campusxchange.data.model
+package com.campxchange.data.model
 
 import com.google.gson.annotations.SerializedName
 
@@ -224,12 +224,12 @@ fun handleBannerClick(context: Context, navController: NavController, linkUrl: S
 
 ### 7.1 ViewModel Layer
 ```kotlin
-package com.campusxchange.ui.banner
+package com.campxchange.ui.banner
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.campusxchange.data.model.BannerDto
-import com.campusxchange.data.network.MarketplaceApiService
+import com.campxchange.data.model.BannerDto
+import com.campxchange.data.network.MarketplaceApiService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -280,7 +280,7 @@ class BannerViewModel @Inject constructor(
 
 ### 7.2 Banner Slideshow Composable
 ```kotlin
-package com.campusxchange.ui.banner
+package com.campxchange.ui.banner
 
 import android.content.Context
 import androidx.compose.animation.animateColorAsState
@@ -316,7 +316,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.campusxchange.data.model.BannerDto
+import com.campxchange.data.model.BannerDto
 import kotlinx.coroutines.delay
 
 @Composable

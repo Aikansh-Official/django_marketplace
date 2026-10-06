@@ -1,4 +1,4 @@
-# 📦 CampusXChange — Android Listing Management & Selling Specification
+# 📦 CampXChange — Android Listing Management & Selling Specification
 
 > **Target Platform:** Android (Native)  
 > **Tech Stack:** Kotlin, Jetpack Compose, Material 3, MVVM, Retrofit, CameraX / PhotoPicker, Coil, Hilt  
@@ -89,7 +89,7 @@ Students can type custom spots or tap quick-fill chips:
 ## 3. Color Palette & Material 3 Tokens
 
 ```kotlin
-package com.CampusXChange.app.ui.theme
+package com.CampXChange.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
@@ -151,11 +151,11 @@ sealed class ListingRoute(val route: String) {
   "contact_whatsapp": "9876543210",
   "images": [
     {
-      "image_url": "https://res.cloudinary.com/CampusXChange/image/upload/v1234/casio1.jpg",
+      "image_url": "https://res.cloudinary.com/CampXChange/image/upload/v1234/casio1.jpg",
       "is_primary": true
     },
     {
-      "image_url": "https://res.cloudinary.com/CampusXChange/image/upload/v1234/casio2.jpg",
+      "image_url": "https://res.cloudinary.com/CampXChange/image/upload/v1234/casio2.jpg",
       "is_primary": false
     }
   ]
@@ -229,7 +229,7 @@ sealed class ListingRoute(val route: String) {
 ### 6.1 DTOs & Retrofit Listing Service
 
 ```kotlin
-package com.CampusXChange.app.data.remote
+package com.CampXChange.app.data.remote
 
 import com.google.gson.annotations.SerializedName
 import retrofit2.Response
@@ -287,7 +287,7 @@ interface ListingManagementApiService {
 ### 6.2 Image Compression & Multi-Photo Picker
 
 ```kotlin
-package com.CampusXChange.app.utils
+package com.CampXChange.app.utils
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -335,14 +335,14 @@ object ImageUtils {
 ### 6.3 Create/Edit Listing ViewModel
 
 ```kotlin
-package com.CampusXChange.app.ui.listing
+package com.CampXChange.app.ui.listing
 
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.CampusXChange.app.data.remote.*
-import com.CampusXChange.app.utils.ImageUtils
+import com.CampXChange.app.data.remote.*
+import com.CampXChange.app.utils.ImageUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -470,7 +470,7 @@ class CreateListingViewModel @Inject constructor(
 ### 6.4 My Listings Screen (Tabs: Active, Sold, Hidden)
 
 ```kotlin
-package com.CampusXChange.app.ui.listing
+package com.CampXChange.app.ui.listing
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -482,8 +482,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.CampusXChange.app.data.remote.ListingDto
-import com.CampusXChange.app.ui.theme.*
+import com.CampXChange.app.data.remote.ListingDto
+import com.CampXChange.app.ui.theme.*
 
 @Composable
 fun MyListingsScreen(

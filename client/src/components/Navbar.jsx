@@ -16,7 +16,7 @@ import {
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import logoImg from '../assets/CampusXChange_Logo.webp';
+import logoImg from '../assets/CampXChange_Logo.webp';
 const AuthModal = lazy(() => import('./AuthModal'));
 const SavedItemsDrawer = lazy(() => import('./SavedItemsDrawer'));
 import NotificationDropdown from './notifications/NotificationDropdown';
@@ -248,10 +248,10 @@ export default function Navbar() {
 
             {/* Left: Brand Logo & Links */}
             <div className="flex items-center gap-3 sm:gap-4 lg:gap-6 flex-shrink-0">
-              <Link to="/" className="flex items-center py-1 group" aria-label="CampusXChange">
+              <Link to="/" className="flex items-center py-1 group" aria-label="CampXChange">
                 <img
                   src={logoImg}
-                  alt="CampusXChange"
+                  alt="CampXChange"
                   className="h-9 sm:h-10 md:h-11 w-auto object-contain shrink-0 transition-transform duration-200 group-hover:scale-105"
                 />
               </Link>
@@ -892,7 +892,7 @@ export default function Navbar() {
 
               {/* Mobile Drawer Platform Version */}
               <div className="pt-2 mt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
-                <span>CampusXChange</span>
+                <span>CampXChange</span>
                 <span>Version {APP_VERSION}</span>
               </div>
             </div>

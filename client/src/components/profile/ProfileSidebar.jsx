@@ -241,7 +241,7 @@ export default function ProfileSidebar({
 
       {/* Platform Version */}
       <div className="pt-2 px-1 flex items-center justify-between text-[11px] text-gray-400">
-        <span className="truncate">CampusXChange</span>
+        <span className="truncate">CampXChange</span>
         <span>Version {APP_VERSION}</span>
       </div>
     </div>

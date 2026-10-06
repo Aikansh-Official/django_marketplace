@@ -9,7 +9,7 @@ export default function Terms() {
         <div className="flex items-center gap-2 text-xs font-semibold text-brand-600 uppercase tracking-wider mb-2">
           <span>Terms & Conditions</span>
           <span>•</span>
-          <span>CampusXChange</span>
+          <span>CampXChange</span>
         </div>
 
         {/* Page Title */}
@@ -24,7 +24,7 @@ export default function Terms() {
         <div className="p-4 rounded-md bg-amber-50 border border-amber-200 mb-8 flex items-start gap-3 text-xs text-amber-900 leading-relaxed">
           <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <div>
-            <strong>Important Summary:</strong> CampusXChange provides a free platform for students to discover and connect for campus trades. All payments, inspections, and physical exchanges occur directly between the buyer and seller. Always verify items in person before sending funds.
+            <strong>Important Summary:</strong> CampXChange provides a free platform for students to discover and connect for campus trades. All payments, inspections, and physical exchanges occur directly between the buyer and seller. Always verify items in person before sending funds.
           </div>
         </div>
 
@@ -34,7 +34,7 @@ export default function Terms() {
           <div>
             <h2 className="text-base font-bold text-gray-900 mb-2">1. Eligibility & Registration</h2>
             <p className="text-xs text-gray-600 leading-relaxed">
-              To list items, initiate chats, or use marketplace features on CampusXChange, you must be a student of Lovely Professional University with a valid 8-digit registration number. Creating fake accounts or registering on behalf of non-students is strictly prohibited.
+              To list items, initiate chats, or use marketplace features on CampXChange, you must be a student of Lovely Professional University with a valid 8-digit registration number. Creating fake accounts or registering on behalf of non-students is strictly prohibited.
             </p>
           </div>
 
@@ -43,7 +43,7 @@ export default function Terms() {
           <div>
             <h2 className="text-base font-bold text-gray-900 mb-2">2. Peer-to-Peer Transactions</h2>
             <p className="text-xs text-gray-600 leading-relaxed">
-              CampusXChange does not own, manufacture, store, inspect, or deliver any items listed. We charge 0% commission fees. Any agreement to buy, sell, or accept a donation is strictly a private agreement between the two students involved. Both parties agree to test, inspect, and confirm item conditions at the time of meetup.
+              CampXChange does not own, manufacture, store, inspect, or deliver any items listed. We charge 0% commission fees. Any agreement to buy, sell, or accept a donation is strictly a private agreement between the two students involved. Both parties agree to test, inspect, and confirm item conditions at the time of meetup.
             </p>
           </div>
 
@@ -66,7 +66,7 @@ export default function Terms() {
           <div>
             <h2 className="text-base font-bold text-gray-900 mb-2">4. Disciplinary Action & Termination</h2>
             <p className="text-xs text-gray-600 leading-relaxed">
-              CampusXChange administrators reserve the right to suspend or permanently ban any user who engages in fraudulent activity, attempts scams, or violates these Terms. In serious cases involving theft or fraud, details may be forwarded to campus security authorities.
+              CampXChange administrators reserve the right to suspend or permanently ban any user who engages in fraudulent activity, attempts scams, or violates these Terms. In serious cases involving theft or fraud, details may be forwarded to campus security authorities.
             </p>
           </div>
 

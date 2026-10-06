@@ -1,4 +1,4 @@
-# 🏪 CampusXChange (CXC Marketplace)
+# 🏪 CampXChange (CXC Marketplace)
 
 > **Campus-Exclusive Peer-to-Peer Student Marketplace for LPU (Lovely Professional University)**  
 > Buy, sell, rent, and donate textbooks, electronics, cycles, lab gear, and hostel essentials within verified campus boundaries.
@@ -8,7 +8,7 @@
 ## 📌 Repository Architecture
 
 ```text
-CampusXChange/
+CampXChange/
 ├── client/                     # Web Application (React, Vite, Tailwind CSS, Lucide, Webcams)
 ├── android/                    # Android Specifications & Native Architecture Blueprints
 ├── server/                     # Backend REST API (Django, Django REST Framework, SimpleJWT, SQLite/PostgreSQL)
@@ -17,7 +17,7 @@ CampusXChange/
 ├── admin_features_list.md      # Comprehensive Feature Registry for Admin Dashboard
 ├── ADMIN_ROADMAP.md            # Governance, Security & RBAC Specifications
 ├── DESIGN_SYSTEM.md            # Brand Identity, Color Palette, and Design Tokens
-└── CampusXChange_Complete_Final_Tech_Stack.md # Complete Platform Technical Stack
+└── CampXChange_Complete_Final_Tech_Stack.md # Complete Platform Technical Stack
 ```
 
 ---

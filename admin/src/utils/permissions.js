@@ -1,7 +1,7 @@
 /**
  * permissions.js
  * Centralized Role-Based Access Control (RBAC) definitions and validation utilities
- * for CampusXChange Admin Console.
+ * for CampXChange Admin Console.
  */
 
 export const PERMISSION_CATALOG = [

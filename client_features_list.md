@@ -1,6 +1,6 @@
-# 🛒 CampusXChange Client (Student Marketplace) — Master Feature List & Roadmap
+# 🛒 CampXChange Client (Student Marketplace) — Master Feature List & Roadmap
 
-> **Complete Feature Registry**: Ye document CampusXChange student-facing marketplace client ka har ek existing feature detail karta hai, aur saath me future enhancements ke suggestions bhi deta hai jo platform ko next level pe le ja sakte hain.
+> **Complete Feature Registry**: Ye document CampXChange student-facing marketplace client ka har ek existing feature detail karta hai, aur saath me future enhancements ke suggestions bhi deta hai jo platform ko next level pe le ja sakte hain.
 
 ---
 

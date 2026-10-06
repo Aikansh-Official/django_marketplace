@@ -61,7 +61,7 @@ export default function ReportModal({
                   Report Listing
                 </h2>
                 <p className="text-xs text-gray-500 truncate">
-                  Help keep CampusXChange safe and trustworthy
+                  Help keep CampXChange safe and trustworthy
                 </p>
               </div>
             </div>

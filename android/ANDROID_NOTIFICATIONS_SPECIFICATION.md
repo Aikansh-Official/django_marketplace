@@ -1,4 +1,4 @@
-# 🔔 CampusXChange — Android Notifications & FCM Push Alerts Specification
+# 🔔 CampXChange — Android Notifications & FCM Push Alerts Specification
 
 > **Target Platform:** Android (Native)  
 > **Tech Stack:** Kotlin, Jetpack Compose, Firebase Cloud Messaging (FCM), Material 3, Hilt, Navigation Deep Links  
@@ -86,7 +86,7 @@
 ## 3. Color Palette & Material 3 Styling
 
 ```kotlin
-package com.CampusXChange.app.ui.theme
+package com.CampXChange.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
@@ -193,7 +193,7 @@ sealed class NotificationRoute(val route: String) {
 ### 6.1 DTOs & Retrofit Notification Service
 
 ```kotlin
-package com.CampusXChange.app.data.remote
+package com.CampXChange.app.data.remote
 
 import com.google.gson.annotations.SerializedName
 import retrofit2.Response
@@ -237,7 +237,7 @@ interface NotificationApiService {
 ### 6.2 FirebaseMessagingService Implementation
 
 ```kotlin
-package com.CampusXChange.app.services
+package com.CampXChange.app.services
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -249,9 +249,9 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import com.CampusXChange.app.MainActivity
+import com.CampXChange.app.MainActivity
 
-class CampusXChangeMessagingService : FirebaseMessagingService() {
+class CampXChangeMessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
@@ -261,7 +261,7 @@ class CampusXChangeMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
 
-        val title = remoteMessage.data["title"] ?: remoteMessage.notification?.title ?: "CampusXChange Alert"
+        val title = remoteMessage.data["title"] ?: remoteMessage.notification?.title ?: "CampXChange Alert"
         val message = remoteMessage.data["message"] ?: remoteMessage.notification?.body ?: ""
         val type = remoteMessage.data["type"] ?: "GENERAL"
         val listingId = remoteMessage.data["listing_id"]
@@ -276,7 +276,7 @@ class CampusXChangeMessagingService : FirebaseMessagingService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
-                "CampusXChange Campus Deals & Alerts",
+                "CampXChange Campus Deals & Alerts",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Notifications for student purchases, offers, and handovers."
@@ -318,12 +318,12 @@ class CampusXChangeMessagingService : FirebaseMessagingService() {
 ### 6.3 Notifications ViewModel
 
 ```kotlin
-package com.CampusXChange.app.ui.notifications
+package com.CampXChange.app.ui.notifications
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.CampusXChange.app.data.remote.NotificationApiService
-import com.CampusXChange.app.data.remote.NotificationDto
+import com.CampXChange.app.data.remote.NotificationApiService
+import com.CampXChange.app.data.remote.NotificationDto
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -403,7 +403,7 @@ class NotificationsViewModel @Inject constructor(
 ### 6.4 NotificationsScreen Composable (Swipe to Delete & Filter)
 
 ```kotlin
-package com.CampusXChange.app.ui.notifications
+package com.CampXChange.app.ui.notifications
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -422,8 +422,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.CampusXChange.app.data.remote.NotificationDto
-import com.CampusXChange.app.ui.theme.*
+import com.CampXChange.app.data.remote.NotificationDto
+import com.CampXChange.app.ui.theme.*
 
 @Composable
 fun NotificationsScreen(

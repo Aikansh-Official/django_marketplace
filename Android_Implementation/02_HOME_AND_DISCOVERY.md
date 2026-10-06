@@ -1,6 +1,6 @@
 # 🛍️ Module 02: Homepage, Search & Marketplace Discovery
 
-This document details the complete native Android specification for the **CampusXChange** home discovery feed, dynamic categories, live search with autocomplete suggestions, filter/sort bottom sheet, 2-column listing card grid, animated background, and urgent announcements.
+This document details the complete native Android specification for the **CampXChange** home discovery feed, dynamic categories, live search with autocomplete suggestions, filter/sort bottom sheet, 2-column listing card grid, animated background, and urgent announcements.
 
 ---
 
@@ -34,9 +34,9 @@ This document details the complete native Android specification for the **Campus
 ### 2.1 Marketplace Discovery Service (`MarketplaceDiscoveryApi.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.remote.api
+package com.campxchange.app.data.remote.api
 
-import com.campusxchange.app.data.remote.dto.*
+import com.campxchange.app.data.remote.dto.*
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -68,7 +68,7 @@ interface MarketplaceDiscoveryApi {
 ### 2.2 Data Transfer Objects (`DiscoveryDtos.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.remote.dto
+package com.campxchange.app.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
 
@@ -133,7 +133,7 @@ data class AnnouncementDto(
 Designed for high density, visual clarity, and responsiveness inside a 2-column grid:
 
 ```kotlin
-package com.campusxchange.app.presentation.home.components
+package com.campxchange.app.presentation.home.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -157,8 +157,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
-import com.campusxchange.app.core.designsystem.*
-import com.campusxchange.app.data.remote.dto.ListingSummaryDto
+import com.campxchange.app.core.designsystem.*
+import com.campxchange.app.data.remote.dto.ListingSummaryDto
 
 @Composable
 fun ListingCard(
@@ -475,12 +475,12 @@ fun ThemeCanvasBackground(modifier: Modifier = Modifier) {
 ## 4. ViewModel State Management (`HomeViewModel.kt`)
 
 ```kotlin
-package com.campusxchange.app.presentation.home
+package com.campxchange.app.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.campusxchange.app.data.remote.api.MarketplaceDiscoveryApi
-import com.campusxchange.app.data.remote.dto.*
+import com.campxchange.app.data.remote.api.MarketplaceDiscoveryApi
+import com.campxchange.app.data.remote.dto.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*

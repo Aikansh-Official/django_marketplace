@@ -1,4 +1,4 @@
-# ⚖️ CampusXChange — Android Legal, Safety & DPDP Compliance Specification
+# ⚖️ CampXChange — Android Legal, Safety & DPDP Compliance Specification
 
 > **Target Platform:** Android (Native Jetpack Compose)  
 > **Source Pages:** `client/src/pages/Terms.jsx`, `Privacy.jsx`, `Guidelines.jsx`, `About.jsx`  
@@ -18,7 +18,7 @@
 
 ## 1. DPDP Act (2023) Student Data Minimization Architecture
 
-CampusXChange strictly adheres to India's **Digital Personal Data Protection (DPDP) Act, 2023**:
+CampXChange strictly adheres to India's **Digital Personal Data Protection (DPDP) Act, 2023**:
 - **Identity Masking:** Public profiles and listings **NEVER** expose student registration numbers, full phone numbers, or email addresses. Names are masked to initial format (e.g., *"Anshuman V."*).
 - **Physical ID Card Confidentiality:** Student ID card scans and selfies are strictly encrypted at rest in MongoDB using AES-256 and stored in private Cloudinary buckets accessible **ONLY** by system administrators. Other students cannot view raw ID cards.
 - **Direct Chat Isolation:** Student chats use system-generated IDs; phone numbers and emails are automatically redacted if detected in chat messages.
@@ -34,13 +34,13 @@ Every product detail page and chat window embeds the **LPU Student Safety Recomm
    - Central Library Ground Floor
    - Hostel Turnstiles / Common Rooms (BH-1 to BH-7, GH-1 to GH-7)
 2. 🔍 **Physical Inspection Before Payment:** Always test electronics, chargers, and calculators in person before releasing payment or scanning the QR code.
-3. 🚫 **Zero Advance Payment Rule:** Never send UPI advances, Google Pay, or deposits before seeing the item physically. CampusXChange is 100% peer-to-peer and charges **0% commission**.
+3. 🚫 **Zero Advance Payment Rule:** Never send UPI advances, Google Pay, or deposits before seeing the item physically. CampXChange is 100% peer-to-peer and charges **0% commission**.
 
 ---
 
 ## 3. Prohibited Items Policy
 
-The following items are banned from CampusXChange; attempting to list them results in automated trust score penalty and permanent account ban:
+The following items are banned from CampXChange; attempting to list them results in automated trust score penalty and permanent account ban:
 - ❌ Alcohol, tobacco, nicotine, vapes, or illegal substances.
 - ❌ Weapons, sharp tools, or hazardous lab chemicals.
 - ❌ University examination question papers, leaked answer keys, or proxy attendance devices.
@@ -98,7 +98,7 @@ Students can report suspicious activity or fraudulent listings:
 ## 5. Jetpack Compose Legal Screens & Safety Cards
 
 ```kotlin
-package com.campusxchange.app.ui.components
+package com.campxchange.app.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -113,7 +113,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.campusxchange.app.ui.theme.*
+import com.campxchange.app.ui.theme.*
 
 @Composable
 fun CampusSafetyCard(modifier: Modifier = Modifier) {

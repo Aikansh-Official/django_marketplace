@@ -54,7 +54,7 @@ export default function SuspendedAccountModal() {
             Safety Action Applied
           </div>
           <p className="text-xs text-red-800 leading-relaxed">
-            Campus administrators have temporarily or permanently restricted this account from buying, listing, or initiating handovers on CampusXChange.
+            Campus administrators have temporarily or permanently restricted this account from buying, listing, or initiating handovers on CampXChange.
           </p>
         </div>
 
@@ -62,7 +62,7 @@ export default function SuspendedAccountModal() {
         <div className="space-y-3 mb-6 text-xs text-gray-500">
           <div className="flex items-center justify-center gap-2">
             <Mail className="w-4 h-4 text-gray-400" />
-            <span>Appeal or dispute: <a href="mailto:support@campusxchange.in" className="font-semibold text-brand-600 hover:underline">support@campusxchange.in</a></span>
+            <span>Appeal or dispute: <a href="mailto:support@campxchange.in" className="font-semibold text-brand-600 hover:underline">support@campxchange.in</a></span>
           </div>
           <div>
             <Link

@@ -1,6 +1,6 @@
 # ⭐ Module 09: Verified Ratings & Peer Reviews Engine
 
-This document provides the complete native Android specification for the **CampusXChange** deal-gated peer review system, interactive 1-5 star selector, preset feedback chips, trust score recalculation impact, and public seller review feed.
+This document provides the complete native Android specification for the **CampXChange** deal-gated peer review system, interactive 1-5 star selector, preset feedback chips, trust score recalculation impact, and public seller review feed.
 
 ---
 
@@ -46,9 +46,9 @@ This document provides the complete native Android specification for the **Campu
 ### 2.1 Reviews Api Service (`ReviewsApiService.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.remote.api
+package com.campxchange.app.data.remote.api
 
-import com.campusxchange.app.data.remote.dto.*
+import com.campxchange.app.data.remote.dto.*
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -69,7 +69,7 @@ interface ReviewsApiService {
 ### 2.2 Data Transfer Objects (`ReviewDtos.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.remote.dto
+package com.campxchange.app.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
 

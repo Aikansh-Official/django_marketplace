@@ -32,7 +32,7 @@ export default function Settings() {
 
     // Security & Operations
     maintenance_mode: false,
-    maintenance_message: 'CampusXChange is currently undergoing scheduled campus maintenance. Please check back shortly.',
+    maintenance_message: 'CampXChange is currently undergoing scheduled campus maintenance. Please check back shortly.',
     allow_registrations: true,
     allowed_domains: '',
   });
@@ -55,7 +55,7 @@ export default function Settings() {
           announcement_dismissible: data.announcement_dismissible !== 'false' && data.announcement_dismissible !== false,
 
           maintenance_mode: data.maintenance_mode === 'true' || data.maintenance_mode === true,
-          maintenance_message: data.maintenance_message || 'CampusXChange is currently undergoing scheduled campus maintenance. Please check back shortly.',
+          maintenance_message: data.maintenance_message || 'CampXChange is currently undergoing scheduled campus maintenance. Please check back shortly.',
           allow_registrations: data.allow_registrations !== 'false' && data.allow_registrations !== false,
           allowed_domains: data.allowed_domains || '',
         });
@@ -326,7 +326,7 @@ export default function Settings() {
                 <div>
                   <h4 className="font-bold text-gray-900 text-xs">Publish Announcement Banner</h4>
                   <p className="text-[11px] text-gray-500 mt-0.5">
-                    When active, this banner appears immediately for every student browsing CampusXChange.
+                    When active, this banner appears immediately for every student browsing CampXChange.
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">

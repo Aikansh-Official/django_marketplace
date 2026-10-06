@@ -70,7 +70,7 @@ export function getSafeImageUrl(url, options = {}) {
 
   // 5. Absolute URLs (already starting with http:// or https://)
   if (processedUrl.startsWith('http://') || processedUrl.startsWith('https://')) {
-    // If page is HTTPS or domain is Cloudinary/Render/CampusXChange, upgrade to HTTPS to prevent mixed content
+    // If page is HTTPS or domain is Cloudinary/Render/CampXChange, upgrade to HTTPS to prevent mixed content
     if (
       processedUrl.startsWith('http://res.cloudinary.com') ||
       (typeof window !== 'undefined' &&

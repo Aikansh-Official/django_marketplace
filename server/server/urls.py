@@ -29,7 +29,7 @@ urlpatterns = [
     re_path(r'^api/health/?$', health_check, name='api-health-check'),
 
 
-    path('campusxchange-admin/', admin.site.urls),
+    path('campxchange-admin/', admin.site.urls),
     path('api/auth/', include('users.urls')),
     path('api/marketplace/', include('marketplace.urls')),
     path('api/media/secure-image/', secure_image_proxy_view, name='secure-image-proxy'),

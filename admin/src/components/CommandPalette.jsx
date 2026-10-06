@@ -199,7 +199,7 @@ export default function CommandPalette({ isOpen, onClose, adminUser }) {
               <kbd className="font-mono bg-white px-1.5 py-0.5 rounded border border-gray-200 text-[10px]">esc</kbd> to close
             </span>
           </div>
-          <span className="font-semibold text-brand-600">CampusXChange Command Center</span>
+          <span className="font-semibold text-brand-600">CampXChange Command Center</span>
         </div>
       </div>
     </div>

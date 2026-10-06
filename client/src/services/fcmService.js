@@ -127,7 +127,7 @@ export const triggerBrowserNotification = (title, options = {}) => {
   try {
     const notif = new Notification(title, {
       body: options.body || '',
-      icon: options.icon || '/CampusXChange_Logo.png',
+      icon: options.icon || '/CampXChange_Logo.png',
       badge: options.badge || '/favicon.png',
       tag: options.tag || 'cxc-native-alert',
       renotify: true,
@@ -166,7 +166,7 @@ export const setupForegroundNotifications = async () => {
     onMessage(messaging, (payload) => {
       console.log('🔔 Foreground FCM notification received:', payload);
 
-      const title = payload.notification?.title || payload.data?.title || 'CampusXChange Alert';
+      const title = payload.notification?.title || payload.data?.title || 'CampXChange Alert';
       const body = payload.notification?.body || payload.data?.body || 'New marketplace update.';
       const link = payload.data?.link || payload.data?.route || '/notifications';
 
@@ -236,7 +236,7 @@ export const setupForegroundNotifications = async () => {
  */
 export const sendTestPushNotification = async () => {
   // Always trigger local browser notification for instant visual verification
-  triggerBrowserNotification('CampusXChange Browser Alert', {
+  triggerBrowserNotification('CampXChange Browser Alert', {
     body: 'Browser push notifications are enabled and functioning properly!',
     link: '/notifications'
   });
@@ -244,7 +244,7 @@ export const sendTestPushNotification = async () => {
   // Also trigger backend test endpoint to test FCM database and push dispatch
   try {
     const res = await api.post('/marketplace/notifications/test-push/', {
-      title: 'CampusXChange Live Alert',
+      title: 'CampXChange Live Alert',
       message: 'FCM push dispatched from Django backend to your browser!',
       link: '/notifications'
     });

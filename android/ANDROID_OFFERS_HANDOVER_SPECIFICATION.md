@@ -1,4 +1,4 @@
-# 🤝 CampusXChange — Android Offers & QR Handover Deal Completion Specification
+# 🤝 CampXChange — Android Offers & QR Handover Deal Completion Specification
 
 > **Target Platform:** Android (Native)  
 > **Tech Stack:** Kotlin, Jetpack Compose, CameraX, Google ML Kit Barcode Scanning, ZXing QR Generator, Material 3, Hilt  
@@ -29,7 +29,7 @@
 
 ## 1. System Architecture & Deal Lifecycle
 
-CampusXChange features a **safe campus physical exchange mechanism** preventing ghosting, cash fraud, and disputed handovers.
+CampXChange features a **safe campus physical exchange mechanism** preventing ghosting, cash fraud, and disputed handovers.
 
 ```mermaid
 sequenceDiagram
@@ -97,7 +97,7 @@ sequenceDiagram
 ## 3. Color Palette & Material 3 Tokens
 
 ```kotlin
-package com.CampusXChange.app.ui.theme
+package com.CampXChange.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
@@ -239,7 +239,7 @@ sealed class HandoverRoute(val route: String) {
 ### 6.1 DTOs & Retrofit Handover Service
 
 ```kotlin
-package com.CampusXChange.app.data.remote
+package com.CampXChange.app.data.remote
 
 import com.google.gson.annotations.SerializedName
 import retrofit2.Response
@@ -302,11 +302,11 @@ interface HandoverApiService {
 ### 6.2 Handover ViewModel (Countdown Timer & Verification)
 
 ```kotlin
-package com.CampusXChange.app.ui.handover
+package com.CampXChange.app.ui.handover
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.CampusXChange.app.data.remote.*
+import com.CampXChange.app.data.remote.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -407,7 +407,7 @@ class HandoverViewModel @Inject constructor(
 ### 6.3 QR Code Generator Composable (ZXing)
 
 ```kotlin
-package com.CampusXChange.app.ui.handover.components
+package com.CampXChange.app.ui.handover.components
 
 import android.graphics.Bitmap
 import android.graphics.Color as AndroidColor
@@ -471,7 +471,7 @@ fun generateQrBitmap(content: String, size: Int): Bitmap? {
 ### 6.4 CameraX QR Scanner Composable (Google ML Kit)
 
 ```kotlin
-package com.CampusXChange.app.ui.handover.components
+package com.CampXChange.app.ui.handover.components
 
 import android.annotation.SuppressLint
 import androidx.camera.core.*
@@ -561,7 +561,7 @@ fun CameraXQrScanner(
 
 #### Seller QR Display Screen
 ```kotlin
-package com.CampusXChange.app.ui.handover
+package com.CampXChange.app.ui.handover
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -574,8 +574,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.CampusXChange.app.ui.handover.components.QRCodeDisplay
-import com.CampusXChange.app.ui.theme.*
+import com.CampXChange.app.ui.handover.components.QRCodeDisplay
+import com.CampXChange.app.ui.theme.*
 
 @Composable
 fun SellerQRDisplayScreen(

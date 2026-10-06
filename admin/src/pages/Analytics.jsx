@@ -52,7 +52,7 @@ export default function Analytics() {
     if (!data) return;
 
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "CampusXChange Analytics Report\n";
+    csvContent += "CampXChange Analytics Report\n";
     csvContent += `Generated On,${new Date().toLocaleString()}\n`;
     csvContent += `Timeframe,${data.timeframe}\n\n`;
 
@@ -95,7 +95,7 @@ export default function Analytics() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `campusxchange_analytics_${data.timeframe}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `campxchange_analytics_${data.timeframe}_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

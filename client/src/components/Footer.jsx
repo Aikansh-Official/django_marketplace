@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import logoImg from '../assets/CampusXChange_Logo.webp';
+import logoImg from '../assets/CampXChange_Logo.webp';
 import { APP_VERSION } from '../config/version';
 import { useAuth } from '../context/AuthContext';
 
@@ -34,14 +34,14 @@ export default function Footer() {
 
           {/* Brand Info (Stacked Logo over Name) */}
           <div className="space-y-3 sm:col-span-2 lg:col-span-4">
-            <Link to="/" className="inline-flex flex-col items-start group" aria-label="CampusXChange">
+            <Link to="/" className="inline-flex flex-col items-start group" aria-label="CampXChange">
               <img
                 src={logoImg}
-                alt="CampusXChange"
+                alt="CampXChange"
                 className="h-8 sm:h-9 w-auto object-contain mb-1.5 transition-transform duration-200 group-hover:scale-105"
               />
               <div className="flex items-baseline">
-                <span className="text-lg sm:text-xl font-bold tracking-tight text-gray-950 font-display">Campus</span>
+                <span className="text-lg sm:text-xl font-bold tracking-tight text-gray-950 font-display">Camp</span>
                 <span className="text-lg sm:text-xl font-bold tracking-tight text-brand-500 font-display">XChange</span>
               </div>
             </Link>
@@ -108,7 +108,7 @@ export default function Footer() {
             <ul className="space-y-2 text-xs">
               <li>
                 <Link to="/about" className="text-gray-500 hover:text-gray-900 transition-colors">
-                  About CampusXChange
+                  About CampXChange
                 </Link>
               </li>
               <li>
@@ -135,7 +135,7 @@ export default function Footer() {
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-400">
           <div className="flex items-center gap-2.5 flex-wrap">
             <p>
-              &copy; {currentYear} CampusXChange. A campus marketplace for LPU students.
+              &copy; {currentYear} CampXChange. A campus marketplace for LPU students.
             </p>
             <span className="hidden sm:inline text-gray-300">•</span>
             <span className="text-xs text-gray-400">

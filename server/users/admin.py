@@ -7,7 +7,7 @@ class CustomUserAdmin(UserAdmin):
     list_display = ['username', 'email', 'last_login_method', 'is_verified_student', 'college_domain', 'trust_score', 'last_login', 'is_staff']
     list_filter = ['last_login_method', 'is_verified_student', 'role', 'is_staff', 'is_active']
     fieldsets = UserAdmin.fieldsets + (
-        ('CampusXChange Student Info', {
+        ('CampXChange Student Info', {
             'fields': ('last_login_method', 'google_id', 'is_verified_student', 'college_domain', 'trust_score', 'profile_picture_url')
         }),
     )

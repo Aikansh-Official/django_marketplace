@@ -1,6 +1,6 @@
 # 🔍 Module 04: Product Detail, Image Lightbox & Offer Engine
 
-This document specifies the native Android implementation for the **CampusXChange** product detail page, high-resolution pinch-to-zoom image lightbox, DPDP-compliant seller preview card, dynamic bargaining/offer negotiation engine, seller offer management, and report listing system.
+This document specifies the native Android implementation for the **CampXChange** product detail page, high-resolution pinch-to-zoom image lightbox, DPDP-compliant seller preview card, dynamic bargaining/offer negotiation engine, seller offer management, and report listing system.
 
 ---
 
@@ -42,9 +42,9 @@ This document specifies the native Android implementation for the **CampusXChang
 ### 2.1 Product & Offer Service (`ProductDetailApi.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.remote.api
+package com.campxchange.app.data.remote.api
 
-import com.campusxchange.app.data.remote.dto.*
+import com.campxchange.app.data.remote.dto.*
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -89,7 +89,7 @@ interface ProductDetailApi {
 ### 2.2 Data Transfer Objects (`ProductDetailDtos.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.remote.dto
+package com.campxchange.app.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
 

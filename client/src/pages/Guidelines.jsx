@@ -9,7 +9,7 @@ export default function Guidelines() {
         <div className="flex items-center gap-2 text-xs font-semibold text-brand-600 uppercase tracking-wider mb-2">
           <span>Campus Safety & Etiquette</span>
           <span>•</span>
-          <span>CampusXChange</span>
+          <span>CampXChange</span>
         </div>
 
         {/* Page Title */}
@@ -139,11 +139,11 @@ export default function Guidelines() {
                 </div>
                 <div className="pt-2">
                   <a
-                    href="mailto:support@campusxchange.in?subject=Report%20Listing%20/%20Scam"
+                    href="mailto:support@campxchange.in?subject=Report%20Listing%20/%20Scam"
                     className="inline-flex items-center gap-2 text-xs font-bold text-brand-600 hover:text-brand-700 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-md transition-colors border border-orange-200"
                   >
                     <Mail className="w-3.5 h-3.5" />
-                    support@campusxchange.in
+                    support@campxchange.in
                   </a>
                 </div>
               </div>

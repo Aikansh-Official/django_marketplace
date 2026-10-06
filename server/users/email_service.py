@@ -4,7 +4,7 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-# Brand Tokens matching CampusXChange
+# Brand Tokens matching CampXChange
 BRAND_ORANGE = "#FB5607"
 BRAND_ORANGE_HOVER = "#EA580C"
 BRAND_ORANGE_BG = "#FFF7ED"
@@ -16,7 +16,7 @@ BG_PAGE = "#F9FAFB"
 
 
 def _get_base_template(title: str, preheader: str, content_html: str) -> str:
-    logo_url = "https://cxc.anshuman892494.online/CampusXChange_Logo.png"
+    logo_url = "https://cxc.anshuman892494.online/CampXChange_Logo.png"
     
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -57,8 +57,8 @@ def _get_base_template(title: str, preheader: str, content_html: str) -> str:
                 <tr>
                   <td align="center">
                     <a href="https://cxc.anshuman892494.online" target="_blank" style="text-decoration: none;">
-                      <img src="{logo_url}" height="28" alt="CampusXChange" style="height: 28px; width: auto; vertical-align: middle; margin-right: 10px; display: inline-block;" />
-                      <span style="font-size: 22px; font-weight: 800; color: {TEXT_DARK}; vertical-align: middle; letter-spacing: -0.5px; display: inline-block;">Campus<span style="color: {BRAND_ORANGE};">XChange</span></span>
+                      <img src="{logo_url}" height="28" alt="CampXChange" style="height: 28px; width: auto; vertical-align: middle; margin-right: 10px; display: inline-block;" />
+                      <span style="font-size: 22px; font-weight: 800; color: {TEXT_DARK}; vertical-align: middle; letter-spacing: -0.5px; display: inline-block;">Camp<span style="color: {BRAND_ORANGE};">XChange</span></span>
                     </a>
                   </td>
                 </tr>
@@ -84,7 +84,7 @@ def _get_base_template(title: str, preheader: str, content_html: str) -> str:
           <tr>
             <td class="footer">
               <p style="margin: 0; font-size: 12px; color: {TEXT_MUTED}; line-height: 1.6;">
-                <strong>CampusXChange</strong> &bull; Peer-to-Peer Student Marketplace<br>
+                <strong>CampXChange</strong> &bull; Peer-to-Peer Student Marketplace<br>
                 Lovely Professional University, Punjab
               </p>
               <p style="margin: 8px 0 0; font-size: 11px; color: #9CA3AF;">
@@ -105,7 +105,7 @@ def get_otp_email_template(otp_code: str, email: str) -> tuple[str, str, str]:
     """
     Returns (subject, html_content, text_content) for OTP verification
     """
-    subject = f"Your CampusXChange Verification Code: {otp_code}"
+    subject = f"Your CampXChange Verification Code: {otp_code}"
     preheader = f"Your verification code is {otp_code}. Valid for 10 minutes."
     
     content = f"""
@@ -114,7 +114,7 @@ def get_otp_email_template(otp_code: str, email: str) -> tuple[str, str, str]:
       </h1>
       <p style="font-size: 14px; line-height: 1.6; color: #4B5563; margin: 0 0 16px;">
         Hello Student,<br>
-        Thank you for joining CampusXChange. Use the verification code below to verify your email address.
+        Thank you for joining CampXChange. Use the verification code below to verify your email address.
       </p>
 
       <div class="otp-box">
@@ -129,7 +129,7 @@ def get_otp_email_template(otp_code: str, email: str) -> tuple[str, str, str]:
 
       <div class="note-box">
         <p style="font-size: 12px; color: #4B5563; line-height: 1.5; margin: 0;">
-          <strong>Security Tip:</strong> Never share this code with anyone. CampusXChange will never ask for your verification code or account password.
+          <strong>Security Tip:</strong> Never share this code with anyone. CampXChange will never ask for your verification code or account password.
         </p>
       </div>
 
@@ -138,9 +138,9 @@ def get_otp_email_template(otp_code: str, email: str) -> tuple[str, str, str]:
       </p>
     """
     
-    html = _get_base_template("Verify Your Email - CampusXChange", preheader, content)
+    html = _get_base_template("Verify Your Email - CampXChange", preheader, content)
     
-    text = f"""CampusXChange - Verify Your Email Address
+    text = f"""CampXChange - Verify Your Email Address
 
 Hello Student,
 
@@ -151,7 +151,7 @@ Never share this code with anyone.
 
 If you did not request this, please ignore this email.
 
-CampusXChange — Student Marketplace
+CampXChange — Student Marketplace
 https://cxc.anshuman892494.online
 """
     return subject, html, text
@@ -161,7 +161,7 @@ def get_password_reset_otp_template(otp_code: str, email: str, name: str = "") -
     """
     Returns (subject, html_content, text_content) for Password Reset OTP verification
     """
-    subject = f"Your CampusXChange Password Reset Code: {otp_code}"
+    subject = f"Your CampXChange Password Reset Code: {otp_code}"
     preheader = f"Use code {otp_code} to reset your password. Valid for 10 minutes."
     greeting = f"Hello {name}," if name else "Hello Student,"
 
@@ -186,7 +186,7 @@ def get_password_reset_otp_template(otp_code: str, email: str, name: str = "") -
 
       <div class="note-box">
         <p style="font-size: 12px; color: #4B5563; line-height: 1.5; margin: 0;">
-          <strong>Security Warning:</strong> Never share this OTP code with anyone. CampusXChange moderators will never ask for your OTP. If you did not request a password reset, you can safely ignore this email; your current password remains unchanged.
+          <strong>Security Warning:</strong> Never share this OTP code with anyone. CampXChange moderators will never ask for your OTP. If you did not request a password reset, you can safely ignore this email; your current password remains unchanged.
         </p>
       </div>
 
@@ -195,9 +195,9 @@ def get_password_reset_otp_template(otp_code: str, email: str, name: str = "") -
       </p>
     """
     
-    html = _get_base_template("Reset Your Password - CampusXChange", preheader, content)
+    html = _get_base_template("Reset Your Password - CampXChange", preheader, content)
     
-    text = f"""CampusXChange - Password Reset Code
+    text = f"""CampXChange - Password Reset Code
 
 {greeting}
 
@@ -210,7 +210,7 @@ Never share this code with anyone.
 
 If you did not request a password reset, please ignore this email.
 
-CampusXChange — Student Marketplace
+CampXChange — Student Marketplace
 https://cxc.anshuman892494.online
 """
     return subject, html, text
@@ -220,8 +220,8 @@ def get_password_reset_template(reset_url: str, email: str, name: str = "") -> t
     """
     Legacy helper for password reset URLs (retained for backward compatibility)
     """
-    subject = "Reset your CampusXChange password"
-    preheader = "We received a request to reset your CampusXChange password."
+    subject = "Reset your CampXChange password"
+    preheader = "We received a request to reset your CampXChange password."
     greeting = f"Hello {name}," if name else "Hello Student,"
 
     content = f"""
@@ -246,13 +246,13 @@ def get_password_reset_template(reset_url: str, email: str, name: str = "") -> t
       </div>
     """
     
-    html = _get_base_template("Reset Your Password - CampusXChange", preheader, content)
+    html = _get_base_template("Reset Your Password - CampXChange", preheader, content)
     
-    text = f"""CampusXChange - Reset Your Password
+    text = f"""CampXChange - Reset Your Password
 
 {greeting}
 
-We received a request to reset your CampusXChange account password:
+We received a request to reset your CampXChange account password:
 {reset_url}
 """
     return subject, html, text
@@ -262,7 +262,7 @@ def get_welcome_email_template(name: str, email: str, role: str = "BUYER") -> tu
     """
     Returns (subject, html_content, text_content) for Welcome Email with student role highlighted.
     """
-    subject = "Welcome to CampusXChange! 🎓"
+    subject = "Welcome to CampXChange! 🎓"
     preheader = "Your student account is verified. Start exploring campus deals."
     display_name = name or "Student"
     frontend_url = getattr(settings, 'FRONTEND_URL', 'https://cxc.anshuman892494.online')
@@ -288,7 +288,7 @@ def get_welcome_email_template(name: str, email: str, role: str = "BUYER") -> tu
 
     content = f"""
       <h1 style="font-size: 20px; font-weight: 700; color: {TEXT_DARK}; margin: 0 0 12px;">
-        Welcome to CampusXChange, {display_name}! 🎉
+        Welcome to CampXChange, {display_name}! 🎉
       </h1>
       <p style="font-size: 14px; line-height: 1.6; color: #4B5563; margin: 0 0 16px;">
         Your student account is now verified and active. You are part of your campus's official student-to-student marketplace.
@@ -318,9 +318,9 @@ def get_welcome_email_template(name: str, email: str, role: str = "BUYER") -> tu
       </div>
     """
     
-    html = _get_base_template("Welcome to CampusXChange!", preheader, content)
+    html = _get_base_template("Welcome to CampXChange!", preheader, content)
     
-    text = f"""Welcome to CampusXChange, {display_name}!
+    text = f"""Welcome to CampXChange, {display_name}!
 
 Your student account is active.
 Registered Role: {role_label}
@@ -328,7 +328,7 @@ Registered Role: {role_label}
 Visit {frontend_url} to explore course books, electronics, and hostel essentials.
 
 Happy trading,
-The CampusXChange Team
+The CampXChange Team
 """
     return subject, html, text
 
@@ -338,7 +338,7 @@ def send_email_via_resend(to_email: str, subject: str, html_content: str, text_c
     Dispatches email using Resend API.
     """
     api_key = getattr(settings, 'RESEND_API_KEY', '') or os.environ.get('RESEND_API_KEY', '')
-    from_email = getattr(settings, 'RESEND_FROM_EMAIL', '') or os.environ.get('RESEND_FROM_EMAIL', 'CampusXChange <noreply@cxc.anshuman892494.online>')
+    from_email = getattr(settings, 'RESEND_FROM_EMAIL', '') or os.environ.get('RESEND_FROM_EMAIL', 'CampXChange <noreply@cxc.anshuman892494.online>')
 
     if not api_key or api_key.strip() == '' or 'your_resend_api_key' in api_key.lower():
         logger.warning(f"[RESEND NOT CONFIGURED] Email to {to_email} with subject '{subject}' logged to console.")

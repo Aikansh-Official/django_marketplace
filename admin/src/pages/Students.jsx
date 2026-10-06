@@ -315,7 +315,7 @@ export default function Students() {
         s.is_active !== false ? 'ACTIVE' : 'SUSPENDED',
         new Date(s.date_joined).toLocaleDateString()
       ],
-      filename: `campusxchange_students_${new Date().toISOString().split('T')[0]}.csv`
+      filename: `campxchange_students_${new Date().toISOString().split('T')[0]}.csv`
     });
   };
 

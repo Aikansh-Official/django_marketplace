@@ -10,7 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 let appVersion = '2.4.0'
 let releaseStage = 'Enterprise'
 let releaseDate = 'October 2026'
-let buildName = 'CampusXChange Admin v2.4.0'
+let buildName = 'CampXChange Admin v2.4.0'
 
 try {
   const rootVersionPath = path.resolve(__dirname, '../version.json')
@@ -20,11 +20,11 @@ try {
     appVersion = data.version || appVersion
     releaseStage = data.releaseStage || releaseStage
     releaseDate = data.releaseDate || releaseDate
-    buildName = data.admin?.buildName || `CampusXChange Admin v${appVersion}`
+    buildName = data.admin?.buildName || `CampXChange Admin v${appVersion}`
   } else if (fs.existsSync(localPkgPath)) {
     const pkg = JSON.parse(fs.readFileSync(localPkgPath, 'utf-8'))
     appVersion = pkg.version || appVersion
-    buildName = `CampusXChange Admin v${appVersion}`
+    buildName = `CampXChange Admin v${appVersion}`
   }
 } catch {
   // Safe fallbacks

@@ -1,6 +1,6 @@
 # 👤 Module 06: Student Profile, Orders Tracker & DPDP Reputation
 
-This document specifies the native Android architecture for the **CampusXChange** student profile dashboard, dual Orders & Sales trackers, offline Room database wishlist, ID verification viewer, and DPDP Act (2023) compliant public seller profile.
+This document specifies the native Android architecture for the **CampXChange** student profile dashboard, dual Orders & Sales trackers, offline Room database wishlist, ID verification viewer, and DPDP Act (2023) compliant public seller profile.
 
 ---
 
@@ -41,9 +41,9 @@ This document specifies the native Android architecture for the **CampusXChange*
 ### 2.1 Profile & Reputation Api Service (`ProfileApiService.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.remote.api
+package com.campxchange.app.data.remote.api
 
-import com.campusxchange.app.data.remote.dto.*
+import com.campxchange.app.data.remote.dto.*
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -80,7 +80,7 @@ interface ProfileApiService {
 ### 2.2 Data Transfer Objects (`ProfileDtos.kt`)
 
 ```kotlin
-package com.campusxchange.app.data.remote.dto
+package com.campxchange.app.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
 
@@ -139,7 +139,7 @@ data class PublicSellerProfileDto(
 Enables students to save items locally without mandatory authentication:
 
 ```kotlin
-package com.campusxchange.app.data.local
+package com.campxchange.app.data.local
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow

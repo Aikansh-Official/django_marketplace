@@ -338,7 +338,7 @@ export default function SystemHealth() {
               <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Platform Release</span>
                 <p className="font-black text-brand-600 font-mono text-sm mt-0.5">v{APP_VERSION}</p>
-                <p className="text-[10px] text-gray-500 mt-0.5">CampusXChange Unified Core</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">CampXChange Unified Core</p>
               </div>
 
               <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
@@ -393,7 +393,7 @@ export default function SystemHealth() {
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" /> Server Local Time: {new Date().toLocaleTimeString()}
             </span>
-            <span>CampusXChange v2.0</span>
+            <span>CampXChange v2.0</span>
           </div>
         </div>
 

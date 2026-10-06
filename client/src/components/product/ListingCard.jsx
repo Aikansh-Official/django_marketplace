@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, MapPin, Package, Repeat, Star, Clock } from 'lucide-react';
 import { getSafeImageUrl } from '../../utils/imageUrl';
-import cxcLogo from '../../assets/CampusXChange_Logo.webp';
+import cxcLogo from '../../assets/CampXChange_Logo.webp';
 
 const ListingCard = React.memo(function ListingCard({
   listing,
@@ -205,7 +205,7 @@ const ListingCard = React.memo(function ListingCard({
           {listing.is_trusted && (
             <div
               className="bg-blue-50/90 border border-blue-200 px-1.5 sm:px-2 py-0.5 rounded-full shadow-2xs flex items-center gap-0.5 sm:gap-1 text-[8px] sm:text-[10px] font-black text-blue-900 shrink-0"
-              title="Verified CampusXChange Trusted Listing"
+              title="Verified CampXChange Trusted Listing"
             >
               <img
                 src={cxcLogo}

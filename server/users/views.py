@@ -54,7 +54,7 @@ def get_client_type(request):
 
     # 3. User-Agent heuristic
     user_agent = (request.META.get('HTTP_USER_AGENT') or '').lower()
-    if 'okhttp' in user_agent or 'campusxchange-android' in user_agent:
+    if 'okhttp' in user_agent or 'campxchange-android' in user_agent:
         return 'android'
 
     return 'web'
@@ -65,7 +65,7 @@ def get_device_description(request):
     client_type = get_client_type(request)
     ua = request.META.get('HTTP_USER_AGENT', '')
     if client_type == 'android':
-        return 'CampusXChange Android App'
+        return 'CampXChange Android App'
 
     browser = 'Web Browser'
     if 'Edg/' in ua:
@@ -326,7 +326,7 @@ def verify_google_token(credential):
             req = urllib.request.Request(
                 fb_url,
                 data=req_data,
-                headers={'Content-Type': 'application/json', 'User-Agent': 'CampusXChange-Auth/1.0'}
+                headers={'Content-Type': 'application/json', 'User-Agent': 'CampXChange-Auth/1.0'}
             )
             with urllib.request.urlopen(req, timeout=10) as resp:
                 if resp.status == 200:
@@ -340,7 +340,7 @@ def verify_google_token(credential):
     # 2. Fallback to Google OAuth2 tokeninfo endpoint
     try:
         tokeninfo_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={credential}"
-        req = urllib.request.Request(tokeninfo_url, headers={'User-Agent': 'CampusXChange-Auth/1.0'})
+        req = urllib.request.Request(tokeninfo_url, headers={'User-Agent': 'CampXChange-Auth/1.0'})
         with urllib.request.urlopen(req, timeout=10) as resp:
             if resp.status == 200:
                 resp_data = json.loads(resp.read().decode('utf-8'))
@@ -357,7 +357,7 @@ def verify_google_token(credential):
 class GoogleLoginView(APIView):
     """
     Authenticate a student via Google OAuth ID token or Firebase Auth ID token.
-    STRICT POLICY: Account must already be registered and email verified on CampusXChange.
+    STRICT POLICY: Account must already be registered and email verified on CampXChange.
     New users cannot auto-register through Google.
     """
     permission_classes = (AllowAny,)
@@ -418,7 +418,7 @@ class GoogleLoginView(APIView):
                 email_attempted=google_email
             )
             return Response({
-                'error': f'The email {google_email} is not registered on CampusXChange. Please register your student account first.',
+                'error': f'The email {google_email} is not registered on CampXChange. Please register your student account first.',
                 'code': 'NOT_REGISTERED',
                 'email': google_email
             }, status=status.HTTP_404_NOT_FOUND)
@@ -644,7 +644,7 @@ class UserActiveSessionsView(APIView):
             },
             'android': {
                 'is_active': bool(user.android_session_id),
-                'device': user.android_session_device or 'CampusXChange Android App',
+                'device': user.android_session_device or 'CampXChange Android App',
                 'logged_in_at': user.android_session_created_at,
                 'lifetime_days': 90
             }
@@ -724,7 +724,7 @@ class SendOTPView(APIView):
 
             logger.info(f'OTP generated and sent for {email}')
             if settings.DEBUG:
-                print(f"\n=========================================\n[CAMPUSXCHANGE OTP FOR {email}]: {otp}\n=========================================\n")
+                print(f"\n=========================================\n[CAMPXCHANGE OTP FOR {email}]: {otp}\n=========================================\n")
                 logger.debug(f'[DEV ONLY] OTP for {email}: {otp}')
             
             return Response({"message": "Verification code sent to your email successfully."})
@@ -998,7 +998,7 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
         from marketplace.cloudinary_upload import upload_user_image_to_cloudinary
         raw_photo = serializer.validated_data.get('profile_photo', None)
         if raw_photo and isinstance(raw_photo, str) and (raw_photo.startswith('data:image/') or len(raw_photo) > 100):
-            cloudinary_url = upload_user_image_to_cloudinary(raw_photo, folder="campusxchange/profiles")
+            cloudinary_url = upload_user_image_to_cloudinary(raw_photo, folder="campxchange/profiles")
             serializer.validated_data['profile_photo'] = cloudinary_url
 
         user = serializer.save()
@@ -1157,7 +1157,7 @@ class CompleteIdVerificationView(APIView):
         from marketplace.cloudinary_upload import upload_user_image_to_cloudinary
 
         cloudinary_id_card = upload_user_image_to_cloudinary(
-            id_card_image, folder="campusxchange/id_cards"
+            id_card_image, folder="campxchange/id_cards"
         )
 
         user.is_id_verified = True
@@ -1169,7 +1169,7 @@ class CompleteIdVerificationView(APIView):
         profile_photo = request.data.get('profile_photo', None)
         if profile_photo and isinstance(profile_photo, str) and len(profile_photo) > 100:
             user.profile_photo = upload_user_image_to_cloudinary(
-                profile_photo, folder="campusxchange/profiles"
+                profile_photo, folder="campxchange/profiles"
             )
         user.trust_score = user.calculate_trust_score()
         user.save()
@@ -1291,10 +1291,10 @@ class UpgradeToSellerView(APIView):
         from marketplace.cloudinary_upload import upload_user_image_to_cloudinary
 
         cloudinary_id_card = upload_user_image_to_cloudinary(
-            id_card_image, folder="campusxchange/id_cards"
+            id_card_image, folder="campxchange/id_cards"
         )
         cloudinary_profile_photo = upload_user_image_to_cloudinary(
-            profile_photo, folder="campusxchange/profiles"
+            profile_photo, folder="campxchange/profiles"
         )
 
         # 6. Successfully upgrade Buyer to Verified Seller

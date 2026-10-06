@@ -2,7 +2,7 @@ import React, { memo } from 'react';
 
 /**
  * ThemeBackground
- * Auto-animated geometric background for CampusXChange (Admin-style floating cubes & squares).
+ * Auto-animated geometric background for CampXChange (Admin-style floating cubes & squares).
  * Carefully positioned strictly within the outer 5% side gutters (empty margin areas),
  * keeping the center 90% content workspace completely clean, legible, and distraction-free.
  * Pure GPU-accelerated CSS animations with zero CPU overhead.

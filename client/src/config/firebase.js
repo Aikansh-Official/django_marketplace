@@ -1,4 +1,4 @@
-// Firebase Client Configuration for CampusXChange
+// Firebase Client Configuration for CampXChange
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 

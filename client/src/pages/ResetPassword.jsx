@@ -21,7 +21,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { forgotPasswordSchema, forgotPasswordResetOTPSchema } from '../components/auth/authSchemas';
-import logoImg from '../assets/CampusXChange_Logo.webp';
+import logoImg from '../assets/CampXChange_Logo.webp';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -144,10 +144,10 @@ export default function ResetPassword() {
         {/* Header Ribbon */}
         <div className="bg-gradient-to-r from-brand-600 via-brand-500 to-indigo-600 px-6 py-7 text-center text-white relative">
           <div className="w-fit px-4 py-2 mx-auto mb-2 bg-white rounded-xl shadow-md flex items-center justify-center">
-            <img src={logoImg} alt="CampusXChange" className="h-8 w-auto object-contain" />
+            <img src={logoImg} alt="CampXChange" className="h-8 w-auto object-contain" />
           </div>
           <h1 className="text-2xl font-black tracking-tight font-display text-white">
-            <span>Campus</span><span className="text-brand-100">XChange</span>
+            <span>Camp</span><span className="text-brand-100">XChange</span>
           </h1>
           <p className="text-xs text-white/85 uppercase tracking-widest mt-0.5 font-semibold">
             Account Security &bull; OTP Password Reset
@@ -250,7 +250,7 @@ export default function ResetPassword() {
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-600 hover:text-brand-600 transition-colors"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Back to CampusXChange</span>
+                  <span>Back to CampXChange</span>
                 </Link>
               </div>
             </div>
@@ -486,7 +486,7 @@ export default function ResetPassword() {
         {/* Security Footer Note */}
         <div className="bg-gray-50/80 px-6 py-3 border-t border-gray-100 flex items-center justify-center gap-1.5 text-[11px] text-gray-400 font-medium">
           <ShieldCheck className="w-3.5 h-3.5 text-brand-500" />
-          <span>Protected by CampusXChange Security &bull; 256-Bit Encrypted</span>
+          <span>Protected by CampXChange Security &bull; 256-Bit Encrypted</span>
         </div>
       </div>
     </div>

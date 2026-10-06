@@ -801,7 +801,7 @@ class BannerSerializer(serializers.ModelSerializer):
         if image_input:
             if is_base64_image(image_input):
                 try:
-                    result = upload_base64_to_cloudinary(image_input, folder="campusxchange/banners")
+                    result = upload_base64_to_cloudinary(image_input, folder="campxchange/banners")
                     attrs['image_url'] = result['url']
                 except Exception:
                     try:

@@ -1,5 +1,5 @@
 // Utility for managing saved / bookmarked marketplace listings
-const STORAGE_KEY = 'campusxchange_saved_items';
+const STORAGE_KEY = 'campxchange_saved_items';
 const LEGACY_STORAGE_KEY = 'lputrade_saved_items';
 
 export const getSavedItems = () => {
