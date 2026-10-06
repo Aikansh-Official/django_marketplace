@@ -14,7 +14,7 @@ import {
   Sparkles,
   QrCode
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import triggerConfetti from '../../utils/confetti';
 import api, { getPlatformConfig } from '../../services/api';
 import { emitTradeEvent, TRADE_ACTIONS } from '../../utils/tradeEvents';
 
@@ -118,7 +118,7 @@ export default function HandoverQRModal({
     isCompletedRef.current = true;
     setIsCompleted(true);
 
-    confetti({
+    triggerConfetti({
       particleCount: 140,
       spread: 90,
       origin: { y: 0.6 }

@@ -1,8 +1,7 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
-import confetti from 'canvas-confetti';
-import Tesseract from 'tesseract.js';
+import triggerConfetti from '../../utils/confetti';
 import {
   ShieldCheck,
   Upload,
@@ -12,20 +11,16 @@ import {
   BadgeCheck,
   Lock,
   AlertTriangle,
-  RefreshCw,
   ScanLine,
   FileText,
   UserCheck,
   GraduationCap,
   Calendar,
-  Activity,
-  Sparkles
+  Activity
 } from 'lucide-react';
 import {
   extractLpuCardDetails,
   checkImageAuthenticity,
-  matchRegistrationNumber,
-  validateLpuIdCard,
   preprocessImageForOcr
 } from '../../utils/idCardVerification';
 import { compressImageToDataUrl } from '../../utils/compressImage';
@@ -81,16 +76,12 @@ export default function IdVerificationTab({ profile, onProfileUpdated, onOpenSel
   };
 
   const triggerCelebrationConfetti = () => {
-    try {
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#10b981', '#f97316', '#3b82f6', '#eab308']
-      });
-    } catch {
-      // Confetti fallback
-    }
+    triggerConfetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#10b981', '#f97316', '#3b82f6', '#eab308']
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -132,9 +123,9 @@ export default function IdVerificationTab({ profile, onProfileUpdated, onOpenSel
       }
 
       setScanProgress(15);
-      setScanStatus('Reading ID card image...');
-
-      // Step 2: In-browser client-side OCR
+      // Step 2: In-browser client-side OCR (Dynamically loaded on demand)
+      setScanStatus('Loading OCR engine...');
+      const { default: Tesseract } = await import('tesseract.js');
       const {
         data: { text }
       } = await Tesseract.recognize(ocrReadyImage, 'eng', {

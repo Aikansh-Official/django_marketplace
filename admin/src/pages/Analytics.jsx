@@ -4,11 +4,17 @@ import toast from 'react-hot-toast';
 import { 
   TrendingUp, Users, ShoppingBag, CheckCircle2, Award, 
   Download, RefreshCw, MapPin, Gift, BarChart3, PieChart, 
-  ArrowUpRight, ShieldCheck, Layers, Calendar, DollarSign,
-  Tag, ChevronRight
+  ArrowUpRight, ShieldCheck, Calendar, DollarSign, Tag
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
+// Color palette for category donut chart
+const categoryColors = [
+  '#6366f1', '#10b981', '#f59e0b', '#ec4899', 
+  '#8b5cf6', '#06b6d4', '#f97316', '#14b8a6', 
+  '#3b82f6', '#84cc16'
+];
 
 export default function Analytics() {
   const [data, setData] = useState(null);
@@ -37,6 +43,7 @@ export default function Analytics() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect
     fetchAnalytics(timeframe);
   }, [timeframe]);
 
@@ -95,13 +102,7 @@ export default function Analytics() {
     toast.success("Analytics report downloaded");
   };
 
-  // Color palette for category donut chart
-  const categoryColors = [
-    '#6366f1', '#10b981', '#f59e0b', '#ec4899', 
-    '#8b5cf6', '#06b6d4', '#f97316', '#14b8a6', 
-    '#3b82f6', '#84cc16'
-  ];
-
+  // Color palette for category donut chart moved outside component
   // Calculations for interactive SVG Area Chart
   const chartData = useMemo(() => {
     if (!data || !data.timeline || data.timeline.length === 0) return null;

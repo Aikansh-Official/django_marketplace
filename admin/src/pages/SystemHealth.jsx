@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { 
-  Activity, Database, Server, Cpu, ShieldCheck, 
+  Activity, Database, ShieldCheck, 
   AlertTriangle, RefreshCw, CheckCircle2, Lock, 
-  Terminal, Clock, Globe, Zap, FileText, ArrowRight
+  Terminal, Clock, Zap, ArrowRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { APP_VERSION } from '../config/version';
@@ -36,6 +36,7 @@ export default function SystemHealth() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect
     fetchHealth();
   }, []);
 

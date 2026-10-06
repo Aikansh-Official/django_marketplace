@@ -2,13 +2,13 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ProfileSidebar from '../components/profile/ProfileSidebar';
-import PersonalInfoTab from '../components/profile/PersonalInfoTab';
-import OrdersSellsTab from '../components/profile/OrdersSellsTab';
-import SavedItemsTab from '../components/profile/SavedItemsTab';
-import MyReportsTab from '../components/profile/MyReportsTab';
 import { getSavedCount } from '../utils/savedStore';
 import api from '../services/api';
 
+const PersonalInfoTab = lazy(() => import('../components/profile/PersonalInfoTab'));
+const OrdersSellsTab = lazy(() => import('../components/profile/OrdersSellsTab'));
+const SavedItemsTab = lazy(() => import('../components/profile/SavedItemsTab'));
+const MyReportsTab = lazy(() => import('../components/profile/MyReportsTab'));
 const IdVerificationTab = lazy(() => import('../components/profile/IdVerificationTab'));
 const LogoutModal = lazy(() => import('../components/profile/LogoutModal'));
 const UpgradeToSellerModal = lazy(() => import('../components/profile/UpgradeToSellerModal'));
@@ -161,46 +161,46 @@ export default function Profile() {
 
         {/* Right Active Tab Content */}
         <div className="flex-1 w-full min-w-0">
-          {activeTab === 'personal-info' && (
-            <PersonalInfoTab
-              profile={profile}
-              onProfileUpdated={fetchProfile}
-              onUpgradeClick={() => setIsUpgradeModalOpen(true)}
-              onOpenSelfieModal={() => setIsSelfieModalOpen(true)}
-            />
-          )}
+          <Suspense
+            fallback={
+              <div className="p-12 flex items-center justify-center">
+                <UniversalLoader text="Loading section..." size="sm" />
+              </div>
+            }
+          >
+            {activeTab === 'personal-info' && (
+              <PersonalInfoTab
+                profile={profile}
+                onProfileUpdated={fetchProfile}
+                onUpgradeClick={() => setIsUpgradeModalOpen(true)}
+                onOpenSelfieModal={() => setIsSelfieModalOpen(true)}
+              />
+            )}
 
-          {activeTab === 'orders-sells' && (
-            <OrdersSellsTab
-              profile={profile}
-              isSeller={isSeller}
-              onListingsCountChange={setListingsCount}
-            />
-          )}
+            {activeTab === 'orders-sells' && (
+              <OrdersSellsTab
+                profile={profile}
+                isSeller={isSeller}
+                onListingsCountChange={setListingsCount}
+              />
+            )}
 
-          {activeTab === 'id-verification' && isSeller && (
-            <Suspense
-              fallback={
-                <div className="p-8 flex items-center justify-center">
-                  <UniversalLoader text="Loading ID Verification..." size="sm" />
-                </div>
-              }
-            >
+            {activeTab === 'id-verification' && isSeller && (
               <IdVerificationTab
                 profile={profile}
                 onProfileUpdated={fetchProfile}
                 onOpenSelfieModal={() => setIsSelfieModalOpen(true)}
               />
-            </Suspense>
-          )}
+            )}
 
-          {activeTab === 'saved-items' && (
-            <SavedItemsTab onSavedCountChange={setSavedCount} />
-          )}
+            {activeTab === 'saved-items' && (
+              <SavedItemsTab onSavedCountChange={setSavedCount} />
+            )}
 
-          {activeTab === 'my-reports' && (
-            <MyReportsTab />
-          )}
+            {activeTab === 'my-reports' && (
+              <MyReportsTab />
+            )}
+          </Suspense>
         </div>
       </div>
 

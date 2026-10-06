@@ -40,3 +40,26 @@ export const SORT_OPTIONS = [
   { value: 'price_desc', label: 'Price: High to Low' },
   { value: 'popular', label: 'Most Viewed' },
 ];
+
+export function calculateSaleEndTime(hasSaleTimer, saleDuration, customSaleEndTime) {
+  if (!hasSaleTimer) return null;
+  if (saleDuration === 'custom') {
+    return customSaleEndTime ? new Date(customSaleEndTime).toISOString() : null;
+  }
+  const now = new Date();
+  if (saleDuration === '12h') now.setHours(now.getHours() + 12);
+  else if (saleDuration === '24h') now.setHours(now.getHours() + 24);
+  else if (saleDuration === '48h') now.setHours(now.getHours() + 48);
+  else if (saleDuration === '3d') now.setDate(now.getDate() + 3);
+  else if (saleDuration === '7d') now.setDate(now.getDate() + 7);
+  return now.toISOString();
+}
+
+export function calculateDiscountPercent(originalPrice, price) {
+  const orig = parseFloat(originalPrice);
+  const curr = parseFloat(price);
+  if (orig && curr && orig > curr && curr > 0) {
+    return Math.round(((orig - curr) / orig) * 100);
+  }
+  return 0;
+}

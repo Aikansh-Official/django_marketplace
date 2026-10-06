@@ -18,7 +18,7 @@ import {
   Sparkles,
   Check
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import triggerConfetti from '../../utils/confetti';
 import { emitTradeEvent, TRADE_ACTIONS } from '../../utils/tradeEvents';
 
 export default function HandoverScannerModal({ listingId, defaultOfferId, onClose, onSuccess }) {
@@ -211,7 +211,7 @@ export default function HandoverScannerModal({ listingId, defaultOfferId, onClos
       });
 
       setIsCompleted(true);
-      confetti({
+      triggerConfetti({
         particleCount: 120,
         spread: 85,
         origin: { y: 0.6 }

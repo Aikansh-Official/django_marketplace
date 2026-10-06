@@ -1,22 +1,22 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import axios from 'axios';
 import {
   LayoutDashboard, Users, ShoppingCart, FolderTree, AlertTriangle,
   Settings, LogOut, Clock, Handshake, Bell, TrendingUp,
-  ShieldAlert, Activity, UserCheck, Search, Shield, LayoutTemplate
+  ShieldAlert, Activity, UserCheck, Search, Shield, LayoutTemplate,
+  Menu, X
 } from 'lucide-react';
+import { api } from '../config/api';
 import CommandPalette from '../components/CommandPalette';
 import logoImg from '../assets/CampusXChange_Logo.webp';
 import { hasModulePermission, getEffectivePermissions } from '../utils/permissions';
 import { APP_VERSION } from '../config/version';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
-
 export default function AdminLayout({ setAuth }) {
   const [time, setTime] = useState(new Date());
   const [adminUser, setAdminUser] = useState(null);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -25,6 +25,7 @@ export default function AdminLayout({ setAuth }) {
     const userStr = localStorage.getItem('admin_user');
     if (userStr) {
       try {
+        // eslint-disable-next-line react/set-state-in-effect
         setAdminUser(JSON.parse(userStr));
       } catch (e) {
         console.error("Failed to parse user from local storage", e);
@@ -34,9 +35,7 @@ export default function AdminLayout({ setAuth }) {
     // 2. Refresh live session profile to synchronize permissions in real-time
     const syncProfile = async () => {
       try {
-        const token = localStorage.getItem('admin_access');
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await axios.get(`${API_BASE}/auth/status/`, { headers, withCredentials: true });
+        const res = await api.get('/auth/status/');
         if (res.data && res.data.isAuthenticated && res.data.user) {
           const mergedUser = {
             ...res.data.user,
@@ -97,7 +96,7 @@ export default function AdminLayout({ setAuth }) {
   const adminRoleDisplay = adminUser?.admin_role || (adminUser?.is_superuser ? 'SUPER_ADMIN' : 'MODERATOR');
 
   return (
-    <div className="flex h-screen bg-gray-50 font-sans">
+    <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
       
       {/* Global Command Palette */}
       <CommandPalette
@@ -106,17 +105,38 @@ export default function AdminLayout({ setAuth }) {
         adminUser={adminUser}
       />
 
-      {/* Sidebar - Simple Solid Design */}
-      <aside className="w-64 bg-ink-900 text-white flex flex-col shadow-xl z-30">
-        <div className="h-20 flex items-center gap-3 px-5 border-b border-gray-800">
-          <img src={logoImg} alt="CampusXChange Logo" className="h-8 w-auto object-contain shrink-0" />
-          <div className="min-w-0">
-            <div className="flex items-baseline truncate">
-              <span className="text-base font-extrabold text-white tracking-tight">Campus</span>
-              <span className="text-base font-extrabold text-brand-400 tracking-tight">XChange</span>
+      {/* Mobile Backdrop Overlay */}
+      {isMobileNavOpen && (
+        <div
+          className="fixed inset-0 bg-ink-950/60 backdrop-blur-xs z-30 lg:hidden"
+          onClick={() => setIsMobileNavOpen(false)}
+        />
+      )}
+
+      {/* Sidebar - Solid Design with Responsive Mobile Drawer */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-ink-900 text-white flex flex-col shadow-2xl transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
+          isMobileNavOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="h-20 flex items-center justify-between px-5 border-b border-gray-800">
+          <div className="flex items-center gap-3">
+            <img src={logoImg} alt="CampusXChange Logo" className="h-8 w-auto object-contain shrink-0" />
+            <div className="min-w-0">
+              <div className="flex items-baseline truncate">
+                <span className="text-base font-extrabold text-white tracking-tight">Campus</span>
+                <span className="text-base font-extrabold text-brand-400 tracking-tight">XChange</span>
+              </div>
+              <span className="text-[10px] text-brand-400 tracking-[0.2em] font-bold block">ADMIN PANEL</span>
             </div>
-            <span className="text-[10px] text-brand-400 tracking-[0.2em] font-bold block">ADMIN PANEL</span>
           </div>
+          {/* Close mobile nav button */}
+          <button
+            onClick={() => setIsMobileNavOpen(false)}
+            className="lg:hidden p-1.5 text-gray-400 hover:text-white rounded-md"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
         
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
@@ -124,6 +144,7 @@ export default function AdminLayout({ setAuth }) {
             <NavLink 
               key={item.name}
               to={item.path} 
+              onClick={() => setIsMobileNavOpen(false)}
               className={({ isActive }) => 
                 `flex items-center gap-3 px-4 py-3 rounded-md transition-colors ${
                   isActive 
@@ -157,7 +178,7 @@ export default function AdminLayout({ setAuth }) {
           </div>
           <button 
             onClick={handleSignOut}
-            className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-md font-semibold text-sm text-red-400 hover:bg-red-500 hover:text-white transition-colors border border-red-500/20 hover:border-red-500 hover:shadow-md"
+            className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-md font-semibold text-sm text-red-400 hover:bg-red-500 hover:text-white transition-colors border border-red-500/20 hover:border-red-500 hover:shadow-md cursor-pointer"
           >
             <LogOut className="h-4 w-4" /> Sign Out
           </button>
@@ -171,29 +192,39 @@ export default function AdminLayout({ setAuth }) {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-gray-50 relative">
+      <div className="flex-1 flex flex-col overflow-hidden bg-gray-50 relative min-w-0">
         
         {/* Top Header */}
-        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-8 sticky top-0 z-20">
-          <div className="flex items-center gap-4">
-            <h2 className="text-2xl font-bold text-gray-800">Overview</h2>
+        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-20">
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Hamburger toggle button for Mobile/Tablet */}
+            <button
+              type="button"
+              onClick={() => setIsMobileNavOpen((prev) => !prev)}
+              className="lg:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              aria-label="Toggle navigation drawer"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 tracking-tight">Overview</h2>
             
             {/* Quick Search / Command Palette Trigger */}
             <button
               type="button"
               onClick={() => setIsCommandPaletteOpen(true)}
-              className="flex items-center gap-3 px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-lg text-xs font-semibold transition-all border border-gray-200 shadow-2xs"
+              className="flex items-center gap-2 sm:gap-3 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-lg text-xs font-semibold transition-all border border-gray-200 shadow-2xs cursor-pointer"
               title="Search or jump to any page (Ctrl+K)"
             >
               <Search className="w-3.5 h-3.5 text-gray-400" />
-              <span>Search or jump to...</span>
+              <span className="hidden sm:inline">Search or jump to...</span>
               <kbd className="font-mono bg-white px-1.5 py-0.5 rounded border border-gray-300 text-[10px] text-gray-600 shadow-2xs">
                 Ctrl K
               </kbd>
             </button>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
              {/* Staff Role Pill */}
              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
                <Shield className="w-3.5 h-3.5 text-purple-600" />
@@ -201,11 +232,11 @@ export default function AdminLayout({ setAuth }) {
              </div>
 
              {/* Realtime Clock Widget */}
-             <div className="flex items-center gap-2 text-gray-700 bg-white/50 backdrop-blur-sm px-4 py-2 rounded-md font-semibold text-sm border border-gray-200 shadow-sm whitespace-nowrap">
+             <div className="flex items-center gap-2 text-gray-700 bg-white/50 backdrop-blur-sm px-3 sm:px-4 py-2 rounded-md font-semibold text-xs sm:text-sm border border-gray-200 shadow-sm whitespace-nowrap">
                <Clock className="h-4 w-4 text-brand-500" />
-               <span>{time.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
-               <span className="text-gray-300 mx-1">|</span>
-               <span className="tabular-nums min-w-[85px] text-right">
+               <span className="hidden md:inline">{time.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
+               <span className="hidden md:inline text-gray-300 mx-1">|</span>
+               <span className="tabular-nums min-w-[75px] sm:min-w-[85px] text-right">
                  {time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                </span>
              </div>
@@ -213,12 +244,12 @@ export default function AdminLayout({ setAuth }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto p-8 relative">
+        <main className="flex-1 overflow-auto p-4 sm:p-8 relative">
           <Outlet />
         </main>
 
         {/* Admin Footer */}
-        <footer className="h-11 bg-white/70 backdrop-blur-sm border-t border-gray-200/80 px-8 flex items-center justify-between text-xs text-gray-500 shrink-0">
+        <footer className="h-11 bg-white/70 backdrop-blur-sm border-t border-gray-200/80 px-4 sm:px-8 flex items-center justify-between text-xs text-gray-500 shrink-0">
           <p>© {new Date().getFullYear()} CampusXChange Enterprise Admin Portal</p>
           <p>Version {APP_VERSION}</p>
         </footer>

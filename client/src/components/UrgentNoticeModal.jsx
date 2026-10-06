@@ -1,17 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldAlert, AlertTriangle, Check, ExternalLink, X, BellRing } from 'lucide-react';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function UrgentNoticeModal() {
   const [urgentNotice, setUrgentNotice] = useState(null);
   const [dismissing, setDismissing] = useState(false);
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  const checkUrgentNotice = async () => {
-    // Only check if user is logged in
-    const userStr = localStorage.getItem('user');
-    if (!userStr) return;
+  const checkUrgentNotice = useCallback(async () => {
+    // Only check if user is logged in and page is active
+    if (!isAuthenticated || document.visibilityState === 'hidden') return;
 
     try {
       const res = await api.get('/marketplace/notifications/urgent/');
@@ -23,24 +24,26 @@ export default function UrgentNoticeModal() {
     } catch {
       // Ignore unauthenticated or network errors silently
     }
-  };
+  }, [isAuthenticated]);
 
   useEffect(() => {
     checkUrgentNotice();
 
-    // Re-check on notifications-updated or user login
+    // Re-check on notifications-updated, auth change, or tab focus
     window.addEventListener('notifications-updated', checkUrgentNotice);
-    window.addEventListener('user-logged-in', checkUrgentNotice);
+    window.addEventListener('auth-changed', checkUrgentNotice);
+    window.addEventListener('focus', checkUrgentNotice);
 
-    // Periodic check every 45 seconds
-    const interval = setInterval(checkUrgentNotice, 45000);
+    // Periodic check every 60 seconds
+    const interval = setInterval(checkUrgentNotice, 60000);
 
     return () => {
       window.removeEventListener('notifications-updated', checkUrgentNotice);
-      window.removeEventListener('user-logged-in', checkUrgentNotice);
+      window.removeEventListener('auth-changed', checkUrgentNotice);
+      window.removeEventListener('focus', checkUrgentNotice);
       clearInterval(interval);
     };
-  }, []);
+  }, [checkUrgentNotice]);
 
   const handleAcknowledge = async () => {
     if (!urgentNotice) return;

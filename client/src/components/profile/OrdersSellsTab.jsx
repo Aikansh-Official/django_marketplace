@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
@@ -25,9 +25,9 @@ import {
   Camera,
   Star
 } from 'lucide-react';
-import HandoverQRModal from '../handover/HandoverQRModal';
-import HandoverScannerModal from '../handover/HandoverScannerModal';
-import ReviewModal from '../reviews/ReviewModal';
+const HandoverQRModal = lazy(() => import('../handover/HandoverQRModal'));
+const HandoverScannerModal = lazy(() => import('../handover/HandoverScannerModal'));
+const ReviewModal = lazy(() => import('../reviews/ReviewModal'));
 import { emitTradeEvent, TRADE_ACTIONS } from '../../utils/tradeEvents';
 
 export default function OrdersSellsTab({ onListingsCountChange, profile, isSeller: isSellerProp }) {
@@ -173,10 +173,10 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
       }
     };
 
-    // Auto-refresh interval (every 2.5s for real-time buyer-seller updates)
+    // Auto-refresh interval (every 12s fallback; event-driven for instant sync)
     const interval = setInterval(() => {
       performSync(true);
-    }, 2500);
+    }, 12000);
 
     const handleSyncEvent = () => {
       performSync(true);
@@ -815,47 +815,50 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
           document.body
         )}
 
-      {/* Handover QR Modal (for Seller) */}
-      {showQRModal && activeOfferForQR && (
-        <HandoverQRModal
-          offerId={activeOfferForQR.id}
-          listingId={activeOfferForQR.listing || activeOfferForQR.listing_id}
-          listingTitle={activeOfferForQR.listing_title}
-          buyerName={activeOfferForQR.buyer_name || activeOfferForQR.buyer_reg}
-          price={activeOfferForQR.offer_amount}
-          location={activeOfferForQR.location}
-          image={activeOfferForQR.image}
-          existingSession={activeOfferForQR.active_handover}
-          onClose={() => setShowQRModal(false)}
-          onComplete={handleHandoverSuccess}
-        />
-      )}
+      {/* Lazy Loaded Modals wrapped in Suspense */}
+      <Suspense fallback={null}>
+        {/* Handover QR Modal (for Seller) */}
+        {showQRModal && activeOfferForQR && (
+          <HandoverQRModal
+            offerId={activeOfferForQR.id}
+            listingId={activeOfferForQR.listing || activeOfferForQR.listing_id}
+            listingTitle={activeOfferForQR.listing_title}
+            buyerName={activeOfferForQR.buyer_name || activeOfferForQR.buyer_reg}
+            price={activeOfferForQR.offer_amount}
+            location={activeOfferForQR.location}
+            image={activeOfferForQR.image}
+            existingSession={activeOfferForQR.active_handover}
+            onClose={() => setShowQRModal(false)}
+            onComplete={handleHandoverSuccess}
+          />
+        )}
 
-      {/* Handover Scanner Modal (for Buyer) */}
-      {showScannerModal && (
-        <HandoverScannerModal
-          listingId={selectedOrderForScanner?.listing}
-          defaultOfferId={selectedOrderForScanner?.id}
-          onClose={() => setShowScannerModal(false)}
-          onSuccess={handleHandoverSuccess}
-        />
-      )}
+        {/* Handover Scanner Modal (for Buyer) */}
+        {showScannerModal && (
+          <HandoverScannerModal
+            listingId={selectedOrderForScanner?.listing}
+            defaultOfferId={selectedOrderForScanner?.id}
+            onClose={() => setShowScannerModal(false)}
+            onSuccess={handleHandoverSuccess}
+          />
+        )}
 
-      {/* Review Modal */}
-      {showReviewModal && reviewTargetDeal && (
-        <ReviewModal
-          dealId={reviewTargetDeal.id}
-          listingTitle={reviewTargetDeal.listingTitle}
-          reviewedUserName={reviewTargetDeal.peerName}
-          onClose={() => {
-            setShowReviewModal(false);
-            setReviewTargetDeal(null);
-          }}
-          onSuccess={() => {
-            fetchMyOffers();
-          }}
-        />
-      )}
+        {/* Review Modal */}
+        {showReviewModal && reviewTargetDeal && (
+          <ReviewModal
+            dealId={reviewTargetDeal.id}
+            listingTitle={reviewTargetDeal.listingTitle}
+            reviewedUserName={reviewTargetDeal.peerName}
+            onClose={() => {
+              setShowReviewModal(false);
+              setReviewTargetDeal(null);
+            }}
+            onSuccess={() => {
+              fetchMyOffers();
+            }}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }

@@ -23,7 +23,7 @@ import api, { getPlatformConfig, getCategories } from '../services/api';
 import CategoryIcon from '../components/CategoryIcon';
 import { getSafeImageUrl } from '../utils/imageUrl';
 import { useAuth } from '../context/AuthContext';
-import { CONDITIONS, CONTACT_PREFERENCES } from '../constants/listingConfig';
+import { CONDITIONS, CONTACT_PREFERENCES, calculateSaleEndTime as getSaleEndTime, calculateDiscountPercent } from '../constants/listingConfig';
 
 const LivePhotoModal = lazy(() => import('../components/common/LivePhotoModal'));
 const UpgradeToSellerModal = lazy(() => import('../components/profile/UpgradeToSellerModal'));
@@ -60,28 +60,12 @@ export default function CreateListing() {
   const [platformConfig, setPlatformConfig] = useState(null);
   const [activeListingsCount, setActiveListingsCount] = useState(0);
 
-  const calculateSaleEndTime = () => {
-    if (!hasSaleTimer) return null;
-    if (saleDuration === 'custom') {
-      return customSaleEndTime ? new Date(customSaleEndTime).toISOString() : null;
-    }
-    const now = new Date();
-    if (saleDuration === '12h') now.setHours(now.getHours() + 12);
-    else if (saleDuration === '24h') now.setHours(now.getHours() + 24);
-    else if (saleDuration === '48h') now.setHours(now.getHours() + 48);
-    else if (saleDuration === '3d') now.setDate(now.getDate() + 3);
-    else if (saleDuration === '7d') now.setDate(now.getDate() + 7);
-    return now.toISOString();
-  };
+  const calculateSaleEndTime = () => getSaleEndTime(hasSaleTimer, saleDuration, customSaleEndTime);
 
-  const calculatedDiscount = React.useMemo(() => {
-    const orig = parseFloat(originalPrice);
-    const curr = parseFloat(price);
-    if (orig && curr && orig > curr && curr > 0) {
-      return Math.round(((orig - curr) / orig) * 100);
-    }
-    return 0;
-  }, [originalPrice, price]);
+  const calculatedDiscount = React.useMemo(
+    () => calculateDiscountPercent(originalPrice, price),
+    [originalPrice, price]
+  );
 
   // Fetch categories, user profile & platform config
   useEffect(() => {

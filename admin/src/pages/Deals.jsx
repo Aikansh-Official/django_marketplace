@@ -4,8 +4,7 @@ import toast from 'react-hot-toast';
 import {
   Handshake, Search, RefreshCw, Download, Eye, AlertTriangle,
   CheckCircle2, XCircle, Clock, ShieldCheck, User, Phone,
-  Mail, MapPin, Tag, ArrowRight, DollarSign, Key, ShieldAlert,
-  Loader2, Copy, Check, ExternalLink, AlertOctagon, HelpCircle
+  Mail, MapPin, Tag, Key, ShieldAlert, Loader2, Copy, Check, AlertOctagon
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -45,6 +44,7 @@ export default function Deals() {
 
   useEffect(() => {
     fetchDeals();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Filter deals by status and search query

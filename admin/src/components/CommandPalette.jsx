@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   Search, LayoutDashboard, TrendingUp, Users, ShoppingCart,
   Handshake, FolderTree, AlertTriangle, Bell, ShieldAlert,
-  Activity, Settings, UserCheck, Megaphone, ArrowRight,
-  Sparkles, FileText, Download, X, CornerDownLeft
+  Activity, Settings, UserCheck, Megaphone,
+  Download, X, CornerDownLeft, LayoutTemplate
 } from 'lucide-react';
 
 import { hasModulePermission } from '../utils/permissions';
@@ -23,6 +23,7 @@ export default function CommandPalette({ isOpen, onClose, adminUser }) {
     { id: 'listings', title: 'Listing Catalog & Inventory', category: 'Navigation', icon: ShoppingCart, path: '/listings', shortcut: 'L', permission: 'listings' },
     { id: 'deals', title: 'Deals & QR Handover Sessions', category: 'Navigation', icon: Handshake, path: '/deals', shortcut: 'H', permission: 'deals' },
     { id: 'categories', title: 'Category Management', category: 'Navigation', icon: FolderTree, path: '/categories', shortcut: 'C', permission: 'categories' },
+    { id: 'banners', title: 'Homepage Banners Slideshow', category: 'Navigation', icon: LayoutTemplate, path: '/banners', shortcut: 'N', permission: 'banners' },
     { id: 'reports', title: 'Content Moderation & Reports', category: 'Navigation', icon: AlertTriangle, path: '/reports', shortcut: 'M', permission: 'reports' },
     { id: 'notifications', title: 'Broadcasts & Direct Notices', category: 'Navigation', icon: Bell, path: '/notifications', shortcut: 'B', permission: 'notifications' },
     { id: 'audit-logs', title: 'Audit Trail & Action Logs', category: 'Navigation', icon: ShieldAlert, path: '/audit-logs', shortcut: 'T', permission: 'audit_logs' },
@@ -32,11 +33,14 @@ export default function CommandPalette({ isOpen, onClose, adminUser }) {
 
     // Quick Actions
     { id: 'act-broadcast', title: 'Compose Campus Broadcast', category: 'Quick Actions', icon: Megaphone, path: '/notifications', permission: 'notifications' },
+    { id: 'act-banners', title: 'Manage Homepage Banners & Promos', category: 'Quick Actions', icon: LayoutTemplate, path: '/banners', permission: 'banners' },
     { id: 'act-inspect-reports', title: 'Review Unresolved Flagged Reports', category: 'Quick Actions', icon: AlertTriangle, path: '/reports', permission: 'reports' },
     { id: 'act-health', title: 'Run Live Database & Cache Diagnostics', category: 'Quick Actions', icon: Activity, path: '/system-health', permission: 'system_health' },
     { id: 'act-audit', title: 'Export Audit Logs (CSV)', category: 'Quick Actions', icon: Download, path: '/audit-logs', permission: 'audit_logs' },
     { id: 'act-team', title: 'Appoint / Promote Staff Member', category: 'Quick Actions', icon: UserCheck, path: '/team', permission: 'team' },
     { id: 'act-deals', title: 'Inspect Active QR Handovers', category: 'Quick Actions', icon: Handshake, path: '/deals', permission: 'deals' },
+    { id: 'act-login-logs', title: 'Inspect Login Security Logs', category: 'Quick Actions', icon: ShieldAlert, path: '/audit-logs', permission: 'audit_logs' },
+    { id: 'act-export-students', title: 'Export Student Directory (CSV)', category: 'Quick Actions', icon: Download, path: '/students', permission: 'students' },
   ];
 
   const authorizedCommands = commands.filter((cmd) => hasModulePermission(adminUser, cmd.permission));
@@ -46,9 +50,16 @@ export default function CommandPalette({ isOpen, onClose, adminUser }) {
     cmd.category.toLowerCase().includes(query.toLowerCase())
   );
 
+  const handleSelect = (command) => {
+    onClose();
+    navigate(command.path);
+  };
+
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react/set-state-in-effect
       setQuery('');
+      // eslint-disable-next-line react/set-state-in-effect
       setSelectedIndex(0);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
@@ -77,12 +88,8 @@ export default function CommandPalette({ isOpen, onClose, adminUser }) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, selectedIndex, filteredCommands]);
-
-  const handleSelect = (command) => {
-    onClose();
-    navigate(command.path);
-  };
 
   if (!isOpen) return null;
 

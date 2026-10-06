@@ -27,7 +27,7 @@ import { unregisterFCMDevice } from '../services/fcmService';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const { user: userProfile, isSeller } = useAuth();
+  const { user: userProfile, isSeller, logout } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
   const [savedCount, setSavedCount] = useState(() => getSavedCount());
@@ -105,6 +105,7 @@ export default function Navbar() {
     }
 
     const fetchNotifications = async () => {
+      if (document.visibilityState === 'hidden') return;
       try {
         const res = await api.get('/marketplace/notifications/unread-count/');
         setUnreadCount(res.data?.unread_count ?? 0);
@@ -114,11 +115,13 @@ export default function Navbar() {
     };
 
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 15000);
+    const interval = setInterval(fetchNotifications, 25000);
     window.addEventListener('notifications-updated', fetchNotifications);
+    window.addEventListener('focus', fetchNotifications);
     return () => {
       clearInterval(interval);
       window.removeEventListener('notifications-updated', fetchNotifications);
+      window.removeEventListener('focus', fetchNotifications);
     };
   }, [userProfile]);
 
@@ -127,6 +130,7 @@ export default function Navbar() {
     if (!userProfile) return;
 
     const fetchChatUnread = async () => {
+      if (document.visibilityState === 'hidden') return;
       try {
         const res = await api.get('/marketplace/conversations/');
         if (Array.isArray(res.data)) {
@@ -139,11 +143,13 @@ export default function Navbar() {
     };
 
     fetchChatUnread();
-    const interval = setInterval(fetchChatUnread, 10000);
+    const interval = setInterval(fetchChatUnread, 30000);
     window.addEventListener('messages-updated', fetchChatUnread);
+    window.addEventListener('focus', fetchChatUnread);
     return () => {
       clearInterval(interval);
       window.removeEventListener('messages-updated', fetchChatUnread);
+      window.removeEventListener('focus', fetchChatUnread);
     };
   }, [userProfile]);
 
@@ -216,10 +222,7 @@ export default function Navbar() {
     } catch {
       // ignore
     }
-    localStorage.removeItem('access');
-    localStorage.removeItem('refresh');
-    localStorage.removeItem('user');
-    setUserProfile(null);
+    logout();
     setIsProfileMenuOpen(false);
     setIsNotificationDropdownOpen(false);
     navigate('/');

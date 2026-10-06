@@ -4,7 +4,7 @@ import { Heart, MapPin, Package, Repeat, Star, Clock } from 'lucide-react';
 import { getSafeImageUrl } from '../../utils/imageUrl';
 import cxcLogo from '../../assets/CampusXChange_Logo.webp';
 
-export default function ListingCard({
+const ListingCard = React.memo(function ListingCard({
   listing,
   isFavorite = false,
   onToggleFavorite,
@@ -12,7 +12,7 @@ export default function ListingCard({
 }) {
   const [timeLeft, setTimeLeft] = useState(null);
 
-  // Live ticking countdown timer for active deals
+  // Live ticking countdown timer for active deals (visibility-aware and throttled)
   useEffect(() => {
     if (!listing.sale_end_time) {
       setTimeLeft(null);
@@ -38,13 +38,18 @@ export default function ListingCard({
 
     setTimeLeft(calculateTimeRemaining());
 
+    // Throttle: If days remain, update once a minute; under 1 hour, update every second
+    const diff = new Date(listing.sale_end_time).getTime() - Date.now();
+    const intervalMs = diff > 3600000 ? 60000 : 1000;
+
     const timer = setInterval(() => {
+      if (document.visibilityState === 'hidden') return;
       const remaining = calculateTimeRemaining();
       setTimeLeft(remaining);
       if (!remaining) {
         clearInterval(timer);
       }
-    }, 1000);
+    }, intervalMs);
 
     return () => clearInterval(timer);
   }, [listing.sale_end_time]);
@@ -271,4 +276,6 @@ export default function ListingCard({
       </div>
     </Link>
   );
-}
+});
+
+export default ListingCard;

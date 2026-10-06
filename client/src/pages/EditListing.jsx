@@ -16,7 +16,7 @@ import {
 import api, { getCategories } from '../services/api';
 import CategoryIcon from '../components/CategoryIcon';
 import { getSafeImageUrl } from '../utils/imageUrl';
-import { CONDITIONS, LPU_LOCATIONS } from '../constants/listingConfig';
+import { CONDITIONS, LPU_LOCATIONS, calculateSaleEndTime as getSaleEndTime, calculateDiscountPercent } from '../constants/listingConfig';
 
 const LivePhotoModal = lazy(() => import('../components/common/LivePhotoModal'));
 
@@ -51,28 +51,12 @@ export default function EditListing() {
   const [status, setStatus] = useState('ACTIVE');
   const [isCameraOpen, setIsCameraOpen] = useState(false);
 
-  const calculateSaleEndTime = () => {
-    if (!hasSaleTimer) return null;
-    if (saleDuration === 'custom') {
-      return customSaleEndTime ? new Date(customSaleEndTime).toISOString() : null;
-    }
-    const now = new Date();
-    if (saleDuration === '12h') now.setHours(now.getHours() + 12);
-    else if (saleDuration === '24h') now.setHours(now.getHours() + 24);
-    else if (saleDuration === '48h') now.setHours(now.getHours() + 48);
-    else if (saleDuration === '3d') now.setDate(now.getDate() + 3);
-    else if (saleDuration === '7d') now.setDate(now.getDate() + 7);
-    return now.toISOString();
-  };
+  const calculateSaleEndTime = () => getSaleEndTime(hasSaleTimer, saleDuration, customSaleEndTime);
 
-  const calculatedDiscount = React.useMemo(() => {
-    const orig = parseFloat(originalPrice);
-    const curr = parseFloat(price);
-    if (orig && curr && orig > curr && curr > 0) {
-      return Math.round(((orig - curr) / orig) * 100);
-    }
-    return 0;
-  }, [originalPrice, price]);
+  const calculatedDiscount = React.useMemo(
+    () => calculateDiscountPercent(originalPrice, price),
+    [originalPrice, price]
+  );
 
   // Fetch listing data and categories
   useEffect(() => {

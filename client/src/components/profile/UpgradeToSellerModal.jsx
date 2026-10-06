@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
-import confetti from 'canvas-confetti';
+import triggerConfetti from '../../utils/confetti';
 import {
   X,
   Camera,
@@ -22,7 +22,6 @@ import {
   Activity,
   Sparkles
 } from 'lucide-react';
-import Tesseract from 'tesseract.js';
 import {
   extractLpuCardDetails,
   checkImageAuthenticity,
@@ -150,7 +149,8 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
       setScanProgress(50);
       setScanStatus('Reading card text...');
 
-      // 3. OCR recognition on preprocessed image
+      // 3. OCR recognition on preprocessed image (dynamically loaded on demand)
+      const { default: Tesseract } = await import('tesseract.js');
       const { data: { text } } = await Tesseract.recognize(ocrReadyImage, 'eng', {
         logger: (m) => {
           if (m.status === 'recognizing text') {
@@ -177,13 +177,11 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
         setIsIdVerified(true);
         setExtractedCardData(result.extraData);
         setRejectionInfo(null);
-        try {
-          confetti({
-            particleCount: 80,
-            spread: 60,
-            origin: { y: 0.6 }
-          });
-        } catch {}
+        triggerConfetti({
+          particleCount: 80,
+          spread: 60,
+          origin: { y: 0.6 }
+        });
         toast.success(`ID Verified! Matched registration ${username}.`, { icon: '🎉' });
       } else {
         setIsIdVerified(false);
@@ -277,13 +275,11 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
         duration: 5000
       });
 
-      try {
-        confetti({
-          particleCount: 120,
-          spread: 80,
-          origin: { y: 0.5 }
-        });
-      } catch {}
+      triggerConfetti({
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.5 }
+      });
 
       window.dispatchEvent(new Event('auth-changed'));
       if (onUpgradeSuccess) onUpgradeSuccess(res.data.user);

@@ -2,10 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
-  AlertTriangle, CheckCircle, Clock, Trash2, XCircle, ShieldCheck,
-  Eye, EyeOff, UserX, AlertOctagon, Send, Search, Filter,
-  ShieldAlert, Tag, Sparkles, RefreshCw, X, Check, Loader2,
-  ExternalLink, User, MessageSquare, AlertCircle
+  AlertTriangle, CheckCircle, Trash2, ShieldCheck,
+  EyeOff, UserX, AlertOctagon, Send, Search,
+  ShieldAlert, Tag, Sparkles, X, Loader2
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -57,7 +56,9 @@ export default function Reports() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect
     fetchReports();
+    // eslint-disable-next-line react/set-state-in-effect
     fetchBannedWords();
   }, []);
 

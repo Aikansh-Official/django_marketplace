@@ -261,6 +261,14 @@ export default function ProductDetail() {
             toast('Deal was cancelled. Listing is now active again.', { icon: 'ℹ️', id: 'item-reactivated-toast' });
           }
         }
+        if (
+          prev &&
+          prev.status === res.data.status &&
+          prev.updated_at === res.data.updated_at &&
+          prev.price === res.data.price
+        ) {
+          return prev;
+        }
         return res.data;
       });
     } catch (e) { }
@@ -296,10 +304,10 @@ export default function ProductDetail() {
       await syncListingData(silent);
     };
 
-    // Auto-refresh interval (every 2.5s matching selling complete speed)
+    // Auto-refresh fallback interval (every 12s; instant sync on events)
     const interval = setInterval(() => {
       performSync(true);
-    }, 2500);
+    }, 12000);
 
     const handleSyncEvent = (e) => {
       const eventListingId = e?.detail?.listingId || e?.detail;

@@ -2,10 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
-  Megaphone, Radio, Send, Bell, Users, ShieldAlert,
-  AlertTriangle, CheckCircle2, Search, RefreshCw, Sparkles,
-  ExternalLink, Clock, User, Phone, Mail, ArrowRight,
-  ShieldCheck, Loader2, FileText, Check, Tag, Eye, Info
+  Megaphone, Radio, Send, ShieldAlert,
+  Search, RefreshCw,
+  ExternalLink, Clock, Loader2, Eye
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -21,7 +20,6 @@ export default function Notifications() {
     direct_notices_sent: 0,
     audience_counts: { ALL: 0, SELLERS: 0, BUYERS: 0, UNVERIFIED: 0 }
   });
-  const [loadingStats, setLoadingStats] = useState(true);
 
   // Broadcast Form State
   const [targetAudience, setTargetAudience] = useState('ALL');
@@ -139,8 +137,10 @@ export default function Notifications() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect
     fetchStats();
     if (activeTab === 'history') {
+      // eslint-disable-next-line react/set-state-in-effect
       fetchHistory();
     }
   }, [activeTab]);
@@ -148,11 +148,13 @@ export default function Notifications() {
   // Search Students for Direct Message
   useEffect(() => {
     if (!studentSearch.trim() || studentSearch.length < 2) {
+      // eslint-disable-next-line react/set-state-in-effect
       setStudentResults([]);
       return;
     }
 
     const timer = setTimeout(async () => {
+      // eslint-disable-next-line react/set-state-in-effect
       setSearchingStudents(true);
       try {
         const res = await axios.get(`${API_BASE}/auth/users/?search=${encodeURIComponent(studentSearch.trim())}`);
@@ -264,15 +266,6 @@ export default function Notifications() {
       log.sender_username?.toLowerCase().includes(q)
     );
   }, [historyLogs, historySearch]);
-
-  const audienceLabel = (aud) => {
-    switch (aud) {
-      case 'SELLERS': return 'All Active Sellers';
-      case 'BUYERS': return 'All Student Buyers';
-      case 'UNVERIFIED': return 'Unverified Students';
-      default: return 'All Registered Students';
-    }
-  };
 
   const recipientCountForAudience = stats.audience_counts[targetAudience] || 0;
 

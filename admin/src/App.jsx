@@ -1,27 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import axios from 'axios';
+import { api } from './config/api';
 import AdminLayout from './layouts/AdminLayout';
-import Dashboard from './pages/Dashboard';
-import Students from './pages/Students';
-import Listings from './pages/Listings';
-import Categories from './pages/Categories';
-import Banners from './pages/Banners';
-import Reports from './pages/Reports';
-import Deals from './pages/Deals';
-import Notifications from './pages/Notifications';
-import Analytics from './pages/Analytics';
-import AuditLogs from './pages/AuditLogs';
-import SystemHealth from './pages/SystemHealth';
-import Team from './pages/Team';
-import Settings from './pages/Settings';
-import Login from './pages/Login';
 import PermissionRoute from './components/PermissionRoute';
+import AdminPageSkeleton from './components/common/AdminPageSkeleton';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+// Code-split pages for high performance
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Students = lazy(() => import('./pages/Students'));
+const Listings = lazy(() => import('./pages/Listings'));
+const Categories = lazy(() => import('./pages/Categories'));
+const Banners = lazy(() => import('./pages/Banners'));
+const Reports = lazy(() => import('./pages/Reports'));
+const Deals = lazy(() => import('./pages/Deals'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+const AuditLogs = lazy(() => import('./pages/AuditLogs'));
+const SystemHealth = lazy(() => import('./pages/SystemHealth'));
+const Team = lazy(() => import('./pages/Team'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Login = lazy(() => import('./pages/Login'));
 
-// A simple protected route component
+// Protected route component
 function ProtectedRoute({ isAuthenticated, children }) {
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -34,22 +35,22 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in securely via HttpOnly cookies
+    // Check if user is logged in securely
     const checkAuth = async () => {
       try {
-        const response = await axios.get(`${API_BASE}/auth/status/`);
+        const response = await api.get('/auth/status/');
         if (response.data.isAuthenticated && (response.data.is_staff || response.data.is_superuser)) {
           setIsAuthenticated(true);
         } else {
           setIsAuthenticated(false);
         }
-      } catch (error) {
+      } catch {
         setIsAuthenticated(false);
       } finally {
         setLoading(false);
       }
     };
-    
+
     checkAuth();
   }, []);
 
@@ -65,32 +66,34 @@ function App() {
   return (
     <BrowserRouter>
       <Toaster position="bottom-right" toastOptions={{ className: 'font-sans font-medium rounded-md shadow-lg', duration: 4000 }} />
-      <Routes>
-        <Route path="/login" element={<Login setAuth={setIsAuthenticated} />} />
+      <Suspense fallback={<AdminPageSkeleton />}>
+        <Routes>
+          <Route path="/login" element={<Login setAuth={setIsAuthenticated} />} />
 
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <AdminLayout setAuth={setIsAuthenticated} />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<PermissionRoute requiredPermission="dashboard"><Dashboard /></PermissionRoute>} />
-          <Route path="analytics" element={<PermissionRoute requiredPermission="analytics"><Analytics /></PermissionRoute>} />
-          <Route path="students" element={<PermissionRoute requiredPermission="students"><Students /></PermissionRoute>} />
-          <Route path="listings" element={<PermissionRoute requiredPermission="listings"><Listings /></PermissionRoute>} />
-          <Route path="deals" element={<PermissionRoute requiredPermission="deals"><Deals /></PermissionRoute>} />
-          <Route path="categories" element={<PermissionRoute requiredPermission="categories"><Categories /></PermissionRoute>} />
-          <Route path="banners" element={<PermissionRoute requiredPermission="banners"><Banners /></PermissionRoute>} />
-          <Route path="reports" element={<PermissionRoute requiredPermission="reports"><Reports /></PermissionRoute>} />
-          <Route path="notifications" element={<PermissionRoute requiredPermission="notifications"><Notifications /></PermissionRoute>} />
-          <Route path="audit-logs" element={<PermissionRoute requiredPermission="audit_logs"><AuditLogs /></PermissionRoute>} />
-          <Route path="system-health" element={<PermissionRoute requiredPermission="system_health"><SystemHealth /></PermissionRoute>} />
-          <Route path="team" element={<PermissionRoute requiredPermission="team"><Team /></PermissionRoute>} />
-          <Route path="settings" element={<PermissionRoute requiredPermission="settings"><Settings /></PermissionRoute>} />
-        </Route>
-      </Routes>
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <AdminLayout setAuth={setIsAuthenticated} />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<PermissionRoute requiredPermission="dashboard"><Dashboard /></PermissionRoute>} />
+            <Route path="analytics" element={<PermissionRoute requiredPermission="analytics"><Analytics /></PermissionRoute>} />
+            <Route path="students" element={<PermissionRoute requiredPermission="students"><Students /></PermissionRoute>} />
+            <Route path="listings" element={<PermissionRoute requiredPermission="listings"><Listings /></PermissionRoute>} />
+            <Route path="deals" element={<PermissionRoute requiredPermission="deals"><Deals /></PermissionRoute>} />
+            <Route path="categories" element={<PermissionRoute requiredPermission="categories"><Categories /></PermissionRoute>} />
+            <Route path="banners" element={<PermissionRoute requiredPermission="banners"><Banners /></PermissionRoute>} />
+            <Route path="reports" element={<PermissionRoute requiredPermission="reports"><Reports /></PermissionRoute>} />
+            <Route path="notifications" element={<PermissionRoute requiredPermission="notifications"><Notifications /></PermissionRoute>} />
+            <Route path="audit-logs" element={<PermissionRoute requiredPermission="audit_logs"><AuditLogs /></PermissionRoute>} />
+            <Route path="system-health" element={<PermissionRoute requiredPermission="system_health"><SystemHealth /></PermissionRoute>} />
+            <Route path="team" element={<PermissionRoute requiredPermission="team"><Team /></PermissionRoute>} />
+            <Route path="settings" element={<PermissionRoute requiredPermission="settings"><Settings /></PermissionRoute>} />
+          </Route>
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

@@ -2,11 +2,11 @@ import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
-  FolderTree, Plus, Search, Edit3, Trash2, Tag, Loader2,
-  X, AlertTriangle, CheckCircle2, ArrowRight, Layers,
+  FolderTree, Plus, Search, Edit3, Trash2, Loader2,
+  X, AlertTriangle, CheckCircle2,
   BookOpen, Laptop, Smartphone, Headphones, Bike, Home,
   Shirt, PenTool, Trophy, Gamepad2, Watch, Camera,
-  Coffee, Sparkles, Package, Music, Briefcase, Glasses
+  Coffee, Sparkles, Package, Music, Briefcase, Glasses, Layers, Tag
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -80,6 +80,7 @@ export default function Categories() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect
     fetchCategories();
   }, []);
 

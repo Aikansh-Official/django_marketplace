@@ -2,10 +2,10 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
-  LayoutTemplate, Plus, Search, Edit3, Trash2, Tag, Loader2,
-  X, AlertTriangle, CheckCircle2, ArrowRight, ExternalLink,
-  Eye, EyeOff, Sparkles, UploadCloud, Link as LinkIcon,
-  SlidersHorizontal, Image as ImageIcon, ArrowUpDown, RefreshCw
+  LayoutTemplate, Plus, Search, Edit3, Trash2, Loader2,
+  X, AlertTriangle, ArrowRight,
+  Eye, EyeOff, UploadCloud, Link as LinkIcon,
+  Image as ImageIcon, RefreshCw
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -66,6 +66,7 @@ export default function Banners() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect
     fetchBanners();
   }, []);
 

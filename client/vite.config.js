@@ -74,9 +74,6 @@ export default defineConfig({
             if (id.includes('firebase')) {
               return 'vendor-firebase';
             }
-            if (id.includes('leaflet')) {
-              return 'vendor-maps';
-            }
             if (id.includes('lucide-react')) {
               return 'vendor-icons';
             }

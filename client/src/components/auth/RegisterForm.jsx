@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
-import confetti from 'canvas-confetti';
-import Tesseract from 'tesseract.js';
+import triggerConfetti from '../../utils/confetti';
 import {
   extractLpuCardDetails,
   checkImageAuthenticity,
@@ -351,6 +350,8 @@ export default function RegisterForm({
       setScanProgress(50);
       setScanStatus('Reading card text...');
 
+      // Dynamically load OCR engine on demand
+      const { default: Tesseract } = await import('tesseract.js');
       const { data: { text } } = await Tesseract.recognize(ocrReadyImage, 'eng', {
         logger: (m) => {
           if (m.status === 'recognizing text') {
@@ -379,14 +380,12 @@ export default function RegisterForm({
         setExtractedCardData(result.extraData);
         setRejectionInfo(null);
 
-        try {
-          confetti({
-            particleCount: 90,
-            spread: 60,
-            origin: { y: 0.6 },
-            colors: ['#10b981', '#f97316', '#3b82f6', '#eab308']
-          });
-        } catch { }
+        triggerConfetti({
+          particleCount: 90,
+          spread: 60,
+          origin: { y: 0.6 },
+          colors: ['#10b981', '#f97316', '#3b82f6', '#eab308']
+        });
 
         toast.success(
           `ID Verified! Registration ${usernameValue} & details matched successfully!`,

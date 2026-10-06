@@ -55,7 +55,9 @@ const iconMap = {
   'others': Package,
 };
 
-export default function CategoryIcon({ name, slug, className = "w-5 h-5", strokeWidth = 2 }) {
+const CategoryIcon = React.memo(function CategoryIcon({ name, slug, className = "w-5 h-5", strokeWidth = 2 }) {
   const IconComponent = iconMap[name] || iconMap[slug] || Package;
   return <IconComponent className={className} strokeWidth={strokeWidth} />;
-}
+});
+
+export default CategoryIcon;

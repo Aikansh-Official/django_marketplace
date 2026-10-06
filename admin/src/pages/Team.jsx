@@ -2,9 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
-  Users, UserCheck, Shield, ShieldAlert, ShieldCheck,
-  UserPlus, Search, Filter, RefreshCw, X, Loader2,
-  CheckCircle2, AlertTriangle, Key, Clock, Mail, Phone, Lock
+  Users, UserCheck, Shield, ShieldCheck,
+  UserPlus, Search, RefreshCw, X, Loader2,
+  Key, Clock, Mail, Phone
 } from 'lucide-react';
 import {
   PERMISSION_CATALOG,
@@ -53,6 +53,7 @@ export default function Team() {
     const userStr = localStorage.getItem('admin_user');
     if (userStr) {
       try {
+        // eslint-disable-next-line react/set-state-in-effect
         setCurrentAdmin(JSON.parse(userStr));
       } catch (e) {
         console.error(e);
@@ -79,6 +80,7 @@ export default function Team() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect
     fetchStaff();
   }, []);
 
@@ -540,7 +542,7 @@ export default function Team() {
               </button>
             </div>
 
-            <form onSubmit={handlePromoteSubmit} className="p-6 space-y-4 text-xs">
+            <form onSubmit={handlePromoteStaff} className="p-6 space-y-4 text-xs">
               {/* Search user */}
               <div>
                 <label className="block font-bold text-gray-700 mb-1">

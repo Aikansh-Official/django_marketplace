@@ -10,16 +10,10 @@ import {
   Package,
   CheckCheck,
   ArrowLeft,
-  Clock,
   ExternalLink,
-  Sparkles,
-  Tag,
-  AlertCircle,
-  ShoppingBag,
-  Repeat
+  Tag
 } from 'lucide-react';
 import { getSafeImageUrl } from '../utils/imageUrl';
-import UniversalLoader from '../components/common/UniversalLoader';
 
 export default function Messages() {
   const { listingId: routeListingId, peerId: routePeerId } = useParams();
@@ -33,24 +27,12 @@ export default function Messages() {
   const [sending, setSending] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentUserId, setCurrentUserId] = useState(null);
 
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-
-  // Fetch current user ID
-  useEffect(() => {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      try {
-        const u = JSON.parse(userStr);
-        if (u?.id) setCurrentUserId(u.id);
-      } catch (e) { }
-    }
-  }, []);
 
   // Fetch all user conversations
   const fetchConversations = async (silent = false) => {
@@ -96,8 +78,25 @@ export default function Messages() {
 
   useEffect(() => {
     fetchConversations(false);
-    const interval = setInterval(() => fetchConversations(true), 5000);
-    return () => clearInterval(interval);
+    const interval = setInterval(() => {
+      if (document.visibilityState !== 'hidden') {
+        fetchConversations(true);
+      }
+    }, 6000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchConversations(true);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleVisibility);
+    };
   }, [routeListingId, routePeerId]);
 
   // Fetch messages for selected chat
@@ -122,8 +121,25 @@ export default function Messages() {
   useEffect(() => {
     if (selectedChat?.listing_id && selectedChat?.peer_id) {
       fetchMessages(false);
-      const interval = setInterval(() => fetchMessages(true), 3000);
-      return () => clearInterval(interval);
+      const interval = setInterval(() => {
+        if (document.visibilityState !== 'hidden') {
+          fetchMessages(true);
+        }
+      }, 3500);
+
+      const handleVisibility = () => {
+        if (document.visibilityState === 'visible') {
+          fetchMessages(true);
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibility);
+      window.addEventListener('focus', handleVisibility);
+
+      return () => {
+        clearInterval(interval);
+        document.removeEventListener('visibilitychange', handleVisibility);
+        window.removeEventListener('focus', handleVisibility);
+      };
     }
   }, [selectedChat?.listing_id, selectedChat?.peer_id]);
 

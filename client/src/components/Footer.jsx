@@ -1,47 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
 import logoImg from '../assets/CampusXChange_Logo.webp';
 import { APP_VERSION } from '../config/version';
+import { useAuth } from '../context/AuthContext';
 
 export default function Footer() {
   const location = useLocation();
   const currentYear = new Date().getFullYear();
-
-  const [userProfile, setUserProfile] = useState(() => {
-    try {
-      const stored = localStorage.getItem('user');
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
-  });
-
-  useEffect(() => {
-    const syncUser = () => {
-      try {
-        const stored = localStorage.getItem('user');
-        setUserProfile(stored ? JSON.parse(stored) : null);
-      } catch {
-        setUserProfile(null);
-      }
-    };
-    window.addEventListener('auth-changed', syncUser);
-    window.addEventListener('storage', syncUser);
-    return () => {
-      window.removeEventListener('auth-changed', syncUser);
-      window.removeEventListener('storage', syncUser);
-    };
-  }, []);
-
-  const isSeller = Boolean(
-    userProfile && (
-      userProfile.role === 'SELLER' ||
-      userProfile.is_id_verified ||
-      userProfile.is_staff ||
-      userProfile.is_superuser
-    )
-  );
-  const isBuyer = Boolean(userProfile && !isSeller);
+  const { user: userProfile, isSeller, isBuyer } = useAuth();
 
   // Normalize current pathname (strip trailing slash)
   const pathname = location.pathname.replace(/\/$/, '') || '/';

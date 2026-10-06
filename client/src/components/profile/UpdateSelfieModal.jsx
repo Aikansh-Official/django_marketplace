@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import Webcam from 'react-webcam';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
-import confetti from 'canvas-confetti';
+import triggerConfetti from '../../utils/confetti';
 import {
   Camera,
   Upload,
@@ -260,16 +260,12 @@ export default function UpdateSelfieModal({
         profile_photo: selfieImage
       });
 
-      try {
-        confetti({
-          particleCount: 90,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#f97316', '#10b981', '#3b82f6', '#eab308']
-        });
-      } catch {
-        // Confetti fallback
-      }
+      triggerConfetti({
+        particleCount: 90,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#f97316', '#10b981', '#3b82f6', '#eab308']
+      });
 
       toast.success('Selfie profile photo updated successfully!', {
         icon: '📸',

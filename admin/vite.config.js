@@ -39,6 +39,27 @@ export default defineConfig({
     __APP_RELEASE_STAGE__: JSON.stringify(releaseStage),
     __APP_RELEASE_DATE__: JSON.stringify(releaseDate),
   },
+  build: {
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'vendor-react';
+          }
+          if (id.includes('node_modules/react-router-dom')) {
+            return 'vendor-router';
+          }
+          if (id.includes('node_modules/lucide-react')) {
+            return 'vendor-icons';
+          }
+          if (id.includes('node_modules/axios')) {
+            return 'vendor-http';
+          }
+        },
+      },
+    },
+  },
   server: {
     fs: {
       allow: ['..'],
