@@ -89,8 +89,30 @@ export default function NotificationDropdown({ isOpen, onClose, unreadCount, onN
       handleMarkRead(notif.id);
     }
     onClose();
-    if (notif.link) {
+
+    const listingId = notif.listing || notif.related_listing;
+
+    // Chat messages go to /messages
+    if (notif.notification_type === 'NEW_CHAT_MESSAGE') {
+      navigate('/messages');
+      return;
+    }
+
+    // Direct seller/buyer notifications related to a listing directly to the listing page
+    if (
+      ['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'OFFER_COUNTERED', 'HANDOVER_READY', 'ITEM_SOLD', 'DEAL_CANCELLED'].includes(notif.notification_type) && 
+      listingId
+    ) {
+      navigate(`/listing/${listingId}`);
+      return;
+    }
+
+    // Default fallbacks
+    if (notif.link && !notif.link.includes('/profile?tab=my-sales')) { 
+       // Only use backend link if it's not the old buggy profile link, or just trust link if no listingId
       navigate(notif.link);
+    } else if (listingId) {
+      navigate(`/listing/${listingId}`);
     } else {
       navigate('/notifications');
     }

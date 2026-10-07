@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Bell,
@@ -127,6 +127,35 @@ export default function Notifications() {
       toast.error('Could not clear notifications.');
     } finally {
       setClearingAll(false);
+    }
+  };
+
+  const navigate = useNavigate();
+
+  const handleItemClick = (notif) => {
+    if (!notif.is_read) {
+      handleMarkRead(notif.id);
+    }
+    
+    const listingId = notif.listing || notif.related_listing;
+
+    if (notif.notification_type === 'NEW_CHAT_MESSAGE') {
+      navigate('/messages');
+      return;
+    }
+
+    if (
+      ['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'OFFER_COUNTERED', 'HANDOVER_READY', 'ITEM_SOLD', 'DEAL_CANCELLED'].includes(notif.notification_type) && 
+      listingId
+    ) {
+      navigate(`/listing/${listingId}`);
+      return;
+    }
+
+    if (notif.link && !notif.link.includes('/profile?tab=my-sales')) { 
+      navigate(notif.link);
+    } else if (listingId) {
+      navigate(`/listing/${listingId}`);
     }
   };
 
@@ -578,8 +607,8 @@ export default function Notifications() {
             return (
               <div
                 key={notif.id}
-                onClick={() => !notif.is_read && handleMarkRead(notif.id)}
-                className={`bg-white border rounded-xl p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 shadow-sm hover:border-gray-300 transition-all ${isUrgent
+                onClick={() => handleItemClick(notif)}
+                className={`bg-white border rounded-xl p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 shadow-sm hover:border-gray-300 transition-all cursor-pointer ${isUrgent
                   ? 'border-l-4 border-l-red-600 bg-red-50/20 border-red-200 shadow-md'
                   : isHigh
                     ? 'border-l-4 border-l-amber-500 bg-amber-50/15 border-amber-200'
