@@ -31,17 +31,28 @@ export function AuthProvider({ children }) {
         }
       }
 
-      if (token && (!storedUserStr || forceFetch)) {
-        setLoading(true);
-        const data = await getAuthStatus(forceFetch);
-        if (data?.isAuthenticated && data?.user) {
-          setUser(data.user);
-          localStorage.setItem('user', JSON.stringify(data.user));
-        } else if (!data?.isAuthenticated) {
-          setUser(null);
-          setAccessToken(null);
+      if (token) {
+        if (!storedUserStr || forceFetch) {
+          setLoading(true);
         }
-      } else if (!token) {
+        
+        getAuthStatus(true).then((data) => {
+          if (data?.isAuthenticated && data?.user) {
+            setUser(data.user);
+            localStorage.setItem('user', JSON.stringify(data.user));
+          } else if (!data?.isAuthenticated) {
+            setUser(null);
+            setAccessToken(null);
+            localStorage.removeItem('user');
+            localStorage.removeItem('access');
+            localStorage.removeItem('refresh');
+          }
+        }).catch(() => {
+          // Keep existing user if network fails
+        }).finally(() => {
+          setLoading(false);
+        });
+      } else {
         setUser(null);
       }
     } catch (err) {

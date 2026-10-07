@@ -44,10 +44,8 @@ export const registerServiceWorker = async () => {
       `/firebase-messaging-sw.js?${params}`,
       { scope: '/' }
     );
-    console.debug('✅ FCM Service Worker registered successfully:', registration.scope);
     return registration;
   } catch (error) {
-    console.warn('⚠️ FCM Service Worker registration failed:', error);
     return null;
   }
 };
@@ -57,7 +55,6 @@ export const registerServiceWorker = async () => {
  */
 export const requestNotificationPermissionAndRegister = async () => {
   if (!isNotificationSupported()) {
-    console.info('Push notifications not supported on this browser.');
     return { success: false, reason: 'UNSUPPORTED' };
   }
 
@@ -71,16 +68,11 @@ export const requestNotificationPermissionAndRegister = async () => {
     const messaging = await getFirebaseMessaging();
 
     if (!messaging) {
-      console.warn('Firebase Messaging not initialized.');
       return { success: false, reason: 'MESSAGING_UNAVAILABLE' };
     }
 
     const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
     if (!vapidKey) {
-      console.warn(
-        '⚠️ VITE_FIREBASE_VAPID_KEY is not defined in client/.env.\n' +
-        'Please generate a Web Push Certificate (VAPID key) in Firebase Console -> Project Settings -> Cloud Messaging -> Web Push certificates.'
-      );
     }
 
     const { getToken } = await import('firebase/messaging');
@@ -100,14 +92,11 @@ export const requestNotificationPermissionAndRegister = async () => {
         device_type: 'WEB',
         device_name: `${navigator.platform || 'Desktop'} Web Browser`
       });
-
-      console.info('✅ FCM Web Push token successfully registered with server.');
       return { success: true, token };
     }
 
     return { success: false, reason: 'TOKEN_EMPTY' };
   } catch (err) {
-    console.warn('Error during FCM registration:', err);
     let reason = err.message || 'REGISTRATION_ERROR';
     if (err.message && err.message.includes('missing-vapid-key')) {
       reason = 'MISSING_VAPID_KEY';
@@ -145,7 +134,6 @@ export const triggerBrowserNotification = (title, options = {}) => {
 
     return notif;
   } catch (e) {
-    console.warn('Native notification display failed:', e);
     return null;
   }
 };
@@ -164,7 +152,6 @@ export const setupForegroundNotifications = async () => {
     const { onMessage } = await import('firebase/messaging');
 
     onMessage(messaging, (payload) => {
-      console.log('🔔 Foreground FCM notification received:', payload);
 
       const title = payload.notification?.title || payload.data?.title || 'CampXChange Alert';
       const body = payload.notification?.body || payload.data?.body || 'New marketplace update.';
@@ -225,9 +212,7 @@ export const setupForegroundNotifications = async () => {
     });
 
     foregroundListenerInitialized = true;
-    console.debug('FCM Foreground listener attached.');
   } catch (err) {
-    console.debug('Could not setup foreground listener:', err);
   }
 };
 
@@ -250,7 +235,6 @@ export const sendTestPushNotification = async () => {
     });
     return res.data;
   } catch (err) {
-    console.warn('Backend test push request failed:', err);
     throw err;
   }
 };
@@ -268,6 +252,5 @@ export const unregisterFCMDevice = async () => {
       localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
     }
   } catch (err) {
-    console.debug('Unregister FCM device cleanup ignored:', err);
   }
 };
