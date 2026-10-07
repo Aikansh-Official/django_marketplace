@@ -37,7 +37,7 @@ import {
   requestNotificationPermissionAndRegister,
   getNotificationPermission
 } from './services/fcmService';
-import NotificationOptInBanner from './components/notifications/NotificationOptInBanner';
+import PushNotificationPrompt from './components/notifications/PushNotificationPrompt';
 
 function App() {
   // Global Image Protection & Anti-Exfiltration Layer
@@ -139,7 +139,7 @@ function App() {
             <Navbar />
             <main className="flex-grow pt-16">
               <AnnouncementBanner />
-              <NotificationOptInBanner />
+              <PushNotificationPrompt />
               <UrgentNoticeModal />
               <MaintenanceScreen />
               <SuspendedAccountModal />

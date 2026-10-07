@@ -26,21 +26,13 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import UniversalLoader from '../components/common/UniversalLoader';
-import {
-  isNotificationSupported,
-  getNotificationPermission,
-  requestNotificationPermissionAndRegister,
-  sendTestPushNotification
-} from '../services/fcmService';
+
 
 export default function Notifications() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
-  const [pushPermission, setPushPermission] = useState(() => getNotificationPermission());
-  const [isEnablingPush, setIsEnablingPush] = useState(false);
-  const [isTestingPush, setIsTestingPush] = useState(false);
   const [deleteModalId, setDeleteModalId] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
@@ -62,15 +54,6 @@ export default function Notifications() {
   useEffect(() => {
     fetchNotifications();
     window.scrollTo(0, 0);
-
-    // If permission is default, auto-request registration so FCM is enabled by default
-    if (getNotificationPermission() === 'default' && localStorage.getItem('access')) {
-      requestNotificationPermissionAndRegister()
-        .then((res) => {
-          if (res?.success) setPushPermission('granted');
-        })
-        .catch(() => {});
-    }
   }, []);
 
   const handleMarkRead = async (id) => {
@@ -156,41 +139,6 @@ export default function Notifications() {
       navigate(notif.link);
     } else if (listingId) {
       navigate(`/listing/${listingId}`);
-    }
-  };
-
-  const handleEnablePush = async () => {
-    setIsEnablingPush(true);
-    try {
-      const res = await requestNotificationPermissionAndRegister();
-      setPushPermission(getNotificationPermission());
-      if (res.success) {
-        toast.success('🔔 Web push alerts enabled! You will now receive instant trade notifications.');
-      } else if (res.reason === 'PERMISSION_DENIED') {
-        toast.error('Notification permission was blocked in browser settings. Please allow notifications for this site.');
-      } else if (res.reason === 'MISSING_VAPID_KEY') {
-        toast.error('VAPID Key missing in client/.env! Please configure VITE_FIREBASE_VAPID_KEY from Firebase Console.');
-      } else {
-        toast.error(res.reason || 'Could not register push notifications.');
-      }
-    } finally {
-      setIsEnablingPush(false);
-    }
-  };
-
-  const handleTestNotification = async () => {
-    setIsTestingPush(true);
-    try {
-      const res = await sendTestPushNotification();
-      if (res?.mode === 'FALLBACK_SIMULATED') {
-        toast.success('Browser notification triggered! (Server FCM in Fallback Mode - service account key needed for live background push)');
-      } else {
-        toast.success('Test push notification sent successfully to your browser!');
-      }
-    } catch (err) {
-      toast.success('Local test notification displayed! (Backend test push skipped or unavailable)');
-    } finally {
-      setIsTestingPush(false);
     }
   };
 
@@ -415,82 +363,6 @@ export default function Notifications() {
           })()}
         </div>
       </div>
-
-      {/* Web Push Alerts Status & Toggle Banner */}
-      {isNotificationSupported() && (
-        <div className="mb-4 sm:mb-5 p-3.5 sm:p-4 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs bg-gradient-to-r from-orange-50/70 via-white to-amber-50/50 border-orange-200/70">
-          <div className="flex items-center gap-3">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-lg ${pushPermission === 'granted'
-              ? 'bg-emerald-500/15 text-emerald-600'
-              : 'bg-orange-500/15 text-orange-600'
-              }`}>
-              {pushPermission === 'granted' ? '🔔' : '🔕'}
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs sm:text-sm font-bold text-gray-900">
-                  {pushPermission === 'granted' ? 'Real-Time Push Notifications Active' : 'Enable Web Push Alerts'}
-                </span>
-                <span className={`w-2 h-2 rounded-full ${pushPermission === 'granted' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'
-                  }`} />
-              </div>
-              <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
-                {pushPermission === 'granted'
-                  ? 'Your browser is linked to Firebase Cloud Messaging (FCM). You will receive instant alerts for offers, chats, and handovers.'
-                  : 'Never miss an offer or chat ping! Receive native browser notifications even when CampXChange is running in the background.'}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 self-start sm:self-center">
-            {pushPermission !== 'granted' ? (
-              <button
-                type="button"
-                onClick={handleEnablePush}
-                disabled={isEnablingPush}
-                className="bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-              >
-                {isEnablingPush ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Enabling...</span>
-                  </>
-                ) : (
-                  <>
-                    <Bell className="w-3.5 h-3.5" />
-                    <span>Enable Push Alerts</span>
-                  </>
-                )}
-              </button>
-            ) : (
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100/70 border border-emerald-300/60 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  Push Active
-                </span>
-                <button
-                  type="button"
-                  onClick={handleTestNotification}
-                  disabled={isTestingPush}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  title="Test sending a browser push notification"
-                >
-                  {isTestingPush ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-600" />
-                      <span>Testing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Test Alert</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Metrics Row */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-4 mb-4 sm:mb-5">

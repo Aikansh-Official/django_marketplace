@@ -18,18 +18,13 @@ import {
   X
 } from 'lucide-react';
 import api from '../../services/api';
-import {
-  isNotificationSupported,
-  getNotificationPermission,
-  requestNotificationPermissionAndRegister
-} from '../../services/fcmService';
+
 
 export default function NotificationDropdown({ isOpen, onClose, unreadCount, onNotificationRead }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('ALL'); // 'ALL' | 'UNREAD' | 'OFFERS' | 'CHATS'
-  const [pushPermission, setPushPermission] = useState(() => getNotificationPermission());
-  const [isRegisteringPush, setIsRegisteringPush] = useState(false);
+
   const navigate = useNavigate();
 
   const fetchDropdownNotifications = async () => {
@@ -118,24 +113,6 @@ export default function NotificationDropdown({ isOpen, onClose, unreadCount, onN
     }
   };
 
-  const handleEnablePush = async () => {
-    setIsRegisteringPush(true);
-    try {
-      const res = await requestNotificationPermissionAndRegister();
-      setPushPermission(getNotificationPermission());
-      if (res.success) {
-        toast.success('Web push alerts enabled!');
-      } else if (res.reason === 'PERMISSION_DENIED') {
-        toast.error('Notification permission was blocked in browser settings.');
-      } else if (res.reason === 'MISSING_VAPID_KEY') {
-        toast.error('Firebase VAPID key missing in client/.env');
-      } else {
-        toast.error(res.reason || 'Could not enable push notifications.');
-      }
-    } finally {
-      setIsRegisteringPush(false);
-    }
-  };
 
   const getTypeIcon = (type) => {
     switch (type) {
@@ -213,29 +190,6 @@ export default function NotificationDropdown({ isOpen, onClose, unreadCount, onN
         </div>
       </div>
 
-      {/* Push Notification Opt-in Prompt (if not granted) */}
-      {isNotificationSupported() && pushPermission !== 'granted' && (
-        <div className="p-2.5 mx-3 mt-2.5 bg-gradient-to-r from-amber-50 to-orange-50 border border-orange-200/80 rounded-xl flex items-center justify-between gap-2 text-xs">
-          <div className="flex items-center gap-2 text-gray-700 min-w-0">
-            <span className="text-base flex-shrink-0">🔔</span>
-            <p className="font-medium text-[11px] leading-tight line-clamp-2">
-              Enable Push notifications for instant buy requests & chat pings!
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleEnablePush}
-            disabled={isRegisteringPush}
-            className="flex-shrink-0 bg-brand-500 hover:bg-brand-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-sm transition-all flex items-center gap-1 disabled:opacity-50"
-          >
-            {isRegisteringPush ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : (
-              <span>Allow</span>
-            )}
-          </button>
-        </div>
-      )}
 
       {/* Tab Filter Pills */}
       <div className="px-3 pt-2.5 pb-1 flex items-center gap-1 overflow-x-auto no-scrollbar border-b border-gray-100">
