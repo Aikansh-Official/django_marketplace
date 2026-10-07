@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import ProfileSidebar from '../components/profile/ProfileSidebar';
 import { getSavedCount } from '../utils/savedStore';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const PersonalInfoTab = lazy(() => import('../components/profile/PersonalInfoTab'));
 const OrdersSellsTab = lazy(() => import('../components/profile/OrdersSellsTab'));
@@ -27,6 +28,8 @@ export default function Profile() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
+  const { user } = useAuth();
+
   const rawTab = searchParams.get('tab');
   
   const normalizedTab = getNormalizedTab(rawTab);
@@ -34,6 +37,12 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState(
     currentTabParam === 'notifications' ? 'personal-info' : currentTabParam
   );
+
+  useEffect(() => {
+    if (activeTab === 'reviews' && user?.id) {
+      navigate(`/seller/${user.id}?tab=reviews`, { replace: true });
+    }
+  }, [activeTab, user, navigate]);
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);

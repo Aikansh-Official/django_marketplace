@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   ShieldCheck,
@@ -28,10 +28,23 @@ import { getSafeImageUrl } from '../utils/imageUrl';
 
 export default function SellerProfile() {
   const { id } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('listings'); // 'listings' | 'reviews'
+  
+  const rawTab = searchParams.get('tab');
+  const initialTab = rawTab === 'reviews' ? 'reviews' : 'listings';
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  // Sync tab state with URL
+  useEffect(() => {
+    if (activeTab === 'reviews') {
+      setSearchParams({ tab: 'reviews' }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+  }, [activeTab, setSearchParams]);
 
   // Report Modal State
   const [showReportModal, setShowReportModal] = useState(false);

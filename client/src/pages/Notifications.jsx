@@ -22,7 +22,8 @@ import {
   AlertTriangle,
   MessageSquare,
   Search,
-  Loader2
+  Loader2,
+  Star
 } from 'lucide-react';
 import api from '../services/api';
 import UniversalLoader from '../components/common/UniversalLoader';
@@ -185,6 +186,13 @@ export default function Notifications() {
             Product Inquiry
           </span>
         );
+      case 'NEW_REVIEW':
+        return (
+          <span className="inline-flex items-center gap-1 bg-brand-50 border border-brand-200 text-brand-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <Star className="w-3 h-3 fill-brand-600 text-brand-600" />
+            Peer Review
+          </span>
+        );
       case 'BROADCAST':
         return (
           <span className="inline-flex items-center gap-1 bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
@@ -284,6 +292,8 @@ export default function Notifications() {
         return <Package className="w-6 h-6 text-purple-600" />;
       case 'DEAL_CANCELLED':
         return <XCircle className="w-6 h-6 text-red-600" />;
+      case 'NEW_REVIEW':
+        return <Star className="w-6 h-6 fill-brand-600 text-brand-600" />;
       default:
         return <Bell className="w-6 h-6 text-blue-600" />;
     }

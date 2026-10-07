@@ -15,6 +15,7 @@ import {
   ExternalLink,
   Sparkles,
   Loader2,
+  Star,
   X
 } from 'lucide-react';
 import api from '../../services/api';
@@ -130,6 +131,8 @@ export default function NotificationDropdown({ isOpen, onClose, unreadCount, onN
         return <Megaphone className="w-4 h-4 text-brand-500" />;
       case 'DIRECT_WARNING':
         return <ShieldAlert className="w-4 h-4 text-red-600" />;
+      case 'NEW_REVIEW':
+        return <Star className="w-4 h-4 fill-brand-500 text-brand-500" />;
       default:
         return <Bell className="w-4 h-4 text-gray-500" />;
     }
