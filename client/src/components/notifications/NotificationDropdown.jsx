@@ -49,10 +49,6 @@ export default function NotificationDropdown({ isOpen, onClose, unreadCount, onN
     fetchDropdownNotifications();
   }, [isOpen, activeTab]);
 
-  // Sync push permission state
-  useEffect(() => {
-    setPushPermission(getNotificationPermission());
-  }, [isOpen]);
 
   const handleMarkRead = async (id, e) => {
     e?.stopPropagation();
