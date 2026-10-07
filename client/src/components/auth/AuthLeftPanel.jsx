@@ -5,7 +5,7 @@ import {
   BadgeCheck,
   CheckCircle2
 } from 'lucide-react';
-import logoImg from '../../assets/CampXChange_Logo.webp';
+import logoImg from '../../assets/CampusXChange_Logo.webp';
 import IdCardCamera from './IdCardCamera';
 import { useIsMobile } from '../../utils/useIsMobile';
 

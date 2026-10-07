@@ -16,7 +16,7 @@ import {
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import logoImg from '../assets/CampXChange_Logo.webp';
+import logoImg from '../assets/CampusXChange_Logo.webp';
 const AuthModal = lazy(() => import('./AuthModal'));
 const SavedItemsDrawer = lazy(() => import('./SavedItemsDrawer'));
 import NotificationDropdown from './notifications/NotificationDropdown';

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, User, Loader2 } from 'lucide-react';
-import logoImg from '../assets/CampXChange_Logo.webp';
+import logoImg from '../assets/CampusXChange_Logo.webp';
 import toast from 'react-hot-toast';
 import ThemeBackground from '../components/ThemeBackground';
 import axios from 'axios';

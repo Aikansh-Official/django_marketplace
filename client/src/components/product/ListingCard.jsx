@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, MapPin, Package, Repeat, Star, Clock } from 'lucide-react';
 import { getSafeImageUrl } from '../../utils/imageUrl';
-import cxcLogo from '../../assets/CampXChange_Logo.webp';
+import cxcLogo from '../../assets/CampusXChange_Logo.webp';
 
 const ListingCard = React.memo(function ListingCard({
   listing,

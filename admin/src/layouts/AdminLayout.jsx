@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { api } from '../config/api';
 import CommandPalette from '../components/CommandPalette';
-import logoImg from '../assets/CampXChange_Logo.webp';
+import logoImg from '../assets/CampusXChange_Logo.webp';
 import { hasModulePermission, getEffectivePermissions } from '../utils/permissions';
 import { APP_VERSION } from '../config/version';
 

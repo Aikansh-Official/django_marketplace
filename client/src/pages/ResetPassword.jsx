@@ -21,7 +21,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { forgotPasswordSchema, forgotPasswordResetOTPSchema } from '../components/auth/authSchemas';
-import logoImg from '../assets/CampXChange_Logo.webp';
+import logoImg from '../assets/CampusXChange_Logo.webp';
 
 export default function ResetPassword() {
   const navigate = useNavigate();

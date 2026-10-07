@@ -127,7 +127,7 @@ export const triggerBrowserNotification = (title, options = {}) => {
   try {
     const notif = new Notification(title, {
       body: options.body || '',
-      icon: options.icon || '/CampXChange_Logo.png',
+      icon: options.icon || '/CampusXChange_Logo.png',
       badge: options.badge || '/favicon.png',
       tag: options.tag || 'cxc-native-alert',
       renotify: true,

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import logoImg from '../assets/CampXChange_Logo.webp';
+import logoImg from '../assets/CampusXChange_Logo.webp';
 import { APP_VERSION } from '../config/version';
 import { useAuth } from '../context/AuthContext';
 
