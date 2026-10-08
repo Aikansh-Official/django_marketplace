@@ -1,6 +1,15 @@
 import axios from 'axios';
 axios.defaults.withCredentials = true;
 
+// Disable all console logs in production (prevents third-party SDKs and errant logs from printing)
+if (import.meta.env.PROD) {
+  console.log = () => {};
+  console.error = () => {};
+  console.warn = () => {};
+  console.info = () => {};
+  console.debug = () => {};
+}
+
 // Automatically attach Bearer token and App Security Key to all outgoing requests
 axios.interceptors.request.use((config) => {
   config.headers = config.headers || {};
