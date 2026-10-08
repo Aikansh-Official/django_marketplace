@@ -88,7 +88,8 @@ export default function LoginForm({ onSwitch, onForgotPassword, onSuccess }) {
       } else if (error?.code === 'auth/popup-blocked') {
         toast.error('Google sign-in popup was blocked by your browser. Please allow popups for this site.');
       } else if (error?.code === 'auth/unauthorized-domain') {
-        toast.error('Domain not authorized. Please add cxc.anshuman892494.online to Firebase Console -> Authentication -> Settings -> Authorized domains.', { duration: 6000 });
+        console.error('Firebase Domain not authorized. Add domain in Firebase Console.');
+        toast.error('Google login is currently unavailable. Please contact the administrator.', { duration: 5000 });
       } else {
         console.error('Google login verification failed:', error);
         toast.error(resData?.error || error?.message || 'Google login failed. Please try again.');
