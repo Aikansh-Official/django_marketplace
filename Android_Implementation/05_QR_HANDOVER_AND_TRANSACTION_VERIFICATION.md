@@ -1,47 +1,57 @@
-# 🤝 Module 05: QR Handover & Campus Transaction Verification
+# 🤝 Module 05: QR Handover, Purchases Dashboard & Campus Transaction Verification (Website Parity)
 
-This document provides the complete technical specification for the **CampXChange** peer-to-peer physical meetup verification system using **ZXing vector QR generation, CameraX with Google ML Kit Barcode Scanning, 6-digit OTP PIN fallback, and real-time completion polling**.
+This document provides the complete technical specification for the **CampXChange** peer-to-peer physical meetup verification system using **ZXing vector QR generation, CameraX with Google ML Kit Barcode Scanning, 6-digit OTP PIN fallback, the 2-step verification/confirmation workflow, and the My Purchases orders dashboard**.
 
 ---
 
 ## 1. Handover Security Architecture & Lifecycle
 
-The campus meetup verification prevents dispute and fraud by guaranteeing both buyer and seller are physically co-located before marking an item as `SOLD`:
+The campus meetup verification prevents disputes and fraud by guaranteeing both buyer and seller are physically co-located before marking an item as `SOLD`:
 
 ```text
        SELLER DEVICE                               BUYER DEVICE
  ┌───────────────────────┐                   ┌───────────────────────┐
- │ Tap "Generate QR"     │                   │ Tap "Scan QR"         │
+ │ Tap "Generate QR"     │                   │ Tap "Scan QR / PIN"   │
  └───────────┬───────────┘                   └───────────┬───────────┘
              │ POST /offers/<id>/generate-qr/            │
              ▼                                           ▼
  ┌───────────────────────┐                   ┌───────────────────────┐
  │ Display Dynamic QR &  │                   │ CameraX Barcode Scan  │
- │ 6-Digit PIN (15m Exp) │                   │ (or Manual 6-Digit PIN│
+ │ 6-Digit PIN (30m Exp) │                   │ (or Manual 6-Digit PIN│
  └───────────┬───────────┘                   └───────────┬───────────┘
              │                                           │
              │       Buyer Scans Seller's Screen         │
              │◄──────────────────────────────────────────┘
              │
-             │ Buyer executes POST /handover/verify/
-             │ with { token: UUID, pin_code: "123456" }
+             │ Step 1: Buyer executes POST /handover/verify/
+             │ with { token: UUID } or { pin_code: "123456" }
              │
              ▼
  ┌───────────────────────────────────────────────────────────────────┐
- │                    Backend Atomic Verification                    │
- │ 1. Session status: ACTIVE ➡️ USED                                │
+ │                  Verified Deal Summary Preview                    │
+ │ 1. Item Title & Agreed Price displayed to Buyer                   │
+ │ 2. Seller Name & Meetup Spot displayed                            │
+ │ 3. Mandatory Safety Checklist (Both boxes required):              │
+ │    - [x] Item inspected in person & condition confirmed           │
+ │    - [x] Payment made directly to seller (Cash/UPI)               │
+ └─────────────────┬─────────────────────────────────────────────────┘
+                   │
+                   │ Step 2: Buyer executes POST /handover/confirm/
+                   │ with { token: UUID }
+                   ▼
+ ┌───────────────────────────────────────────────────────────────────┐
+ │                    Backend Atomic Transaction                     │
+ │ 1. HandoverSession status: ACTIVE ➡️ USED                         │
  │ 2. Offer status: ACCEPTED ➡️ COMPLETED                            │
  │ 3. Listing status: PENDING ➡️ SOLD                                │
  │ 4. Trust Score Bonus: +5 points to both Buyer and Seller          │
  └─────────────────┬───────────────────────────────┬─────────────────┘
                    │                               │
-       Auto-Polling│(2.5s)               Verification Result
-       Detects USED│                               │
                    ▼                               ▼
  ┌───────────────────────┐                   ┌───────────────────────┐
- │ 🎉 Confetti Celebration│                   │ 🎉 Confetti Celebration│
+ │ 🎉 Confetti Screen    │                   │ 🎉 Confetti Screen    │
  │ "+5 Trust Score Added"│                   │ "+5 Trust Score Added"│
- │ Redirect to Orders    │                   │ Prompt Deal Review    │
+ │ Marked as SOLD        │                   │ Prompt Deal Review    │
  └───────────────────────┘                   └───────────────────────┘
 ```
 
@@ -52,7 +62,7 @@ The campus meetup verification prevents dispute and fraud by guaranteeing both b
 ### 2.1 Handover Api Service (`HandoverApiService.kt`)
 
 ```kotlin
-package com.campxchange.app.data.remote.api
+package com.campxchange.app.data.api
 
 import com.campxchange.app.data.remote.dto.*
 import retrofit2.Response
@@ -60,345 +70,105 @@ import retrofit2.http.*
 
 interface HandoverApiService {
 
-    @POST("marketplace/offers/{id}/generate-qr/")
-    suspend fun generateHandoverQr(
-        @Path("id") offerId: Int
+    @POST("api/marketplace/offers/{id}/generate-qr/")
+    suspend fun generateHandoverQR(
+        @Path("id") offerId: String
     ): Response<HandoverSessionDto>
 
-    @POST("marketplace/handover/verify/")
+    @POST("api/marketplace/handover/verify/")
     suspend fun verifyHandover(
-        @Body request: VerifyHandoverRequestDto
-    ): Response<HandoverVerificationResultDto>
+        @Body request: VerifyHandoverRequest
+    ): Response<VerifyHandoverResponse>
 
-    @GET("marketplace/handover/session-status/{id}/")
-    suspend fun checkSessionStatus(
-        @Path("id") sessionId: Int
-    ): Response<HandoverSessionStatusDto>
+    @POST("api/marketplace/handover/confirm/")
+    suspend fun confirmHandover(
+        @Body request: ConfirmHandoverRequest
+    ): Response<ConfirmHandoverResponse>
+
+    @GET("api/marketplace/my-offers/")
+    suspend fun getMyOffers(): Response<List<OfferDto>>
 }
 ```
 
 ### 2.2 Data Transfer Objects (`HandoverDtos.kt`)
 
 ```kotlin
-package com.campxchange.app.data.remote.dto
+package com.campxchange.app.data.api
 
 import com.google.gson.annotations.SerializedName
 
 data class HandoverSessionDto(
-    @SerializedName("session_id") val sessionId: Int,
-    @SerializedName("token") val token: String, // UUID
-    @SerializedName("pin_code") val pinCode: String, // 6-digit numeric string e.g. "582910"
-    @SerializedName("expires_at") val expiresAt: String,
-    @SerializedName("listing_title") val listingTitle: String,
-    @SerializedName("agreed_price") val agreedPrice: Double,
-    @SerializedName("buyer_name") val buyerName: String,
-    @SerializedName("qr_payload") val qrPayload: String // Verification URL or JSON payload
+    @SerializedName("id") val rawId: Any? = null,
+    val token: String = "",
+    @SerializedName("pin_code") val pinCode: String = "",
+    @SerializedName("expires_at") val expiresAt: String? = null,
+    @SerializedName("remaining_seconds") val remainingSeconds: Int? = null,
+    val status: String = "ACTIVE"
+) {
+    val idString: String get() = rawId?.toString() ?: ""
+}
+
+data class VerifyHandoverRequest(
+    val token: String? = null,
+    @SerializedName("pin_code") val pinCode: String? = null
 )
 
-data class VerifyHandoverRequestDto(
-    @SerializedName("token") val token: String,
-    @SerializedName("pin_code") val pinCode: String
-)
+data class VerifyHandoverResponse(
+    @SerializedName("session_id") val rawSessionId: Any? = null,
+    val token: String = "",
+    @SerializedName("listing_id") val rawListingId: Any? = null,
+    @SerializedName(value = "listing_title", alternate = ["listingTitle"]) val listingTitle: String = "",
+    @SerializedName(value = "listing_price", alternate = ["listingPrice"]) val listingPrice: String = "",
+    @SerializedName(value = "listing_image", alternate = ["listingImage"]) val listingImage: String? = null,
+    @SerializedName(value = "seller_id", alternate = ["sellerId"]) val rawSellerId: Any? = null,
+    @SerializedName(value = "seller_name", alternate = ["sellerName"]) val sellerName: String = "",
+    @SerializedName(value = "seller_reg", alternate = ["sellerReg"]) val sellerReg: String? = null,
+    @SerializedName(value = "meetup_location", alternate = ["meetupLocation"]) val meetupLocation: String = "",
+    val verified: Boolean = false
+) {
+    val sessionIdString: String get() = rawSessionId?.toString() ?: ""
+    val listingIdString: String get() = rawListingId?.toString() ?: ""
+}
 
-data class HandoverVerificationResultDto(
-    @SerializedName("success") val success: Boolean,
-    @SerializedName("message") val message: String,
-    @SerializedName("trust_score_awarded") val trustScoreAwarded: Int,
-    @SerializedName("offer_id") val offerId: Int,
-    @SerializedName("listing_id") val listingId: Int
-)
+data class ConfirmHandoverRequest(val token: String)
 
-data class HandoverSessionStatusDto(
-    @SerializedName("status") val status: String // "ACTIVE", "USED", "EXPIRED", "CANCELLED"
+data class ConfirmHandoverResponse(
+    val success: Boolean = true,
+    val message: String = "",
+    @SerializedName("trust_score_awarded") val trustScoreAwarded: Int = 5
 )
 ```
 
 ---
 
-## 3. Seller: QR Code & 6-Digit PIN Generation Screen (`SellerHandoverScreen.kt`)
+## 3. UI Screen Architecture (Website Parity)
 
-### 3.1 Vector QR Code Generation
-Uses **ZXing Core** to render an ultra-sharp vector bitmap inside Jetpack Compose:
+### 3.1 "My Purchases & Active Orders" Screen (`MyOrdersScreen.kt`)
+- Route: `Screen.MyOrders` (`"profile/my_orders"`)
+- Accessible directly from Profile (for both Buyers and Sellers).
+- Shows tabs: `All`, `Handover Ready (Accepted)`, `Pending`, `Completed`.
+- Any accepted offer features a **"Scan QR / Handover"** button opening `BuyerHandoverScreen`.
 
-```kotlin
-package com.campxchange.app.core.util
+### 3.2 Product Detail Screen Banner (`ProductDetailScreen.kt`)
+- If the current student's offer is accepted by the seller:
+  - Displays a green banner at top:
+    *"Your Purchase Request Was Accepted! Meet the seller on campus to inspect the item, make payment (Cash/UPI), and scan their Handover QR code or enter their 6-digit PIN."*
+  - Bottom CTA button updates to: **"Deal Reserved / Handover QR"** and navigates directly to `BuyerHandoverScreen`.
 
-import android.graphics.Bitmap
-import android.graphics.Color
-import com.google.zxing.BarcodeFormat
-import com.google.zxing.qrcode.QRCodeWriter
+### 3.3 Seller QR Screen (`SellerQRDisplayScreen.kt`)
+- Route: `Screen.HandoverSellerQR` (`"handover_seller_qr/{offerId}"`)
+- Calls `POST /api/marketplace/offers/{id}/generate-qr/`.
+- Renders sharp vector QR code and large 6-digit fallback PIN.
 
-object QrCodeGenerator {
-    fun generateQrBitmap(content: String, sizePx: Int = 512): Bitmap {
-        val writer = QRCodeWriter()
-        val bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, sizePx, sizePx)
-        val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.RGB_565)
-        for (x in 0 until sizePx) {
-            for (y in 0 until sizePx) {
-                bitmap.setPixel(x, y, if (bitMatrix[x, y]) Color.BLACK else Color.WHITE)
-            }
-        }
-        return bitmap
-    }
-}
-```
-
-### 3.2 Seller Handover Screen Composable
-
-```kotlin
-@Composable
-fun SellerHandoverScreen(
-    offerId: Int,
-    viewModel: HandoverViewModel,
-    onCompleted: () -> Unit,
-    onNavigateBack: () -> Unit
-) {
-    val state by viewModel.sellerState.collectAsStateWithLifecycle()
-    val clipboardManager = LocalClipboardManager.current
-    val context = LocalContext.current
-
-    LaunchedEffect(offerId) {
-        viewModel.startSellerSession(offerId)
-    }
-
-    LaunchedEffect(state.isSessionCompleted) {
-        if (state.isSessionCompleted) {
-            onCompleted()
-        }
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Campus Handover QR") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text("Show this QR to the Buyer", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Text("Keep this screen open until the buyer scans the code.", color = TextSecondary, style = MaterialTheme.typography.bodyMedium)
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // 1. QR Code Display
-            state.qrBitmap?.let { bitmap ->
-                Image(
-                    bitmap = bitmap.asImageBitmap(),
-                    contentDescription = "Handover QR",
-                    modifier = Modifier
-                        .size(240.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .border(2.dp, BorderLight, RoundedCornerShape(16.dp))
-                )
-            } ?: CircularProgressIndicator(modifier = Modifier.size(60.dp), color = Brand500)
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // 2. 6-Digit PIN Code Fallback Box
-            Text("OR SHARE 6-DIGIT PIN CODE", style = MaterialTheme.typography.labelSmall, color = TextMuted)
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Surface(
-                color = Color(0xFFF1F5F9),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.clickable {
-                    state.pinCode?.let {
-                        clipboardManager.setText(AnnotatedString(it))
-                        Toast.makeText(context, "PIN copied to clipboard", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = state.pinCode ?: "------",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 8.sp,
-                        color = TextPrimary
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = Brand500, modifier = Modifier.size(20.dp))
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // 3. Expiration Countdown Timer
-            Text(
-                text = "Session expires in: ${state.remainingTimeFormatted}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (state.isExpiringSoon) ErrorRed else TextSecondary,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // 4. Polling Status Pulse
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = Brand500)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Waiting for buyer to scan...", style = MaterialTheme.typography.bodySmall, color = TextMuted)
-            }
-        }
-    }
-}
-```
-
----
-
-## 4. Buyer: CameraX Barcode Scanner (`BuyerScannerScreen.kt`)
-
-Uses **CameraX Analysis UseCase** and **Google ML Kit Barcode Scanning** (`Barcode.FORMAT_QR_CODE`):
-
-```kotlin
-@Composable
-fun BuyerScannerScreen(
-    offerId: Int,
-    viewModel: HandoverViewModel,
-    onVerified: () -> Unit,
-    onNavigateBack: () -> Unit
-) {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    var selectedTab by remember { mutableIntStateOf(0) } // 0: Camera Scan, 1: Enter PIN
-    var manualPinInput by remember { mutableStateOf("") }
-
-    val barcodeScanner = remember {
-        val options = BarcodeScannerOptions.Builder()
-            .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
-            .build()
-        BarcodeScanning.getClient(options)
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Verify Handover") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            TabRow(selectedTabIndex = selectedTab) {
-                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Scan QR") })
-                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Enter 6-Digit PIN") })
-            }
-
-            if (selectedTab == 0) {
-                // CameraX QR Viewfinder
-                Box(modifier = Modifier.fillMaxSize()) {
-                    AndroidView(
-                        factory = { ctx ->
-                            val previewView = PreviewView(ctx)
-                            val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-                            cameraProviderFuture.addListener({
-                                val cameraProvider = cameraProviderFuture.get()
-                                val preview = Preview.Builder().build().also {
-                                    it.setSurfaceProvider(previewView.surfaceProvider)
-                                }
-
-                                val imageAnalysis = ImageAnalysis.Builder()
-                                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                                    .build()
-
-                                imageAnalysis.setAnalyzer(ContextCompat.getMainExecutor(ctx)) { imageProxy ->
-                                    val mediaImage = imageProxy.image
-                                    if (mediaImage != null) {
-                                        val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-                                        barcodeScanner.process(image)
-                                            .addOnSuccessListener { barcodes ->
-                                                barcodes.firstOrNull()?.rawValue?.let { qrValue ->
-                                                    viewModel.verifyScannedToken(qrValue, onSuccess = onVerified)
-                                                }
-                                            }
-                                            .addOnCompleteListener { imageProxy.close() }
-                                    } else {
-                                        imageProxy.close()
-                                    }
-                                }
-
-                                cameraProvider.unbindAll()
-                                cameraProvider.bindToLifecycle(
-                                    lifecycleOwner,
-                                    CameraSelector.DEFAULT_BACK_CAMERA,
-                                    preview,
-                                    imageAnalysis
-                                )
-                            }, ContextCompat.getMainExecutor(ctx))
-                            previewView
-                        },
-                        modifier = Modifier.fillMaxSize()
-                    )
-
-                    // Viewfinder Box Overlay with Target Corners
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val boxSize = size.width * 0.7f
-                        val left = (size.width - boxSize) / 2
-                        val top = (size.height - boxSize) / 2
-
-                        drawRect(color = Color(0x99000000)) // Scrim
-                        drawRect(
-                            color = Color.Transparent,
-                            topLeft = Offset(left, top),
-                            size = Size(boxSize, boxSize),
-                            blendMode = BlendMode.Clear
-                        )
-                        drawRect(
-                            color = Brand500,
-                            topLeft = Offset(left, top),
-                            size = Size(boxSize, boxSize),
-                            style = Stroke(width = 3.dp.toPx())
-                        )
-                    }
-                }
-            } else {
-                // Manual 6-Digit PIN Input Fallback
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text("Enter the 6-digit PIN shown on the Seller's screen", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    OutlinedTextField(
-                        value = manualPinInput,
-                        onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) manualPinInput = it },
-                        textStyle = TextStyle(fontSize = 32.sp, letterSpacing = 12.sp, textAlign = TextAlign.Center, fontWeight = FontWeight.Bold),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth(0.85f)
-                    )
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Button(
-                        onClick = { viewModel.verifyManualPin(offerId, manualPinInput, onSuccess = onVerified) },
-                        enabled = manualPinInput.length == 6,
-                        colors = ButtonDefaults.buttonColors(containerColor = Brand500),
-                        modifier = Modifier.fillMaxWidth().height(50.dp)
-                    ) {
-                        Text("Confirm & Complete Handover", fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-    }
-}
-```
+### 3.4 Buyer Handover Screen (`BuyerHandoverScreen.kt`)
+- Route: `Screen.HandoverBuyer` (`"handover_buyer"`)
+- Supports:
+  1. **Camera QR Scan:** Integrated CameraX preview scanning seller's phone screen.
+  2. **6-Digit PIN Entry:** Numeric input box.
+- After code verification:
+  - Displays verified item title, price, seller name, and meetup location.
+  - Requires 2 confirmation checkboxes:
+    - `[ ] I have inspected the item in person and confirmed its condition.`
+    - `[ ] I have completed payment (Cash / UPI) to the seller.`
+  - Unlocks "Confirm Final Handover & Deal" button.
+  - On confirm, navigates to `Screen.DealComplete` celebrating with Confetti!
