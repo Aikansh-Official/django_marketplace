@@ -475,6 +475,8 @@ class HandoverSessionSerializer(serializers.ModelSerializer):
     listing_title = serializers.CharField(source='offer.listing.title', read_only=True)
     listing_price = serializers.DecimalField(source='offer.offer_amount', max_digits=10, decimal_places=2, read_only=True)
     remaining_seconds = serializers.SerializerMethodField()
+    offer_status = serializers.CharField(source='offer.status', read_only=True)
+    is_completed = serializers.SerializerMethodField()
 
     class Meta:
         model = HandoverSession
@@ -482,9 +484,13 @@ class HandoverSessionSerializer(serializers.ModelSerializer):
             'id', 'offer', 'token', 'pin_code', 'status',
             'expires_at', 'remaining_seconds', 'created_at', 'completed_at',
             'seller_name', 'seller_reg', 'buyer_name', 'buyer_reg',
-            'listing_id', 'listing_title', 'listing_price'
+            'listing_id', 'listing_title', 'listing_price',
+            'offer_status', 'is_completed'
         ]
         read_only_fields = fields
+
+    def get_is_completed(self, obj):
+        return obj.status == 'USED' or (obj.offer and obj.offer.status == 'COMPLETED') or bool(obj.completed_at)
 
     def get_remaining_seconds(self, obj):
         if obj.status != 'ACTIVE':
