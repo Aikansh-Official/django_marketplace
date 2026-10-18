@@ -222,6 +222,51 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
             'status', 'category', 'uploaded_images', 'primary_image_index'
         ]
 
+    def to_internal_value(self, data):
+        # Resolve category if passed as integer index (1-8), slug, or name
+        if isinstance(data, dict) or hasattr(data, 'get'):
+            mutable_data = data.copy() if hasattr(data, 'copy') else dict(data)
+            cat_val = mutable_data.get('category')
+            if cat_val is not None:
+                # Check if it's already a 24-character hex ObjectId
+                is_valid_oid = False
+                if isinstance(cat_val, str) and len(cat_val) == 24:
+                    try:
+                        int(cat_val, 16)
+                        is_valid_oid = True
+                    except ValueError:
+                        is_valid_oid = False
+
+                if not is_valid_oid:
+                    int_mapping = {
+                        1: 'books-notes',
+                        2: 'fashion-lifestyle',
+                        3: 'hostel-room-essentials',
+                        4: 'laptops-computers',
+                        5: 'mobiles-electronics',
+                        6: 'others',
+                        7: 'sports-fitness',
+                        8: 'stationery-lab-gear',
+                    }
+                    cat_obj = None
+                    try:
+                        cat_int = int(cat_val)
+                        if cat_int in int_mapping:
+                            cat_obj = Category.objects.filter(slug=int_mapping[cat_int]).first()
+                    except (ValueError, TypeError):
+                        pass
+
+                    if not cat_obj and isinstance(cat_val, str):
+                        cat_obj = (
+                            Category.objects.filter(slug=cat_val).first() or
+                            Category.objects.filter(name__iexact=cat_val).first()
+                        )
+
+                    if cat_obj:
+                        mutable_data['category'] = str(cat_obj.id)
+            data = mutable_data
+        return super().to_internal_value(data)
+
     def validate_uploaded_images(self, value):
         if value and len(value) > 4:
             raise serializers.ValidationError("A maximum of 4 images is allowed per listing.")
