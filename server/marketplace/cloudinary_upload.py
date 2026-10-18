@@ -41,7 +41,7 @@ def upload_image_to_cloudinary(image_file, folder="campxchange/listings"):
     )
 
     return {
-        "url": result.get("secure_url"),
+        "url": result.get("secure_url") or result.get("url"),
         "public_id": result.get("public_id"),
     }
 

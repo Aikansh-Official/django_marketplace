@@ -651,7 +651,7 @@ class UploadImageView(APIView):
     Accepts multipart/form-data with an 'image' field.
     Returns the Cloudinary secure URL.
     """
-    permission_classes = [permissions.IsAuthenticated, IsVerifiedSeller]
+    permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = 'image_upload'
@@ -682,9 +682,13 @@ class UploadImageView(APIView):
 
         try:
             result = upload_image_to_cloudinary(image_file)
+            uploaded_url = result.get('url')
+            if not uploaded_url:
+                raise ValueError("Cloudinary upload failed to produce a valid URL")
             return Response({
-                'url': result['url'],
-                'public_id': result['public_id'],
+                'url': uploaded_url,
+                'image_url': uploaded_url,
+                'public_id': result.get('public_id', ''),
             }, status=status.HTTP_200_OK)
         except Exception as e:
             # Fallback to local storage if Cloudinary fails or credentials mismatch
@@ -701,6 +705,7 @@ class UploadImageView(APIView):
                 file_url = request.build_absolute_uri(f"{settings.MEDIA_URL}{saved_path}")
                 return Response({
                     'url': file_url,
+                    'image_url': file_url,
                     'public_id': saved_path,
                 }, status=status.HTTP_200_OK)
             except Exception as fallback_err:
