@@ -353,17 +353,16 @@ class ListingListCreateView(generics.ListCreateAPIView):
         )
 
         cache_key = 'cxc_public_default_active_listings'
-        is_anon = not (request.user and request.user.is_authenticated)
 
-        if is_default_feed and is_anon:
+        if is_default_feed:
             cached_data = cache.get(cache_key)
             if cached_data is not None:
                 return Response(cached_data)
 
         response = super().list(request, *args, **kwargs)
 
-        if is_default_feed and is_anon and response.status_code == 200:
-            cache.set(cache_key, response.data, 60)
+        if is_default_feed and response.status_code == 200:
+            cache.set(cache_key, response.data, 15)
 
         return response
 
@@ -1194,6 +1193,12 @@ class ChatMessageListCreateView(APIView):
             listing=listing,
             link=f"/chat/{listing.id}/{request.user.id}"
         )
+        try:
+            from django.core.cache import cache
+            cache.delete(f"cxc_user_conversations_{request.user.id}")
+            cache.delete(f"cxc_user_conversations_{peer.id}")
+        except Exception:
+            pass
 
         return Response(ChatMessageSerializer(msg, context={'request': request}).data, status=status.HTTP_201_CREATED)
 
@@ -1204,6 +1209,12 @@ class UserConversationsView(APIView):
 
     def get(self, request):
         user = request.user
+        from django.core.cache import cache
+        cache_key = f"cxc_user_conversations_{user.id}"
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data)
+
         recent_msgs = ChatMessage.objects.filter(
             Q(sender=user) | Q(recipient=user)
         ).select_related('listing', 'sender', 'recipient').order_by('-created_at')
@@ -1239,6 +1250,7 @@ class UserConversationsView(APIView):
                     'unread_count': unread_count
                 })
 
+        cache.set(cache_key, conversations, 10)
         return Response(conversations)
 
 
