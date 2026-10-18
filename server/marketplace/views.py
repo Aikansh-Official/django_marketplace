@@ -987,12 +987,13 @@ class ReviewCreateView(APIView):
 
     def post(self, request):
         deal_id = request.data.get('deal_id')
+        listing_title = request.data.get('listing_title') or request.data.get('item_title')
         rating = request.data.get('rating')
         comment = request.data.get('comment', '').strip()
         quick_tags = request.data.get('quick_tags', [])
 
-        if not deal_id or not rating:
-            return Response({'error': 'Deal ID and rating are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not rating:
+            return Response({'error': 'Rating is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             rating = int(rating)
@@ -1001,10 +1002,33 @@ class ReviewCreateView(APIView):
         except (ValueError, TypeError):
             return Response({'error': 'Rating must be an integer between 1 and 5.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            deal = Offer.objects.select_related('listing', 'listing__seller', 'buyer').get(pk=deal_id)
-        except Offer.DoesNotExist:
-            return Response({'error': 'Deal not found.'}, status=status.HTTP_404_NOT_FOUND)
+        # 1. Resolve deal: First try deal_id if valid 24-character ObjectId
+        deal = None
+        if deal_id and isinstance(deal_id, str) and len(str(deal_id)) == 24:
+            try:
+                int(str(deal_id), 16)
+                deal = Offer.objects.select_related('listing', 'listing__seller', 'buyer').filter(pk=deal_id).first()
+            except (ValueError, Exception):
+                deal = None
+
+        # 2. Fallback: Search among user's completed deals by listing title or most recent
+        if not deal:
+            completed_deals = Offer.objects.select_related('listing', 'listing__seller', 'buyer').filter(
+                Q(buyer=request.user) | Q(listing__seller=request.user),
+                status='COMPLETED'
+            ).order_by('-updated_at', '-created_at')
+
+            if listing_title and str(listing_title).strip():
+                clean_title = str(listing_title).strip()
+                deal = completed_deals.filter(listing__title__iexact=clean_title).first()
+                if not deal:
+                    deal = completed_deals.filter(listing__title__icontains=clean_title).first()
+
+            if not deal:
+                deal = completed_deals.first()
+
+        if not deal:
+            return Response({'error': 'Completed trade deal not found for review.'}, status=status.HTTP_404_NOT_FOUND)
 
         if deal.status != 'COMPLETED':
             return Response({'error': 'Reviews can only be submitted for completed transactions.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -1014,8 +1038,14 @@ class ReviewCreateView(APIView):
 
         reviewed_user = deal.listing.seller if request.user == deal.buyer else deal.buyer
 
-        if Review.objects.filter(deal=deal, reviewer=request.user).exists():
-            return Response({'error': 'You have already submitted a review for this deal.'}, status=status.HTTP_400_BAD_REQUEST)
+        # If review already exists for this deal, update it gracefully
+        existing_review = Review.objects.filter(deal=deal, reviewer=request.user).first()
+        if existing_review:
+            existing_review.rating = rating
+            existing_review.comment = comment
+            existing_review.quick_tags = quick_tags if isinstance(quick_tags, list) else []
+            existing_review.save()
+            return Response(ReviewSerializer(existing_review).data, status=status.HTTP_200_OK)
 
         review = Review.objects.create(
             deal=deal,
@@ -2049,8 +2079,10 @@ class ConfirmHandoverView(APIView):
             return Response({
                 'success': True,
                 'message': 'Handover successfully verified and confirmed! Listing marked as SOLD.',
-                'listing_id': listing.id,
-                'listing_title': listing.title
+                'listing_id': str(listing.id),
+                'listing_title': listing.title,
+                'deal_id': str(offer.id),
+                'trader_name': seller_name
             })
 
 
