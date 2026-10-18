@@ -1,38 +1,38 @@
-# 🔔 Module 08: Notifications, System Alerts & Platform Infrastructure
+# 🔔 Module 08: Notifications, System Alerts & Platform Infrastructure (Website Parity)
 
-This document details the complete native Android specification for **CampXChange** push notifications via **Firebase Cloud Messaging (FCM)**, the in-app notification feed, urgent non-dismissible safety modals, maintenance/suspension interceptors, and dual-device session isolation.
+This document details the complete native Android specification for **CampXChange** push notifications via **Firebase Cloud Messaging (FCM)**, the in-app notification feed (with 100% website-parity filtering, search, and badges), urgent safety modals, and deep-link routing.
 
 ---
 
 ## 1. Notification Architecture & Channel Matrix
 
 ```text
-       FCM CLOUD PUSH                      IN-APP NOTIFICATION FEED
- ┌───────────────────────┐                 ┌───────────────────────┐
- │ Push Message Payload  │                 │ GET /notifications/   │
- └───────────┬───────────┘                 └───────────┬───────────┘
-             │                                         │
-             ▼                                         ▼
- ┌───────────────────────┐                 ┌───────────────────────┐
- │ CXCFirebaseService    │                 │ Filter Tabs:          │
- │ - Route to Channel    │                 │ [All] [Unread]        │
- │ - Build PendingIntent │                 │ [Broadcasts] [Offers] │
- └───────────┬───────────┘                 └───────────────────────┘
-             │
- ┌───────────┴───────────────────────────────────────────────────────┐
- │ Android Notification Channels (API 26+ / Android 8.0+):           │
- │ 1. URGENT_CHANNEL  (High Importance, Vibration, Heads-up popup)   │
- │ 2. OFFERS_CHANNEL  (High Importance, Transaction alerts)          │
- │ 3. CHAT_CHANNEL    (High Importance, Peer messages with avatar)   │
- │ 4. BROADCASTS_CHAN (Default Importance, Campus announcements)     │
- └───────────────────────────────────────────────────────────────────┘
+        FCM CLOUD PUSH                      IN-APP NOTIFICATION FEED (WEBSITE PARITY)
+  ┌───────────────────────┐                 ┌────────────────────────────────────────────────────────┐
+  │ Push Message Payload  │                 │ GET /api/marketplace/notifications/?tab=...&search=... │
+  └───────────┬───────────┘                 └───────────────────────────┬────────────────────────────┘
+              │                                                         │
+              ▼                                                         ▼
+  ┌───────────────────────┐                 ┌────────────────────────────────────────────────────────┐
+  │ CXCFirebaseService    │                 │ 5 Web-Parity Filter Tabs:                              │
+  │ - Route to Channel    │                 │ [All] [Unread] [Trade Alerts] [Messages] [Announcements│
+  │ - Build PendingIntent │                 │ Search Bar: In-memory & query text matching            │
+  └───────────┬───────────┘                 └────────────────────────────────────────────────────────┘
+              │
+  ┌───────────┴──────────────────────────────────────────────────────────────────────────────┐
+  │ Android Notification Channels (API 26+ / Android 8.0+):                                  │
+  │ 1. cxc_urgent_channel   (High Importance, Heads-up popup for Safety & Handover QR)       │
+  │ 2. cxc_trade_channel    (High Importance, Deals, Offers, Buy Requests)                   │
+  │ 3. cxc_messages_channel (High Importance, Student direct chats with avatars)             │
+  │ 4. cxc_broadcast_channel(Default Importance, Campus announcements)                       │
+  └──────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## 2. API Endpoints & Request/Response Contracts
 
-### 2.1 Notifications Api Service (`NotificationsApiService.kt`)
+### 2.1 Notifications Api Service (`NotificationApiService.kt`)
 
 ```kotlin
 package com.campxchange.app.data.remote.api
@@ -41,30 +41,34 @@ import com.campxchange.app.data.remote.dto.*
 import retrofit2.Response
 import retrofit2.http.*
 
-interface NotificationsApiService {
+interface NotificationApiService {
 
     @GET("marketplace/notifications/")
     suspend fun getNotifications(
-        @Query("tab") tab: String? = null // "UNREAD", "BROADCAST", "OFFERS"
+        @Query("tab") tab: String? = null,      // "ALL", "UNREAD", "TRADE", "MESSAGES", "BROADCAST"
+        @Query("search") search: String? = null // Search term matching title or message
     ): Response<List<NotificationDto>>
 
     @PATCH("marketplace/notifications/{id}/read/")
     suspend fun markAsRead(
-        @Path("id") notificationId: Int
-    ): Response<Unit>
+        @Path("id") notificationId: String
+    ): Response<GenericMessageResponse>
 
-    @DELETE("marketplace/notifications/{id}/")
+    @POST("marketplace/notifications/read-all/")
+    suspend fun markAllAsRead(): Response<GenericMessageResponse>
+
+    @DELETE("marketplace/notifications/{id}/delete/")
     suspend fun deleteNotification(
-        @Path("id") notificationId: Int
-    ): Response<Unit>
+        @Path("id") notificationId: String
+    ): Response<GenericMessageResponse>
 
     @DELETE("marketplace/notifications/clear-all/")
-    suspend fun clearAllNotifications(): Response<Unit>
+    suspend fun clearAllNotifications(): Response<GenericMessageResponse>
 
     @POST("marketplace/fcm-token/")
     suspend fun registerFcmToken(
         @Body request: FcmTokenRegistrationDto
-    ): Response<Unit>
+    ): Response<GenericMessageResponse>
 }
 ```
 
@@ -76,186 +80,112 @@ package com.campxchange.app.data.remote.dto
 import com.google.gson.annotations.SerializedName
 
 data class NotificationDto(
-    @SerializedName("id") val id: Int,
-    @SerializedName("notification_type") val type: String, // "BUY_REQUEST", "BROADCAST", "DIRECT_WARNING", "HANDOVER_READY", etc.
-    @SerializedName("priority") val priority: String, // "NORMAL", "HIGH", "URGENT"
-    @SerializedName("title") val title: String,
-    @SerializedName("message") val message: String,
-    @SerializedName("link") val link: String?,
-    @SerializedName("is_read") val isRead: Boolean,
-    @SerializedName("created_at") val createdAt: String
-)
+    @SerializedName("id") val rawId: Any?,
+    @SerializedName("notification_type") val type: String = "GENERAL",
+    @SerializedName("priority") val priority: String = "NORMAL", // "LOW", "NORMAL", "HIGH", "URGENT"
+    @SerializedName("title") val title: String = "",
+    @SerializedName("message") val message: String = "",
+    @SerializedName("link") val link: String? = null,
+    @SerializedName("listing") val rawListing: Any? = null,
+    @SerializedName("listing_title") val listingTitle: String? = null,
+    @SerializedName("listing_image") val listingImage: String? = null,
+    @SerializedName("sender") val rawSender: Any? = null,
+    @SerializedName("sender_name") val senderName: String? = null,
+    @SerializedName("sender_username") val senderUsername: String? = null,
+    @SerializedName("is_read") val isRead: Boolean = false,
+    @SerializedName("created_at") val createdAt: String = ""
+) {
+    val idString: String
+        get() = when (rawId) {
+            is Number -> rawId.toLong().toString()
+            is String -> rawId
+            else -> rawId?.toString() ?: ""
+        }
+
+    val resolvedListingIdString: String?
+        get() = when (rawListing) {
+            is Number -> rawListing.toLong().toString()
+            is String -> rawListing.ifEmpty { null }
+            is Map<*, *> -> rawListing["id"]?.toString()
+            else -> null
+        }
+}
 
 data class FcmTokenRegistrationDto(
     @SerializedName("fcm_token") val fcmToken: String,
     @SerializedName("device_model") val deviceModel: String
 )
+
+data class GenericMessageResponse(
+    val success: Boolean? = true,
+    val message: String? = null
+)
 ```
 
 ---
 
-## 3. Firebase Cloud Messaging Service (`CXCFirebaseMessagingService.kt`)
+## 3. Web Parity Feature Matrix
 
-```kotlin
-package com.campxchange.app.core.notification
+### 3.1 The 5 Category Tabs
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.content.Context
-import android.content.Intent
-import android.os.Build
-import androidx.core.app.NotificationCompat
-import com.campxchange.app.MainActivity
-import com.campxchange.app.R
-import com.google.firebase.messaging.FirebaseMessagingService
-import com.google.firebase.messaging.RemoteMessage
+Matching `client/src/pages/Notifications.jsx`:
+1. **All (`ALL`):** Displays all notifications received by the student.
+2. **Unread (`UNREAD`):** Filter for unread items (`is_read == false`) with active unread counter badge.
+3. **Trade Alerts (`TRADE`):** Filter for transactions:
+   - `BUY_REQUEST` (Purchase Request)
+   - `OFFER_RECEIVED` (Offer Received)
+   - `OFFER_ACCEPTED` (Offer Accepted)
+   - `OFFER_DECLINED` (Offer Declined)
+   - `COUNTER_OFFER` (Counter Offer)
+   - `HANDOVER_READY` (Handover QR Ready)
+   - `ITEM_SOLD` (Item Sold)
+   - `DEAL_CANCELLED` (Deal Cancelled)
+4. **Messages (`MESSAGES`):** Filter for communications:
+   - `CHAT_MESSAGE` (Direct chat message)
+   - `PRODUCT_INQUIRY` (Listing inquiry)
+   - `OFFER_MESSAGE` (Negotiation note)
+5. **Announcements (`BROADCAST`):** System broadcasts & security warnings:
+   - `CAMPUS_BROADCAST` (Official Campus Announcement)
+   - `SYSTEM_ALERT` (System Alert)
+   - `DIRECT_WARNING` (Account Notice / Safety Alert)
+   - `SECURITY_ALERT` (Security Interceptor)
+   - `GENERAL` (Platform updates)
 
-class CXCFirebaseMessagingService : FirebaseMessagingService() {
+### 3.2 Visual Palette & Badge Styling
 
-    override fun onNewToken(token: String) {
-        super.onNewToken(token)
-        // Dispatches new FCM token to Django backend via Repository
-    }
-
-    override fun onMessageReceived(remoteMessage: RemoteMessage) {
-        super.onMessageReceived(remoteMessage)
-
-        val title = remoteMessage.data["title"] ?: remoteMessage.notification?.title ?: "CampXChange"
-        val body = remoteMessage.data["body"] ?: remoteMessage.notification?.body ?: ""
-        val priority = remoteMessage.data["priority"] ?: "NORMAL"
-        val deepLinkRoute = remoteMessage.data["route"]
-
-        showNotification(title, body, priority, deepLinkRoute)
-    }
-
-    private fun showNotification(title: String, body: String, priority: String, route: String?) {
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        createChannels(notificationManager)
-
-        val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            route?.let { putExtra("DESTINATION_ROUTE", it) }
-        }
-
-        val pendingIntent = PendingIntent.getActivity(
-            this,
-            System.currentTimeMillis().toInt(),
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        val channelId = when (priority) {
-            "URGENT" -> "cxc_urgent_channel"
-            "HIGH" -> "cxc_offers_channel"
-            else -> "cxc_general_channel"
-        }
-
-        val notification = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.drawable.ic_cxc_notification)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setAutoCancel(true)
-            .setPriority(if (priority == "URGENT") NotificationCompat.PRIORITY_MAX else NotificationCompat.PRIORITY_DEFAULT)
-            .setContentIntent(pendingIntent)
-            .build()
-
-        notificationManager.notify(System.currentTimeMillis().toInt(), notification)
-    }
-
-    private fun createChannels(manager: NotificationManager) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val urgentChannel = NotificationChannel(
-                "cxc_urgent_channel",
-                "Urgent Safety Notices",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Critical campus compliance and urgent safety alerts"
-                enableVibration(true)
-            }
-
-            val offersChannel = NotificationChannel(
-                "cxc_offers_channel",
-                "Offers & Deals",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Updates on your purchase requests and handover QR"
-            }
-
-            val generalChannel = NotificationChannel(
-                "cxc_general_channel",
-                "Campus Announcements",
-                NotificationManager.IMPORTANCE_DEFAULT
-            )
-
-            manager.createNotificationChannels(listOf(urgentChannel, offersChannel, generalChannel))
-        }
-    }
-}
-```
+| Type | Badge Background | Badge Text | Symbol/Icon |
+|---|---|---|---|
+| **Purchase Request / Offer** | `#FEF3C7` (Amber 100) | `#92400E` (Amber 800) | 💰 Tag / Cart |
+| **Offer Accepted / Item Sold**| `#D1FAE5` (Emerald 100) | `#065F46` (Emerald 800) | 🤝 Checkmark / Deal |
+| **Handover Ready** | `#DBEAFE` (Blue 100) | `#1E40AF` (Blue 800) | 📦 QR Code |
+| **Offer Declined / Cancelled**| `#FEE2E2` (Red 100) | `#991B1B` (Red 800) | ✕ Cross |
+| **Messages / Inquiry** | `#E0E7FF` (Indigo 100) | `#3730A3` (Indigo 800) | 💬 Chat Bubble |
+| **Broadcast / Alerts** | `#FEF3C7` / `#FEE2E2` | Amber / Red | 📢 Megaphone |
 
 ---
 
 ## 4. UI Composable Implementations
 
 ### 4.1 In-App Notifications Screen (`NotificationsScreen.kt`)
-
-```kotlin
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun NotificationsScreen(
-    viewModel: NotificationsViewModel,
-    onNavigateRoute: (String) -> Unit,
-    onNavigateBack: () -> Unit
-) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Notifications & Alerts", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    TextButton(onClick = { viewModel.clearAll() }) {
-                        Text("Clear All", color = Brand500, fontWeight = FontWeight.SemiBold)
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // Filter Tabs
-            TabRow(selectedTabIndex = state.selectedTab) {
-                Tab(selected = state.selectedTab == 0, onClick = { viewModel.setTab(0) }, text = { Text("All") })
-                Tab(selected = state.selectedTab == 1, onClick = { viewModel.setTab(1) }, text = { Text("Unread (${state.unreadCount})") })
-                Tab(selected = state.selectedTab == 2, onClick = { viewModel.setTab(2) }, text = { Text("Broadcasts") })
-                Tab(selected = state.selectedTab == 3, onClick = { viewModel.setTab(3) }, text = { Text("Requests") })
-            }
-
-            LazyColumn(
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(state.notifications) { item ->
-                    NotificationCard(
-                        notification = item,
-                        onClick = {
-                            viewModel.markRead(item.id)
-                            item.link?.let { onNavigateRoute(it) }
-                        },
-                        onDelete = { viewModel.deleteNotification(item.id) }
-                    )
-                }
-            }
-        }
-    }
-}
-```
+The Jetpack Compose screen implements:
+1. **TopBar Action Center:**
+   - Back navigation.
+   - Title with unread count pill badge.
+   - "Mark all read" button.
+   - "Clear all" button (opens confirmation alert dialog).
+2. **Search Header:**
+   - `OutlinedTextField` with leading search icon and trailing clear button.
+3. **Tab Row:**
+   - 5 selectable chips showing name + count badge: `All (12)`, `Unread (3)`, `Trade (4)`, `Messages (2)`, `Announcements (3)`.
+4. **Notification Cards:**
+   - Rounded border (Orange border if unread, light gray if read).
+   - Category badge pill with dynamic colors.
+   - Relative timestamp formatted via `DateUtils.getRelativeTimeSpanString`.
+   - Title & detailed message.
+   - Coil `AsyncImage` product thumbnail when `listing_image` exists.
+   - Quick delete icon button.
+5. **Empty State:**
+   - Beautiful illustration and empty state message when no notifications match selected filter or search query.
 
 ---
 
