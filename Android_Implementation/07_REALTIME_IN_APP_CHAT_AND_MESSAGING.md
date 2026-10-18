@@ -54,14 +54,14 @@ interface ChatApiService {
 
     @GET("marketplace/chat/{listingId}/{peerId}/")
     suspend fun getChatThread(
-        @Path("listingId") listingId: Int,
-        @Path("peerId") peerId: Int
-    ): Response<List<ChatMessageDto>>
+        @Path("listingId") listingId: Long,
+        @Path("peerId") peerId: Long
+    ): Response<ChatThreadResponseDto>
 
     @POST("marketplace/chat/{listingId}/{peerId}/")
     suspend fun sendMessage(
-        @Path("listingId") listingId: Int,
-        @Path("peerId") peerId: Int,
+        @Path("listingId") listingId: Long,
+        @Path("peerId") peerId: Long,
         @Body request: SendMessageRequestDto
     ): Response<ChatMessageDto>
 }
@@ -74,25 +74,49 @@ package com.campxchange.app.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
 
+data class ChatThreadResponseDto(
+    @SerializedName("listing") val listing: ChatListingBriefDto,
+    @SerializedName("peer") val peer: ChatPeerBriefDto,
+    @SerializedName("messages") val messages: List<ChatMessageDto>
+)
+
+data class ChatListingBriefDto(
+    @SerializedName("id") val id: Long,
+    @SerializedName("title") val title: String,
+    @SerializedName("price") val price: String,
+    @SerializedName("transaction_type") val transactionType: String,
+    @SerializedName("image") val imageUrl: String?,
+    @SerializedName("seller_id") val sellerId: Long
+)
+
+data class ChatPeerBriefDto(
+    @SerializedName("id") val id: Long,
+    @SerializedName("name") val name: String,
+    @SerializedName("is_verified") val isVerified: Boolean
+)
+
 data class ConversationSummaryDto(
-    @SerializedName("listing_id") val listingId: Int,
+    @SerializedName("listing_id") val listingId: Long,
     @SerializedName("listing_title") val listingTitle: String,
-    @SerializedName("listing_price") val listingPrice: Double,
+    @SerializedName("listing_price") val listingPrice: String,
     @SerializedName("listing_image") val listingImageUrl: String?,
-    @SerializedName("peer_id") val peerId: Int,
+    @SerializedName("peer_id") val peerId: Long,
     @SerializedName("peer_name") val peerName: String,
     @SerializedName("last_message") val lastMessage: String,
-    @SerializedName("last_message_timestamp") val lastMessageTimestamp: String,
+    @SerializedName("last_message_at") val lastMessageTimestamp: String,
     @SerializedName("unread_count") val unreadCount: Int
 )
 
 data class ChatMessageDto(
-    @SerializedName("id") val id: Int,
-    @SerializedName("sender_id") val senderId: Int,
-    @SerializedName("recipient_id") val recipientId: Int,
-    @SerializedName("listing_id") val listingId: Int,
+    @SerializedName("id") val id: Long,
+    @SerializedName("sender") val senderId: Long,
+    @SerializedName("sender_name") val senderName: String,
+    @SerializedName("recipient") val recipientId: Long,
+    @SerializedName("recipient_name") val recipientName: String,
+    @SerializedName("listing") val listingId: Long,
     @SerializedName("message") val message: String,
     @SerializedName("is_read") val isRead: Boolean,
+    @SerializedName("is_mine") val isMine: Boolean,
     @SerializedName("created_at") val createdAt: String
 )
 
@@ -340,17 +364,20 @@ class ChatViewModel @Inject constructor(
 
     private var pollingJob: Job? = null
 
-    fun startPolling(listingId: Int, peerId: Int) {
+    fun startPolling(listingId: Long, peerId: Long) {
         pollingJob?.cancel()
         pollingJob = viewModelScope.launch {
             while (isActive) {
                 try {
                     val res = chatApi.getChatThread(listingId, peerId)
-                    if (res.isSuccessful) {
-                        _messages.value = res.body() ?: emptyList()
+                    if (res.isSuccessful && res.body() != null) {
+                        val threadData = res.body()!!
+                        _messages.update { current ->
+                            (current + threadData.messages).distinctBy { it.id }.sortedBy { it.id }
+                        }
                     }
                 } catch (e: Exception) {
-                    // Fail silently to retry in next interval
+                    // Fail silently to retry in next 3s interval
                 }
                 delay(3000L) // 3-second cycle
             }
@@ -359,15 +386,20 @@ class ChatViewModel @Inject constructor(
 
     fun stopPolling() {
         pollingJob?.cancel()
+        pollingJob = null
     }
 
-    fun sendMessage(listingId: Int, peerId: Int, text: String) {
+    fun sendMessage(listingId: Long, peerId: Long, text: String, onSentSuccess: () -> Unit = {}) {
+        val trimmed = text.trim()
+        if (trimmed.isBlank()) return
         viewModelScope.launch {
-            val res = chatApi.sendMessage(listingId, peerId, SendMessageRequestDto(text))
-            if (res.isSuccessful) {
-                res.body()?.let { newMsg ->
-                    _messages.update { it + newMsg }
+            val res = chatApi.sendMessage(listingId, peerId, SendMessageRequestDto(trimmed))
+            if (res.isSuccessful && res.body() != null) {
+                val newMsg = res.body()!!
+                _messages.update { current ->
+                    (current + newMsg).distinctBy { it.id }.sortedBy { it.id }
                 }
+                onSentSuccess()
             }
         }
     }

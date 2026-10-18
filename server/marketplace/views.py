@@ -1111,7 +1111,7 @@ class ChatMessageListCreateView(APIView):
         try:
             listing = Listing.objects.get(pk=listing_id)
             peer = User.objects.get(pk=peer_id, is_active=True)
-        except (Listing.DoesNotExist, User.DoesNotExist):
+        except (Listing.DoesNotExist, User.DoesNotExist, Exception):
             return Response({'error': 'Listing or peer user not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         messages = ChatMessage.objects.filter(
@@ -1157,7 +1157,7 @@ class ChatMessageListCreateView(APIView):
         try:
             listing = Listing.objects.get(pk=listing_id)
             peer = User.objects.get(pk=peer_id, is_active=True)
-        except (Listing.DoesNotExist, User.DoesNotExist):
+        except (Listing.DoesNotExist, User.DoesNotExist, Exception):
             return Response({'error': 'Listing or peer user not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         message_text = request.data.get('message', '').strip()
