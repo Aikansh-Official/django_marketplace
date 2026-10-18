@@ -184,10 +184,16 @@ data class VerifyHandoverResponse(
 
 ## 5. Android UI & Navigation Architecture
 
-### 5.1 MyPurchasesScreen (Buyer Orders Dashboard)
+### 5.1 Cart & Active Purchases Dashboard (`MyOrdersScreen`)
 - **Route:** `Screen.MyOrders` (`"profile/my_orders"`)
-- Displays all requests/orders grouped into 4 tabs: `All`, `Handover Ready (Accepted)`, `Pending`, and `Completed`.
-- Any accepted offer renders a green status badge and a prominent button: **"Scan QR / Handover"** linking directly to `Screen.HandoverBuyer`.
+- **TopBar Direct Access:** Prominent Shopping Cart icon with real-time numeric badge on `CampXChangeTopBar` next to notifications, displaying count of Handover-ready accepted orders.
+- **Side Drawer Access (Sellers & Buyers):** Dedicated **"My Cart & Purchases"** menu item in `AppDrawerContent` under both `SELLER` and `BUYER` menus with dynamic "X Ready" indicator. Even if a user is in Seller mode, they can track everything they want to buy.
+- **Cart-style Tabs:**
+  1. `Handover Ready` (Accepted deals ready to meet & scan QR) - defaults to this tab whenever accepted orders exist.
+  2. `Pending` (Requests awaiting seller acceptance)
+  3. `Completed` (Finished campus trades)
+  4. `All` (Complete order history)
+- **Card Actions:** Any accepted offer renders a green status card, seller name, agreed price, meetup location (e.g. "Law Gate", "BH-4 Hostel"), and a primary CTA: **"Scan QR / Handover"** linking directly to `Screen.HandoverBuyer`.
 
 ### 5.2 ProductDetailScreen Green Accepted Banner
 - When buyer opens a product that the seller has accepted:
