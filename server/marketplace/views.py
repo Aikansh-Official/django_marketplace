@@ -501,6 +501,9 @@ class MyListingsView(generics.ListAPIView):
 class ToggleListingStatusView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsVerifiedSeller]
 
+    def post(self, request, pk):
+        return self.patch(request, pk)
+
     def patch(self, request, pk):
         try:
             listing = Listing.objects.get(pk=pk)
@@ -815,6 +818,9 @@ class ListingOffersView(APIView):
 class RespondOfferView(APIView):
     """Seller accepts or declines an incoming purchase request."""
     permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        return self.patch(request, pk)
 
     def patch(self, request, pk):
         try:
@@ -1895,6 +1901,22 @@ class CommunityHubView(APIView):
 class GenerateHandoverQRView(APIView):
     """Seller generates dynamic QR code & 6-digit PIN for physical handover."""
     permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            offer = Offer.objects.select_related('listing', 'listing__seller', 'buyer').get(pk=pk)
+        except Offer.DoesNotExist:
+            return Response({'error': 'Deal / Offer not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if offer.listing.seller != request.user and offer.buyer != request.user:
+            return Response({'error': 'Access denied.'}, status=status.HTTP_403_FORBIDDEN)
+
+        session = HandoverSession.objects.filter(offer=offer).order_by('-created_at').first()
+        if not session:
+            return Response({'error': 'No handover session found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = HandoverSessionSerializer(session)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, pk):
         try:
