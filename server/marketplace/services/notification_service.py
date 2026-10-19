@@ -40,8 +40,15 @@ def get_firebase_app():
 
         cred = None
         if cred_source:
-            if os.path.isfile(cred_source):
-                cred = credentials.Certificate(cred_source)
+            resolved_file = cred_source
+            if not os.path.isfile(resolved_file) and not os.path.isabs(resolved_file):
+                base_dir = getattr(settings, 'BASE_DIR', '')
+                candidate = os.path.join(base_dir, resolved_file)
+                if os.path.isfile(candidate):
+                    resolved_file = candidate
+
+            if os.path.isfile(resolved_file):
+                cred = credentials.Certificate(resolved_file)
             else:
                 # Try raw JSON string or base64 string
                 try:
@@ -130,13 +137,22 @@ class NotificationService:
             try:
                 push_data = {
                     'notification_id': str(notif.id),
-                    'type': notification_type,
-                    'priority': priority,
-                    'link': link or '',
-                    'route': link or '',
-                    'title': title,
-                    'body': message,
+                    'type': str(notification_type),
+                    'notification_type': str(notification_type),
+                    'priority': str(priority),
+                    'link': str(link or ''),
+                    'route': str(link or ''),
+                    'title': str(title),
+                    'body': str(message),
+                    'message': str(message),
                 }
+                if listing:
+                    push_data['listing_id'] = str(listing.id)
+                    push_data['listing_title'] = str(getattr(listing, 'title', ''))
+                if sender:
+                    push_data['sender_id'] = str(sender.id)
+                    push_data['sender_name'] = str(getattr(sender, 'full_name', '') or sender.username)
+
                 if extra_data and isinstance(extra_data, dict):
                     for k, v in extra_data.items():
                         push_data[str(k)] = str(v)
@@ -197,12 +213,16 @@ class NotificationService:
             if tokens:
                 push_data = {
                     'type': 'BROADCAST',
-                    'priority': priority,
-                    'link': link or '',
-                    'route': link or '',
-                    'title': title,
-                    'body': message,
+                    'notification_type': 'BROADCAST',
+                    'priority': str(priority),
+                    'link': str(link or ''),
+                    'route': str(link or ''),
+                    'title': str(title),
+                    'body': str(message),
+                    'message': str(message),
                 }
+                if sender:
+                    push_data['sender_id'] = str(sender.id)
                 if extra_data and isinstance(extra_data, dict):
                     for k, v in extra_data.items():
                         push_data[str(k)] = str(v)
@@ -244,25 +264,42 @@ class NotificationService:
 
             # Ensure all values in data payload are strings
             clean_data = {}
-            if data:
+            if data and isinstance(data, dict):
                 for k, v in data.items():
                     clean_data[str(k)] = str(v)
-            if 'link' not in clean_data:
-                clean_data['link'] = link or ''
-            if 'title' not in clean_data:
-                clean_data['title'] = title
-            if 'body' not in clean_data:
-                clean_data['body'] = message
 
-            # Channel mapping for Android (matching CXCFirebaseMessagingService)
-            channel_id = 'cxc_general_channel'
-            android_priority = 'normal'
+            if 'link' not in clean_data:
+                clean_data['link'] = str(link or '')
+            if 'route' not in clean_data:
+                clean_data['route'] = str(link or '')
+            if 'title' not in clean_data:
+                clean_data['title'] = str(title)
+            if 'body' not in clean_data:
+                clean_data['body'] = str(message)
+            if 'message' not in clean_data:
+                clean_data['message'] = str(message)
+
+            notif_type = clean_data.get('type') or clean_data.get('notification_type') or 'GENERAL'
+
+            # Channel mapping for Android (matching CampXChangeMessagingService)
             if priority == 'URGENT':
                 channel_id = 'cxc_urgent_channel'
                 android_priority = 'high'
-            elif priority == 'HIGH':
-                channel_id = 'cxc_offers_channel'
+            elif notif_type in [
+                'CHAT_MESSAGE', 'NEW_CHAT_MESSAGE', 'PRODUCT_INQUIRY', 'OFFER_MESSAGE'
+            ]:
+                channel_id = 'cxc_messages_channel'
                 android_priority = 'high'
+            elif notif_type in [
+                'HANDOVER_READY', 'BUY_REQUEST', 'OFFER_RECEIVED', 'OFFER_ACCEPTED',
+                'OFFER_DECLINED', 'COUNTER_OFFER', 'ITEM_SOLD', 'DEAL_CANCELLED',
+                'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'OFFER_COUNTERED'
+            ]:
+                channel_id = 'cxc_trade_channel'
+                android_priority = 'high'
+            else:
+                channel_id = 'cxc_broadcast_channel'
+                android_priority = 'high' if priority == 'HIGH' else 'normal'
 
             # Android specific config
             android_config = messaging.AndroidConfig(
@@ -271,53 +308,77 @@ class NotificationService:
                     title=title,
                     body=message,
                     channel_id=channel_id,
-                    icon='ic_cxc_notification',
+                    icon='cxc_logo',
                     click_action='CXC_NOTIFICATION_CLICK',
+                    default_sound=True,
+                    default_vibrate_timings=True
                 ),
                 data=clean_data
             )
 
-            # Web Push specific config
+            # Web Push specific config: WebpushFCMOptions requires an absolute HTTPS URL
+            base_frontend = getattr(settings, 'FRONTEND_URL', 'https://cxc.anshuman892494.online')
+            if ',' in base_frontend:
+                base_frontend = base_frontend.split(',')[0].strip()
+            base_frontend = base_frontend.rstrip('/')
+            if not base_frontend.startswith('http'):
+                base_frontend = f"https://{base_frontend}"
+
+            if link and (link.startswith('https://') or link.startswith('http://')):
+                web_link = link.replace('http://', 'https://', 1)
+            elif link and link.strip():
+                web_link = f"{base_frontend}/{link.lstrip('/')}"
+            else:
+                web_link = f"{base_frontend}/notifications"
+
             webpush_config = messaging.WebpushConfig(
                 notification=messaging.WebpushNotification(
                     title=title,
                     body=message,
-                    icon='/CampXChange_Logo.png',
+                    icon='/CampusXChange_Logo.png',
                     badge='/favicon.png',
-                    data={'link': link or '/notifications'}
+                    data={'link': web_link}
                 ),
-                fcm_options=messaging.WebpushFCMOptions(link=link or '/notifications'),
+                fcm_options=messaging.WebpushFCMOptions(link=web_link),
                 data=clean_data
             )
 
-            # Multicast message
-            multicast_msg = messaging.MulticastMessage(
-                tokens=tokens,
-                notification=messaging.Notification(title=title, body=message),
-                data=clean_data,
-                android=android_config,
-                webpush=webpush_config
-            )
+            # Multicast delivery in chunks of 500 (Firebase API batch limit)
+            total_success = 0
+            dead_tokens = []
+            chunk_size = 500
 
-            response = messaging.send_each_for_multicast(multicast_msg)
-            logger.info(f"FCM sent: {response.success_count} success, {response.failure_count} failures out of {len(tokens)}")
+            for i in range(0, len(tokens), chunk_size):
+                token_chunk = tokens[i:i + chunk_size]
+                multicast_msg = messaging.MulticastMessage(
+                    tokens=token_chunk,
+                    notification=messaging.Notification(title=title, body=message),
+                    data=clean_data,
+                    android=android_config,
+                    webpush=webpush_config
+                )
 
-            # Auto-prune dead/unregistered tokens
-            if response.failure_count > 0:
-                dead_tokens = []
-                for idx, resp in enumerate(response.responses):
-                    if not resp.success:
-                        err = resp.exception
-                        # Check error code or exception type
-                        err_code = getattr(err, 'code', str(err)).lower()
-                        if 'unregistered' in err_code or 'invalid-registration' in err_code or 'mismatch' in err_code:
-                            dead_tokens.append(tokens[idx])
+                response = messaging.send_each_for_multicast(multicast_msg)
+                total_success += response.success_count
+                logger.info(
+                    f"FCM batch {i // chunk_size + 1}: {response.success_count} success, "
+                    f"{response.failure_count} failures out of {len(token_chunk)}"
+                )
 
-                if dead_tokens:
-                    FCMDevice.objects.filter(registration_id__in=dead_tokens).update(is_active=False)
-                    logger.info(f"Pruned {len(dead_tokens)} inactive/unregistered FCM token(s).")
+                if response.failure_count > 0:
+                    for idx, resp in enumerate(response.responses):
+                        if not resp.success:
+                            err = resp.exception
+                            err_code = getattr(err, 'code', str(err)).lower()
+                            if any(sub in err_code for sub in ['unregistered', 'invalid-registration', 'mismatch', 'not-found']):
+                                dead_tokens.append(token_chunk[idx])
 
-            return response.success_count
+            # Prune dead/unregistered tokens
+            if dead_tokens:
+                FCMDevice.objects.filter(registration_id__in=dead_tokens).update(is_active=False)
+                logger.info(f"Pruned {len(dead_tokens)} inactive/unregistered FCM token(s).")
+
+            return total_success
 
         except Exception as e:
             logger.warning(f"Error executing FCM multicast send: {e}")

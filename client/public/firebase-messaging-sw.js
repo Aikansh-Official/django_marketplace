@@ -31,7 +31,7 @@ if (firebaseConfig.apiKey && firebaseConfig.projectId) {
 
       const notificationOptions = {
         body: body,
-        icon: '/CampXChange_Logo.webp',
+        icon: '/CampusXChange_Logo.webp',
         badge: '/favicon.png',
         data: { link: link },
         tag: payload.data?.type || 'cxc-notification',
@@ -60,7 +60,7 @@ self.addEventListener('push', (event) => {
 
     const options = {
       body: body,
-      icon: '/CampXChange_Logo.webp',
+      icon: '/CampusXChange_Logo.webp',
       badge: '/favicon.png',
       data: { link: link },
       tag: data.data?.type || 'cxc-push',

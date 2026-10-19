@@ -1227,7 +1227,13 @@ class ChatMessageListCreateView(APIView):
             title=f"Message from {masked_sender}",
             message=f'Re: "{listing.title}" — {message_text[:80]}',
             listing=listing,
-            link=f"/chat/{listing.id}/{request.user.id}"
+            link=f"/chat/{listing.id}/{request.user.id}",
+            extra_data={
+                'listing_id': str(listing.id),
+                'peer_id': str(request.user.id),
+                'sender_id': str(request.user.id),
+                'deep_link_type': 'NEW_CHAT_MESSAGE'
+            }
         )
         try:
             from django.core.cache import cache
@@ -1553,12 +1559,15 @@ class AdminListingReportUpdateView(APIView):
                     f"CampXChange Moderation Notice: Your listing '{report.listing.title}' received a community violation report "
                     f"for: '{report.reason}'. Please review university guidelines to keep your selling privileges active."
                 )
-                Notification.objects.create(
+                NotificationService.send_notification(
                     recipient=report.listing.seller,
+                    sender=request.user if request.user.is_authenticated else None,
                     notification_type='GENERAL',
+                    priority='HIGH',
                     title='⚠️ Official Moderation Warning',
                     message=warn_msg,
-                    listing=report.listing
+                    listing=report.listing,
+                    link='/notifications'
                 )
             report.status = 'RESOLVED'
             report.resolved_at = timezone.now()
@@ -1574,12 +1583,15 @@ class AdminListingReportUpdateView(APIView):
                 report.listing.status = 'HIDDEN'
                 report.listing.save(update_fields=['status'])
                 if report.listing.seller:
-                    Notification.objects.create(
+                    NotificationService.send_notification(
                         recipient=report.listing.seller,
+                        sender=request.user if request.user.is_authenticated else None,
                         notification_type='GENERAL',
+                        priority='HIGH',
                         title='Listing Taken Down (Hidden)',
                         message=f"Your listing '{report.listing.title}' has been temporarily hidden by administrators following a moderation review.",
-                        listing=report.listing
+                        listing=report.listing,
+                        link='/profile?tab=my-listings'
                     )
             report.status = 'RESOLVED'
             report.resolved_at = timezone.now()
@@ -1613,11 +1625,14 @@ class AdminListingReportUpdateView(APIView):
                 title = report.listing.title
                 report.listing.delete()
                 if seller:
-                    Notification.objects.create(
+                    NotificationService.send_notification(
                         recipient=seller,
+                        sender=request.user if request.user.is_authenticated else None,
                         notification_type='GENERAL',
+                        priority='HIGH',
                         title='Listing Removed by Moderation',
-                        message=f"Your listing '{title}' was removed by campus administrators due to policy violations."
+                        message=f"Your listing '{title}' was removed by campus administrators due to policy violations.",
+                        link='/notifications'
                     )
             report.status = 'RESOLVED'
             report.resolved_at = timezone.now()
@@ -1951,13 +1966,21 @@ class GenerateHandoverQRView(APIView):
 
         # Notify buyer
         seller_name = getattr(request.user, 'full_name', '') or request.user.username
-        Notification.objects.create(
+        NotificationService.send_notification(
             recipient=offer.buyer,
             sender=request.user,
             notification_type='HANDOVER_READY',
+            priority='HIGH',
             title=f"Handover QR Ready for '{offer.listing.title}'",
             message=f"{seller_name} has generated the Handover QR & PIN. Scan or enter PIN to complete your purchase!",
-            listing=offer.listing
+            listing=offer.listing,
+            link=f"/profile?tab=my-orders&offer={offer.id}",
+            extra_data={
+                'deal_id': str(offer.id),
+                'offer_id': str(offer.id),
+                'listing_id': str(offer.listing.id),
+                'deep_link_type': 'HANDOVER_READY'
+            }
         )
 
         serializer = HandoverSessionSerializer(session)
@@ -2079,23 +2102,39 @@ class ConfirmHandoverView(APIView):
             seller_name = getattr(listing.seller, 'full_name', '') or listing.seller.username
 
             # 5. Notify Seller
-            Notification.objects.create(
+            NotificationService.send_notification(
                 recipient=listing.seller,
                 sender=request.user,
                 notification_type='ITEM_SOLD',
+                priority='HIGH',
                 title=f"Deal Complete! '{listing.title}' Marked as Sold 🎉",
                 message=f"{buyer_name} verified product receipt and confirmed payment. Your item is marked as Sold.",
-                listing=listing
+                listing=listing,
+                link=f"/profile?tab=my-sales&offer={offer.id}",
+                extra_data={
+                    'deal_id': str(offer.id),
+                    'offer_id': str(offer.id),
+                    'listing_id': str(listing.id),
+                    'deep_link_type': 'ITEM_SOLD'
+                }
             )
 
             # 6. Notify Buyer
-            Notification.objects.create(
+            NotificationService.send_notification(
                 recipient=request.user,
                 sender=listing.seller,
                 notification_type='ITEM_SOLD',
+                priority='HIGH',
                 title=f"Purchase Verified for '{listing.title}' 🎉",
                 message=f"You completed purchase of '{listing.title}' from {seller_name}. The item is logged in your Purchases.",
-                listing=listing
+                listing=listing,
+                link=f"/profile?tab=my-orders&offer={offer.id}",
+                extra_data={
+                    'deal_id': str(offer.id),
+                    'offer_id': str(offer.id),
+                    'listing_id': str(listing.id),
+                    'deep_link_type': 'ITEM_SOLD'
+                }
             )
 
             return Response({
@@ -2142,13 +2181,21 @@ class CancelDealView(APIView):
             canceller_name = getattr(request.user, 'full_name', '') or request.user.username
             recipient = offer.buyer if is_seller else listing.seller
 
-            Notification.objects.create(
+            NotificationService.send_notification(
                 recipient=recipient,
                 sender=request.user,
                 notification_type='DEAL_CANCELLED',
+                priority='NORMAL',
                 title=f"Campus Deal Cancelled for '{listing.title}'",
                 message=f"{canceller_name} cancelled the campus deal. The listing is now available again.",
-                listing=listing
+                listing=listing,
+                link=f"/product/{listing.id}",
+                extra_data={
+                    'deal_id': str(offer.id),
+                    'offer_id': str(offer.id),
+                    'listing_id': str(listing.id),
+                    'deep_link_type': 'DEAL_CANCELLED'
+                }
             )
 
         return Response({
@@ -2234,21 +2281,37 @@ class AdminDealActionView(APIView):
 
                 # 4. Notify both parties
                 reason_msg = f" Reason: {reason}" if reason else ""
-                Notification.objects.create(
+                NotificationService.send_notification(
                     recipient=buyer,
                     sender=request.user,
                     notification_type='DEAL_CANCELLED',
+                    priority='NORMAL',
                     title=f"Campus Deal Cancelled by Admin: '{listing.title}'",
                     message=f"Campus Administration cancelled deal #{offer.id} for '{listing.title}'.{reason_msg}",
-                    listing=listing
+                    listing=listing,
+                    link=f"/product/{listing.id}",
+                    extra_data={
+                        'deal_id': str(offer.id),
+                        'offer_id': str(offer.id),
+                        'listing_id': str(listing.id),
+                        'deep_link_type': 'DEAL_CANCELLED'
+                    }
                 )
-                Notification.objects.create(
+                NotificationService.send_notification(
                     recipient=seller,
                     sender=request.user,
                     notification_type='DEAL_CANCELLED',
+                    priority='NORMAL',
                     title=f"Campus Deal Cancelled by Admin: '{listing.title}'",
                     message=f"Campus Administration cancelled deal #{offer.id} for '{listing.title}'. The listing has been restored to Active marketplace.{reason_msg}",
-                    listing=listing
+                    listing=listing,
+                    link=f"/product/{listing.id}",
+                    extra_data={
+                        'deal_id': str(offer.id),
+                        'offer_id': str(offer.id),
+                        'listing_id': str(listing.id),
+                        'deep_link_type': 'DEAL_CANCELLED'
+                    }
                 )
 
             serializer = AdminDealSerializer(offer)
@@ -2304,21 +2367,37 @@ class AdminDealActionView(APIView):
 
                 # 5. Notify both parties
                 reason_msg = f" Note: {reason}" if reason else ""
-                Notification.objects.create(
+                NotificationService.send_notification(
                     recipient=seller,
                     sender=request.user,
                     notification_type='ITEM_SOLD',
+                    priority='HIGH',
                     title=f"Deal Verified & Completed: '{listing.title}' 🎉",
                     message=f"Campus Administration manually verified and completed handover for '{listing.title}'. Item is marked as SOLD.{reason_msg}",
-                    listing=listing
+                    listing=listing,
+                    link=f"/profile?tab=my-sales&offer={offer.id}",
+                    extra_data={
+                        'deal_id': str(offer.id),
+                        'offer_id': str(offer.id),
+                        'listing_id': str(listing.id),
+                        'deep_link_type': 'ITEM_SOLD'
+                    }
                 )
-                Notification.objects.create(
+                NotificationService.send_notification(
                     recipient=buyer,
                     sender=request.user,
                     notification_type='ITEM_SOLD',
+                    priority='HIGH',
                     title=f"Purchase Verified & Completed: '{listing.title}' 🎉",
                     message=f"Campus Administration verified handover for '{listing.title}'. The transaction is marked as COMPLETED.{reason_msg}",
-                    listing=listing
+                    listing=listing,
+                    link=f"/profile?tab=my-orders&offer={offer.id}",
+                    extra_data={
+                        'deal_id': str(offer.id),
+                        'offer_id': str(offer.id),
+                        'listing_id': str(listing.id),
+                        'deep_link_type': 'ITEM_SOLD'
+                    }
                 )
 
             serializer = AdminDealSerializer(offer)

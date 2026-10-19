@@ -69,3 +69,6 @@ Thumbs.db
 
 # OCR models
 *.traineddata
+
+# Nested standalone repositories
+CXC_Marketplace_Android/
