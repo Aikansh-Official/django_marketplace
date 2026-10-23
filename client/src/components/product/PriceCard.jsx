@@ -16,7 +16,8 @@ export default function PriceCard({
   onOpenChat,
   onOpenScannerModal,
   onOpenQRModal,
-  onCancelDeal
+  onCancelDeal,
+  onOpenSellerDrawer
 }) {
   if (!listing) return null;
 
@@ -111,6 +112,7 @@ export default function PriceCard({
         onOpenScannerModal={onOpenScannerModal}
         onOpenQRModal={onOpenQRModal}
         onCancelDeal={onCancelDeal}
+        onOpenSellerDrawer={onOpenSellerDrawer}
       />
     </div>
   );

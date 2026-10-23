@@ -29,7 +29,8 @@ export default function BuyerActions({
   onOpenChat,
   onOpenScannerModal,
   onOpenQRModal,
-  onCancelDeal
+  onCancelDeal,
+  onOpenSellerDrawer
 }) {
   if (!listing) return null;
 
@@ -83,31 +84,33 @@ export default function BuyerActions({
             </p>
 
             <div className="space-y-2 pt-1">
-              <Link
-                to={`/edit-listing/${listing.id}`}
-                className="w-full bg-white hover:bg-gray-50 border border-gray-300 hover:border-gray-400 text-gray-800 font-bold py-2.5 px-4 rounded-md transition-all text-xs flex items-center justify-center gap-2 shadow-2xs"
+              <button
+                type="button"
+                onClick={() => onOpenSellerDrawer && onOpenSellerDrawer('controls')}
+                className="w-full bg-brand-500 hover:bg-brand-600 active:scale-[0.99] text-white font-bold py-2.5 px-4 rounded-md transition-all text-xs flex items-center justify-center gap-2 shadow-sm cursor-pointer"
               >
-                <Edit3 className="w-3.5 h-3.5 text-gray-600" />
-                <span>Edit Listing Details</span>
-              </Link>
+                <Tag className="w-3.5 h-3.5" />
+                <span>Open Seller Control Panel</span>
+              </button>
 
-              {listingOffers.length > 0 ? (
+              <div className="grid grid-cols-2 gap-2">
+                <Link
+                  to={`/edit-listing/${listing.id}`}
+                  className="bg-white hover:bg-gray-50 border border-gray-300 hover:border-gray-400 text-gray-800 font-bold py-2 px-3 rounded-md transition-all text-xs flex items-center justify-center gap-1.5 shadow-2xs"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-gray-600" />
+                  <span>Edit Details</span>
+                </Link>
+
                 <button
                   type="button"
-                  onClick={() => {
-                    const el = document.getElementById('seller-offers-panel');
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="w-full bg-brand-500 hover:bg-brand-600 active:scale-[0.99] text-white font-bold py-2.5 px-4 rounded-md transition-all text-xs flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                  onClick={() => onOpenSellerDrawer && onOpenSellerDrawer('requests')}
+                  className="bg-orange-50 hover:bg-orange-100/80 border border-brand-200 text-brand-700 font-bold py-2 px-3 rounded-md transition-all text-xs flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
                 >
-                  <ShoppingBag className="w-3.5 h-3.5" />
-                  <span>View Buyer Requests ({listingOffers.length})</span>
+                  <ShoppingBag className="w-3.5 h-3.5 text-brand-600" />
+                  <span>Requests ({listingOffers.length})</span>
                 </button>
-              ) : (
-                <div className="bg-white/90 border border-dashed border-gray-200 rounded-md py-2 px-3 text-center text-[11px] text-gray-400">
-                  No buyer requests yet • Keep checking
-                </div>
-              )}
+              </div>
             </div>
           </div>
         ) : (
@@ -219,6 +222,14 @@ export default function BuyerActions({
                 <span>Generate Handover QR & PIN</span>
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => onOpenSellerDrawer && onOpenSellerDrawer('controls')}
+              className="w-full bg-white hover:bg-amber-100/50 border border-amber-300 text-amber-900 font-bold py-2 px-3 rounded-md text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Tag className="w-3.5 h-3.5 text-brand-600" />
+              <span>Open Seller Control Panel</span>
+            </button>
           </div>
         ) : userOffer?.status === 'ACCEPTED' ? (
           <div className="bg-emerald-50 border border-emerald-300 text-emerald-900 p-4 rounded-md text-xs font-bold text-center space-y-2.5">

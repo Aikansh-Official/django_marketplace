@@ -10,7 +10,9 @@ import {
   Heart,
   Package,
   Share2,
-  ShieldCheck
+  ShieldCheck,
+  Sliders,
+  Tag
 } from 'lucide-react';
 import { toggleSavedItem, isItemSaved } from '../utils/savedStore';
 import UniversalLoader from '../components/common/UniversalLoader';
@@ -21,7 +23,7 @@ import { emitTradeEvent, TRADE_ACTIONS } from '../utils/tradeEvents';
 // Modular Product Components
 import ImageGallery from '../components/product/ImageGallery';
 import StatusBanners from '../components/product/StatusBanners';
-import SellerControlPanel from '../components/product/SellerControlPanel';
+import SellerControlDrawer from '../components/product/SellerControlDrawer';
 import PriceCard from '../components/product/PriceCard';
 
 // Lazy Loaded Modals & Drawers (splits html5-qrcode and chat out of initial product view)
@@ -58,6 +60,18 @@ export default function ProductDetail() {
   const [submittingBuyRequest, setSubmittingBuyRequest] = useState(false);
   const [listingOffers, setListingOffers] = useState([]);
   const [userOffer, setUserOffer] = useState(null);
+
+  // Seller slide-over drawer state (requests or controls)
+  const [showSellerDrawer, setShowSellerDrawer] = useState(false);
+  const [sellerDrawerTab, setSellerDrawerTab] = useState('requests');
+
+  const handleOpenSellerDrawer = (tab) => {
+    const targetTab = (tab === 'controls' || tab === 'requests')
+      ? tab
+      : (listingOffers && listingOffers.length > 0 ? 'requests' : 'controls');
+    setSellerDrawerTab(targetTab);
+    setShowSellerDrawer(true);
+  };
 
   // In-App Chat state
   const [showChatDrawer, setShowChatDrawer] = useState(false);
@@ -635,6 +649,7 @@ export default function ProductDetail() {
         </div>
 
         <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+
           <button
             type="button"
             onClick={handleToggleSave}
@@ -669,23 +684,57 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* Seller Management Panel */}
+      {/* Compact Seller Management Strip & Access Trigger */}
       {isOwner && (
-        <SellerControlPanel
-          listing={listing}
-          listingOffers={listingOffers}
-          statusUpdating={statusUpdating}
-          cancellingDeal={cancellingDeal}
-          onStatusChange={handleStatusChange}
-          onDeleteClick={() => setShowDeleteModal(true)}
-          onRespondOffer={handleRespondOffer}
-          onOpenCounterModal={handleOpenCounterModal}
-          onOpenQRModal={(off) => {
-            setActiveOfferForQR(off);
-            setShowQRModal(true);
-          }}
-          onCancelDeal={handleCancelDeal}
-        />
+        <div className="mb-6 p-3 sm:p-3.5 bg-gradient-to-r from-orange-50/90 via-amber-50/50 to-white border border-brand-200/90 rounded-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-md bg-brand-500 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
+              <Tag className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-xs font-black text-brand-950 uppercase tracking-wider truncate">
+                  Seller Control Panel
+                </h3>
+                <span
+                  className={`font-extrabold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded-md border ${
+                    listing.status === 'SOLD'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : 'bg-brand-50 text-brand-600 border-brand-200/80'
+                  }`}
+                >
+                  {listing.status === 'PENDING' ? 'Reserved' : listing.status}
+                </span>
+                {listingOffers.some((o) => o.status === 'PENDING') && (
+                  <span className="text-[10px] font-bold text-amber-700 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-md animate-pulse">
+                    Action Needed
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-gray-500 truncate mt-0.5">
+                {listingOffers.length > 0
+                  ? `${listingOffers.length} buyer request${listingOffers.length > 1 ? 's' : ''} received • Tap to review and manage status`
+                  : 'Manage listing visibility, inquiries & incoming student purchase requests'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+            <button
+              type="button"
+              onClick={() => handleOpenSellerDrawer()}
+              className="bg-brand-500 hover:bg-brand-600 active:scale-[0.99] text-white font-bold text-xs px-3.5 py-2 rounded-md shadow-xs hover:shadow transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <Tag className="w-3.5 h-3.5" />
+              <span>Open Seller Panel</span>
+              {listingOffers.length > 0 && (
+                <span className="bg-white text-brand-600 text-[10px] font-black px-1.5 py-0.2 rounded-full">
+                  {listingOffers.length}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Status & Action Banners for Buyer */}
@@ -732,6 +781,7 @@ export default function ProductDetail() {
                 setShowQRModal(true);
               }}
               onCancelDeal={handleCancelDeal}
+              onOpenSellerDrawer={handleOpenSellerDrawer}
             />
           </div>
 
@@ -812,6 +862,7 @@ export default function ProductDetail() {
                 setShowQRModal(true);
               }}
               onCancelDeal={handleCancelDeal}
+              onOpenSellerDrawer={handleOpenSellerDrawer}
             />
           </div>
 
@@ -1050,6 +1101,61 @@ export default function ProductDetail() {
             onClose={() => setShowChatDrawer(false)}
           />
         </Suspense>
+      )}
+
+      {/* Slide-over Seller Control Drawer */}
+      {isOwner && showSellerDrawer && (
+        <SellerControlDrawer
+          isOpen={showSellerDrawer}
+          initialTab={sellerDrawerTab}
+          onClose={() => setShowSellerDrawer(false)}
+          listing={listing}
+          listingOffers={listingOffers}
+          statusUpdating={statusUpdating}
+          cancellingDeal={cancellingDeal}
+          onStatusChange={handleStatusChange}
+          onDeleteClick={() => {
+            setShowSellerDrawer(false);
+            setShowDeleteModal(true);
+          }}
+          onRespondOffer={handleRespondOffer}
+          onOpenCounterModal={(off) => {
+            setShowSellerDrawer(false);
+            handleOpenCounterModal(off);
+          }}
+          onOpenQRModal={(off) => {
+            setShowSellerDrawer(false);
+            setActiveOfferForQR(off);
+            setShowQRModal(true);
+          }}
+          onCancelDeal={handleCancelDeal}
+        />
+      )}
+
+      {/* Floating Quick Access Button for Seller */}
+      {isOwner && !showSellerDrawer && (
+        <div className="fixed bottom-6 right-6 z-40">
+          <button
+            type="button"
+            onClick={() => handleOpenSellerDrawer()}
+            className="bg-brand-500 hover:bg-brand-600 active:scale-95 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center gap-2 border-2 border-white cursor-pointer"
+            title="Open Seller Control Panel"
+          >
+            <Tag className="w-4 h-4" />
+            <span>Seller Panel</span>
+            {listingOffers.length > 0 && (
+              <span
+                className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+                  listingOffers.some((o) => o.status === 'PENDING')
+                    ? 'bg-amber-300 text-gray-900 animate-pulse'
+                    : 'bg-white text-brand-600'
+                }`}
+              >
+                {listingOffers.length}
+              </span>
+            )}
+          </button>
+        </div>
       )}
     </div>
   );
