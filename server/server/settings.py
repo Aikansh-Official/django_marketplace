@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables from .env file
-load_dotenv(os.path.join(BASE_DIR, '.env'))
+load_dotenv(os.path.join(BASE_DIR, '.env'), override=True)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
@@ -144,10 +144,10 @@ _mongo_options = {
     'maxPoolSize': int(os.environ.get('MONGO_MAX_POOL_SIZE', 50)),
     'minPoolSize': int(os.environ.get('MONGO_MIN_POOL_SIZE', 0)),
     'maxIdleTimeMS': 30000,
-    'serverSelectionTimeoutMS': int(os.environ.get('MONGO_TIMEOUT_MS', 5000)),
-    'connectTimeoutMS': 5000,
-    'socketTimeoutMS': 15000,
-    'waitQueueTimeoutMS': 5000,
+    'serverSelectionTimeoutMS': int(os.environ.get('MONGO_TIMEOUT_MS', 30000)),
+    'connectTimeoutMS': 30000,
+    'socketTimeoutMS': 30000,
+    'waitQueueTimeoutMS': 10000,
     'retryWrites': True,
     'retryReads': True,
 }
@@ -464,6 +464,11 @@ FIREBASE_API_KEY = os.environ.get('FIREBASE_API_KEY', '')
 FIREBASE_PROJECT_ID = os.environ.get('FIREBASE_PROJECT_ID', '')
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
 FIREBASE_SERVICE_ACCOUNT_KEY = os.environ.get('FIREBASE_SERVICE_ACCOUNT_KEY', '')
+
+# ── Google Gemini AI Settings ──────────────────────────────────
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-3.5-flash-lite')
+
 
 
 

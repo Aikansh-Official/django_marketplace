@@ -1,6 +1,6 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import toast from 'react-hot-toast';
-import api from '../../services/api';
+import api, { verifyIdCardWithAI } from '../../services/api';
 import triggerConfetti from '../../utils/confetti';
 import {
   ShieldCheck,
@@ -113,39 +113,34 @@ export default function IdVerificationTab({ profile, onProfileUpdated, onOpenSel
         return;
       }
 
-      setScanProgress(10);
+      setScanProgress(25);
       setScanStatus('Optimizing image for scanning...');
-      let ocrReadyImage = idFrontImage;
+      let compressedForAi = idFrontImage;
       try {
-        ocrReadyImage = await preprocessImageForOcr(idFrontImage);
-      } catch (prepErr) {
-        console.warn('OCR preprocessing failed, using original:', prepErr);
+        compressedForAi = await compressImageToDataUrl(idFrontImage, {
+          maxWidth: 1280,
+          maxHeight: 900,
+          quality: 0.85,
+        });
+      } catch (compErr) {
+        console.warn('Compression before inspection failed, using original:', compErr);
       }
 
-      setScanProgress(15);
-      // Step 2: In-browser client-side OCR (Dynamically loaded on demand)
-      setScanStatus('Loading OCR engine...');
-      const { default: Tesseract } = await import('tesseract.js');
-      const {
-        data: { text }
-      } = await Tesseract.recognize(ocrReadyImage, 'eng', {
-        logger: (m) => {
-          if (m.status === 'recognizing text') {
-            const pct = Math.round((m.progress || 0) * 100);
-            setScanProgress(Math.max(15, pct));
-            setScanStatus(`Scanning card text (${pct}%)...`);
-          } else if (m.status) {
-            setScanStatus(`${m.status.replace(/_/g, ' ')}...`);
-          }
-        }
+      setScanProgress(55);
+      setScanStatus('Scanning & verifying ID card credentials...');
+
+      // Step 2: Verification Endpoint
+      const aiResponse = await verifyIdCardWithAI({
+        image: compressedForAi,
+        reg_no: registeredRegNo,
+        full_name: studentName,
+        university: 'Lovely Professional University'
       });
 
       setScanProgress(100);
-      setScanStatus('Validating LPU branding, registration number & student name...');
+      setScanStatus('Scanning completed!');
 
-      const validationResult = extractLpuCardDetails(text, registeredRegNo, studentName);
-
-      if (validationResult.isValid) {
+      if (aiResponse.is_valid) {
         // MATCH SUCCESSFUL! Update backend DB model CustomUser.is_id_verified = True
         try {
           let compressedForDb = idFrontImage;
@@ -162,7 +157,13 @@ export default function IdVerificationTab({ profile, onProfileUpdated, onOpenSel
           await api.post('/auth/verify-id/', {
             reg_no: registeredRegNo,
             id_card_image: compressedForDb,
-            id_card_data: validationResult.extraData
+            id_card_data: {
+              program: aiResponse.program || 'Student',
+              validity: aiResponse.valid_upto || 'Active',
+              batch: aiResponse.batch || 'Verified',
+              regNo: aiResponse.extracted_reg_no || registeredRegNo,
+              fullName: aiResponse.extracted_name || studentName
+            }
           });
         } catch (apiErr) {
           console.warn('Backend verify-id call:', apiErr?.response?.data || apiErr.message);
@@ -181,17 +182,13 @@ export default function IdVerificationTab({ profile, onProfileUpdated, onOpenSel
         window.dispatchEvent(new Event('auth-changed'));
       } else {
         // REJECTED
-        setRejectionInfo({
-          reason: validationResult.reason
-        });
-
-        toast.error('Verification Rejected: ' + validationResult.reason, {
-          duration: 6000
-        });
+        const reason = aiResponse.reason || 'Verification failed. Please upload a clearer photo of your LPU student ID.';
+        setRejectionInfo({ reason });
+        toast.error('Verification Rejected: ' + reason, { duration: 6000 });
       }
-    } catch (ocrErr) {
-      console.error('OCR scanning error:', ocrErr);
-      const errMsg = 'Failed to read ID card photo. Please upload a clearer photo with good lighting.';
+    } catch (err) {
+      console.error('ID verification error:', err);
+      const errMsg = err.response?.data?.reason || err.response?.data?.error || err.message || 'ID card scanning failed. Please try again.';
       toast.error(errMsg);
       setRejectionInfo({ reason: errMsg });
     } finally {

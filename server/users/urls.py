@@ -8,7 +8,8 @@ from .views import (
     AdminStaffListView, AdminStaffDetailView,
     ForgotPasswordRequestView, ForgotPasswordResetView,
     UserActiveSessionsView, RevokeSessionView,
-    GoogleLoginView, UserLoginHistoryView, AdminLoginLogsView
+    GoogleLoginView, UserLoginHistoryView, AdminLoginLogsView,
+    VerifyIdCardAIView
 )
 
 urlpatterns = [
@@ -32,6 +33,7 @@ urlpatterns = [
     path('profile/', UserProfileView.as_view(), name='user_profile'),
     path('verify-id/', CompleteIdVerificationView.as_view(), name='verify_id'),
     path('upgrade-to-seller/', UpgradeToSellerView.as_view(), name='upgrade_to_seller'),
+    path('verify-id-ai/', VerifyIdCardAIView.as_view(), name='verify_id_ai'),
     path('status/', AuthStatusView.as_view(), name='auth_status'),
     path('check-username/', CheckUsernameView.as_view(), name='check_username'),
     path('check-phone/', CheckPhoneView.as_view(), name='check_phone'),

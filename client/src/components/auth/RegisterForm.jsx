@@ -11,8 +11,7 @@ import {
 import { compressImageToDataUrl } from '../../utils/compressImage';
 import { preloadVisionDetectors } from '../../utils/faceLivenessDetector';
 import { registerSchema } from './authSchemas';
-import { ShieldAlert } from 'lucide-react';
-import api, { getPlatformConfig } from '../../services/api';
+import api, { getPlatformConfig, verifyIdCardWithAI } from '../../services/api';
 import RegisterStepper from './RegisterStepper';
 import RegisterStepDetails from './steps/RegisterStepDetails';
 import RegisterStepIdCard from './steps/RegisterStepIdCard';
@@ -317,7 +316,7 @@ export default function RegisterForm({
     }
   };
 
-  // Step 2 (Seller): Intelligent OCR verification of ID Card
+  // Step 2 (Seller): AI Vision verification of ID Card via Gemini
   const handleScanAndVerifyId = async () => {
     if (!idFrontImage) {
       toast.error('Please capture your student ID card photo first.');
@@ -325,8 +324,8 @@ export default function RegisterForm({
     }
 
     setIsScanning(true);
-    setScanProgress(10);
-    setScanStatus('Scanning...');
+    setScanProgress(15);
+    setScanStatus('Optimizing ID card image...');
     setRejectionInfo(null);
 
     try {
@@ -341,43 +340,40 @@ export default function RegisterForm({
         return;
       }
 
-      setScanProgress(30);
-      setScanStatus('Optimizing image for fast OCR...');
+      setScanProgress(35);
+      setScanStatus('Optimizing image for scanning...');
+      const optimizedImage = await compressImageToDataUrl(idFrontImage, 1280, 0.85);
 
-      // 2. High Accuracy Optical Character Recognition (OCR) with canvas optimization
-      const ocrReadyImage = await preprocessImageForOcr(idFrontImage);
+      setScanProgress(60);
+      setScanStatus('Scanning & verifying ID card credentials...');
 
-      setScanProgress(50);
-      setScanStatus('Reading card text...');
-
-      // Dynamically load OCR engine on demand
-      const { default: Tesseract } = await import('tesseract.js');
-      const { data: { text } } = await Tesseract.recognize(ocrReadyImage, 'eng', {
-        logger: (m) => {
-          if (m.status === 'recognizing text') {
-            const currentPct = 50 + Math.floor(m.progress * 45);
-            setScanProgress(currentPct);
-            setScanStatus(`Reading card text (${Math.floor(m.progress * 100)}%)...`);
-          }
-        },
+      // 2. Call Backend Verification Endpoint
+      const aiResponse = await verifyIdCardWithAI({
+        image: optimizedImage || idFrontImage,
+        reg_no: usernameValue,
+        full_name: fullNameValue,
+        university: 'Lovely Professional University'
       });
 
       setScanProgress(100);
-      setScanStatus('Verifying...');
-
-      // 3. Multi-Anchor LPU Validation & Field Extraction
-      const result = extractLpuCardDetails(text, usernameValue, fullNameValue);
+      setScanStatus('Scanning completed!');
 
       setVerificationDetails({
-        regMatched: Boolean(result.regMatched),
-        nameMatched: Boolean(result.nameMatched),
-        univMatched: Boolean(result.univMatched)
+        regMatched: Boolean(aiResponse.reg_matched),
+        nameMatched: Boolean(aiResponse.name_matched),
+        univMatched: Boolean(aiResponse.univ_matched)
       });
 
-      if (result.isValid) {
+      if (aiResponse.is_valid) {
         // MATCH SUCCESSFUL!
         setIsIdVerified(true);
-        setExtractedCardData(result.extraData);
+        setExtractedCardData({
+          program: aiResponse.program || 'Student',
+          validity: aiResponse.valid_upto || 'Active',
+          batch: aiResponse.batch || 'Verified',
+          regNo: aiResponse.extracted_reg_no || usernameValue,
+          fullName: aiResponse.extracted_name || fullNameValue
+        });
         setRejectionInfo(null);
 
         triggerConfetti({
@@ -388,19 +384,20 @@ export default function RegisterForm({
         });
 
         toast.success(
-          `ID Verified! Registration ${usernameValue} & details matched successfully!`,
+          `ID Card Verified! Registration ${usernameValue} & details matched successfully!`,
           { icon: '🎉', duration: 4000 }
         );
       } else {
-        // REJECTION
+        // REJECTION OR PARTIAL MISMATCH
         setIsIdVerified(false);
         setExtractedCardData(null);
-        setRejectionInfo({ reason: result.reason });
-        toast.error(result.reason);
+        const reason = aiResponse.reason || 'ID card verification failed. Please check details or upload a clearer photo.';
+        setRejectionInfo({ reason });
+        toast.error(reason);
       }
-    } catch (ocrErr) {
-      console.error('OCR Error:', ocrErr);
-      const errMsg = 'Could not read ID card. Please retake a clearer photo.';
+    } catch (err) {
+      console.error('ID Verification Error:', err);
+      const errMsg = err.response?.data?.reason || err.response?.data?.error || err.message || 'ID card scanning failed. Please try again.';
       toast.error(errMsg);
       setRejectionInfo({ reason: errMsg });
     } finally {

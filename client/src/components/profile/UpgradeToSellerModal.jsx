@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import api from '../../services/api';
+import api, { verifyIdCardWithAI } from '../../services/api';
 import toast from 'react-hot-toast';
 import triggerConfetti from '../../utils/confetti';
 import {
@@ -118,7 +118,7 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
     reader.readAsDataURL(file);
   };
 
-  // Run OCR & authenticity verification
+  // Run AI Vision verification via Gemini
   const handleScanAndVerifyId = async () => {
     if (!idFrontImage) {
       toast.error('Please upload your student ID card photo first.');
@@ -126,7 +126,7 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
     }
 
     setIsScanning(true);
-    setScanProgress(10);
+    setScanProgress(15);
     setScanStatus('Scanning photo authenticity...');
     setRejectionInfo(null);
 
@@ -137,45 +137,44 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
         setRejectionInfo({ reason: authenticityCheck.reason });
         toast.error(authenticityCheck.reason, { duration: 5000 });
         setIsScanning(false);
+        setScanProgress(0);
+        setScanStatus('');
         return;
       }
 
-      setScanProgress(30);
-      setScanStatus('Optimizing image for fast OCR...');
+      setScanProgress(35);
+      setScanStatus('Optimizing image for scanning...');
+      const optimizedImage = await compressImageToDataUrl(idFrontImage, 1280, 0.85);
 
-      // 2. High-speed, high-accuracy offscreen canvas preprocessing
-      const ocrReadyImage = await preprocessImageForOcr(idFrontImage);
+      setScanProgress(60);
+      setScanStatus('Scanning & verifying ID card credentials...');
 
-      setScanProgress(50);
-      setScanStatus('Reading card text...');
-
-      // 3. OCR recognition on preprocessed image (dynamically loaded on demand)
-      const { default: Tesseract } = await import('tesseract.js');
-      const { data: { text } } = await Tesseract.recognize(ocrReadyImage, 'eng', {
-        logger: (m) => {
-          if (m.status === 'recognizing text') {
-            const currentPct = 50 + Math.floor(m.progress * 45);
-            setScanProgress(currentPct);
-            setScanStatus(`Reading card text (${Math.floor(m.progress * 100)}%)...`);
-          }
-        },
+      // 2. Call Backend Verification Endpoint
+      const aiResponse = await verifyIdCardWithAI({
+        image: optimizedImage || idFrontImage,
+        reg_no: username,
+        full_name: fullName,
+        university: 'Lovely Professional University'
       });
 
       setScanProgress(100);
-      setScanStatus('Matching details...');
-
-      // 4. Match against account
-      const result = extractLpuCardDetails(text, username, fullName);
+      setScanStatus('Scanning completed!');
 
       setVerificationDetails({
-        regMatched: Boolean(result.regMatched),
-        nameMatched: Boolean(result.nameMatched),
-        univMatched: Boolean(result.univMatched)
+        regMatched: Boolean(aiResponse.reg_matched),
+        nameMatched: Boolean(aiResponse.name_matched),
+        univMatched: Boolean(aiResponse.univ_matched)
       });
 
-      if (result.isValid) {
+      if (aiResponse.is_valid) {
         setIsIdVerified(true);
-        setExtractedCardData(result.extraData);
+        setExtractedCardData({
+          program: aiResponse.program || 'Student',
+          validity: aiResponse.valid_upto || 'Active',
+          batch: aiResponse.batch || 'Verified',
+          regNo: aiResponse.extracted_reg_no || username,
+          fullName: aiResponse.extracted_name || fullName
+        });
         setRejectionInfo(null);
         triggerConfetti({
           particleCount: 80,
@@ -186,12 +185,13 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
       } else {
         setIsIdVerified(false);
         setExtractedCardData(null);
-        setRejectionInfo({ reason: result.reason });
-        toast.error(result.reason);
+        const reason = aiResponse.reason || 'ID card verification failed. Please check details or upload a clearer photo.';
+        setRejectionInfo({ reason });
+        toast.error(reason);
       }
     } catch (err) {
-      console.error('OCR Error:', err);
-      const errMsg = 'Could not read card clearly. Please upload a brighter, sharper photo.';
+      console.error('ID Verification Error:', err);
+      const errMsg = err.response?.data?.reason || err.response?.data?.error || err.message || 'ID card scanning failed. Please try again.';
       toast.error(errMsg);
       setRejectionInfo({ reason: errMsg });
     } finally {

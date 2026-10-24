@@ -336,5 +336,16 @@ export async function getMyReports() {
   return api.get('/marketplace/my-reports/');
 }
 
+// AI-Powered Student ID Card Verification via Gemini
+export async function verifyIdCardWithAI({ image, reg_no, full_name, university }) {
+  const response = await api.post('/auth/verify-id-ai/', {
+    image,
+    reg_no,
+    full_name,
+    university: university || 'Lovely Professional University',
+  });
+  return response.data;
+}
+
 export default api;
 

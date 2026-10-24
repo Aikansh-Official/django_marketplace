@@ -1317,6 +1317,44 @@ class UpgradeToSellerView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+class VerifyIdCardAIView(APIView):
+    """
+    Endpoint for AI-powered verification of Student ID Cards using Google Gemini Vision.
+    Accessible to both registering students and existing buyers upgrading to seller.
+    """
+    permission_classes = (AllowAny,)
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'signup'
+
+    def post(self, request):
+        image = request.data.get('image')
+        reg_no = str(request.data.get('reg_no', '') or request.data.get('username', '')).strip()
+        full_name = str(request.data.get('full_name', '')).strip()
+        university = str(request.data.get('university', 'Lovely Professional University')).strip()
+
+        if not image or not isinstance(image, str) or len(image) < 100:
+            return Response(
+                {"success": False, "is_valid": False, "reason": "A valid ID card photo is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not reg_no:
+            return Response(
+                {"success": False, "is_valid": False, "reason": "Registration number is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        from .gemini_id_verifier import verify_student_id_with_gemini
+        result = verify_student_id_with_gemini(
+            image_base64=image,
+            target_reg_no=reg_no,
+            target_full_name=full_name,
+            target_university=university
+        )
+
+        return Response(result, status=status.HTTP_200_OK)
+
+
 class AdminStaffListView(APIView):
     permission_classes = (HasAdminModulePermission('team'),)
 
