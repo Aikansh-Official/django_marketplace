@@ -11,7 +11,8 @@ import {
   AlertTriangle,
   Repeat,
   Camera,
-  Clock
+  Clock,
+  MessageSquare
 } from 'lucide-react';
 import api, { getCategories } from '../services/api';
 import CategoryIcon from '../components/CategoryIcon';
@@ -101,9 +102,9 @@ export default function EditListing() {
         setIsNegotiable(data.is_negotiable ?? true);
         setCondition(data.condition || 'GOOD');
         setLocation(data.location || '');
-        setContactPreference(data.contact_preference || 'ALL');
-        setContactPhone(data.contact_phone || '');
-        setContactWhatsapp(data.contact_whatsapp || '');
+        setContactPreference('CHAT');
+        setContactPhone('');
+        setContactWhatsapp('');
         setDescription(data.description || '');
         setStatus(data.status || 'ACTIVE');
 
@@ -256,9 +257,9 @@ export default function EditListing() {
       is_negotiable: transactionType === 'DONATE' ? false : isNegotiable,
       condition,
       location: location.trim(),
-      contact_preference: contactPreference,
-      contact_phone: contactPhone.trim(),
-      contact_whatsapp: contactWhatsapp.trim(),
+      contact_preference: 'CHAT',
+      contact_phone: '',
+      contact_whatsapp: '',
       description: description.trim(),
       status,
       uploaded_images: images,
@@ -786,28 +787,28 @@ export default function EditListing() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                Phone Number
-              </label>
-              <input
-                type="text"
-                value={contactPhone}
-                onChange={(e) => setContactPhone(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                WhatsApp Number
-              </label>
-              <input
-                type="text"
-                value={contactWhatsapp}
-                onChange={(e) => setContactWhatsapp(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 outline-none"
-              />
+          <div className="bg-brand-50/70 border border-brand-200 rounded-lg p-3.5">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+                <MessageSquare className="w-4 h-4" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-gray-900">
+                    Buyer Contact Method: In-App Chat Only
+                  </span>
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-brand-100 text-brand-800 px-2 py-0.5 rounded-full border border-brand-300">
+                    Protected
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-600 mt-0.5 leading-relaxed">
+                  Buyers contact you exclusively through CampXChange's secure real-time in-app chat. Direct phone calls and WhatsApp are disabled to protect your privacy.
+                </p>
+                <div className="flex items-center gap-1.5 mt-2 text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 w-fit">
+                  <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                  <span>Phone and WhatsApp remain 100% hidden & confidential</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

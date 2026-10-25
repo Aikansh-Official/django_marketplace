@@ -20,11 +20,7 @@ export const CONDITIONS = [
 ];
 
 export const CONTACT_PREFERENCES = [
-  { value: 'ALL', label: 'All Channels', desc: 'In-app Chat, WhatsApp & Phone Call' },
-  { value: 'WHATSAPP', label: 'WhatsApp Preferred', desc: 'Buyer contacts directly via WhatsApp' },
-  { value: 'CALL', label: 'Phone Call Preferred', desc: 'Direct voice calls' },
-  { value: 'CHAT', label: 'In-App Chat Only', desc: 'Keeps your phone number private' },
-  { value: 'MEETUP', label: 'Campus Meetup Only', desc: 'Coordinate spot on campus' },
+  { value: 'CHAT', label: 'In-App Chat Only', desc: 'Secure real-time chat keeps your phone and WhatsApp number private' },
 ];
 
 export const TRANSACTION_FILTERS = [

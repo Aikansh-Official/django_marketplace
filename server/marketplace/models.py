@@ -60,7 +60,7 @@ class Listing(models.Model):
     rent_period = models.CharField(max_length=20, default='month', blank=True, null=True, help_text="e.g. day, week, month, semester")
     condition = models.CharField(max_length=10, choices=CONDITION_CHOICES, default='GOOD')
     location = models.CharField(max_length=255, help_text="e.g. Block 34, BH-4, Uni-Mall, Law Gate")
-    contact_preference = models.CharField(max_length=20, choices=CONTACT_PREFERENCES, default='ALL')
+    contact_preference = models.CharField(max_length=20, choices=CONTACT_PREFERENCES, default='CHAT')
     contact_phone = models.CharField(max_length=20, blank=True, null=True)
     contact_whatsapp = models.CharField(max_length=20, blank=True, null=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='ACTIVE')

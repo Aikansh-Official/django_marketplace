@@ -17,7 +17,8 @@ import {
   Lock,
   ShieldAlert,
   Clock,
-  Eye
+  Eye,
+  MessageSquare
 } from 'lucide-react';
 import api, { getPlatformConfig, getCategories } from '../services/api';
 import CategoryIcon from '../components/CategoryIcon';
@@ -49,7 +50,7 @@ export default function CreateListing() {
   const [isNegotiable, setIsNegotiable] = useState(true);
   const [condition, setCondition] = useState('GOOD');
   const [location, setLocation] = useState('');
-  const [contactPreference, setContactPreference] = useState('ALL');
+  const [contactPreference, setContactPreference] = useState('CHAT');
   const [contactPhone, setContactPhone] = useState('');
   const [contactWhatsapp, setContactWhatsapp] = useState('');
   const [description, setDescription] = useState('');
@@ -95,10 +96,6 @@ export default function CreateListing() {
         try {
           const profileRes = await api.get('/auth/profile/');
           setUserProfile(profileRes.data);
-          if (profileRes.data.phone_number) {
-            setContactPhone(profileRes.data.phone_number);
-            setContactWhatsapp(profileRes.data.phone_number);
-          }
         } catch (err) {
           console.error('Failed to load profile', err);
         }
@@ -261,9 +258,9 @@ export default function CreateListing() {
       is_negotiable: transactionType === 'DONATE' ? false : isNegotiable,
       condition,
       location: location.trim(),
-      contact_preference: contactPreference,
-      contact_phone: contactPhone.trim(),
-      contact_whatsapp: contactWhatsapp.trim(),
+      contact_preference: 'CHAT',
+      contact_phone: '',
+      contact_whatsapp: '',
       description: description.trim(),
       status: 'ACTIVE',
       uploaded_images: images,
@@ -1042,59 +1039,35 @@ export default function CreateListing() {
               </div>
             </div>
 
-            {/* Seller Contact Preference */}
+            {/* Buyer Contact Preference - In-App Chat Only */}
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-2">
                 Buyer Contact Preference
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-4">
-                {CONTACT_PREFERENCES.map((pref) => {
-                  const isSelected = contactPreference === pref.value;
-                  return (
-                    <button
-                      key={pref.value}
-                      type="button"
-                      onClick={() => setContactPreference(pref.value)}
-                      className={`p-3 rounded-md border text-left transition-all ${isSelected
-                        ? 'border-brand-500 bg-brand-50 text-brand-900 ring-1 ring-brand-500'
-                        : 'border-gray-200 bg-gray-50/50 hover:bg-gray-100 text-gray-700'
-                        }`}
-                    >
-                      <div className="text-xs font-bold">{pref.label}</div>
-                      <div className="text-[11px] text-gray-500 mt-0.5">{pref.desc}</div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {contactPreference !== 'CHAT' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">
-                      Phone Number (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="+91 9876543210"
-                      value={contactPhone}
-                      onChange={(e) => setContactPhone(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 outline-none"
-                    />
+              <div className="bg-brand-50/70 border border-brand-200 rounded-lg p-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-full bg-brand-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+                    <MessageSquare className="w-5 h-5" />
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">
-                      WhatsApp Number (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="+91 9876543210"
-                      value={contactWhatsapp}
-                      onChange={(e) => setContactWhatsapp(e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 outline-none"
-                    />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-gray-900">
+                        In-App Chat Only
+                      </span>
+                      <span className="text-[10px] font-black uppercase tracking-wider bg-brand-100 text-brand-800 px-2 py-0.5 rounded-full border border-brand-300">
+                        Secure & Private
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                      All buyer communication is handled exclusively through CampXChange's real-time in-app chat. WhatsApp and direct phone calls are disabled to prevent spam and protect your contact privacy.
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-2.5 text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200 w-fit">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Your phone number and WhatsApp remain 100% hidden & confidential</span>
+                    </div>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
