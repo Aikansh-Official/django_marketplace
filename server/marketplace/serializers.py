@@ -146,6 +146,8 @@ class ListingSerializer(serializers.ModelSerializer):
     is_seller = serializers.SerializerMethodField()
     is_buyer = serializers.SerializerMethodField()
     offers_count = serializers.SerializerMethodField()
+    total_offers_count = serializers.SerializerMethodField()
+    completed_offer = serializers.SerializerMethodField()
 
     discount_percentage = serializers.ReadOnlyField()
 
@@ -159,9 +161,9 @@ class ListingSerializer(serializers.ModelSerializer):
             'contact_preference', 'contact_phone', 'contact_whatsapp',
             'status', 'views_count', 'created_at', 'updated_at',
             'category', 'category_id', 'images', 'seller', 'is_seller', 'is_buyer',
-            'offers_count'
+            'offers_count', 'total_offers_count', 'completed_offer'
         ]
-        read_only_fields = ['views_count', 'created_at', 'updated_at', 'seller', 'is_seller', 'is_buyer', 'offers_count', 'discount_percentage', 'is_trusted']
+        read_only_fields = ['views_count', 'created_at', 'updated_at', 'seller', 'is_seller', 'is_buyer', 'offers_count', 'total_offers_count', 'completed_offer', 'discount_percentage', 'is_trusted']
 
     def get_seller(self, obj):
         request = self.context.get('request')
@@ -192,6 +194,30 @@ class ListingSerializer(serializers.ModelSerializer):
         if user and user.is_authenticated and obj.seller_id == user.id:
             return obj.offers.filter(status='PENDING').count()
         return 0
+
+    def get_total_offers_count(self, obj):
+        return obj.offers.count()
+
+    def get_completed_offer(self, obj):
+        if obj.status == 'SOLD':
+            completed = obj.offers.filter(status='COMPLETED').order_by('-created_at').first()
+            if completed:
+                request = self.context.get('request')
+                from .media_security import generate_secure_image_url
+                raw_photo = getattr(completed.buyer, 'profile_photo', None) or getattr(completed.buyer, 'profile_picture_url', None)
+                return {
+                    'id': str(completed.id),
+                    'buyer_id': str(completed.buyer.id),
+                    'buyer_name': completed.buyer.full_name or completed.buyer.username,
+                    'buyer_reg': completed.buyer.username,
+                    'buyer_trust_score': completed.buyer.trust_score,
+                    'buyer_photo': generate_secure_image_url(raw_photo, request=request),
+                    'amount': str(completed.counter_amount or completed.offer_amount or obj.price),
+                    'is_exchange_offer': completed.is_exchange_offer,
+                    'exchange_item_title': completed.exchange_item_title,
+                    'created_at': completed.created_at.isoformat() if completed.created_at else None,
+                }
+        return None
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -510,6 +536,7 @@ class OfferSerializer(serializers.ModelSerializer):
     buyer_name = serializers.CharField(source='buyer.full_name', read_only=True)
     buyer_reg = serializers.CharField(source='buyer.username', read_only=True)
     buyer_trust_score = serializers.IntegerField(source='buyer.trust_score', read_only=True)
+    buyer_photo = serializers.SerializerMethodField()
     meetup_location = serializers.CharField(source='listing.location', read_only=True)
     listing_image = serializers.SerializerMethodField()
     active_handover = serializers.SerializerMethodField()
@@ -521,11 +548,17 @@ class OfferSerializer(serializers.ModelSerializer):
             'offer_amount', 'counter_amount', 'seller_note', 'buyer_message',
             'is_exchange_offer', 'exchange_item_title',
             'status', 'created_at',
-            'buyer', 'buyer_name', 'buyer_reg', 'buyer_trust_score',
+            'buyer', 'buyer_name', 'buyer_reg', 'buyer_trust_score', 'buyer_photo',
             'seller_id', 'seller_name', 'seller_reg', 'seller_phone', 'seller_whatsapp',
             'meetup_location', 'active_handover'
         ]
         read_only_fields = ['status', 'created_at']
+
+    def get_buyer_photo(self, obj):
+        from .media_security import generate_secure_image_url
+        request = self.context.get('request') if hasattr(self, 'context') else None
+        raw = getattr(obj.buyer, 'profile_photo', None) or getattr(obj.buyer, 'profile_picture_url', None)
+        return generate_secure_image_url(raw, request=request)
 
     def get_listing_image(self, obj):
         img = obj.listing.images.filter(is_primary=True).first() or obj.listing.images.first()

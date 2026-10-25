@@ -460,15 +460,20 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
                           <span className="text-[11px] text-gray-400 font-semibold">
                             {item.category?.name}
                           </span>
-                          {item.offers_count > 0 && (
+                          {item.status === 'SOLD' && item.completed_offer ? (
+                            <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              Sold to {item.completed_offer.buyer_name || item.completed_offer.buyer_reg}
+                            </span>
+                          ) : (item.offers_count > 0 || item.total_offers_count > 0) ? (
                             <Link
                               to={`/listing/${item.id}`}
                               className="inline-flex items-center gap-1 bg-brand-50 border border-brand-200 text-brand-700 text-[10px] font-bold px-2 py-0.5 rounded-full hover:bg-brand-100 transition-colors"
                             >
                               <ShoppingBag className="w-3 h-3 text-brand-500" />
-                              {item.offers_count} {item.offers_count === 1 ? 'Buyer Request' : 'Buyer Requests'}
+                              {item.offers_count || item.total_offers_count} {(item.offers_count || item.total_offers_count) === 1 ? 'Buyer Request' : 'Buyer Requests'}
                             </Link>
-                          )}
+                          ) : null}
                         </div>
 
                         <Link
@@ -490,7 +495,12 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
                           <span>•</span>
                           <span className="flex items-center gap-1">
                             <Eye className="w-3.5 h-3.5 text-gray-400" />
-                            {item.views_count} views
+                            {item.views_count || 0} views
+                          </span>
+                          <span>•</span>
+                          <span className="flex items-center gap-1">
+                            <ShoppingBag className="w-3.5 h-3.5 text-gray-400" />
+                            {item.total_offers_count || item.offers_count || 0} requests
                           </span>
                         </div>
                       </div>

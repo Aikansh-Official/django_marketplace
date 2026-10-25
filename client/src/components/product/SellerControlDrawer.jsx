@@ -70,20 +70,31 @@ export default function SellerControlDrawer({
     };
   }, [isOpen, onClose]);
 
-  // Sort offers: PENDING first, then COUNTERED, then ACCEPTED, then COMPLETED/REJECTED/CANCELLED
+  // Resolve completed offer if item is sold
+  const completedOffer = useMemo(() => {
+    if (listing?.completed_offer) return listing.completed_offer;
+    if (!Array.isArray(listingOffers)) return null;
+    return listingOffers.find((o) => o.status === 'COMPLETED') || null;
+  }, [listing, listingOffers]);
+
+  const totalRequestsCount = useMemo(() => {
+    if (Array.isArray(listingOffers) && listingOffers.length > 0) {
+      return listingOffers.length;
+    }
+    return listing?.total_offers_count || listing?.offers_count || 0;
+  }, [listing, listingOffers]);
+
+  // Sort offers: If SOLD, COMPLETED deal comes first; otherwise PENDING first
   const sortedOffers = useMemo(() => {
     if (!listing || !Array.isArray(listingOffers)) return [];
-    const priority = {
-      PENDING: 1,
-      COUNTERED: 2,
-      ACCEPTED: 3,
-      COMPLETED: 4,
-      REJECTED: 5,
-      CANCELLED: 6
-    };
+    const isSold = listing?.status === 'SOLD';
+    const priority = isSold
+      ? { COMPLETED: 0, ACCEPTED: 1, COUNTERED: 2, PENDING: 3, REJECTED: 4, CANCELLED: 5 }
+      : { PENDING: 1, COUNTERED: 2, ACCEPTED: 3, COMPLETED: 4, REJECTED: 5, CANCELLED: 6 };
+
     return [...listingOffers].sort((a, b) => {
-      const pA = priority[a.status] || 99;
-      const pB = priority[b.status] || 99;
+      const pA = priority[a.status] ?? 99;
+      const pB = priority[b.status] ?? 99;
       if (pA !== pB) return pA - pB;
       return new Date(b.created_at) - new Date(a.created_at);
     });
@@ -185,9 +196,16 @@ export default function SellerControlDrawer({
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0 text-gray-500 text-[11px]">
-              <Eye className="w-3.5 h-3.5 text-gray-400" />
-              <span>{listing.views_count} views</span>
+            {/* Total Views & Total Requests Counters */}
+            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1.5 shrink-0">
+              <div className="inline-flex items-center gap-1 bg-white px-2 py-1 rounded-md border border-brand-200 text-gray-800 font-bold text-[11px] shadow-2xs">
+                <Eye className="w-3.5 h-3.5 text-brand-500" />
+                <span>{listing.views_count || 0} {listing.views_count === 1 ? 'view' : 'views'}</span>
+              </div>
+              <div className="inline-flex items-center gap-1 bg-white px-2 py-1 rounded-md border border-brand-200 text-gray-800 font-bold text-[11px] shadow-2xs">
+                <ShoppingBag className="w-3.5 h-3.5 text-brand-500" />
+                <span>{totalRequestsCount} {totalRequestsCount === 1 ? 'request' : 'requests'}</span>
+              </div>
             </div>
           </div>
 
@@ -212,7 +230,7 @@ export default function SellerControlDrawer({
                       : 'bg-gray-200 text-gray-700'
                   }`}
                 >
-                  {listingOffers.length}
+                  {totalRequestsCount}
                 </span>
               </button>
 
@@ -233,6 +251,134 @@ export default function SellerControlDrawer({
 
           {/* Scrollable Content Body */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+            {/* HERO CARD: SOLD OUT & HANDOVER ANALYTICS SUMMARY */}
+            {(listing.status === 'SOLD' || completedOffer) && (
+              <div className="p-4 sm:p-4.5 bg-gradient-to-br from-emerald-50 via-teal-50/40 to-white border border-emerald-300 rounded-lg shadow-xs space-y-3.5 animate-in fade-in">
+                {/* Header Badge & Date */}
+                <div className="flex items-center justify-between gap-2 flex-wrap pb-2.5 border-b border-emerald-200/80">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 bg-emerald-600 text-white text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md shadow-2xs">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Item Successfully Sold
+                    </span>
+                  </div>
+                  {completedOffer?.created_at && (
+                    <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded border border-emerald-200">
+                      Handover: {new Date(completedOffer.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </span>
+                  )}
+                </div>
+
+                {/* Sold To Buyer Card */}
+                {completedOffer ? (
+                  <div className="bg-white/95 border border-emerald-200 rounded-md p-3 flex items-center justify-between gap-3 shadow-2xs">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {completedOffer.buyer_photo ? (
+                        <img
+                          src={getSafeImageUrl(completedOffer.buyer_photo)}
+                          alt={completedOffer.buyer_name || completedOffer.buyer_reg}
+                          className="w-11 h-11 rounded-full object-cover border-2 border-emerald-400 shadow-2xs shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-11 h-11 rounded-full bg-emerald-100 text-emerald-800 border-2 border-emerald-300 flex items-center justify-center font-black text-sm shrink-0 shadow-2xs">
+                          {(completedOffer.buyer_name || completedOffer.buyer_reg || 'U').slice(0, 1).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <div className="text-[10px] uppercase font-black text-emerald-700 tracking-wider">
+                          Sold To Student
+                        </div>
+                        <div className="font-extrabold text-sm text-gray-900 truncate">
+                          {completedOffer.buyer_name || completedOffer.buyer_reg}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mt-0.5 flex-wrap">
+                          <span className="text-gray-600 font-bold">@{completedOffer.buyer_reg}</span>
+                          <span>•</span>
+                          <span className="inline-flex items-center gap-0.5 bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-extrabold px-1.5 py-0.2 rounded">
+                            Trust {completedOffer.buyer_trust_score ?? 100}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md shadow-2xs">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        Handed Over
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white/90 border border-emerald-200 rounded-md p-3 text-xs text-emerald-900 font-semibold flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Direct Campus Handover completed & confirmed.</span>
+                  </div>
+                )}
+
+                {/* Key Metrics: Views, Requests, and Deal Value */}
+                <div className="grid grid-cols-3 gap-2">
+                  {/* Total Views Box */}
+                  <div className="bg-white border border-emerald-100 rounded-md p-2.5 text-center shadow-2xs">
+                    <div className="flex items-center justify-center gap-1 text-gray-500 text-[10px] font-bold uppercase tracking-wider mb-0.5">
+                      <Eye className="w-3.5 h-3.5 text-brand-500" />
+                      <span>Total Views</span>
+                    </div>
+                    <div className="text-base sm:text-lg font-black text-gray-900">
+                      {listing.views_count || 0}
+                    </div>
+                    <div className="text-[10px] text-gray-500 font-medium">
+                      student {listing.views_count === 1 ? 'view' : 'views'}
+                    </div>
+                  </div>
+
+                  {/* Total Requests Box */}
+                  <div className="bg-white border border-emerald-100 rounded-md p-2.5 text-center shadow-2xs">
+                    <div className="flex items-center justify-center gap-1 text-gray-500 text-[10px] font-bold uppercase tracking-wider mb-0.5">
+                      <ShoppingBag className="w-3.5 h-3.5 text-brand-500" />
+                      <span>Requests</span>
+                    </div>
+                    <div className="text-base sm:text-lg font-black text-gray-900">
+                      {totalRequestsCount}
+                    </div>
+                    <div className="text-[10px] text-gray-500 font-medium">
+                      total {totalRequestsCount === 1 ? 'offer' : 'offers'}
+                    </div>
+                  </div>
+
+                  {/* Final Sold Deal Price Box */}
+                  <div className="bg-white border border-emerald-100 rounded-md p-2.5 text-center shadow-2xs">
+                    <div className="flex items-center justify-center gap-1 text-gray-500 text-[10px] font-bold uppercase tracking-wider mb-0.5">
+                      <Tag className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Deal Price</span>
+                    </div>
+                    <div className="text-base sm:text-lg font-black text-emerald-700 truncate">
+                      {listing.transaction_type === 'DONATE'
+                        ? 'Free'
+                        : completedOffer?.is_exchange_offer
+                          ? 'Swap'
+                          : `Rs ${completedOffer?.counter_amount || completedOffer?.offer_amount || completedOffer?.amount || listing.price}`}
+                    </div>
+                    <div className="text-[10px] text-gray-500 font-medium truncate">
+                      {completedOffer?.is_exchange_offer ? (completedOffer.exchange_item_title || 'Item trade') : 'Final amount'}
+                    </div>
+                  </div>
+                </div>
+
+                {completedOffer?.buyer_message && (
+                  <p className="text-gray-600 italic text-[11px] bg-white/90 p-2.5 rounded-md border border-emerald-100">
+                    &ldquo;{completedOffer.buyer_message}&rdquo;
+                  </p>
+                )}
+              </div>
+            )}
             {/* 1. SELLER CONTROL PANEL */}
             {activeTab === 'controls' && (
               <div className="bg-white border border-brand-200/90 rounded-md p-4 sm:p-5 shadow-xs flex flex-col space-y-3.5">
@@ -413,36 +559,75 @@ export default function SellerControlDrawer({
                   </div>
                 ) : (
                   <div className="space-y-2.5">
-                    {sortedOffers.map((off) => (
-                      <div
-                        key={off.id}
-                        className="p-3 bg-gray-50/90 rounded-md border border-gray-200/90 text-xs space-y-1.5 hover:border-brand-200 transition-colors shadow-2xs"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                            <strong className="text-gray-900 truncate">
-                              {off.buyer_name || off.buyer_reg}
-                            </strong>
-                            <span className="text-gray-400 text-[11px]">(@{off.buyer_reg})</span>
-                            <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.2 rounded-md">
-                              Trust {off.buyer_trust_score ?? 0}
+                    {sortedOffers.map((off) => {
+                      const isCompleted = off.status === 'COMPLETED';
+                      return (
+                        <div
+                          key={off.id}
+                          className={`p-3 rounded-md text-xs space-y-2 transition-all shadow-2xs ${
+                            isCompleted
+                              ? 'bg-emerald-50/90 border-2 border-emerald-400 ring-1 ring-emerald-200'
+                              : 'bg-gray-50/90 border border-gray-200/90 hover:border-brand-200'
+                          }`}
+                        >
+                          {isCompleted && (
+                            <div className="flex items-center justify-between pb-1.5 border-b border-emerald-200/80 text-[10px] font-black text-emerald-800 uppercase tracking-wider">
+                              <span className="flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                Winning Student • Deal Completed
+                              </span>
+                              <span className="bg-emerald-600 text-white px-2 py-0.5 rounded-full">
+                                Sold & Handed Over
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              {off.buyer_photo ? (
+                                <img
+                                  src={getSafeImageUrl(off.buyer_photo)}
+                                  alt={off.buyer_name || off.buyer_reg}
+                                  className="w-8 h-8 rounded-full object-cover border border-emerald-300 shadow-2xs shrink-0"
+                                  onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-700 font-bold text-xs flex items-center justify-center shrink-0">
+                                  {(off.buyer_name || off.buyer_reg || 'U').slice(0, 1).toUpperCase()}
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <strong className="text-gray-900 truncate">
+                                    {off.buyer_name || off.buyer_reg}
+                                  </strong>
+                                  <span className="text-gray-400 text-[11px]">(@{off.buyer_reg})</span>
+                                  <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.2 rounded-md">
+                                    Trust {off.buyer_trust_score ?? 0}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                                off.status === 'COMPLETED'
+                                  ? 'bg-emerald-600 text-white'
+                                  : off.status === 'ACCEPTED'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : off.status === 'REJECTED' || off.status === 'CANCELLED'
+                                      ? 'bg-gray-200 text-gray-700'
+                                      : off.status === 'COUNTERED'
+                                        ? 'bg-amber-100 text-amber-800'
+                                        : 'bg-blue-100 text-blue-800'
+                              }`}
+                            >
+                              {off.status === 'ACCEPTED' ? 'Reserved' : off.status}
                             </span>
                           </div>
-
-                          <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
-                              off.status === 'ACCEPTED'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : off.status === 'REJECTED' || off.status === 'CANCELLED'
-                                  ? 'bg-gray-200 text-gray-700'
-                                  : off.status === 'COUNTERED'
-                                    ? 'bg-amber-100 text-amber-800'
-                                    : 'bg-blue-100 text-blue-800'
-                            }`}
-                          >
-                            {off.status === 'ACCEPTED' ? 'Reserved' : off.status}
-                          </span>
-                        </div>
 
                         {off.is_exchange_offer && off.exchange_item_title && (
                           <div className="bg-indigo-50 border border-indigo-200/80 rounded-md p-2 flex items-center gap-1.5 text-[11px] text-indigo-900 font-bold">
@@ -527,23 +712,40 @@ export default function SellerControlDrawer({
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
+                </div>
                 )}
               </div>
             )}
           </div>
 
           {/* Drawer Footer */}
-          <div className="p-4 border-t border-gray-100 bg-gray-50/80 flex items-center justify-between gap-3 flex-shrink-0">
-            <span className="text-xs text-gray-500 font-medium">
-              {listingOffers.length} {listingOffers.length === 1 ? 'request' : 'requests'} • Status:{' '}
-              <span className="font-bold text-gray-800">{listing.status}</span>
-            </span>
+          <div className="p-3.5 sm:p-4 border-t border-gray-100 bg-gray-50/80 flex items-center justify-between gap-3 flex-shrink-0">
+            <div className="flex items-center gap-2 text-xs text-gray-600 font-medium flex-wrap">
+              <span className="inline-flex items-center gap-1 font-bold text-gray-800">
+                <Eye className="w-3.5 h-3.5 text-brand-500" />
+                <span>{listing.views_count || 0} views</span>
+              </span>
+              <span>•</span>
+              <span className="inline-flex items-center gap-1 font-bold text-gray-800">
+                <ShoppingBag className="w-3.5 h-3.5 text-brand-500" />
+                <span>{totalRequestsCount} {totalRequestsCount === 1 ? 'request' : 'requests'}</span>
+              </span>
+              {completedOffer && (
+                <>
+                  <span>•</span>
+                  <span className="text-emerald-700 font-bold inline-flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    Sold to {completedOffer.buyer_name || completedOffer.buyer_reg}
+                  </span>
+                </>
+              )}
+            </div>
             <button
               type="button"
               onClick={onClose}
-              className="text-xs font-semibold text-gray-700 hover:text-gray-900 bg-white border border-gray-200 hover:border-gray-300 px-4 py-2 rounded-md transition-colors shadow-2xs cursor-pointer"
+              className="text-xs font-semibold text-gray-700 hover:text-gray-900 bg-white border border-gray-200 hover:border-gray-300 px-4 py-2 rounded-md transition-colors shadow-2xs cursor-pointer shrink-0"
             >
               Close Panel
             </button>

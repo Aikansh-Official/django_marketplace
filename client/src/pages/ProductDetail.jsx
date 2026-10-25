@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import api, { submitReport } from '../services/api';
 import toast from 'react-hot-toast';
@@ -6,11 +6,14 @@ import {
   AlertCircle,
   ArrowLeft,
   BadgeCheck,
+  CheckCircle2,
+  Eye,
   Flag,
   Heart,
   Package,
   Share2,
   ShieldCheck,
+  ShoppingBag,
   Sliders,
   Tag
 } from 'lucide-react';
@@ -211,6 +214,12 @@ export default function ProductDetail() {
   const isBuyer = Boolean(
     !isOwner && (listing?.is_buyer || userOffer?.status === 'COMPLETED')
   );
+
+  const completedOffer = useMemo(() => {
+    if (listing?.completed_offer) return listing.completed_offer;
+    if (!Array.isArray(listingOffers)) return null;
+    return listingOffers.find((o) => o.status === 'COMPLETED') || null;
+  }, [listing, listingOffers]);
 
   // Offer & Listing State Fetchers (Supports Silent Real-Time Auto-Refresh)
   const fetchListingOffers = useCallback(async (silent = false) => {
@@ -686,35 +695,62 @@ export default function ProductDetail() {
 
       {/* Compact Seller Management Strip & Access Trigger */}
       {isOwner && (
-        <div className="mb-6 p-3 sm:p-3.5 bg-gradient-to-r from-orange-50/90 via-amber-50/50 to-white border border-brand-200/90 rounded-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+        <div
+          className={`mb-6 p-3 sm:p-3.5 rounded-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs border ${
+            listing.status === 'SOLD'
+              ? 'bg-gradient-to-r from-emerald-50/90 via-teal-50/40 to-white border-emerald-300'
+              : 'bg-gradient-to-r from-orange-50/90 via-amber-50/50 to-white border-brand-200/90'
+          }`}
+        >
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-md bg-brand-500 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
-              <Tag className="w-4 h-4" />
+            <div
+              className={`w-9 h-9 rounded-md text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 ${
+                listing.status === 'SOLD' ? 'bg-emerald-600' : 'bg-brand-500'
+              }`}
+            >
+              {listing.status === 'SOLD' ? <CheckCircle2 className="w-5 h-5" /> : <Tag className="w-4 h-4" />}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-xs font-black text-brand-950 uppercase tracking-wider truncate">
+                <h3 className="text-xs font-black text-gray-900 uppercase tracking-wider truncate">
                   Seller Control Panel
                 </h3>
                 <span
                   className={`font-extrabold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded-md border ${
                     listing.status === 'SOLD'
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                       : 'bg-brand-50 text-brand-600 border-brand-200/80'
                   }`}
                 >
-                  {listing.status === 'PENDING' ? 'Reserved' : listing.status}
+                  {listing.status === 'PENDING' ? 'Reserved' : listing.status === 'SOLD' ? 'SOLD' : listing.status}
                 </span>
-                {listingOffers.some((o) => o.status === 'PENDING') && (
+
+                {/* View count & Request count pills */}
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-gray-700 bg-white px-2 py-0.5 rounded border border-gray-200 shadow-2xs">
+                  <Eye className="w-3.5 h-3.5 text-brand-500" />
+                  <span>{listing.views_count || 0} views</span>
+                </span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-gray-700 bg-white px-2 py-0.5 rounded border border-gray-200 shadow-2xs">
+                  <ShoppingBag className="w-3.5 h-3.5 text-brand-500" />
+                  <span>
+                    {(listingOffers?.length || listing?.total_offers_count || 0)}{' '}
+                    {(listingOffers?.length || listing?.total_offers_count || 0) === 1 ? 'request' : 'requests'}
+                  </span>
+                </span>
+
+                {listingOffers.some((o) => o.status === 'PENDING') && listing.status !== 'SOLD' && (
                   <span className="text-[10px] font-bold text-amber-700 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-md animate-pulse">
                     Action Needed
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-gray-500 truncate mt-0.5">
-                {listingOffers.length > 0
-                  ? `${listingOffers.length} buyer request${listingOffers.length > 1 ? 's' : ''} received • Tap to review and manage status`
-                  : 'Manage listing visibility, inquiries & incoming student purchase requests'}
+
+              <p className="text-[11px] text-gray-600 truncate mt-0.5">
+                {listing.status === 'SOLD' && completedOffer
+                  ? `Sold to ${completedOffer.buyer_name || completedOffer.buyer_reg} (@${completedOffer.buyer_reg}) • Tap to review deal details`
+                  : listingOffers.length > 0
+                    ? `${listingOffers.length} buyer request${listingOffers.length > 1 ? 's' : ''} received • Tap to review and manage status`
+                    : 'Manage listing visibility, inquiries & incoming student purchase requests'}
               </p>
             </div>
           </div>
@@ -722,14 +758,18 @@ export default function ProductDetail() {
           <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
             <button
               type="button"
-              onClick={() => handleOpenSellerDrawer()}
-              className="bg-brand-500 hover:bg-brand-600 active:scale-[0.99] text-white font-bold text-xs px-3.5 py-2 rounded-md shadow-xs hover:shadow transition-all flex items-center gap-1.5 cursor-pointer"
+              onClick={() => handleOpenSellerDrawer('requests')}
+              className={`${
+                listing.status === 'SOLD'
+                  ? 'bg-emerald-600 hover:bg-emerald-700'
+                  : 'bg-brand-500 hover:bg-brand-600'
+              } active:scale-[0.99] text-white font-bold text-xs px-3.5 py-2 rounded-md shadow-xs hover:shadow transition-all flex items-center gap-1.5 cursor-pointer`}
             >
               <Tag className="w-3.5 h-3.5" />
-              <span>Open Seller Panel</span>
-              {listingOffers.length > 0 && (
-                <span className="bg-white text-brand-600 text-[10px] font-black px-1.5 py-0.2 rounded-full">
-                  {listingOffers.length}
+              <span>{listing.status === 'SOLD' ? 'View Sold Details' : 'Open Seller Panel'}</span>
+              {(listingOffers.length > 0 || listing.total_offers_count > 0) && (
+                <span className="bg-white text-gray-900 text-[10px] font-black px-1.5 py-0.2 rounded-full">
+                  {listingOffers.length || listing.total_offers_count}
                 </span>
               )}
             </button>
@@ -737,11 +777,15 @@ export default function ProductDetail() {
         </div>
       )}
 
-      {/* Status & Action Banners for Buyer */}
+      {/* Status & Action Banners for Buyer & Seller */}
       <StatusBanners
         listing={listing}
         userOffer={userOffer}
         isBuyer={isBuyer}
+        isOwner={isOwner}
+        completedOffer={completedOffer}
+        listingOffers={listingOffers}
+        onOpenSellerDrawer={() => handleOpenSellerDrawer('requests')}
         respondingToCounter={respondingToCounter}
         cancellingDeal={cancellingDeal}
         onBuyerCounterRespond={handleBuyerCounterRespond}
