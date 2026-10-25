@@ -218,12 +218,12 @@ const ListingCard = React.memo(function ListingCard({
         </div>
 
         {/* Listing Title */}
-        <p
-          className="text-gray-700 text-xs font-medium line-clamp-2 mb-2 sm:mb-3 group-hover:text-brand-600 transition-colors leading-snug"
+        <h4
+          className="text-gray-900 text-xs sm:text-sm font-bold line-clamp-2 mb-2 sm:mb-2.5 group-hover:text-brand-600 transition-colors leading-snug tracking-tight"
           title={listing.title}
         >
           {listing.title}
-        </p>
+        </h4>
 
         {/* Card Footer: Seller Profile & Location */}
         <div className="mt-auto pt-2 border-t border-gray-100 flex flex-col gap-1.5 sm:gap-2">
