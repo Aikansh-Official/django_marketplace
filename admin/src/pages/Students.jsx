@@ -632,13 +632,37 @@ export default function Students() {
                       {/* Student Info */}
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center shrink-0">
-                            {student.full_name ? student.full_name.charAt(0) : student.username.charAt(0)}
-                          </div>
+                          {(() => {
+                            const photoUrl = student.profile_picture_url || student.profile_photo || student.avatar;
+                            return (
+                              <div
+                                onClick={() => handleInspectStudent(student)}
+                                className="relative w-9 h-9 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center shrink-0 overflow-hidden border border-gray-200 shadow-2xs cursor-pointer hover:ring-2 hover:ring-brand-400 transition-all"
+                                title="Click to inspect student profile & verification ID"
+                              >
+                                {photoUrl ? (
+                                  <img
+                                    src={photoUrl}
+                                    alt={student.full_name || student.username}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                  />
+                                ) : null}
+                                <span className="text-xs font-bold uppercase select-none">
+                                  {student.full_name ? student.full_name.charAt(0) : student.username.charAt(0)}
+                                </span>
+                              </div>
+                            );
+                          })()}
                           <div>
-                            <p className="font-bold text-gray-900 leading-snug">
+                            <button
+                              onClick={() => handleInspectStudent(student)}
+                              className="font-bold text-gray-900 leading-snug hover:text-brand-600 transition-colors text-left cursor-pointer"
+                            >
                               {student.full_name || 'Unnamed Student'}
-                            </p>
+                            </button>
                             <span className="font-mono text-[11px] text-brand-600 font-bold block">
                               @{student.username}
                             </span>

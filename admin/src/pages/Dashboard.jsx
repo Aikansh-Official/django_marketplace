@@ -263,19 +263,33 @@ export default function Dashboard() {
             ) : recentStudents.length === 0 ? (
               <p className="text-xs text-gray-500 py-6 text-center">No students registered yet.</p>
             ) : (
-              recentStudents.map((user) => (
-                <div key={user.id} className="flex items-center justify-between p-2.5 rounded-md hover:bg-gray-50 transition-colors border border-gray-100">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-brand-100 text-brand-700 font-bold flex items-center justify-center flex-shrink-0 text-sm">
-                      {(user.full_name || user.username)[0].toUpperCase()}
+              recentStudents.map((user) => {
+                const photoUrl = user.profile_picture_url || user.profile_photo || user.avatar;
+                return (
+                  <div key={user.id} className="flex items-center justify-between p-2.5 rounded-md hover:bg-gray-50 transition-colors border border-gray-100">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="relative w-10 h-10 rounded-full bg-brand-100 text-brand-700 font-bold flex items-center justify-center flex-shrink-0 text-sm overflow-hidden border border-gray-200">
+                        {photoUrl ? (
+                          <img
+                            src={photoUrl}
+                            alt={user.full_name || user.username}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : null}
+                        <span className="select-none">
+                          {(user.full_name || user.username)[0].toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-gray-900 truncate">
+                          {user.full_name || user.username}
+                        </p>
+                        <p className="text-[11px] text-gray-500 truncate mt-0.5">{user.email}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-gray-900 truncate">
-                        {user.full_name || user.username}
-                      </p>
-                      <p className="text-[11px] text-gray-500 truncate mt-0.5">{user.email}</p>
-                    </div>
-                  </div>
                   <div className="text-right flex-shrink-0 ml-3">
                     {user.is_verified_student ? (
                       <span className="px-2.5 py-0.5 bg-green-100 text-green-800 text-[10px] font-bold rounded-full">
@@ -289,7 +303,8 @@ export default function Dashboard() {
                     <p className="text-[10px] text-gray-400 mt-0.5">Trust: {user.trust_score}/100</p>
                   </div>
                 </div>
-              ))
+              );
+            })
             )}
           </div>
         </div>

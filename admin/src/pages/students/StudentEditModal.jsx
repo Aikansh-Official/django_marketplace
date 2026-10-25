@@ -20,9 +20,31 @@ export default function StudentEditModal({
       <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-100 my-auto">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50/80">
-          <div>
-            <h3 className="text-base font-black text-gray-900">Edit Student Details</h3>
-            <p className="text-xs text-gray-500 font-mono">@{student.username}</p>
+          <div className="flex items-center gap-3">
+            {(() => {
+              const photoUrl = student.profile_picture_url || student.profile_photo || student.avatar;
+              return (
+                <div className="relative w-10 h-10 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center shrink-0 overflow-hidden border border-gray-200 shadow-2xs">
+                  {photoUrl ? (
+                    <img
+                      src={photoUrl}
+                      alt={student.full_name || student.username}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : null}
+                  <span className="text-sm font-bold uppercase select-none">
+                    {student.full_name ? student.full_name.charAt(0) : student.username.charAt(0)}
+                  </span>
+                </div>
+              );
+            })()}
+            <div>
+              <h3 className="text-base font-black text-gray-900">Edit Student Details</h3>
+              <p className="text-xs text-gray-500 font-mono">@{student.username}</p>
+            </div>
           </div>
           <button
             onClick={onClose}

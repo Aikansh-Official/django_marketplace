@@ -625,7 +625,7 @@ class AdminDashboardStatsView(APIView):
         # Fetch only the top 5 recent listings and students with minimal fields
         recent_listings_qs = Listing.objects.select_related('seller', 'category').prefetch_related('images').order_by('-created_at')[:5]
         recent_students_qs = User.objects.filter(is_staff=False, is_superuser=False).only(
-            'id', 'username', 'full_name', 'email', 'is_verified_student', 'trust_score', 'profile_photo'
+            'id', 'username', 'full_name', 'email', 'is_verified_student', 'trust_score', 'profile_photo', 'profile_picture_url'
         ).order_by('-date_joined')[:5]
 
         recent_listings = ListingSerializer(recent_listings_qs, many=True, context={'request': request}).data

@@ -67,6 +67,8 @@ export default function StudentInspectModal({
 
   const ocrEntries = getOcrEntries(student.id_card_ocr_data);
   const hasOcr = hasValidOcrFields(ocrEntries);
+  const photoUrl = student.profile_picture_url || student.profile_photo || student.avatar;
+  const idCardUrl = student.id_card_image || student.id_card_front_url;
 
   return (
     <div
@@ -79,8 +81,24 @@ export default function StudentInspectModal({
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50/80 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold text-base shadow-sm">
-              {student.full_name ? student.full_name.charAt(0) : student.username.charAt(0)}
+            <div
+              onClick={() => photoUrl && onOpenLightbox(photoUrl)}
+              className={`relative w-11 h-11 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold text-base shadow-sm overflow-hidden border border-gray-200 shrink-0 ${photoUrl ? 'cursor-pointer hover:ring-2 hover:ring-brand-500' : ''}`}
+              title={photoUrl ? "Click to view full photo" : undefined}
+            >
+              {photoUrl ? (
+                <img
+                  src={photoUrl}
+                  alt={student.full_name || student.username}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : null}
+              <span className="select-none">
+                {student.full_name ? student.full_name.charAt(0).toUpperCase() : student.username.charAt(0).toUpperCase()}
+              </span>
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -169,9 +187,9 @@ export default function StudentInspectModal({
                 <ShieldCheck className="w-4 h-4 text-brand-600" />
                 Physical ID Card & Face Verification Inspection
               </span>
-              {student.id_card_image && (
+              {idCardUrl && (
                 <button
-                  onClick={() => onOpenLightbox(student.id_card_image)}
+                  onClick={() => onOpenLightbox(idCardUrl)}
                   className="flex items-center gap-1 text-[11px] font-bold text-brand-600 hover:text-brand-800 cursor-pointer"
                 >
                   <Maximize2 className="w-3 h-3" /> Fullscreen Zoom
@@ -184,22 +202,22 @@ export default function StudentInspectModal({
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-gray-600 uppercase tracking-wider">Account Face Photo</span>
-                  {student.profile_photo && (
+                  {photoUrl && (
                     <button
-                      onClick={() => onOpenLightbox(student.profile_photo)}
-                      className="text-[10px] text-gray-500 hover:text-gray-800"
+                      onClick={() => onOpenLightbox(photoUrl)}
+                      className="text-[10px] font-bold text-brand-600 hover:text-brand-800 cursor-pointer flex items-center gap-1"
                     >
-                      View
+                      <Maximize2 className="w-2.5 h-2.5" /> Fullscreen
                     </button>
                   )}
                 </div>
                 <div className="h-48 bg-gray-50 rounded-lg border border-dashed border-gray-300 flex items-center justify-center overflow-hidden relative group">
-                  {student.profile_photo ? (
+                  {photoUrl ? (
                     <img
-                      src={student.profile_photo}
+                      src={photoUrl}
                       alt="Student Face"
                       className="w-full h-full object-contain cursor-pointer hover:scale-105 transition-transform"
-                      onClick={() => onOpenLightbox(student.profile_photo)}
+                      onClick={() => onOpenLightbox(photoUrl)}
                     />
                   ) : (
                     <div className="text-center p-4 text-gray-400">
@@ -216,19 +234,19 @@ export default function StudentInspectModal({
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-gray-600 uppercase tracking-wider">Physical ID Card Scan</span>
-                  {student.id_card_image && (
+                  {idCardUrl && (
                     <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-bold">
                       Upload Present
                     </span>
                   )}
                 </div>
                 <div className="h-48 bg-gray-50 rounded-lg border border-dashed border-gray-300 flex items-center justify-center overflow-hidden relative group">
-                  {student.id_card_image ? (
+                  {idCardUrl ? (
                     <img
-                      src={student.id_card_image}
+                      src={idCardUrl}
                       alt="Physical ID Card"
                       className="w-full h-full object-contain cursor-pointer hover:scale-105 transition-transform"
-                      onClick={() => onOpenLightbox(student.id_card_image)}
+                      onClick={() => onOpenLightbox(idCardUrl)}
                     />
                   ) : (
                     <div className="text-center p-4 text-gray-400">

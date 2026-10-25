@@ -161,9 +161,26 @@ export default function AdminLayout({ setAuth }) {
 
         <div className="p-4 border-t border-gray-800">
           <div className="flex items-center gap-3 mb-3 px-2">
-            <div className="w-10 h-10 bg-brand-600 rounded-full flex items-center justify-center text-white font-bold uppercase shrink-0">
-              {adminUser ? adminUser.username.charAt(0) : 'A'}
-            </div>
+            {(() => {
+              const adminPhoto = adminUser?.profile_picture_url || adminUser?.profile_photo || adminUser?.avatar;
+              return (
+                <div className="relative w-10 h-10 bg-brand-600 rounded-full flex items-center justify-center text-white font-bold uppercase shrink-0 overflow-hidden border border-gray-700 shadow-2xs">
+                  {adminPhoto ? (
+                    <img
+                      src={adminPhoto}
+                      alt={adminUser?.username || 'Admin'}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : null}
+                  <span className="select-none">
+                    {adminUser ? adminUser.username.charAt(0).toUpperCase() : 'A'}
+                  </span>
+                </div>
+              );
+            })()}
             <div className="overflow-hidden min-w-0">
               <p className="text-sm font-bold text-white truncate">{adminUser ? adminUser.full_name || adminUser.username : 'Admin User'}</p>
               <div className="flex items-center gap-1.5 mt-0.5">

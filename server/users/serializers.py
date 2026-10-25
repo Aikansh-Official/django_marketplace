@@ -280,7 +280,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             id_card_image=cloudinary_id_card,
             id_card_data=id_card_data if is_id_verified else {},
             trust_score=10 if is_id_verified else 5, # Email (+5) + ID Card (+5)
-            profile_photo=cloudinary_profile_photo
+            profile_photo=cloudinary_profile_photo,
+            profile_picture_url=cloudinary_profile_photo
         )
 
         # Recalculate trust score with selfie bonus
@@ -305,6 +306,7 @@ class UserListSerializer(serializers.ModelSerializer):
     completed_trades_count = serializers.SerializerMethodField()
     has_id_card = serializers.SerializerMethodField()
     profile_photo = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    profile_picture_url = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     effective_permissions = serializers.ListField(source='effective_admin_permissions', read_only=True)
     is_google_linked = serializers.SerializerMethodField()
 
@@ -314,6 +316,7 @@ class UserListSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'full_name', 'phone_number', 'role',
             'is_active', 'is_verified_student', 'is_id_verified', 'has_id_card',
             'college_domain', 'trust_score', 'completed_trades_count', 'profile_photo',
+            'profile_picture_url',
             'last_login_method', 'last_login', 'is_google_linked',
             'date_joined', 'is_staff', 'is_superuser', 'admin_role', 'admin_permissions',
             'effective_permissions'
@@ -322,6 +325,7 @@ class UserListSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'role', 'is_active', 'is_verified_student',
             'is_id_verified', 'has_id_card', 'college_domain',
             'trust_score', 'completed_trades_count', 'profile_photo',
+            'profile_picture_url',
             'last_login_method', 'last_login', 'is_google_linked', 'date_joined',
             'is_staff', 'is_superuser', 'admin_role', 'admin_permissions',
             'effective_permissions'
@@ -344,8 +348,15 @@ class UserListSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         from marketplace.media_security import generate_secure_image_url
-        if data.get('profile_photo'):
-            data['profile_photo'] = generate_secure_image_url(data['profile_photo'])
+        raw_photo = getattr(instance, 'profile_photo', None) or getattr(instance, 'profile_picture_url', None)
+        if raw_photo:
+            secured_url = generate_secure_image_url(raw_photo)
+            data['profile_photo'] = secured_url
+            data['profile_picture_url'] = secured_url
+        else:
+            data['profile_photo'] = None
+            data['profile_picture_url'] = None
+
         if 'id_card_image' in data and data.get('id_card_image'):
             data['id_card_image'] = generate_secure_image_url(data['id_card_image'])
         return data
@@ -375,14 +386,19 @@ class UserLoginHistorySerializer(serializers.ModelSerializer):
 class UserDashboardSummarySerializer(serializers.ModelSerializer):
     """Ultra lightweight serializer for dashboard recent students preview."""
     profile_photo = serializers.SerializerMethodField()
+    profile_picture_url = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'full_name', 'email', 'is_verified_student', 'trust_score', 'profile_photo')
+        fields = ('id', 'username', 'full_name', 'email', 'is_verified_student', 'trust_score', 'profile_photo', 'profile_picture_url')
 
     def get_profile_photo(self, obj):
         from marketplace.media_security import generate_secure_image_url
-        return generate_secure_image_url(getattr(obj, 'profile_photo', None))
+        raw = getattr(obj, 'profile_photo', None) or getattr(obj, 'profile_picture_url', None)
+        return generate_secure_image_url(raw) if raw else None
+
+    def get_profile_picture_url(self, obj):
+        return self.get_profile_photo(obj)
 
 
 class AdminUserUpdateSerializer(serializers.ModelSerializer):
@@ -391,7 +407,7 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'username', 'email', 'full_name', 'phone_number', 'role',
             'is_active', 'is_verified_student', 'is_id_verified', 'trust_score',
-            'id_card_image', 'id_card_data', 'profile_photo', 'admin_role', 'admin_permissions'
+            'id_card_image', 'id_card_data', 'profile_photo', 'profile_picture_url', 'admin_role', 'admin_permissions'
         )
         read_only_fields = ('id', 'username')
 
@@ -399,14 +415,20 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
 class StaffUserSerializer(serializers.ModelSerializer):
     effective_role = serializers.CharField(source='effective_admin_role', read_only=True)
     effective_permissions = serializers.ListField(source='effective_admin_permissions', read_only=True)
+    profile_picture_url = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = (
             'id', 'username', 'email', 'full_name', 'phone_number',
             'admin_role', 'effective_role', 'admin_permissions', 'effective_permissions',
-            'is_staff', 'is_superuser', 'is_active', 'date_joined', 'last_login', 'profile_photo'
+            'is_staff', 'is_superuser', 'is_active', 'date_joined', 'last_login', 'profile_photo', 'profile_picture_url'
         )
+
+    def get_profile_picture_url(self, obj):
+        from marketplace.media_security import generate_secure_image_url
+        raw = getattr(obj, 'profile_photo', None) or getattr(obj, 'profile_picture_url', None)
+        return generate_secure_image_url(raw) if raw else None
 
 
 class PublicSellerProfileSerializer(serializers.ModelSerializer):
