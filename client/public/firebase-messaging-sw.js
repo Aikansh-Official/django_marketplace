@@ -24,7 +24,7 @@ function displayPushNotification(payload) {
   const title = payload.notification?.title || payload.data?.title || 'CampXChange Notification';
   const body = payload.notification?.body || payload.data?.body || payload.data?.message || 'You have a new update on CampXChange.';
   const link = payload.data?.link || payload.data?.route || payload.fcmOptions?.link || '/notifications';
-  const icon = payload.notification?.icon || '/CampusXChange_Logo.webp';
+  const icon = payload.notification?.icon || '/favicon.png';
   const badge = '/favicon.png';
   const tag = payload.data?.type || payload.data?.tag || 'cxc-notification';
 

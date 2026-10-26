@@ -340,7 +340,7 @@ class NotificationService:
                 notification=messaging.WebpushNotification(
                     title=title,
                     body=message,
-                    icon=f"{base_frontend}/CampusXChange_Logo.webp",
+                    icon=f"{base_frontend}/favicon.png",
                     badge=f"{base_frontend}/favicon.png",
                     data={'link': web_link}
                 ),

@@ -16,7 +16,13 @@ BG_PAGE = "#F9FAFB"
 
 
 def _get_base_template(title: str, preheader: str, content_html: str) -> str:
-    logo_url = "https://cxc.anshuman892494.online/CampXChange_Logo.png"
+    base_frontend = getattr(settings, 'FRONTEND_URL', 'https://cxc.anshuman892494.online')
+    if ',' in base_frontend:
+        base_frontend = base_frontend.split(',')[0].strip()
+    base_frontend = base_frontend.rstrip('/')
+    if not base_frontend.startswith('http'):
+        base_frontend = f"https://{base_frontend}"
+    logo_url = f"{base_frontend}/favicon.png"
     
     return f"""<!DOCTYPE html>
 <html lang="en">
