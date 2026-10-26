@@ -496,18 +496,23 @@ export default function ProductDetail() {
   };
 
   const handleCancelDeal = async (offerId) => {
-    if (!window.confirm('Are you sure you want to cancel this campus deal? The listing will become Active again for other students.')) {
+    const isPending = userOffer?.status === 'PENDING';
+    const confirmMsg = isPending
+      ? 'Are you sure you want to withdraw your purchase request?'
+      : 'Are you sure you want to cancel this campus deal? The listing will become Active again for other students.';
+
+    if (!window.confirm(confirmMsg)) {
       return;
     }
     setCancellingDeal(true);
     try {
       await api.post(`/marketplace/offers/${offerId}/cancel/`);
-      toast.success('Deal cancelled. Listing restored to Active.');
+      toast.success(isPending ? 'Purchase request withdrawn.' : 'Deal cancelled. Listing restored to Active.');
       setListing((prev) => ({ ...prev, status: 'ACTIVE' }));
       if (isOwner) {
         fetchListingOffers();
       } else {
-        setUserOffer((prev) => (prev ? { ...prev, status: 'CANCELLED' } : null));
+        setUserOffer(null);
       }
       emitTradeEvent(TRADE_ACTIONS.DEAL_CANCELLED, {
         listingId: id,

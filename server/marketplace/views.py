@@ -2148,7 +2148,7 @@ class ConfirmHandoverView(APIView):
 
 
 class CancelDealView(APIView):
-    """Allows either buyer or seller to cancel an accepted deal before handover, restoring listing to ACTIVE."""
+    """Allows either buyer or seller to cancel an accepted deal or withdraw a pending/countered request, restoring listing to ACTIVE."""
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
@@ -2161,33 +2161,43 @@ class CancelDealView(APIView):
         is_buyer = (offer.buyer == request.user)
 
         if not (is_seller or is_buyer):
-            return Response({'error': 'You are not authorized to cancel this deal.'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'error': 'You are not authorized to cancel this request.'}, status=status.HTTP_403_FORBIDDEN)
 
-        if offer.status != 'ACCEPTED':
-            return Response({'error': f'Cannot cancel deal in {offer.status} status.'}, status=status.HTTP_400_BAD_REQUEST)
+        if offer.status not in ('ACCEPTED', 'PENDING', 'COUNTERED'):
+            return Response({'error': f'Cannot cancel request in {offer.status} status.'}, status=status.HTTP_400_BAD_REQUEST)
 
         with transaction.atomic():
-            # Invalidate all handover sessions
+            was_accepted = (offer.status == 'ACCEPTED')
+
+            # Invalidate all handover sessions if any exist
             HandoverSession.objects.filter(offer=offer, status='ACTIVE').update(status='CANCELLED')
 
             offer.status = 'CANCELLED'
             offer.save()
 
-            # Unlock listing back to ACTIVE
+            # Unlock listing back to ACTIVE if it was reserved/pending due to this accepted deal
             listing = offer.listing
-            listing.status = 'ACTIVE'
-            listing.save()
+            if was_accepted and listing.status == 'PENDING':
+                listing.status = 'ACTIVE'
+                listing.save()
 
             canceller_name = getattr(request.user, 'full_name', '') or request.user.username
             recipient = offer.buyer if is_seller else listing.seller
+
+            if was_accepted:
+                notif_title = f"Campus Deal Cancelled for '{listing.title}'"
+                notif_msg = f"{canceller_name} cancelled the campus deal. The listing is now available again."
+            else:
+                notif_title = f"Purchase Request Withdrawn for '{listing.title}'"
+                notif_msg = f"{canceller_name} has withdrawn their purchase request."
 
             NotificationService.send_notification(
                 recipient=recipient,
                 sender=request.user,
                 notification_type='DEAL_CANCELLED',
                 priority='NORMAL',
-                title=f"Campus Deal Cancelled for '{listing.title}'",
-                message=f"{canceller_name} cancelled the campus deal. The listing is now available again.",
+                title=notif_title,
+                message=notif_msg,
                 listing=listing,
                 link=f"/product/{listing.id}",
                 extra_data={
@@ -2198,9 +2208,10 @@ class CancelDealView(APIView):
                 }
             )
 
+        success_msg = 'Deal cancelled and listing restored to Active.' if was_accepted else 'Purchase request withdrawn successfully.'
         return Response({
             'success': True,
-            'message': 'Deal cancelled and listing restored to Active.'
+            'message': success_msg
         })
 
 

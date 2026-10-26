@@ -80,12 +80,18 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
   };
 
   const handleCancelDeal = async (offerId) => {
-    if (!window.confirm('Are you sure you want to cancel this campus deal? The item will be made available again.')) {
+    const targetOrder = orders.find((o) => o.id === offerId);
+    const isPending = targetOrder?.status === 'PENDING';
+    const confirmPrompt = isPending
+      ? 'Are you sure you want to withdraw your purchase request?'
+      : 'Are you sure you want to cancel this campus deal? The item will be made available again.';
+
+    if (!window.confirm(confirmPrompt)) {
       return;
     }
     try {
       await api.post(`/marketplace/offers/${offerId}/cancel/`);
-      toast.success('Deal cancelled. Listing restored to Active.');
+      toast.success(isPending ? 'Purchase request withdrawn.' : 'Deal cancelled. Listing restored to Active.');
       fetchMyOffers(false);
       if (isSeller) fetchMyListings(false);
       emitTradeEvent(TRADE_ACTIONS.DEAL_CANCELLED, { offerId });
@@ -735,6 +741,16 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
                             Decline
                           </button>
                         </div>
+                      )}
+
+                      {ord.status === 'PENDING' && (
+                        <button
+                          onClick={() => handleCancelDeal(ord.id)}
+                          className="min-h-[36px] px-3 py-1.5 rounded-lg border border-rose-200 text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer flex items-center justify-center shrink-0 shadow-2xs"
+                          title="Withdraw Purchase Request"
+                        >
+                          Withdraw Request
+                        </button>
                       )}
 
                       {ord.status === 'ACCEPTED' && (

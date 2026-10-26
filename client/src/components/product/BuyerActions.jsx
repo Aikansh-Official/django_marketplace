@@ -12,7 +12,8 @@ import {
   ShieldCheck,
   ShoppingBag,
   Tag,
-  UserCheck
+  UserCheck,
+  XCircle
 } from 'lucide-react';
 
 export default function BuyerActions({
@@ -117,9 +118,21 @@ export default function BuyerActions({
           /* Buyer Actions */
           <div className="space-y-3">
             {userOffer?.status === 'PENDING' ? (
-              <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3.5 rounded-md text-xs font-bold text-center flex items-center justify-center gap-2 shadow-2xs">
-                <Clock className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                <span>Purchase Request Pending Seller Approval</span>
+              <div className="space-y-2">
+                <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3.5 rounded-md text-xs font-bold text-center flex items-center justify-center gap-2 shadow-2xs">
+                  <Clock className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                  <span>Purchase Request Pending Seller Approval</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onCancelDeal && onCancelDeal(userOffer.id)}
+                  disabled={cancellingDeal}
+                  className="w-full bg-white hover:bg-rose-50 border border-rose-200 text-rose-600 hover:text-rose-700 font-bold py-2.5 px-3 rounded-md transition-all text-xs flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-50"
+                  title="Withdraw this purchase request"
+                >
+                  <XCircle className="w-3.5 h-3.5 text-rose-500" />
+                  <span>{cancellingDeal ? 'Cancelling Request...' : 'Withdraw / Cancel Request'}</span>
+                </button>
               </div>
             ) : (
               <div className="space-y-2">
