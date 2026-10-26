@@ -76,8 +76,9 @@ def get_firebase_app():
             logger.info("✅ Firebase Admin SDK successfully initialized for FCM.")
             return True
         else:
-            logger.info("ℹ️ Firebase credentials not provided. FCM NotificationService running in Fallback/Simulated mode.")
-            _firebase_init_error = "MISSING_CREDENTIALS"
+            reason = _firebase_init_error or ("FIREBASE_SERVICE_ACCOUNT_KEY not set" if not cred_source else "Could not load credentials from provided source")
+            logger.warning(f"ℹ️ Firebase credentials not initialized. FCM NotificationService running in Fallback/Simulated mode. Details: {reason}")
+            _firebase_init_error = reason
             return False
 
     except Exception as e:
@@ -356,7 +357,6 @@ class NotificationService:
                 token_chunk = tokens[i:i + chunk_size]
                 multicast_msg = messaging.MulticastMessage(
                     tokens=token_chunk,
-                    notification=messaging.Notification(title=title, body=message),
                     data=clean_data,
                     android=android_config,
                     webpush=webpush_config
