@@ -7,3 +7,9 @@ class MarketplaceConfig(AppConfig):
 
     def ready(self):
         import marketplace.signals  # noqa: F401
+        try:
+            from .services.notification_service import get_firebase_app
+            get_firebase_app()
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Error in eager Firebase init: {e}")
