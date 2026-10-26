@@ -64,7 +64,14 @@ export const requestNotificationPermissionAndRegister = async () => {
       return { success: false, reason: 'PERMISSION_DENIED', permission };
     }
 
-    const swRegistration = await registerServiceWorker();
+    let swRegistration = await registerServiceWorker();
+    if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+      try {
+        const readyRegistration = await navigator.serviceWorker.ready;
+        if (readyRegistration) swRegistration = readyRegistration;
+      } catch (_) {}
+    }
+
     const messaging = await getFirebaseMessaging();
 
     if (!messaging) {

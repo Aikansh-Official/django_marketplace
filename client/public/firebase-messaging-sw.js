@@ -1,10 +1,10 @@
 // Firebase Cloud Messaging Service Worker for CampXChange
-// Runs in the background to receive push alerts even when the app/tab is closed.
+// Handles background push alerts even when the website/tab is closed.
 
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js");
 
-// Initialize Firebase in Service Worker using same credentials from URL search params or fallback
+// 1. Resolve Firebase Configuration from URL query parameters (dynamically passed from client .env)
 const urlParams = new URL(location).searchParams;
 const firebaseConfig = {
   apiKey: urlParams.get('apiKey') || '',
@@ -17,83 +17,94 @@ const firebaseConfig = {
 
 let firebaseInitialized = false;
 
-if (firebaseConfig.apiKey && firebaseConfig.projectId) {
-  try {
+// 2. Helper to reliably construct and display notification
+function displayPushNotification(payload) {
+  if (!payload) return Promise.resolve();
+
+  const title = payload.notification?.title || payload.data?.title || 'CampXChange Notification';
+  const body = payload.notification?.body || payload.data?.body || payload.data?.message || 'You have a new update on CampXChange.';
+  const link = payload.data?.link || payload.data?.route || payload.fcmOptions?.link || '/notifications';
+  const icon = payload.notification?.icon || '/CampusXChange_Logo.webp';
+  const badge = '/favicon.png';
+  const tag = payload.data?.type || payload.data?.tag || 'cxc-notification';
+
+  const notificationOptions = {
+    body: body,
+    icon: icon,
+    badge: badge,
+    data: { 
+      link: link,
+      ...payload.data 
+    },
+    tag: tag,
+    renotify: true,
+    requireInteraction: false,
+    vibrate: [200, 100, 200]
+  };
+
+  return self.registration.showNotification(title, notificationOptions);
+}
+
+// 3. Initialize Firebase SDK inside Service Worker
+try {
+  if (firebaseConfig.apiKey && firebaseConfig.projectId) {
     firebase.initializeApp(firebaseConfig);
     const messaging = firebase.messaging();
 
-    // Background push handler via Firebase SDK
+    // Firebase background message handler (triggers for data-only FCM messages)
     messaging.onBackgroundMessage((payload) => {
-      console.log('[firebase-messaging-sw.js] Background message received:', payload);
-      const title = payload.notification?.title || payload.data?.title || 'CampXChange Notification';
-      const body = payload.notification?.body || payload.data?.body || 'You have a new update on CampXChange.';
-      const link = payload.data?.link || payload.data?.route || '/notifications';
-
-      const notificationOptions = {
-        body: body,
-        icon: '/CampusXChange_Logo.webp',
-        badge: '/favicon.png',
-        data: { link: link },
-        tag: payload.data?.type || 'cxc-notification',
-        renotify: true,
-        vibrate: [200, 100, 200]
-      };
-
-      self.registration.showNotification(title, notificationOptions);
+      console.log('[firebase-messaging-sw.js] onBackgroundMessage received:', payload);
+      displayPushNotification(payload);
     });
 
     firebaseInitialized = true;
-  } catch (e) {
-    console.warn('[firebase-messaging-sw.js] Firebase SDK init in SW skipped or failed:', e);
   }
+} catch (e) {
+  console.warn('[firebase-messaging-sw.js] Firebase SDK init fallback to native push:', e);
 }
 
-// Fallback native push event listener (ONLY runs if Firebase SDK wasn't initialized, avoiding duplicate popups)
+// 4. Native W3C Push Event Handler (Guaranteed delivery when tab/website is closed)
+// Handles raw WebPush packets and ensures showNotification is ALWAYS called inside event.waitUntil
 self.addEventListener('push', (event) => {
-  if (firebaseInitialized || !event.data) return;
+  console.log('[firebase-messaging-sw.js] Push event received in background.');
 
-  try {
-    const data = event.data.json();
-    const title = data.notification?.title || data.data?.title || 'CampXChange Notification';
-    const body = data.notification?.body || data.data?.body || '';
-    const link = data.data?.link || data.data?.route || '/notifications';
+  let payload = null;
+  if (event.data) {
+    try {
+      payload = event.data.json();
+    } catch (e) {
+      try {
+        payload = { data: { message: event.data.text() } };
+      } catch (_) {
+        payload = {};
+      }
+    }
+  }
 
-    const options = {
-      body: body,
-      icon: '/CampusXChange_Logo.webp',
-      badge: '/favicon.png',
-      data: { link: link },
-      tag: data.data?.type || 'cxc-push',
-      renotify: true,
-      vibrate: [150, 80, 150]
-    };
-
-    event.waitUntil(
-      self.registration.showNotification(title, options)
-    );
-  } catch (err) {
-    console.debug('[firebase-messaging-sw.js] Raw push handled.');
+  // Display notification via waitUntil to keep Service Worker alive until rendered
+  if (payload) {
+    event.waitUntil(displayPushNotification(payload));
   }
 });
 
-// Notification click event handler: Focus existing window or open target route
+// 5. Notification Click Handler (Focus existing tab or open new window)
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const rawLink = event.notification.data?.link || '/notifications';
+  const rawLink = event.notification.data?.link || event.notification.data?.route || '/notifications';
   const targetUrl = new URL(rawLink, self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // If a tab is already open, focus it and navigate
+      // Focus existing CampXChange tab if open
       for (let client of windowClients) {
-        if ('focus' in client) {
+        if (client.url.startsWith(self.location.origin) && 'focus' in client) {
           if ('navigate' in client) {
             client.navigate(targetUrl);
           }
           return client.focus();
         }
       }
-      // If no tab is open, open a new browser window
+      // If no tab is open, open a new window
       if (clients.openWindow) {
         return clients.openWindow(targetUrl);
       }

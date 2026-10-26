@@ -282,33 +282,36 @@ class NotificationService:
             notif_type = clean_data.get('type') or clean_data.get('notification_type') or 'GENERAL'
 
             # Channel mapping for Android (matching CampXChangeMessagingService)
+            # Use 'high' priority to wake device even when in Doze / background
+            android_priority = 'high'
             if priority == 'URGENT':
                 channel_id = 'cxc_urgent_channel'
-                android_priority = 'high'
             elif notif_type in [
                 'CHAT_MESSAGE', 'NEW_CHAT_MESSAGE', 'PRODUCT_INQUIRY', 'OFFER_MESSAGE'
             ]:
                 channel_id = 'cxc_messages_channel'
-                android_priority = 'high'
             elif notif_type in [
                 'HANDOVER_READY', 'BUY_REQUEST', 'OFFER_RECEIVED', 'OFFER_ACCEPTED',
                 'OFFER_DECLINED', 'COUNTER_OFFER', 'ITEM_SOLD', 'DEAL_CANCELLED',
                 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'OFFER_COUNTERED'
             ]:
                 channel_id = 'cxc_trade_channel'
-                android_priority = 'high'
             else:
                 channel_id = 'cxc_broadcast_channel'
-                android_priority = 'high' if priority == 'HIGH' else 'normal'
 
-            # Android specific config
+            # Ensure routing keys match both Android and Web expectations
+            clean_data['deep_link_type'] = str(notif_type)
+            clean_data['notification_type'] = str(notif_type)
+            clean_data['channel_id'] = str(channel_id)
+
+            # Android specific config: Use clean monochrome notification drawable
             android_config = messaging.AndroidConfig(
                 priority=android_priority,
                 notification=messaging.AndroidNotification(
                     title=title,
                     body=message,
                     channel_id=channel_id,
-                    icon='cxc_logo',
+                    icon='ic_cxc_notification',
                     click_action='CXC_NOTIFICATION_CLICK',
                     default_sound=True,
                     default_vibrate_timings=True
@@ -332,11 +335,12 @@ class NotificationService:
                 web_link = f"{base_frontend}/notifications"
 
             webpush_config = messaging.WebpushConfig(
+                headers={"Urgency": "high"},
                 notification=messaging.WebpushNotification(
                     title=title,
                     body=message,
-                    icon='/CampusXChange_Logo.png',
-                    badge='/favicon.png',
+                    icon=f"{base_frontend}/CampusXChange_Logo.webp",
+                    badge=f"{base_frontend}/favicon.png",
                     data={'link': web_link}
                 ),
                 fcm_options=messaging.WebpushFCMOptions(link=web_link),
