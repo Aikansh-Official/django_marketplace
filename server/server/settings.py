@@ -463,7 +463,9 @@ LOGGING = {
 FIREBASE_API_KEY = os.environ.get('FIREBASE_API_KEY', '')
 FIREBASE_PROJECT_ID = os.environ.get('FIREBASE_PROJECT_ID', '')
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
-FIREBASE_SERVICE_ACCOUNT_KEY = os.environ.get('FIREBASE_SERVICE_ACCOUNT_KEY', '')
+_default_service_account = '/etc/secrets/serviceAccountKey.json' if os.path.isfile('/etc/secrets/serviceAccountKey.json') else ''
+FIREBASE_SERVICE_ACCOUNT_KEY = os.environ.get('FIREBASE_SERVICE_ACCOUNT_KEY', _default_service_account)
+
 
 # ── Google Gemini AI Settings ──────────────────────────────────
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')

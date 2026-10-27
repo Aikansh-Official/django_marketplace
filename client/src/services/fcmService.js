@@ -227,21 +227,27 @@ export const setupForegroundNotifications = async () => {
  * Sends a test push notification to verify browser notification delivery
  */
 export const sendTestPushNotification = async () => {
-  // Always trigger local browser notification for instant visual verification
-  triggerBrowserNotification('CampXChange Browser Alert', {
-    body: 'Browser push notifications are enabled and functioning properly!',
-    link: '/notifications'
-  });
-
-  // Also trigger backend test endpoint to test FCM database and push dispatch
+  // Trigger backend test endpoint to test REAL FCM push dispatch
   try {
     const res = await api.post('/marketplace/notifications/test-push/', {
       title: 'CampXChange Live Alert',
-      message: 'FCM push dispatched from Django backend to your browser!',
+      message: 'FCM push dispatched from Django backend to your device!',
       link: '/notifications'
     });
+
+    if (res.data?.mode === 'FALLBACK_SIMULATED') {
+      triggerBrowserNotification('⚠️ FCM Server Fallback', {
+        body: 'Server running in Simulated mode (Firebase Admin key not loaded). Real push not sent.',
+        link: '/notifications'
+      });
+    }
     return res.data;
   } catch (err) {
+    // Fallback to local browser notification only if backend is unreachable
+    triggerBrowserNotification('CampXChange Browser Alert', {
+      body: 'Browser push notifications are enabled (local offline test).',
+      link: '/notifications'
+    });
     throw err;
   }
 };

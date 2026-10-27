@@ -37,37 +37,60 @@ def get_firebase_app():
 
         cred_source = getattr(settings, 'FIREBASE_SERVICE_ACCOUNT_KEY', '').strip()
         project_id = getattr(settings, 'FIREBASE_PROJECT_ID', '').strip()
+        base_dir = str(getattr(settings, 'BASE_DIR', ''))
 
         cred = None
-        if cred_source:
-            resolved_file = cred_source
-            if not os.path.isfile(resolved_file) and not os.path.isabs(resolved_file):
-                base_dir = getattr(settings, 'BASE_DIR', '')
-                candidate = os.path.join(base_dir, resolved_file)
-                if os.path.isfile(candidate):
-                    resolved_file = candidate
 
-            if os.path.isfile(resolved_file):
-                cred = credentials.Certificate(resolved_file)
-            else:
-                # Try raw JSON string or base64 string
+        # 1. Discover credential file candidates across Render Secret Files, BASE_DIR, and repo root
+        candidate_paths = []
+        if cred_source and not cred_source.startswith('{'):
+            candidate_paths.append(cred_source)
+            if base_dir:
+                candidate_paths.append(os.path.join(base_dir, cred_source))
+                candidate_paths.append(os.path.join(os.path.dirname(base_dir), cred_source))
+
+        # Render Secret File standard path and conventions
+        candidate_paths.extend([
+            '/etc/secrets/serviceAccountKey.json',
+            os.path.join('/etc/secrets', os.path.basename(cred_source) if cred_source else 'serviceAccountKey.json'),
+            os.path.join(base_dir, 'serviceAccountKey.json') if base_dir else '',
+            os.path.join(os.path.dirname(base_dir), 'serviceAccountKey.json') if base_dir else '',
+        ])
+
+        for path in candidate_paths:
+            if path and os.path.isfile(path):
                 try:
-                    raw_str = cred_source
-                    if not raw_str.startswith('{'):
-                        # Check base64
-                        try:
-                            raw_str = base64.b64decode(raw_str).decode('utf-8')
-                        except Exception:
-                            pass
+                    cred = credentials.Certificate(path)
+                    logger.info(f"✅ Firebase credentials successfully loaded from file: {path}")
+                    break
+                except Exception as cert_err:
+                    logger.warning(f"Found credential file at {path} but failed to parse: {cert_err}")
+
+        # 2. If no valid file was found, attempt parsing cred_source as raw or base64 JSON
+        if not cred and cred_source:
+            try:
+                raw_str = cred_source
+                if not raw_str.startswith('{'):
+                    try:
+                        raw_str = base64.b64decode(raw_str).decode('utf-8')
+                    except Exception:
+                        pass
+                if raw_str.startswith('{'):
                     cert_dict = json.loads(raw_str)
                     cred = credentials.Certificate(cert_dict)
-                except Exception as parse_err:
-                    logger.warning(f"Could not parse FIREBASE_SERVICE_ACCOUNT_KEY: {parse_err}")
+                    logger.info("✅ Firebase credentials successfully loaded from raw/base64 JSON.")
+            except Exception as parse_err:
+                logger.warning(f"Could not parse FIREBASE_SERVICE_ACCOUNT_KEY as JSON: {parse_err}")
 
+        # 3. Check GOOGLE_APPLICATION_CREDENTIALS environment variable
         if not cred:
             google_app_cred = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS', '').strip()
             if google_app_cred and os.path.isfile(google_app_cred):
-                cred = credentials.ApplicationDefault()
+                try:
+                    cred = credentials.ApplicationDefault()
+                    logger.info(f"✅ Firebase credentials loaded from GOOGLE_APPLICATION_CREDENTIALS: {google_app_cred}")
+                except Exception as g_err:
+                    logger.warning(f"Failed to load GOOGLE_APPLICATION_CREDENTIALS: {g_err}")
 
         if cred:
             options = {'projectId': project_id} if project_id else None
@@ -76,7 +99,9 @@ def get_firebase_app():
             logger.info("✅ Firebase Admin SDK successfully initialized for FCM.")
             return True
         else:
-            reason = _firebase_init_error or ("FIREBASE_SERVICE_ACCOUNT_KEY not set" if not cred_source else "Could not load credentials from provided source")
+            reason = _firebase_init_error or (
+                "Neither FIREBASE_SERVICE_ACCOUNT_KEY env var nor /etc/secrets/serviceAccountKey.json could be resolved to valid credentials."
+            )
             logger.warning(f"ℹ️ Firebase credentials not initialized. FCM NotificationService running in Fallback/Simulated mode. Details: {reason}")
             _firebase_init_error = reason
             return False
@@ -257,8 +282,13 @@ class NotificationService:
 
         is_ready = get_firebase_app()
         if not is_ready:
-            logger.info(f"FCM Fallback Mode: Notification dispatched to {len(tokens)} token(s) [Simulated]")
-            return len(tokens)
+            logger.warning(
+                f"⚠️ FCM Push Skipped: Firebase Admin SDK is in Fallback/Simulated mode. "
+                f"Cannot deliver push notification to {len(tokens)} registered device token(s). "
+                f"Reason: {_firebase_init_error}"
+            )
+            return 0
+
 
         try:
             from firebase_admin import messaging
