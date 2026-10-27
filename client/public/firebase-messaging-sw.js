@@ -7,12 +7,12 @@ importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-com
 // 1. Resolve Firebase Configuration from URL query parameters (dynamically passed from client .env)
 const urlParams = new URL(location).searchParams;
 const firebaseConfig = {
-  apiKey: urlParams.get('apiKey') || '',
-  authDomain: urlParams.get('authDomain') || '',
-  projectId: urlParams.get('projectId') || '',
-  storageBucket: urlParams.get('storageBucket') || '',
-  messagingSenderId: urlParams.get('messagingSenderId') || '',
-  appId: urlParams.get('appId') || ''
+  apiKey: urlParams.get('apiKey') || 'AIzaSyBE0mfGFWDldaexmetlxg2m9eLOVsLYNRY',
+  authDomain: urlParams.get('authDomain') || 'campxchange-auth.firebaseapp.com',
+  projectId: urlParams.get('projectId') || 'campxchange-auth',
+  storageBucket: urlParams.get('storageBucket') || 'campxchange-auth.firebasestorage.app',
+  messagingSenderId: urlParams.get('messagingSenderId') || '665608453808',
+  appId: urlParams.get('appId') || '1:665608453808:web:d492284a5be72910a10575'
 };
 
 let firebaseInitialized = false;

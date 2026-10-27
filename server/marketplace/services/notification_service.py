@@ -13,6 +13,72 @@ _firebase_initialized = False
 _firebase_init_error = None
 
 
+def _resilient_create_certificate(source):
+    """
+    Safely creates a firebase_admin credentials.Certificate instance.
+    Handles:
+    - Standard JSON file path
+    - Render Secret Files with unescaped control characters / newlines
+    - Files / strings where private_key has literal '\\n' instead of actual newlines
+    - Base64 encoded or raw JSON strings
+    - Dictionary with automatic PEM newline normalization
+    """
+    import firebase_admin
+    from firebase_admin import credentials
+
+    # 1. If source is an existing file path
+    if isinstance(source, str) and os.path.isfile(source):
+        try:
+            cred = credentials.Certificate(source)
+            logger.info(f"✅ Firebase certificate loaded directly from file: {source}")
+            return cred
+        except Exception as direct_err:
+            logger.info(f"Direct parse of {source} failed ({direct_err}), attempting resilient JSON recovery...")
+            try:
+                with open(source, 'r', encoding='utf-8') as f:
+                    raw_text = f.read()
+                cert_dict = json.loads(raw_text, strict=False)
+                if 'private_key' in cert_dict and isinstance(cert_dict['private_key'], str):
+                    cert_dict['private_key'] = cert_dict['private_key'].replace('\\r\\n', '\n').replace('\\n', '\n')
+                cred = credentials.Certificate(cert_dict)
+                logger.info(f"✅ Firebase credentials recovered and loaded from file: {source}")
+                return cred
+            except Exception as recover_err:
+                logger.warning(f"Resilient recovery failed for file {source}: {recover_err}")
+
+    # 2. If source is a JSON or Base64 string
+    if isinstance(source, str) and source.strip():
+        raw = source.strip()
+        if not raw.startswith('{'):
+            try:
+                raw = base64.b64decode(raw).decode('utf-8')
+            except Exception:
+                pass
+        if raw.startswith('{'):
+            try:
+                cert_dict = json.loads(raw, strict=False)
+                if 'private_key' in cert_dict and isinstance(cert_dict['private_key'], str):
+                    cert_dict['private_key'] = cert_dict['private_key'].replace('\\r\\n', '\n').replace('\\n', '\n')
+                cred = credentials.Certificate(cert_dict)
+                logger.info("✅ Firebase credentials successfully loaded from raw/base64 JSON string.")
+                return cred
+            except Exception as parse_err:
+                logger.warning(f"Could not parse string credentials: {parse_err}")
+
+    # 3. If source is a dict
+    if isinstance(source, dict):
+        try:
+            cert_dict = dict(source)
+            if 'private_key' in cert_dict and isinstance(cert_dict['private_key'], str):
+                cert_dict['private_key'] = cert_dict['private_key'].replace('\\r\\n', '\n').replace('\\n', '\n')
+            cred = credentials.Certificate(cert_dict)
+            logger.info("✅ Firebase credentials loaded from dictionary.")
+            return cred
+        except Exception as dict_err:
+            logger.warning(f"Could not load certificate from dict: {dict_err}")
+
+    return None
+
 def get_firebase_app():
     """
     Safely initialize and retrieve the default Firebase App instance.
@@ -59,28 +125,13 @@ def get_firebase_app():
 
         for path in candidate_paths:
             if path and os.path.isfile(path):
-                try:
-                    cred = credentials.Certificate(path)
-                    logger.info(f"✅ Firebase credentials successfully loaded from file: {path}")
+                cred = _resilient_create_certificate(path)
+                if cred:
                     break
-                except Exception as cert_err:
-                    logger.warning(f"Found credential file at {path} but failed to parse: {cert_err}")
 
         # 2. If no valid file was found, attempt parsing cred_source as raw or base64 JSON
         if not cred and cred_source:
-            try:
-                raw_str = cred_source
-                if not raw_str.startswith('{'):
-                    try:
-                        raw_str = base64.b64decode(raw_str).decode('utf-8')
-                    except Exception:
-                        pass
-                if raw_str.startswith('{'):
-                    cert_dict = json.loads(raw_str)
-                    cred = credentials.Certificate(cert_dict)
-                    logger.info("✅ Firebase credentials successfully loaded from raw/base64 JSON.")
-            except Exception as parse_err:
-                logger.warning(f"Could not parse FIREBASE_SERVICE_ACCOUNT_KEY as JSON: {parse_err}")
+            cred = _resilient_create_certificate(cred_source)
 
         # 3. Check GOOGLE_APPLICATION_CREDENTIALS environment variable
         if not cred:
@@ -387,6 +438,10 @@ class NotificationService:
                 token_chunk = tokens[i:i + chunk_size]
                 multicast_msg = messaging.MulticastMessage(
                     tokens=token_chunk,
+                    notification=messaging.Notification(
+                        title=str(title),
+                        body=str(message)
+                    ),
                     data=clean_data,
                     android=android_config,
                     webpush=webpush_config

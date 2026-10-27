@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { isNotificationSupported, getNotificationPermission, requestNotificationPermissionAndRegister, sendTestPushNotification } from '../../services/fcmService';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import {
@@ -21,6 +22,35 @@ export default function NotificationsTab({ onUnreadCountChange, onNavigateTab })
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
+  const [pushStatus, setPushStatus] = useState(() => getNotificationPermission());
+  const [pushLoading, setPushLoading] = useState(false);
+
+  const handleTestOrEnablePush = async () => {
+    setPushLoading(true);
+    try {
+      if (pushStatus !== 'granted') {
+        const res = await requestNotificationPermissionAndRegister();
+        if (res.success) {
+          setPushStatus('granted');
+          toast.success('Device push notifications enabled!');
+        } else {
+          setPushStatus(getNotificationPermission());
+          toast.error(res.reason || 'Could not enable notifications.');
+        }
+      } else {
+        const res = await sendTestPushNotification();
+        if (res?.mode === 'FALLBACK_SIMULATED') {
+          toast.error('Server running in fallback mode (missing Firebase credentials). Real push not delivered.', { duration: 5000 });
+        } else {
+          toast.success('Test alert dispatched to registered devices! Check PC/phone notification tray.');
+        }
+      }
+    } catch (err) {
+      toast.error('Failed to trigger device test alert.');
+    } finally {
+      setPushLoading(false);
+    }
+  };
 
   const fetchNotifications = async () => {
     try {
@@ -152,6 +182,28 @@ export default function NotificationsTab({ onUnreadCountChange, onNavigateTab })
               Mark all as read
             </button>
           )}
+
+          <button
+            onClick={handleTestOrEnablePush}
+            disabled={pushLoading}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs font-semibold transition-colors shadow-2xs ${
+              pushStatus === 'granted'
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                : pushStatus === 'denied'
+                ? 'border-rose-200 bg-rose-50 text-rose-700'
+                : 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100'
+            }`}
+            title={pushStatus === 'granted' ? 'Click to send a test notification to your device' : 'Click to enable device push notifications'}
+          >
+            <Bell className="w-3.5 h-3.5" />
+            {pushLoading
+              ? 'Testing...'
+              : pushStatus === 'granted'
+              ? 'Test Device Alert'
+              : pushStatus === 'denied'
+              ? 'Push Blocked'
+              : 'Enable Device Push'}
+          </button>
 
           {notifications.length > 0 && (
             <button
