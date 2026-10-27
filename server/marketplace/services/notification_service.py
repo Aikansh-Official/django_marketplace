@@ -144,10 +144,15 @@ def get_firebase_app():
                     logger.warning(f"Failed to load GOOGLE_APPLICATION_CREDENTIALS: {g_err}")
 
         if cred:
-            options = {'projectId': project_id} if project_id else None
+            # Let credentials define project_id automatically; only use options if missing from cert
+            options = None
+            cred_proj = getattr(cred, 'project_id', None)
+            if not cred_proj and project_id:
+                options = {'projectId': project_id.strip()}
             firebase_admin.initialize_app(cred, options=options)
             _firebase_initialized = True
-            logger.info("✅ Firebase Admin SDK successfully initialized for FCM.")
+            active_proj = getattr(cred, 'project_id', project_id or 'default')
+            logger.info(f"✅ Firebase Admin SDK successfully initialized for FCM (Project: {active_proj}).")
             return True
         else:
             reason = _firebase_init_error or (
@@ -458,8 +463,10 @@ class NotificationService:
                     for idx, resp in enumerate(response.responses):
                         if not resp.success:
                             err = resp.exception
-                            err_code = getattr(err, 'code', str(err)).lower()
-                            if any(sub in err_code for sub in ['unregistered', 'invalid-registration', 'mismatch', 'not-found']):
+                            err_code = getattr(err, 'code', str(err))
+                            logger.warning(f"⚠️ FCM Device Delivery Failed [{idx+1}/{len(token_chunk)}]: code={err_code} err={err}")
+                            err_str = str(err_code).lower()
+                            if any(sub in err_str for sub in ['unregistered', 'invalid-registration', 'mismatch', 'not-found', 'notregistered']):
                                 dead_tokens.append(token_chunk[idx])
 
             # Prune dead/unregistered tokens
