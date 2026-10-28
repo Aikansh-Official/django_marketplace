@@ -242,6 +242,10 @@ class NotificationService:
                     'body': str(message),
                     'message': str(message),
                 }
+                if recipient:
+                    push_data['recipient_id'] = str(recipient.id)
+                    push_data['recipient_email'] = str(getattr(recipient, 'email', '') or '')
+                    push_data['recipient_username'] = str(getattr(recipient, 'username', '') or '')
                 if listing:
                     push_data['listing_id'] = str(listing.id)
                     push_data['listing_title'] = str(getattr(listing, 'title', ''))

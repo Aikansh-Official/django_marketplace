@@ -1411,6 +1411,9 @@ class RegisterFCMDeviceView(APIView):
         device_type = serializer.validated_data.get('device_type', 'WEB')
         device_name = serializer.validated_data.get('name', '')
 
+        # Prevent cross-user push leakage when switching accounts on the same device
+        FCMDevice.objects.filter(registration_id=token).exclude(user=request.user).update(is_active=False)
+
         device, created = FCMDevice.objects.update_or_create(
             registration_id=token,
             defaults={
