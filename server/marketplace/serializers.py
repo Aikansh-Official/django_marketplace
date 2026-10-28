@@ -578,6 +578,8 @@ class NotificationSerializer(serializers.ModelSerializer):
     sender_name = serializers.CharField(source='sender.full_name', read_only=True, default='')
     sender_username = serializers.CharField(source='sender.username', read_only=True, default='')
     sender_is_staff = serializers.BooleanField(source='sender.is_staff', read_only=True, default=False)
+    is_global = serializers.SerializerMethodField()
+    is_read = serializers.SerializerMethodField()
 
     class Meta:
         model = Notification
@@ -585,15 +587,43 @@ class NotificationSerializer(serializers.ModelSerializer):
             'id', 'notification_type', 'priority', 'title', 'message', 'link',
             'listing', 'listing_title', 'listing_image',
             'sender', 'sender_name', 'sender_username', 'sender_is_staff',
-            'is_read', 'created_at'
+            'extra_data', 'is_global', 'is_read', 'created_at'
         ]
         read_only_fields = ['created_at']
+
+    def get_is_global(self, obj):
+        return obj.recipient is None
+
+    def get_is_read(self, obj):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None) if request else None
+        if not user or not user.is_authenticated:
+            return obj.is_read
+        if obj.recipient is not None:
+            return obj.is_read
+        return obj.read_by.filter(id=user.id).exists()
 
     def get_listing_image(self, obj):
         if obj.listing:
             img = obj.listing.images.filter(is_primary=True).first() or obj.listing.images.first()
             return img.image_url if img else None
         return None
+
+
+class UserNotificationPreferenceSerializer(serializers.ModelSerializer):
+    class Meta:
+        from .models import UserNotificationPreference
+        model = UserNotificationPreference
+        fields = [
+            'notify_offers',
+            'notify_chats',
+            'notify_handover',
+            'notify_broadcasts',
+            'notify_price_drops',
+            'sound_enabled',
+            'updated_at'
+        ]
+        read_only_fields = ['updated_at']
 
 
 class FCMDeviceSerializer(serializers.ModelSerializer):

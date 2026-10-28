@@ -198,6 +198,19 @@ class NotificationService:
         if not recipient:
             return None
 
+        # Check user notification preferences if configured
+        try:
+            pref = getattr(recipient, 'notification_preferences', None)
+            if pref:
+                if notification_type in ['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'OFFER_COUNTERED', 'HANDOVER_READY', 'ITEM_SOLD', 'DEAL_CANCELLED'] and not pref.notify_offers:
+                    send_push = False
+                elif notification_type in ['NEW_CHAT_MESSAGE', 'CHAT_MESSAGE'] and not pref.notify_chats:
+                    send_push = False
+                elif notification_type == 'BROADCAST' and not pref.notify_broadcasts:
+                    send_push = False
+        except Exception as pref_err:
+            logger.debug(f"Preference check skipped: {pref_err}")
+
         # 1. Create in-app notification in DB
         try:
             notif = Notification.objects.create(
@@ -208,7 +221,8 @@ class NotificationService:
                 title=title,
                 message=message,
                 listing=listing,
-                link=link or ''
+                link=link or '',
+                extra_data=extra_data or {}
             )
         except Exception as db_err:
             logger.error(f"Error creating in-app notification for {recipient}: {db_err}")
@@ -253,6 +267,69 @@ class NotificationService:
         return notif
 
     @classmethod
+    def send_campus_broadcast(
+        cls,
+        title,
+        message,
+        priority='NORMAL',
+        link='',
+        sender=None,
+        extra_data=None
+    ):
+        """
+        Single-Row Global Announcement:
+        Creates a single Notification record with recipient=None and dispatches
+        an instant FCM push to the 'campus_broadcasts' topic.
+        Saves 99.9% database space and avoids multicast chunking bottlenecks.
+        """
+        payload_data = {
+            'type': 'BROADCAST',
+            'notification_type': 'BROADCAST',
+            'priority': str(priority),
+            'link': str(link or '/notifications'),
+            'route': str(link or '/notifications'),
+            'title': str(title),
+            'body': str(message),
+            'message': str(message),
+            'is_global': 'true'
+        }
+        if sender:
+            payload_data['sender_id'] = str(sender.id)
+            payload_data['sender_name'] = str(getattr(sender, 'full_name', '') or sender.username)
+        if extra_data and isinstance(extra_data, dict):
+            for k, v in extra_data.items():
+                payload_data[str(k)] = str(v)
+
+        # 1. Create single Global Notification (recipient=None)
+        try:
+            notif = Notification.objects.create(
+                recipient=None,
+                sender=sender,
+                notification_type='BROADCAST',
+                priority=priority,
+                title=title,
+                message=message,
+                link=link or '/notifications',
+                extra_data=payload_data
+            )
+            payload_data['notification_id'] = str(notif.id)
+        except Exception as e:
+            logger.error(f"Failed to create global campus broadcast: {e}")
+            return None
+
+        # 2. Dispatch FCM to topic 'campus_broadcasts'
+        cls.send_topic_push(
+            topic='campus_broadcasts',
+            title=title,
+            message=message,
+            link=link or '/notifications',
+            priority=priority,
+            data=payload_data
+        )
+
+        return notif
+
+    @classmethod
     def send_broadcast(
         cls,
         recipients,
@@ -264,12 +341,13 @@ class NotificationService:
         extra_data=None
     ):
         """
-        Bulk creates database notifications and dispatches multicast FCM push to multiple recipients.
+        Dispatches broadcast notification to specified recipients.
+        If audience is all students, delegates to send_campus_broadcast for efficiency.
         """
         if not recipients:
             return 0
 
-        # 1. Bulk create database notifications
+        # 1. Bulk create database notifications for targeted subsets
         notif_objects = [
             Notification(
                 recipient=user,
@@ -278,13 +356,14 @@ class NotificationService:
                 priority=priority,
                 title=title,
                 message=message,
-                link=link or ''
+                link=link or '',
+                extra_data=extra_data or {}
             )
             for user in recipients
         ]
         created = Notification.objects.bulk_create(notif_objects, batch_size=500)
 
-        # 2. Multicast FCM push to all registered devices of these recipients
+        # 2. Multicast FCM push to active registered devices of these recipients
         try:
             active_devices = FCMDevice.objects.filter(
                 user__in=recipients,
@@ -314,6 +393,132 @@ class NotificationService:
             logger.warning(f"Broadcast push notification failed: {e}")
 
         return len(created)
+
+    @classmethod
+    def send_topic_push(cls, topic, title, message, link='', priority='NORMAL', data=None):
+        """
+        Dispatches a topic-based FCM notification.
+        Instantly broadcasts to all devices subscribed to the topic (e.g. 'campus_broadcasts').
+        """
+        is_ready = get_firebase_app()
+        if not is_ready:
+            logger.warning(f"FCM Topic push skipped for '{topic}': Firebase Admin SDK not initialized.")
+            return False
+
+        try:
+            from firebase_admin import messaging
+
+            clean_data = {}
+            if data and isinstance(data, dict):
+                for k, v in data.items():
+                    clean_data[str(k)] = str(v)
+
+            clean_data['topic'] = str(topic)
+            clean_data['link'] = str(link or '/notifications')
+            clean_data['title'] = str(title)
+            clean_data['body'] = str(message)
+            clean_data['channel_id'] = 'cxc_broadcast_channel'
+
+            base_frontend = getattr(settings, 'FRONTEND_URL', 'https://cxc.anshuman892494.online')
+            if ',' in base_frontend:
+                base_frontend = base_frontend.split(',')[0].strip()
+            base_frontend = base_frontend.rstrip('/')
+            if not base_frontend.startswith('http'):
+                base_frontend = f"https://{base_frontend}"
+
+            web_link = link if (link.startswith('http://') or link.startswith('https://')) else f"{base_frontend}/{link.lstrip('/')}"
+
+            msg = messaging.Message(
+                topic=topic,
+                notification=messaging.Notification(
+                    title=str(title),
+                    body=str(message)
+                ),
+                data=clean_data,
+                android=messaging.AndroidConfig(
+                    priority='high',
+                    notification=messaging.AndroidNotification(
+                        title=title,
+                        body=message,
+                        channel_id='cxc_broadcast_channel',
+                        icon='ic_cxc_notification',
+                        click_action='CXC_NOTIFICATION_CLICK',
+                        default_sound=True,
+                        default_vibrate_timings=True
+                    ),
+                    data=clean_data
+                ),
+                webpush=messaging.WebpushConfig(
+                    headers={"Urgency": "high"},
+                    notification=messaging.WebpushNotification(
+                        title=title,
+                        body=message,
+                        icon=f"{base_frontend}/favicon.png",
+                        badge=f"{base_frontend}/favicon.png",
+                        data={'link': web_link}
+                    ),
+                    fcm_options=messaging.WebpushFCMOptions(link=web_link),
+                    data=clean_data
+                )
+            )
+
+            response = messaging.send(msg)
+            logger.info(f"✅ FCM Topic Push sent to '{topic}': {response}")
+            return True
+        except Exception as e:
+            logger.warning(f"Error executing FCM topic send to '{topic}': {e}")
+            return False
+
+    @classmethod
+    def subscribe_device_to_topic(cls, token, topic='campus_broadcasts'):
+        """
+        Subscribes an FCM device registration token to a Firebase topic.
+        """
+        is_ready = get_firebase_app()
+        if not is_ready or not token:
+            return False
+        try:
+            from firebase_admin import messaging
+            response = messaging.subscribe_to_topic([token], topic)
+            if response.success_count > 0:
+                logger.info(f"Subscribed device token to topic '{topic}'")
+                # Record topic in FCMDevice record if present
+                device = FCMDevice.objects.filter(registration_id=token).first()
+                if device:
+                    current_topics = set(device.topics or [])
+                    current_topics.add(topic)
+                    device.topics = list(current_topics)
+                    device.save(update_fields=['topics'])
+                return True
+            else:
+                logger.warning(f"Failed to subscribe token to topic '{topic}': {response.errors}")
+                return False
+        except Exception as e:
+            logger.warning(f"Exception subscribing device token to topic '{topic}': {e}")
+            return False
+
+    @classmethod
+    def unsubscribe_device_from_topic(cls, token, topic='campus_broadcasts'):
+        """
+        Unsubscribes an FCM device registration token from a Firebase topic.
+        """
+        is_ready = get_firebase_app()
+        if not is_ready or not token:
+            return False
+        try:
+            from firebase_admin import messaging
+            response = messaging.unsubscribe_from_topic([token], topic)
+            if response.success_count > 0:
+                device = FCMDevice.objects.filter(registration_id=token).first()
+                if device and device.topics:
+                    current_topics = [t for t in device.topics if t != topic]
+                    device.topics = current_topics
+                    device.save(update_fields=['topics'])
+                return True
+            return False
+        except Exception as e:
+            logger.warning(f"Exception unsubscribing device token from topic '{topic}': {e}")
+            return False
 
     @classmethod
     def send_fcm_push(cls, user, title, message, link='', priority='NORMAL', data=None):
@@ -469,10 +674,10 @@ class NotificationService:
                             if any(sub in err_str for sub in ['unregistered', 'invalid-registration', 'mismatch', 'not-found', 'notregistered']):
                                 dead_tokens.append(token_chunk[idx])
 
-            # Prune dead/unregistered tokens
+            # Prune dead/unregistered tokens (auto-purge invalid registrations)
             if dead_tokens:
-                FCMDevice.objects.filter(registration_id__in=dead_tokens).update(is_active=False)
-                logger.info(f"Pruned {len(dead_tokens)} inactive/unregistered FCM token(s).")
+                deleted_count, _ = FCMDevice.objects.filter(registration_id__in=dead_tokens).delete()
+                logger.info(f"Purged {deleted_count} dead/unregistered FCM token(s) from database.")
 
             return total_success
 

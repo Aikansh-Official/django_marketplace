@@ -193,7 +193,8 @@ class Notification(models.Model):
         ('URGENT', 'Urgent'),
     )
 
-    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='notifications')
+    read_by = models.ManyToManyField(User, blank=True, related_name='read_global_notifications')
     sender = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='notifications_sent')
     notification_type = models.CharField(max_length=30, choices=TYPES, default='GENERAL')
     priority = models.CharField(max_length=10, choices=PRIORITIES, default='NORMAL')
@@ -201,6 +202,7 @@ class Notification(models.Model):
     message = models.TextField()
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, null=True, blank=True, related_name='notifications')
     link = models.CharField(max_length=255, blank=True, default='')
+    extra_data = models.JSONField(default=dict, blank=True)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -209,10 +211,20 @@ class Notification(models.Model):
         indexes = [
             models.Index(fields=['recipient', 'is_read', '-created_at']),
             models.Index(fields=['recipient', '-created_at']),
+            models.Index(fields=['-created_at']),
         ]
 
     def __str__(self):
-        return f"Notification for {self.recipient}: {self.title} ({self.priority})"
+        dest = self.recipient.email if self.recipient else "GLOBAL"
+        return f"Notification for {dest}: {self.title} ({self.priority})"
+
+    def is_read_by(self, user):
+        """Dynamic read checker supporting both personal and global notifications."""
+        if self.recipient is not None:
+            return self.is_read
+        if not user or not user.is_authenticated:
+            return False
+        return self.read_by.filter(id=user.id).exists()
 
 
 class FCMDevice(models.Model):
@@ -226,6 +238,7 @@ class FCMDevice(models.Model):
     registration_id = models.CharField(max_length=512, unique=True, db_index=True)
     device_type = models.CharField(max_length=10, choices=DEVICE_TYPES, default='WEB')
     device_name = models.CharField(max_length=150, blank=True, default='')
+    topics = models.JSONField(default=list, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -417,3 +430,17 @@ class Banner(models.Model):
 
     def __str__(self):
         return f"Banner: {self.title or 'Untitled'} (Order: {self.display_order}, Active: {self.is_active})"
+
+
+class UserNotificationPreference(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='notification_preferences')
+    notify_offers = models.BooleanField(default=True)
+    notify_chats = models.BooleanField(default=True)
+    notify_handover = models.BooleanField(default=True)
+    notify_broadcasts = models.BooleanField(default=True)
+    notify_price_drops = models.BooleanField(default=True)
+    sound_enabled = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Notification Preferences for {self.user.email}"

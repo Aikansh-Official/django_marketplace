@@ -776,3 +776,61 @@ class MarketplaceClientParityTests(TestCase):
         self.assertEqual(notif.priority, 'URGENT')
         self.assertEqual(notif.link, '/handover/123')
 
+    def test_global_notification_single_row_and_read_by(self):
+        # 1. Dispatch global broadcast (recipient=None)
+        global_notif = NotificationService.send_campus_broadcast(
+            title='Campus Fest 2026 Announcement',
+            message='Annual university tech fest registrations are open!',
+            priority='HIGH',
+            link='/announcements/fest',
+            sender=self.seller,
+            extra_data={'category': 'event', 'action': 'VIEW_FEST'}
+        )
+        self.assertIsNotNone(global_notif)
+        self.assertIsNone(global_notif.recipient)
+        self.assertEqual(global_notif.extra_data.get('action'), 'VIEW_FEST')
+
+        # 2. Both buyer and seller should see it in their notification list
+        self.client.force_authenticate(user=self.buyer)
+        buyer_list = self.client.get('/api/marketplace/notifications/')
+        self.assertEqual(buyer_list.status_code, status.HTTP_200_OK)
+        # Find global notif in list (compare string representation of IDs)
+        buyer_item = next((n for n in buyer_list.data if str(n['id']) == str(global_notif.id)), None)
+        self.assertIsNotNone(buyer_item)
+        self.assertTrue(buyer_item['is_global'])
+        self.assertFalse(buyer_item['is_read'])
+        self.assertEqual(buyer_item['extra_data'].get('action'), 'VIEW_FEST')
+
+        # 3. Buyer marks it as read
+        read_res = self.client.patch(f'/api/marketplace/notifications/{global_notif.id}/read/')
+        self.assertEqual(read_res.status_code, status.HTTP_200_OK)
+
+        # Buyer now sees it as read
+        buyer_list_after = self.client.get('/api/marketplace/notifications/')
+        buyer_item_after = next((n for n in buyer_list_after.data if str(n['id']) == str(global_notif.id)), None)
+        self.assertTrue(buyer_item_after['is_read'])
+
+        # 4. Seller still sees it as UNREAD (isolated read tracking without duplicate rows!)
+        self.client.force_authenticate(user=self.seller)
+        seller_list = self.client.get('/api/marketplace/notifications/')
+        seller_item = next((n for n in seller_list.data if str(n['id']) == str(global_notif.id)), None)
+        self.assertFalse(seller_item['is_read'])
+
+    def test_notification_preferences_api(self):
+        self.client.force_authenticate(user=self.buyer)
+        # 1. Get default preferences
+        get_res = self.client.get('/api/marketplace/notifications/preferences/')
+        self.assertEqual(get_res.status_code, status.HTTP_200_OK)
+        self.assertTrue(get_res.data['notify_offers'])
+        self.assertTrue(get_res.data['sound_enabled'])
+
+        # 2. Update preferences
+        patch_res = self.client.patch('/api/marketplace/notifications/preferences/', {
+            'notify_chats': False,
+            'sound_enabled': False
+        })
+        self.assertEqual(patch_res.status_code, status.HTTP_200_OK)
+        self.assertFalse(patch_res.data['notify_chats'])
+        self.assertFalse(patch_res.data['sound_enabled'])
+
+

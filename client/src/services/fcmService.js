@@ -1,3 +1,47 @@
+/**
+ * Plays a pleasant synthetic two-tone chime via Web Audio API (zero external assets needed)
+ */
+export const playNotificationChime = () => {
+  try {
+    if (typeof window === 'undefined') return;
+    const soundEnabled = localStorage.getItem('cxc_sound_enabled');
+    if (soundEnabled === 'false') return;
+
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+
+    const ctx = new AudioContext();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
+    const now = ctx.currentTime;
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(698.46, now); // F5
+    gain1.gain.setValueAtTime(0.15, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.18);
+
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(880.00, now + 0.1); // A5
+    gain2.gain.setValueAtTime(0.2, now + 0.1);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.1);
+    osc2.stop(now + 0.35);
+  } catch (err) {
+    console.debug('Audio chime failed/blocked:', err);
+  }
+};
+
 import React from 'react';
 import toast from 'react-hot-toast';
 import api from './api';
@@ -99,6 +143,17 @@ export const requestNotificationPermissionAndRegister = async () => {
         device_type: 'WEB',
         device_name: `${navigator.platform || 'Desktop'} Web Browser`
       });
+
+      // Also subscribe to global campus announcements topic (ExamPoint architecture)
+      try {
+        await api.post('/marketplace/notifications/subscribe-topic/', {
+          token,
+          topics: ['campus_broadcasts']
+        });
+      } catch (topicErr) {
+        console.debug('Topic subscription skipped:', topicErr);
+      }
+
       return { success: true, token };
     }
 
@@ -159,10 +214,13 @@ export const setupForegroundNotifications = async () => {
     const { onMessage } = await import('firebase/messaging');
 
     onMessage(messaging, (payload) => {
-
       const title = payload.notification?.title || payload.data?.title || 'CampXChange Alert';
       const body = payload.notification?.body || payload.data?.body || 'New marketplace update.';
       const link = payload.data?.link || payload.data?.route || '/notifications';
+      const notifType = payload.data?.type || payload.data?.notification_type || '';
+
+      // Play audio chime
+      playNotificationChime();
 
       // 1. Dispatch custom event for navbar bell and list views to refresh
       window.dispatchEvent(new CustomEvent('notifications-updated', { detail: payload }));
@@ -172,7 +230,19 @@ export const setupForegroundNotifications = async () => {
         triggerBrowserNotification(title, { body, link });
       }
 
-      // 3. Display interactive foreground toast using React.createElement (pure JS compatible)
+      // 3. Determine action button label based on notification type
+      let actionLabel = 'Tap to view →';
+      if (notifType === 'BUY_REQUEST' || notifType === 'OFFER_COUNTERED') {
+        actionLabel = 'Review Offer →';
+      } else if (notifType === 'HANDOVER_READY') {
+        actionLabel = 'View PIN & QR →';
+      } else if (notifType === 'NEW_CHAT_MESSAGE') {
+        actionLabel = 'Reply in Chat →';
+      } else if (notifType === 'BROADCAST') {
+        actionLabel = 'View Announcement →';
+      }
+
+      // 4. Display interactive foreground toast using React.createElement (pure JS compatible)
       toast(
         (t) =>
           React.createElement(
@@ -197,8 +267,8 @@ export const setupForegroundNotifications = async () => {
               link
                 ? React.createElement(
                   'span',
-                  { className: 'text-[11px] text-orange-500 font-medium inline-block mt-1 hover:underline' },
-                  'Tap to view →'
+                  { className: 'text-[11px] text-brand-500 font-bold inline-block mt-1 hover:underline' },
+                  actionLabel
                 )
                 : null
             )

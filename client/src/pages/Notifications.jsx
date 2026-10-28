@@ -121,22 +121,30 @@ export default function Notifications() {
       handleMarkRead(notif.id);
     }
     
-    const listingId = notif.listing || notif.related_listing;
+    const extra = notif.extra_data || {};
+    const offerId = extra.offer_id;
+    const listingId = extra.listing_id || notif.listing || notif.related_listing;
 
     if (notif.notification_type === 'NEW_CHAT_MESSAGE') {
-      navigate('/messages');
+      if (extra.listing_id && (extra.peer_id || extra.sender_id)) {
+        navigate(`/chat/${extra.listing_id}/${extra.peer_id || extra.sender_id}`);
+      } else {
+        navigate('/messages');
+      }
       return;
     }
 
-    if (
-      ['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'OFFER_COUNTERED', 'HANDOVER_READY', 'ITEM_SOLD', 'DEAL_CANCELLED'].includes(notif.notification_type) && 
-      listingId
-    ) {
-      navigate(`/listing/${listingId}`);
+    if (notif.notification_type === 'BUY_REQUEST' && offerId) {
+      navigate(`/profile?tab=my-sales&offer=${offerId}`);
       return;
     }
 
-    if (notif.link && !notif.link.includes('/profile?tab=my-sales')) { 
+    if (['REQUEST_ACCEPTED', 'OFFER_COUNTERED', 'HANDOVER_READY'].includes(notif.notification_type) && offerId) {
+      navigate(`/profile?tab=my-orders&offer=${offerId}`);
+      return;
+    }
+
+    if (notif.link && notif.link.trim() !== '') {
       navigate(notif.link);
     } else if (listingId) {
       navigate(`/listing/${listingId}`);

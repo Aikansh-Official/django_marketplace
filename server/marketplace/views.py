@@ -3,7 +3,7 @@ import random
 import datetime
 import django
 from django.conf import settings
-from django.db import transaction
+from django.db import transaction, models
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, permissions
 from rest_framework.views import APIView
@@ -790,7 +790,13 @@ class CreateOfferView(APIView):
             title=f"New Purchase Request for '{listing.title}'",
             message=notif_msg,
             listing=listing,
-            link=f"/profile?tab=my-sales&offer={offer.id}"
+            link=f"/profile?tab=my-sales&offer={offer.id}",
+            extra_data={
+                'offer_id': str(offer.id),
+                'listing_id': str(listing.id),
+                'action': 'BUY_REQUEST',
+                'offered_price': str(offer.offer_amount)
+            }
         )
 
         serializer = OfferSerializer(offer)
@@ -914,7 +920,13 @@ class RespondOfferView(APIView):
                 title=f"Counter-Offer: Rs {counter_amount} for '{listing.title}'",
                 message=f"{seller_display} proposed a counter price of Rs {counter_amount} for '{listing.title}'.{f' Note: \"{seller_note}\"' if seller_note else ''}",
                 listing=listing,
-                link=f"/profile?tab=my-orders&offer={offer.id}"
+                link=f"/profile?tab=my-orders&offer={offer.id}",
+                extra_data={
+                    'offer_id': str(offer.id),
+                    'listing_id': str(listing.id),
+                    'counter_amount': str(counter_amount),
+                    'action': 'OFFER_COUNTERED'
+                }
             )
 
         serializer = OfferSerializer(offer)
@@ -1340,12 +1352,20 @@ class NotificationListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        qs = Notification.objects.filter(recipient=self.request.user).select_related('listing', 'sender').order_by('-created_at')
+        # Merge personal notifications and global campus announcements
+        qs = Notification.objects.filter(
+            models.Q(recipient=self.request.user) | models.Q(recipient__isnull=True)
+        ).select_related('listing', 'sender').order_by('-created_at')
+
         tab = self.request.query_params.get('tab', '').upper().strip()
         search = self.request.query_params.get('search', '').strip()
 
         if tab == 'UNREAD':
-            qs = qs.filter(is_read=False)
+            # Personal unread OR global announcements not yet marked read by this student
+            qs = qs.filter(
+                models.Q(recipient=self.request.user, is_read=False) |
+                (models.Q(recipient__isnull=True) & ~models.Q(read_by=self.request.user))
+            )
         elif tab in ['OFFERS', 'DEALS']:
             qs = qs.filter(notification_type__in=[
                 'BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED',
@@ -1364,14 +1384,15 @@ class NotificationListView(generics.ListAPIView):
 
 class UnreadNotificationCountView(APIView):
     """
-    Lightweight endpoint returning the total unread notifications count for the authenticated user.
-    Used for instant navbar bell badge updates and polling.
+    Lightweight endpoint returning the accurate total unread notifications count
+    for the authenticated student (personal unread + global campus announcements).
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        count = Notification.objects.filter(recipient=request.user, is_read=False).count()
-        return Response({'unread_count': count})
+        personal_unread = Notification.objects.filter(recipient=request.user, is_read=False).count()
+        global_unread = Notification.objects.filter(recipient__isnull=True).exclude(read_by=request.user).count()
+        return Response({'unread_count': personal_unread + global_unread})
 
 
 class RegisterFCMDeviceView(APIView):
@@ -1472,9 +1493,14 @@ class MarkNotificationReadView(APIView):
 
     def patch(self, request, pk):
         try:
-            notif = Notification.objects.get(pk=pk, recipient=request.user)
-            notif.is_read = True
-            notif.save()
+            notif = Notification.objects.get(
+                models.Q(pk=pk) & (models.Q(recipient=request.user) | models.Q(recipient__isnull=True))
+            )
+            if notif.recipient is None:
+                notif.read_by.add(request.user)
+            else:
+                notif.is_read = True
+                notif.save(update_fields=['is_read'])
             return Response({'success': True})
         except Notification.DoesNotExist:
             return Response({'error': 'Notification not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -1484,7 +1510,12 @@ class MarkAllNotificationsReadView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        # 1. Mark personal unread notifications
         Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+        # 2. Add student to read_by of all unread global announcements
+        global_unread = Notification.objects.filter(recipient__isnull=True).exclude(read_by=request.user)
+        for g_notif in global_unread:
+            g_notif.read_by.add(request.user)
         return Response({'success': True})
 
 
@@ -1493,7 +1524,13 @@ class DeleteNotificationView(APIView):
 
     def delete(self, request, pk):
         try:
-            notif = Notification.objects.get(pk=pk, recipient=request.user)
+            notif = Notification.objects.get(
+                models.Q(pk=pk) & (models.Q(recipient=request.user) | models.Q(recipient__isnull=True))
+            )
+            if notif.recipient is None:
+                # Global announcement: student dismisses it (marks read)
+                notif.read_by.add(request.user)
+                return Response({'success': True, 'message': 'Announcement dismissed'})
             notif.delete()
             return Response({'success': True})
         except Notification.DoesNotExist:
@@ -1504,8 +1541,66 @@ class ClearAllNotificationsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def delete(self, request):
+        # Delete all personal notifications
         Notification.objects.filter(recipient=request.user).delete()
+        # Dismiss all unread global announcements
+        global_notifs = Notification.objects.filter(recipient__isnull=True).exclude(read_by=request.user)
+        for g_notif in global_notifs:
+            g_notif.read_by.add(request.user)
         return Response({'success': True})
+
+
+class SubscribeFCMTopicView(APIView):
+    """
+    Subscribes the authenticated student's device token to specific topics
+    (e.g., 'campus_broadcasts') for high-throughput broadcast push notifications.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        token = request.data.get('token')
+        topics = request.data.get('topics', ['campus_broadcasts'])
+        if not token:
+            return Response({'error': 'FCM token is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if isinstance(topics, str):
+            topics = [topics]
+
+        from .services.notification_service import NotificationService
+        subscribed = []
+        for topic in topics:
+            res = NotificationService.subscribe_device_to_topic(token.strip(), topic.strip())
+            if res:
+                subscribed.append(topic)
+
+        return Response({
+            'success': True,
+            'message': f'Subscribed to {len(subscribed)} topic(s)',
+            'subscribed_topics': subscribed
+        })
+
+
+class NotificationPreferencesView(APIView):
+    """
+    Retrieve or update granular notification preferences for the authenticated student.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        from .models import UserNotificationPreference
+        from .serializers import UserNotificationPreferenceSerializer
+        pref, _ = UserNotificationPreference.objects.get_or_create(user=request.user)
+        return Response(UserNotificationPreferenceSerializer(pref).data)
+
+    def patch(self, request):
+        from .models import UserNotificationPreference
+        from .serializers import UserNotificationPreferenceSerializer
+        pref, _ = UserNotificationPreference.objects.get_or_create(user=request.user)
+        serializer = UserNotificationPreferenceSerializer(pref, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ListingReportCreateView(APIView):
@@ -2485,15 +2580,26 @@ class AdminBroadcastNotificationView(APIView):
                 recipients_count=recipients_count
             )
 
-            # 2. Bulk create individual in-app notifications and dispatch multicast FCM push
-            NotificationService.send_broadcast(
-                recipients=list(recipients),
-                title=title,
-                message=message,
-                priority=priority,
-                link=link or '/notifications',
-                sender=request.user
-            )
+            # 2. If target audience is ALL, use ExamPoint's single-row Global Campus Broadcast
+            if target_audience == 'ALL':
+                NotificationService.send_campus_broadcast(
+                    title=title,
+                    message=message,
+                    priority=priority,
+                    link=link or '/notifications',
+                    sender=request.user,
+                    extra_data={'target_audience': target_audience}
+                )
+            else:
+                NotificationService.send_broadcast(
+                    recipients=list(recipients),
+                    title=title,
+                    message=message,
+                    priority=priority,
+                    link=link or '/notifications',
+                    sender=request.user,
+                    extra_data={'target_audience': target_audience}
+                )
 
         log_admin_action(
             request,
@@ -2605,14 +2711,13 @@ class UrgentNotificationView(APIView):
 
     def get(self, request):
         urgent_notif = Notification.objects.filter(
-            recipient=request.user,
-            priority='URGENT',
-            is_read=False
+            models.Q(recipient=request.user, priority='URGENT', is_read=False) |
+            (models.Q(recipient__isnull=True, priority='URGENT') & ~models.Q(read_by=request.user))
         ).select_related('sender').order_by('-created_at').first()
 
         if urgent_notif:
             return Response({
-                'urgent': NotificationSerializer(urgent_notif).data
+                'urgent': NotificationSerializer(urgent_notif, context={'request': request}).data
             })
         return Response({'urgent': None})
 

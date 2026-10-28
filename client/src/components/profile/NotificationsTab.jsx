@@ -15,7 +15,12 @@ import {
   ArrowRight,
   ShoppingBag,
   CheckCircle,
-  XCircle
+  XCircle,
+  Volume2,
+  VolumeX,
+  MessageSquare,
+  Megaphone,
+  Sliders
 } from 'lucide-react';
 
 export default function NotificationsTab({ onUnreadCountChange, onNavigateTab }) {
@@ -24,6 +29,13 @@ export default function NotificationsTab({ onUnreadCountChange, onNavigateTab })
   const [filter, setFilter] = useState('ALL');
   const [pushStatus, setPushStatus] = useState(() => getNotificationPermission());
   const [pushLoading, setPushLoading] = useState(false);
+  const [preferences, setPreferences] = useState({
+    notify_offers: true,
+    notify_chats: true,
+    notify_broadcasts: true,
+    sound_enabled: true
+  });
+  const [prefLoading, setPrefLoading] = useState(false);
 
   const handleTestOrEnablePush = async () => {
     setPushLoading(true);
@@ -65,8 +77,36 @@ export default function NotificationsTab({ onUnreadCountChange, onNavigateTab })
     }
   };
 
+  const fetchPreferences = async () => {
+    try {
+      const res = await api.get('/marketplace/notifications/preferences/');
+      if (res.data) {
+        setPreferences(res.data);
+        localStorage.setItem('cxc_sound_enabled', String(res.data.sound_enabled));
+      }
+    } catch (e) {
+      console.debug('Failed to fetch notification preferences:', e);
+    }
+  };
+
+  const handleTogglePreference = async (key) => {
+    const nextVal = !preferences[key];
+    setPreferences((prev) => ({ ...prev, [key]: nextVal }));
+    if (key === 'sound_enabled') {
+      localStorage.setItem('cxc_sound_enabled', String(nextVal));
+    }
+    try {
+      await api.patch('/marketplace/notifications/preferences/', { [key]: nextVal });
+      toast.success('Notification settings saved.');
+    } catch {
+      toast.error('Failed to update preference.');
+      setPreferences((prev) => ({ ...prev, [key]: !nextVal }));
+    }
+  };
+
   useEffect(() => {
     fetchNotifications();
+    fetchPreferences();
   }, []);
 
   const handleMarkRead = async (id) => {
@@ -161,6 +201,89 @@ export default function NotificationsTab({ onUnreadCountChange, onNavigateTab })
 
   return (
     <div className="space-y-6">
+      {/* Notification Preferences Card */}
+      <div className="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
+            <Sliders className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-gray-900">Notification Preferences</h3>
+            <p className="text-xs text-gray-500">Customize how and when you receive campus marketplace alerts</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-gray-200 bg-gray-50/50 cursor-pointer transition-colors">
+            <div className="flex items-center gap-2.5">
+              <ShoppingBag className="w-4 h-4 text-orange-500" />
+              <div>
+                <span className="text-xs font-semibold text-gray-800 block">Trade & Offers</span>
+                <span className="text-[11px] text-gray-400">Buyer requests, counter-offers & handovers</span>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={preferences.notify_offers}
+              onChange={() => handleTogglePreference('notify_offers')}
+              className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 cursor-pointer"
+            />
+          </label>
+
+          <label className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-gray-200 bg-gray-50/50 cursor-pointer transition-colors">
+            <div className="flex items-center gap-2.5">
+              <MessageSquare className="w-4 h-4 text-indigo-500" />
+              <div>
+                <span className="text-xs font-semibold text-gray-800 block">Direct Messages</span>
+                <span className="text-[11px] text-gray-400">In-app chats from interested students</span>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={preferences.notify_chats}
+              onChange={() => handleTogglePreference('notify_chats')}
+              className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 cursor-pointer"
+            />
+          </label>
+
+          <label className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-gray-200 bg-gray-50/50 cursor-pointer transition-colors">
+            <div className="flex items-center gap-2.5">
+              <Megaphone className="w-4 h-4 text-brand-500" />
+              <div>
+                <span className="text-xs font-semibold text-gray-800 block">Campus Announcements</span>
+                <span className="text-[11px] text-gray-400">Important campus notices & safety alerts</span>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={preferences.notify_broadcasts}
+              onChange={() => handleTogglePreference('notify_broadcasts')}
+              className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 cursor-pointer"
+            />
+          </label>
+
+          <label className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-gray-200 bg-gray-50/50 cursor-pointer transition-colors">
+            <div className="flex items-center gap-2.5">
+              {preferences.sound_enabled ? (
+                <Volume2 className="w-4 h-4 text-emerald-500" />
+              ) : (
+                <VolumeX className="w-4 h-4 text-gray-400" />
+              )}
+              <div>
+                <span className="text-xs font-semibold text-gray-800 block">Notification Sound</span>
+                <span className="text-[11px] text-gray-400">Play subtle chime on incoming alerts</span>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={preferences.sound_enabled}
+              onChange={() => handleTogglePreference('sound_enabled')}
+              className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 cursor-pointer"
+            />
+          </label>
+        </div>
+      </div>
+
       {/* Top Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 pb-3">
         <div>

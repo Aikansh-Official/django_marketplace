@@ -36,6 +36,7 @@ export default function NotificationDropdown({ isOpen, onClose, unreadCount, onN
       if (activeTab === 'UNREAD') tabParam = '?tab=UNREAD';
       else if (activeTab === 'OFFERS') tabParam = '?tab=OFFERS';
       else if (activeTab === 'CHATS') tabParam = '?tab=CHATS';
+      else if (activeTab === 'BROADCAST') tabParam = '?tab=BROADCAST';
 
       const res = await api.get(`/marketplace/notifications/${tabParam}`);
       setNotifications(Array.isArray(res.data) ? res.data.slice(0, 7) : []);
@@ -82,26 +83,32 @@ export default function NotificationDropdown({ isOpen, onClose, unreadCount, onN
     }
     onClose();
 
-    const listingId = notif.listing || notif.related_listing;
+    const extra = notif.extra_data || {};
+    const offerId = extra.offer_id;
+    const listingId = extra.listing_id || notif.listing || notif.related_listing;
 
-    // Chat messages go to /messages
+    // Chat messages navigate directly to chat conversation
     if (notif.notification_type === 'NEW_CHAT_MESSAGE') {
-      navigate('/messages');
+      if (extra.listing_id && (extra.peer_id || extra.sender_id)) {
+        navigate(`/chat/${extra.listing_id}/${extra.peer_id || extra.sender_id}`);
+      } else {
+        navigate('/messages');
+      }
       return;
     }
 
-    // Direct seller/buyer notifications related to a listing directly to the listing page
-    if (
-      ['BUY_REQUEST', 'REQUEST_ACCEPTED', 'REQUEST_REJECTED', 'OFFER_COUNTERED', 'HANDOVER_READY', 'ITEM_SOLD', 'DEAL_CANCELLED'].includes(notif.notification_type) && 
-      listingId
-    ) {
-      navigate(`/listing/${listingId}`);
+    // Offer & Handover smart routing via extra_data
+    if (notif.notification_type === 'BUY_REQUEST' && offerId) {
+      navigate(`/profile?tab=my-sales&offer=${offerId}`);
       return;
     }
 
-    // Default fallbacks
-    if (notif.link && !notif.link.includes('/profile?tab=my-sales')) { 
-       // Only use backend link if it's not the old buggy profile link, or just trust link if no listingId
+    if (['REQUEST_ACCEPTED', 'OFFER_COUNTERED', 'HANDOVER_READY'].includes(notif.notification_type) && offerId) {
+      navigate(`/profile?tab=my-orders&offer=${offerId}`);
+      return;
+    }
+
+    if (notif.link && notif.link.trim() !== '') {
       navigate(notif.link);
     } else if (listingId) {
       navigate(`/listing/${listingId}`);
@@ -196,7 +203,8 @@ export default function NotificationDropdown({ isOpen, onClose, unreadCount, onN
           { key: 'ALL', label: 'All' },
           { key: 'UNREAD', label: 'Unread' },
           { key: 'OFFERS', label: 'Offers' },
-          { key: 'CHATS', label: 'Chats' }
+          { key: 'CHATS', label: 'Chats' },
+          { key: 'BROADCAST', label: 'Campus' }
         ].map((tab) => (
           <button
             key={tab.key}
@@ -243,9 +251,16 @@ export default function NotificationDropdown({ isOpen, onClose, unreadCount, onN
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-1">
-                  <p className={`text-xs font-semibold truncate ${!notif.is_read ? 'text-gray-900' : 'text-gray-700'}`}>
-                    {notif.title}
-                  </p>
+                  <div className="flex items-center gap-1.5 truncate">
+                    <p className={`text-xs font-semibold truncate ${!notif.is_read ? 'text-gray-900' : 'text-gray-700'}`}>
+                      {notif.title}
+                    </p>
+                    {notif.is_global && (
+                      <span className="text-[9px] font-bold bg-brand-100 text-brand-700 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                        Campus
+                      </span>
+                    )}
+                  </div>
                   <span className="text-[10px] text-gray-400 flex-shrink-0 font-medium">
                     {formatTimeAgo(notif.created_at)}
                   </span>
