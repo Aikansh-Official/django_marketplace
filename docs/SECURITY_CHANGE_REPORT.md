@@ -194,3 +194,13 @@ listing becomes unavailable.
 Validation: tests reject invalid numeric forms and preserve exact two-decimal
 currency values. Simultaneous competing acceptance remains a concurrency concern
 requiring dedicated load and transaction testing.
+
+## 18. Backend dependency security
+
+Django is updated to 6.1.1, Django REST Framework to 3.18.2 and PyJWT to
+2.15.0. The Django, REST API and MongoDB architecture remains unchanged.
+
+Validation: all 72 backend tests pass against an isolated local MongoDB replica
+set. pip check reports no dependency conflicts, and the updated requirements
+audit reports zero known vulnerabilities. Both frontend production builds pass.
+Live external provider flows and production deployment remain unverified.
