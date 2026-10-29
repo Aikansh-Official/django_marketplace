@@ -409,7 +409,7 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
             'is_active', 'is_verified_student', 'is_id_verified', 'trust_score',
             'id_card_image', 'id_card_data', 'profile_photo', 'profile_picture_url', 'admin_role', 'admin_permissions'
         )
-        read_only_fields = ('id', 'username')
+        read_only_fields = ('id', 'username', 'admin_role', 'admin_permissions')
 
 
 class StaffUserSerializer(serializers.ModelSerializer):

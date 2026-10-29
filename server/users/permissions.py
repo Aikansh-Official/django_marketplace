@@ -28,4 +28,5 @@ class IsSuperAdminUser(permissions.BasePermission):
 
     def has_permission(self, request, view):
         user = request.user
-        return bool(user and user.is_authenticated and (user.is_superuser or user.effective_admin_role == 'SUPER_ADMIN'))
+        return bool(user and user.is_authenticated and user.is_active and
+                    (user.is_superuser or (user.is_staff and user.effective_admin_role == 'SUPER_ADMIN')))

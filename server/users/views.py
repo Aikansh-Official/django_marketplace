@@ -919,7 +919,8 @@ class UserListView(generics.ListAPIView):
 
 class UserAdminDetailView(generics.RetrieveUpdateDestroyAPIView):
     # This view is for the admin dashboard to inspect/manage/delete a specific user with full ID card
-    queryset = User.objects.all()
+    # Staff accounts are managed exclusively by the super-admin team endpoints.
+    queryset = User.objects.filter(is_staff=False, is_superuser=False)
     permission_classes = (HasAdminModulePermission('students'),)
 
     def get_serializer_class(self):
