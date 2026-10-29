@@ -214,7 +214,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             
         try:
             otp_record = OTPVerification.objects.get(email=email)
-            if not otp_record.is_verified:
+            if not otp_record.is_verified or not otp_record.is_valid() or otp_record.is_locked():
                 raise serializers.ValidationError({"email": "Email must be verified with OTP before registering."})
         except OTPVerification.DoesNotExist:
             raise serializers.ValidationError({"email": "Email must be verified with OTP before registering."})

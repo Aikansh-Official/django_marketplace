@@ -10,6 +10,8 @@ User = get_user_model()
 
 class UserSecurityTests(TestCase):
     def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
         self.client = APIClient()
         security_key = getattr(settings, 'DATA_SECURITY_KEY', '')
         if security_key:

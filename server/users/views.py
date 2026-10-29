@@ -686,7 +686,7 @@ class SendOTPView(APIView):
                 )
 
             email = serializer.validated_data['email']
-            otp = str(random.randint(100000, 999999))
+            otp = str(100000 + secrets.randbelow(900000))
             
             # Data Security Layer: Encrypt OTP before persisting to database
             from server.crypto import encrypt_data

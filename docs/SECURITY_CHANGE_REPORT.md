@@ -110,3 +110,13 @@ Validation: tests reject failed and mismatched verification, accept a matching
 server result, and return unavailable status when verification cannot run. Live
 document verification requires the deployment's existing service credentials;
 these credentials were not available for local validation.
+
+## 10. Registration verification codes
+
+Signup codes now use cryptographic randomness. Registration requires a verified,
+unexpired, unlocked code, preventing an old verified record from granting email
+verification indefinitely. Existing six-digit code and ten-minute expiry formats
+are preserved.
+
+Validation: database-backed registration tests include expired verified records
+and a fresh verified record.
