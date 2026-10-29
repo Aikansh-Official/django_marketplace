@@ -1,4 +1,5 @@
 import toast from 'react-hot-toast';
+import { escapeCSVCell } from './csvCell';
 
 /**
  * Universal CSV Export Helper
@@ -17,15 +18,12 @@ export function exportToCSV({ data, headers, rowMapper, filename = 'campxchange_
     const csvRows = [];
 
     // Header row
-    csvRows.push(headers.map((h) => `"${String(h).replace(/"/g, '""')}"`).join(','));
+    csvRows.push(headers.map(escapeCSVCell).join(','));
 
     // Data rows
     for (const item of data) {
       const row = rowMapper(item);
-      const formattedRow = row.map((cell) => {
-        if (cell === null || cell === undefined) return '""';
-        return `"${String(cell).replace(/"/g, '""')}"`;
-      });
+      const formattedRow = row.map(escapeCSVCell);
       csvRows.push(formattedRow.join(','));
     }
 

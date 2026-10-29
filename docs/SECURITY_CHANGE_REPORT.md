@@ -131,3 +131,12 @@ Firebase or changing the application framework.
 Validation: npm audit reports zero vulnerabilities for both frontends after the
 updates. Both production builds pass. These checks reflect the registry advisories
 available during this review and do not guarantee that dependencies have no flaws.
+
+## 12. Spreadsheet export safety
+
+Administrative CSV exports now neutralize formula-leading cells, including values
+with leading whitespace, before quoting them. This prevents user-controlled names
+or descriptions from becoming formulas when an administrator opens an export.
+
+Validation: Node tests cover formula prefixes, whitespace bypasses, quoted text,
+ordinary numbers and empty cells.
