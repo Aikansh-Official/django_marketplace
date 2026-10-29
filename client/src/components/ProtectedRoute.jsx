@@ -8,9 +8,12 @@ export default function ProtectedRoute({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
     
   useEffect(() => {
-    const checkAuth = async () => {
+    let isMounted = true;
+
+    const checkAuth = async (retryCount = 0) => {
       try {
         const response = await api.get('/auth/status/');
+        if (!isMounted) return;
         if (response.data.isAuthenticated) {
           setIsAuthenticated(true);
         } else {
@@ -18,11 +21,24 @@ export default function ProtectedRoute({ children }) {
           window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { mode: 'login' } }));
         }
       } catch (error) {
+        // If transient network glitch or server redeploying / waking from sleep, retry once
+        if (retryCount < 1) {
+          setTimeout(() => {
+            if (isMounted) checkAuth(retryCount + 1);
+          }, 1500);
+          return;
+        }
+        if (!isMounted) return;
         setIsAuthenticated(false);
         window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { mode: 'login' } }));
       }
     };
+
     checkAuth();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   if (isAuthenticated === null) {
