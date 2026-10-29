@@ -296,6 +296,11 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
     def validate_uploaded_images(self, value):
         if value and len(value) > 4:
             raise serializers.ValidationError("A maximum of 4 images is allowed per listing.")
+        from .media_security import extract_raw_source_from_secure_url
+        from .media_paths import validate_listing_image_url
+        for image in value or []:
+            if not is_base64_image(image):
+                validate_listing_image_url(extract_raw_source_from_secure_url(image))
         return value
 
     def validate(self, attrs):
@@ -366,7 +371,8 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
                     from .cloudinary_upload import upload_image_to_cloudinary
 
                     rel_path = raw_url.split('/media/', 1)[1].split('?')[0]
-                    local_disk_path = os.path.join(settings.MEDIA_ROOT, rel_path.replace('/', os.sep))
+                    from .media_paths import local_media_path
+                    local_disk_path = local_media_path(raw_url)
                     if os.path.isfile(local_disk_path):
                         with open(local_disk_path, 'rb') as f:
                             fname = os.path.basename(local_disk_path)

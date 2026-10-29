@@ -59,3 +59,15 @@ preventing refresh failures when that header is required by the server.
 Validation: tests reject an unprotected cookie write, accept a matching CSRF token,
 and preserve bearer authentication. A no-cache CSRF bootstrap endpoint supports
 browser clients hosted separately from the API.
+
+## 6. Media path and asset boundaries
+
+User-supplied listing image paths could escape the media directory during local
+file migration or signed-image delivery. Paths now resolve within MEDIA_ROOT and
+must have a supported raster extension. Listing URLs are restricted to uploaded
+listing assets, excluding private ID-card URLs and unrelated Cloudinary accounts.
+Cloudinary deletion also checks the exact account and listing folder.
+
+Validation: traversal, encoded traversal, Windows drive paths, non-image files,
+private assets and foreign cloud accounts are rejected; existing local listing
+URLs and the configured Cloudinary listing format remain accepted.

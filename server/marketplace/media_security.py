@@ -294,7 +294,8 @@ def secure_image_proxy_view(request):
         if '/media/' in decoded_url or decoded_url.startswith('/media/'):
             rel_media_path = decoded_url.split('/media/', 1)[1]
             clean_rel_path = rel_media_path.split('?')[0]
-            local_file_path = os.path.join(settings.MEDIA_ROOT, clean_rel_path.replace('/', os.sep))
+            from .media_paths import local_media_path
+            local_file_path = local_media_path(decoded_url)
             if os.path.isfile(local_file_path):
                 import mimetypes
                 guessed_type, _ = mimetypes.guess_type(local_file_path)

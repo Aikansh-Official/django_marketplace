@@ -125,7 +125,14 @@ def extract_cloudinary_public_id(image_url):
     """
     if not image_url or not isinstance(image_url, str):
         return None
-    if "cloudinary.com" not in image_url:
+    from urllib.parse import urlsplit, unquote
+    parsed = urlsplit(image_url)
+    cloud = getattr(settings, 'CLOUDINARY_CLOUD_NAME', '')
+    path = unquote(parsed.path)
+    if (parsed.scheme != 'https' or parsed.hostname != 'res.cloudinary.com'
+            or not cloud or not path.startswith(f'/{cloud}/image/upload/')
+            or '/campxchange/listings/' not in path
+            or any(part in ('.', '..') for part in path.split('/'))):
         return None
 
     try:
