@@ -754,12 +754,8 @@ class CreateOfferView(APIView):
         if listing.transaction_type == 'DONATE':
             offer_amount = 0
         elif listing.is_negotiable and custom_amount is not None and str(custom_amount).strip() != '':
-            try:
-                offer_amount = float(custom_amount)
-                if offer_amount <= 0:
-                    raise ValueError()
-            except (ValueError, TypeError):
-                return Response({'error': 'Please enter a valid positive offer amount.'}, status=status.HTTP_400_BAD_REQUEST)
+            from .amounts import positive_offer_amount
+            offer_amount = positive_offer_amount(custom_amount)
         else:
             offer_amount = listing.price
         buyer_message = request.data.get('message', '').strip()
@@ -847,6 +843,9 @@ class RespondOfferView(APIView):
         if action not in ['ACCEPT', 'REJECT', 'COUNTER']:
             return Response({'error': 'Action must be ACCEPT, REJECT, or COUNTER.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        if offer.status not in ('PENDING', 'COUNTERED') or listing.status != 'ACTIVE':
+            return Response({'error': 'This request is no longer open for negotiation.'}, status=status.HTTP_400_BAD_REQUEST)
+
         seller_display = getattr(request.user, 'full_name', '') or request.user.username
 
         if action == 'ACCEPT':
@@ -905,12 +904,8 @@ class RespondOfferView(APIView):
             seller_note = request.data.get('seller_note', '').strip()
             if not counter_amount:
                 return Response({'error': 'Counter-offer amount is required.'}, status=status.HTTP_400_BAD_REQUEST)
-            try:
-                counter_amount = float(counter_amount)
-                if counter_amount <= 0:
-                    raise ValueError()
-            except (ValueError, TypeError):
-                return Response({'error': 'Please enter a valid positive counter amount.'}, status=status.HTTP_400_BAD_REQUEST)
+            from .amounts import positive_offer_amount
+            counter_amount = positive_offer_amount(counter_amount)
 
             offer.counter_amount = counter_amount
             offer.seller_note = seller_note
@@ -960,6 +955,9 @@ class BuyerCounterRespondView(APIView):
 
         buyer_display = getattr(request.user, 'full_name', '') or request.user.username
         listing = offer.listing
+
+        if action == 'ACCEPT' and listing.status != 'ACTIVE':
+            return Response({'error': 'This listing is no longer available.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if action == 'ACCEPT':
             offer.offer_amount = offer.counter_amount

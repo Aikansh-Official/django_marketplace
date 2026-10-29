@@ -12,6 +12,8 @@ from marketplace.image_validation import normalize_image
 from django.core.files.uploadedfile import SimpleUploadedFile
 import io
 from PIL import Image
+from marketplace.amounts import positive_offer_amount
+from decimal import Decimal
 
 
 class ListingCacheSecurityTests(SimpleTestCase):
@@ -88,3 +90,13 @@ class ImageContentSecurityTests(SimpleTestCase):
     def test_invalid_base64_rejected(self):
         with self.assertRaises(ValidationError):
             normalize_image('data:image/png;base64,!!!')
+
+
+class OfferAmountSecurityTests(SimpleTestCase):
+    def test_nonfinite_negative_oversized_and_excess_precision_rejected(self):
+        for value in ('NaN', 'Infinity', '-Infinity', '-1', '0', '100000000', '1.001'):
+            with self.assertRaises(ValidationError):
+                positive_offer_amount(value)
+
+    def test_normal_currency_amount_accepted_exactly(self):
+        self.assertEqual(positive_offer_amount('123.45'), Decimal('123.45'))

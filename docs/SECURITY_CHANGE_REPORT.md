@@ -182,3 +182,15 @@ delivery remains available only in debug mode.
 
 Validation: tests check health-response redaction, failed delivery without provider
 configuration, and absence of verification codes in production warning logs.
+
+## 17. Offer amount and negotiation state validation
+
+Offer and counter-offer amounts now use bounded decimal validation instead of
+floating-point conversion. NaN, infinity, negative amounts, excess precision and
+values beyond the database field limit are rejected. Closed requests cannot be
+reaccepted or countered, and a buyer cannot accept a stale counter-offer after the
+listing becomes unavailable.
+
+Validation: tests reject invalid numeric forms and preserve exact two-decimal
+currency values. Simultaneous competing acceptance remains a concurrency concern
+requiring dedicated load and transaction testing.
