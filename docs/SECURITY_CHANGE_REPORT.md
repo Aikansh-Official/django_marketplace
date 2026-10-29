@@ -150,3 +150,14 @@ trade's participants and staff, rather than every listing visitor.
 
 Validation: database-backed tests reject unrelated peer access and preserve the
 normal buyer-to-seller conversation response.
+
+## 14. Administrator seeding
+
+Database seeding no longer creates a predictable default superadmin, resets an
+existing password, promotes an existing ordinary account, or prints passwords.
+New administrators require explicit environment credentials and password
+validation. Existing accounts remain unchanged by seeding.
+
+Validation: database-backed tests cover missing credentials, preservation of an
+existing ordinary account and password, and explicit creation of a new admin.
+Any deployment that previously used the published default password must rotate it.
