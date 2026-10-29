@@ -12,3 +12,13 @@ and super-admin permission requires an active staff account or superuser.
 
 Validation: regression tests cover blocked role assignment, staff-only super-admin
 access, inactive accounts, and the student endpoint's staff exclusion.
+
+## 2. Marketplace feed cache privacy
+
+The default feed shared one cache entry between guests and signed-in users,
+allowing private seller contact data and owner-specific fields to reach another
+visitor. Only anonymous responses now use the shared cache. A new cache key avoids
+serving previously cached private responses after deployment.
+
+Validation: tests exercise member-to-guest leakage, guest cache reuse, and a member
+request after a guest response has been cached.

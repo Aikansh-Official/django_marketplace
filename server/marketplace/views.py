@@ -342,6 +342,7 @@ class ListingListCreateView(generics.ListCreateAPIView):
         from django.core.cache import cache
         qp = request.query_params
         is_default_feed = (
+            not request.user.is_authenticated and
             not qp.get('search') and
             (not qp.get('category') or qp.get('category') == 'ALL') and
             (not qp.get('condition') or qp.get('condition') == 'ALL') and
@@ -352,7 +353,7 @@ class ListingListCreateView(generics.ListCreateAPIView):
             qp.get('sort', 'newest') == 'newest'
         )
 
-        cache_key = 'cxc_public_default_active_listings'
+        cache_key = 'cxc_public_default_active_listings_v2'
 
         if is_default_feed:
             cached_data = cache.get(cache_key)
@@ -3323,7 +3324,7 @@ def invalidate_banner_cache(sender, **kwargs):
 def invalidate_listing_cache(sender, **kwargs):
     try:
         from django.core.cache import cache
-        cache.delete('cxc_public_default_active_listings')
+        cache.delete('cxc_public_default_active_listings_v2')
     except Exception:
         pass
 
