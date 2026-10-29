@@ -253,5 +253,5 @@ def verify_student_id_with_gemini(
         return {
             "success": False,
             "is_valid": False,
-            "reason": f"Verification failed due to an unexpected error: {str(e)}"
+            "reason": "Verification is temporarily unavailable. Please try again later."
         }

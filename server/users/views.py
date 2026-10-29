@@ -701,7 +701,7 @@ class SendOTPView(APIView):
             mail_result = send_otp_email(email, otp)
             if not mail_result.get('success', False) and not mail_result.get('mock', False):
                 logger.warning(f"Failed to send OTP email to {email}: {mail_result.get('error')}")
-                if not settings.DEBUG and getattr(settings, 'RESEND_API_KEY', None):
+                if not settings.DEBUG:
                     return Response(
                         {"error": "Failed to send verification email. Please check your address or try again later."},
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -716,7 +716,7 @@ class SendOTPView(APIView):
         except Exception as e:
             logger.exception(f"Unexpected error in SendOTPView: {e}")
             return Response(
-                {"error": f"Failed to send OTP: {str(e)}"},
+                {"error": "Unable to send the verification code. Please try again later."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -774,7 +774,7 @@ class ForgotPasswordRequestView(APIView):
 
             if not mail_res.get('success', False) and not mail_res.get('mock', False):
                 logger.warning(f"Resend password reset OTP delivery issue for {clean_email}: {mail_res.get('error')}")
-                if not settings.DEBUG and getattr(settings, 'RESEND_API_KEY', None):
+                if not settings.DEBUG:
                     return Response(
                         {"error": "Failed to deliver verification code email. Please try again in a moment."},
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR

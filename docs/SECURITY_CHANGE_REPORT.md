@@ -171,3 +171,14 @@ unavailable response instead of claiming success.
 
 Validation: database-backed tests reject private topic names and another user's
 device, and accept the caller's device for campus broadcasts with a mocked provider.
+
+## 16. Public diagnostics and email delivery
+
+Public health responses no longer expose database exception details. Verification
+errors return generic messages. Missing production email configuration no longer
+logs verification-code subjects or reports a successful delivery; the request
+returns a failure that the existing frontend can display. Development console
+delivery remains available only in debug mode.
+
+Validation: tests check health-response redaction, failed delivery without provider
+configuration, and absence of verification codes in production warning logs.

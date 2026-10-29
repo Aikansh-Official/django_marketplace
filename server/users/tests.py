@@ -12,6 +12,10 @@ class UserSecurityTests(TestCase):
     def setUp(self):
         from django.core.cache import cache
         cache.clear()
+        from unittest.mock import patch
+        mail = patch('users.views.send_otp_email', return_value={'success': True})
+        mail.start()
+        self.addCleanup(mail.stop)
         self.client = APIClient()
         security_key = getattr(settings, 'DATA_SECURITY_KEY', '')
         if security_key:

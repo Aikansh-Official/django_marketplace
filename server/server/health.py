@@ -19,7 +19,7 @@ def health_check(request):
         connection.ensure_connection()
     except Exception as e:
         logger.error(f"Database health check failed: {e}", exc_info=True)
-        db_status = f"unhealthy: {str(e)}"
+        db_status = 'unhealthy'
         status_code = 503
 
     response_data = {

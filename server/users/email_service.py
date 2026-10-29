@@ -347,7 +347,9 @@ def send_email_via_resend(to_email: str, subject: str, html_content: str, text_c
     from_email = getattr(settings, 'RESEND_FROM_EMAIL', '') or os.environ.get('RESEND_FROM_EMAIL', 'CampXChange <noreply@cxc.anshuman892494.online>')
 
     if not api_key or api_key.strip() == '' or 'your_resend_api_key' in api_key.lower():
-        logger.warning(f"[RESEND NOT CONFIGURED] Email to {to_email} with subject '{subject}' logged to console.")
+        logger.warning('Email delivery unavailable: provider is not configured.')
+        if not settings.DEBUG:
+            return {"success": False, "mock": False, "error": "Email delivery is unavailable."}
         if settings.DEBUG:
             print(f"\n==================== [DEV RESEND EMAIL TO: {to_email}] ====================")
             print(f"Subject: {subject}")
