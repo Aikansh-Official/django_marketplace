@@ -542,26 +542,8 @@ class CustomTokenRefreshView(TokenRefreshView):
 
             user = User.objects.get(id=user_id)
 
-            # Check if active session was replaced by another login or logged out
-            if token_session_id:
-                if client_type == 'android':
-                    if not user.android_session_id or user.android_session_id != token_session_id:
-                        return Response({
-                            'error': 'Session terminated: Your account was logged in on another Android device or logged out.',
-                            'session_invalidated': True,
-                            'client_type': 'android'
-                        }, status=status.HTTP_401_UNAUTHORIZED)
-                else:
-                    if not user.web_session_id or user.web_session_id != token_session_id:
-                        resp = Response({
-                            'error': 'Session terminated: Your account was logged in on another web browser/device or logged out.',
-                            'session_invalidated': True,
-                            'client_type': 'web'
-                        }, status=status.HTTP_401_UNAUTHORIZED)
-                        access_cookie = getattr(settings, 'SIMPLE_JWT', {}).get('AUTH_COOKIE', 'access_token')
-                        resp.delete_cookie(access_cookie)
-                        resp.delete_cookie(refresh_cookie_name)
-                        return resp
+            from .session_security import require_active_session
+            require_active_session(user, token.payload)
 
             # Issue fresh access token carrying session claims
             access_token = token.access_token
@@ -577,7 +559,7 @@ class CustomTokenRefreshView(TokenRefreshView):
             # If token rotation is active, rotate refresh token while maintaining session claims
             if getattr(settings, 'SIMPLE_JWT', {}).get('ROTATE_REFRESH_TOKENS', False):
                 token.set_jti()
-                token.set_exp()
+                # Preserve the original session expiry instead of extending it forever.
                 if token_session_id:
                     token['session_id'] = token_session_id
                     token['client_type'] = client_type
@@ -588,7 +570,7 @@ class CustomTokenRefreshView(TokenRefreshView):
             return response
 
         except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error': 'Invalid or expired session. Please sign in again.', 'session_invalidated': True}, status=status.HTTP_401_UNAUTHORIZED)
 
 class LogoutView(APIView):
     permission_classes = (AllowAny,)
@@ -840,6 +822,8 @@ class ForgotPasswordResetView(APIView):
 
             # Update user password using Django's secure hasher
             user.set_password(new_password)
+            from .session_security import revoke_user_sessions
+            revoke_user_sessions(user)
             user.save()
 
             # Mark OTP as verified and clean up used OTPs

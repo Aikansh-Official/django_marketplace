@@ -3,6 +3,8 @@ from django.test import SimpleTestCase
 from users.permissions import IsSuperAdminUser
 from users.serializers import AdminUserUpdateSerializer
 from users.views import UserAdminDetailView
+from users.session_security import require_active_session, revoke_user_sessions
+from rest_framework.exceptions import AuthenticationFailed
 
 
 class StudentAdministrationSecurityTests(SimpleTestCase):
@@ -30,3 +32,25 @@ class StudentAdministrationSecurityTests(SimpleTestCase):
                    for clause in UserAdminDetailView.queryset.query.where.children}
         self.assertIs(filters['is_staff'], False)
         self.assertIs(filters['is_superuser'], False)
+
+
+class SessionSecurityTests(SimpleTestCase):
+    def test_valid_web_and_android_sessions(self):
+        user = SimpleNamespace(is_active=True, web_session_id='web-id', android_session_id='app-id')
+        for platform, session in [('web', 'web-id'), ('android', 'app-id')]:
+            require_active_session(user, {'client_type': platform, 'session_id': session})
+
+    def test_missing_cross_platform_and_revoked_claims_are_rejected(self):
+        user = SimpleNamespace(is_active=True, web_session_id='web-id', android_session_id='app-id')
+        for claims in ({}, {'client_type': 'web'}, {'client_type': 'other', 'session_id': 'web-id'},
+                       {'client_type': 'android', 'session_id': 'web-id'}):
+            with self.assertRaises(AuthenticationFailed):
+                require_active_session(user, claims)
+        revoke_user_sessions(user)
+        with self.assertRaises(AuthenticationFailed):
+            require_active_session(user, {'client_type': 'web', 'session_id': 'web-id'})
+
+    def test_suspended_user_is_rejected(self):
+        user = SimpleNamespace(is_active=False, web_session_id='web-id')
+        with self.assertRaises(AuthenticationFailed):
+            require_active_session(user, {'client_type': 'web', 'session_id': 'web-id'})

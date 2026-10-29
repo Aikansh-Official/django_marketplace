@@ -34,3 +34,16 @@ accepted when supplied by the hosting environment, without trusting all tenants.
 
 Validation: middleware tests reject unrelated hosting tenants and accept the
 existing application origin.
+
+## 4. Session revocation and password recovery
+
+Access and refresh tokens now require an active account and matching web or
+Android session claims. Missing claims cannot bypass logout or session revocation.
+Password reset clears both platform sessions. Refresh rotation preserves the
+original expiry instead of indefinitely extending a stolen session. Invalid
+refresh responses no longer expose internal exception text.
+
+Validation: tests cover valid web/Android sessions, cross-platform claims, missing
+claims, revoked sessions and suspended accounts. Legacy tokens without session
+claims require signing in again. Refresh-token replay within an otherwise active
+session remains a limitation until persistent token-family tracking is introduced.
