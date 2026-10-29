@@ -1580,11 +1580,16 @@ class SubscribeFCMTopicView(APIView):
     def post(self, request):
         token = request.data.get('token')
         topics = request.data.get('topics', ['campus_broadcasts'])
-        if not token:
+        if not isinstance(token, str) or not token.strip():
             return Response({'error': 'FCM token is required'}, status=status.HTTP_400_BAD_REQUEST)
 
         if isinstance(topics, str):
             topics = [topics]
+        if not isinstance(topics, list) or not topics or any(topic != 'campus_broadcasts' for topic in topics):
+            return Response({'error': 'Only campus_broadcasts subscriptions are allowed.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not FCMDevice.objects.filter(registration_id=token.strip(), user=request.user, is_active=True).exists():
+            return Response({'error': 'Register this device to your account first.'}, status=status.HTTP_403_FORBIDDEN)
+        topics = list(dict.fromkeys(topics))
 
         from .services.notification_service import NotificationService
         subscribed = []
@@ -1594,10 +1599,10 @@ class SubscribeFCMTopicView(APIView):
                 subscribed.append(topic)
 
         return Response({
-            'success': True,
+            'success': len(subscribed) == len(topics),
             'message': f'Subscribed to {len(subscribed)} topic(s)',
             'subscribed_topics': subscribed
-        })
+        }, status=status.HTTP_200_OK if len(subscribed) == len(topics) else status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 class NotificationPreferencesView(APIView):

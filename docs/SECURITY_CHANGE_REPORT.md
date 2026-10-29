@@ -161,3 +161,13 @@ validation. Existing accounts remain unchanged by seeding.
 Validation: database-backed tests cover missing credentials, preservation of an
 existing ordinary account and password, and explicit creation of a new admin.
 Any deployment that previously used the published default password must rotate it.
+
+## 15. Push topic authorization
+
+Topic subscription now requires an active device registered to the caller and
+allows only the existing public campus broadcast topic. Users cannot subscribe
+arbitrary device tokens to arbitrary topic names. Provider failure returns an
+unavailable response instead of claiming success.
+
+Validation: database-backed tests reject private topic names and another user's
+device, and accept the caller's device for campus broadcasts with a mocked provider.
