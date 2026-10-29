@@ -1185,8 +1185,9 @@ class ChatMessageListCreateView(APIView):
         primary_img = listing.images.filter(is_primary=True).first() or listing.images.first()
 
         peer_name = (getattr(peer, 'full_name', '') or getattr(peer, 'first_name', '') or peer.username).strip()
-        parts = peer_name.split()
-        masked_peer_name = f"{parts[0]} {parts[1][0]}." if len(parts) >= 2 else parts[0]
+        from .media_security import generate_secure_image_url
+        raw_peer_photo = getattr(peer, 'profile_photo', None) or getattr(peer, 'profile_picture_url', None)
+        peer_avatar = generate_secure_image_url(raw_peer_photo, request=request) if raw_peer_photo else None
 
         return Response({
             'listing': {
@@ -1199,7 +1200,9 @@ class ChatMessageListCreateView(APIView):
             },
             'peer': {
                 'id': peer.id,
-                'name': masked_peer_name,
+                'name': peer_name,
+                'email': peer.email,
+                'avatar': peer_avatar,
                 'is_verified': getattr(peer, 'is_id_verified', False)
             },
             'messages': serializer.data
@@ -1227,16 +1230,14 @@ class ChatMessageListCreateView(APIView):
             is_read=False
         )
 
-        sender_name = getattr(request.user, 'full_name', '') or request.user.username
-        parts = sender_name.strip().split()
-        masked_sender = f"{parts[0]} {parts[1][0]}." if len(parts) >= 2 else parts[0]
+        sender_name = (getattr(request.user, 'full_name', '') or getattr(request.user, 'first_name', '') or request.user.username).strip()
 
         NotificationService.send_notification(
             recipient=peer,
             sender=request.user,
             notification_type='NEW_CHAT_MESSAGE',
             priority='NORMAL',
-            title=f"Message from {masked_sender}",
+            title=f"Message from {sender_name}",
             message=f'Re: "{listing.title}" — {message_text[:80]}',
             listing=listing,
             link=f"/chat/{listing.id}/{request.user.id}",
@@ -1289,8 +1290,9 @@ class UserConversationsView(APIView):
                     is_read=False
                 ).count()
                 peer_name = (getattr(peer, 'full_name', '') or getattr(peer, 'first_name', '') or peer.username).strip()
-                parts = peer_name.split()
-                masked_peer = f"{parts[0]} {parts[1][0]}." if len(parts) >= 2 else parts[0]
+                from .media_security import generate_secure_image_url
+                raw_peer_photo = getattr(peer, 'profile_photo', None) or getattr(peer, 'profile_picture_url', None)
+                peer_avatar = generate_secure_image_url(raw_peer_photo, request=request) if raw_peer_photo else None
 
                 conversations.append({
                     'listing_id': msg.listing_id,
@@ -1298,7 +1300,9 @@ class UserConversationsView(APIView):
                     'listing_price': str(msg.listing.price),
                     'listing_image': primary_img.image_url if primary_img else None,
                     'peer_id': peer.id,
-                    'peer_name': masked_peer,
+                    'peer_name': peer_name,
+                    'peer_email': peer.email,
+                    'peer_avatar': peer_avatar,
                     'last_message': msg.message,
                     'last_message_time': msg.created_at,
                     'unread_count': unread_count

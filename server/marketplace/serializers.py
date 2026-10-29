@@ -858,22 +858,16 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'sender', 'recipient', 'is_read', 'created_at']
 
     def get_sender_name(self, obj):
-        name = (getattr(obj.sender, 'full_name', '') or getattr(obj.sender, 'first_name', '')).strip()
+        name = (getattr(obj.sender, 'full_name', '') or getattr(obj.sender, 'first_name', '') or obj.sender.username).strip()
         if not name:
             return f"Student #{obj.sender_id}"
-        parts = name.split()
-        if len(parts) >= 2:
-            return f"{parts[0]} {parts[1][0]}."
-        return parts[0]
+        return name
 
     def get_recipient_name(self, obj):
-        name = (getattr(obj.recipient, 'full_name', '') or getattr(obj.recipient, 'first_name', '')).strip()
+        name = (getattr(obj.recipient, 'full_name', '') or getattr(obj.recipient, 'first_name', '') or obj.recipient.username).strip()
         if not name:
             return f"Student #{obj.recipient_id}"
-        parts = name.split()
-        if len(parts) >= 2:
-            return f"{parts[0]} {parts[1][0]}."
-        return parts[0]
+        return name
 
     def get_is_mine(self, obj):
         request = self.context.get('request')

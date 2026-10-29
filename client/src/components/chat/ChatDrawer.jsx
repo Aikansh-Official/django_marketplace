@@ -148,18 +148,38 @@ export default function ChatDrawer({
           {/* Header with Warm Gradient & Controls */}
           <div className="px-5 py-3.5 border-b border-gray-100 bg-gradient-to-r from-orange-50/70 via-amber-50/40 to-white flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs border border-brand-100">
-                {displayName.slice(0, 2).toUpperCase()}
+              <div className="w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs border border-brand-100 overflow-hidden relative">
+                {peer?.avatar ? (
+                  <img
+                    src={getSafeImageUrl(peer.avatar)}
+                    alt={displayName}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      const fallback = e.currentTarget.nextElementSibling;
+                      if (fallback) fallback.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                <span className={peer?.avatar ? 'hidden' : ''}>
+                  {displayName.slice(0, 2).toUpperCase()}
+                </span>
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <h3 className="font-extrabold text-sm text-gray-900 truncate">{displayName}</h3>
                   <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" title="Verified Campus Trader" />
                 </div>
-                <p className="text-[11px] text-gray-500 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span className="font-medium text-emerald-800">Campus Secure Chat</span>
-                </p>
+                {peer?.email ? (
+                  <p className="text-[11px] text-gray-500 truncate" title={peer.email}>
+                    {peer.email}
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-gray-500 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="font-medium text-emerald-800">Campus Secure Chat</span>
+                  </p>
+                )}
               </div>
             </div>
 

@@ -21,7 +21,7 @@ export default function Messages() {
 
   const [conversations, setConversations] = useState([]);
   const [loadingConversations, setLoadingConversations] = useState(true);
-  const [selectedChat, setSelectedChat] = useState(null); // { listing_id, peer_id, peer_name, listing_title, listing_price, listing_image }
+  const [selectedChat, setSelectedChat] = useState(null); // { listing_id, peer_id, peer_name, peer_email, peer_avatar, listing_title, listing_price, listing_image }
   const [messages, setMessages] = useState([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
@@ -57,10 +57,13 @@ export default function Messages() {
             .get(`/marketplace/listings/${routeListingId}/`)
             .then((listingRes) => {
               const item = listingRes.data;
+              const seller = item.seller || {};
               setSelectedChat({
                 listing_id: routeListingId,
                 peer_id: routePeerId,
-                peer_name: 'Campus Student',
+                peer_name: seller.full_name || item.seller_name || 'Campus Student',
+                peer_email: seller.email || item.seller_email || '',
+                peer_avatar: seller.profile_photo || seller.profile_picture_url || null,
                 listing_title: item.title,
                 listing_price: item.price,
                 listing_image: item.images?.[0]?.image_url
@@ -108,6 +111,14 @@ export default function Messages() {
         `/marketplace/chat/${selectedChat.listing_id}/${selectedChat.peer_id}/`
       );
       setMessages(res.data.messages || []);
+      if (res.data.peer) {
+        setSelectedChat((prev) => ({
+          ...prev,
+          peer_name: res.data.peer.name || prev?.peer_name,
+          peer_email: res.data.peer.email || prev?.peer_email,
+          peer_avatar: res.data.peer.avatar !== undefined ? res.data.peer.avatar : prev?.peer_avatar,
+        }));
+      }
       if (!silent) {
         setTimeout(scrollToBottom, 100);
       }
@@ -224,6 +235,7 @@ export default function Messages() {
     const q = searchQuery.toLowerCase();
     return (
       (c.peer_name || '').toLowerCase().includes(q) ||
+      (c.peer_email || '').toLowerCase().includes(q) ||
       (c.listing_title || '').toLowerCase().includes(q) ||
       (c.last_message || '').toLowerCase().includes(q)
     );
@@ -354,10 +366,24 @@ export default function Messages() {
                       </div>
                       {/* Floating Peer Avatar badge */}
                       <div
-                        className="w-5 h-5 rounded-full bg-brand-500 text-white border-2 border-white text-[9px] font-black flex items-center justify-center absolute -bottom-1 -right-1 shadow-xs"
+                        className="w-5 h-5 rounded-full bg-brand-500 text-white border-2 border-white text-[9px] font-black flex items-center justify-center absolute -bottom-1 -right-1 shadow-xs overflow-hidden"
                         title={conv.peer_name}
                       >
-                        {(conv.peer_name || 'U')[0].toUpperCase()}
+                        {conv.peer_avatar ? (
+                          <img
+                            src={getSafeImageUrl(conv.peer_avatar)}
+                            alt={conv.peer_name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              const fallback = e.currentTarget.nextElementSibling;
+                              if (fallback) fallback.classList.remove('hidden');
+                            }}
+                          />
+                        ) : null}
+                        <span className={conv.peer_avatar ? 'hidden' : ''}>
+                          {(conv.peer_name || 'U')[0].toUpperCase()}
+                        </span>
                       </div>
                     </div>
 
@@ -422,8 +448,22 @@ export default function Messages() {
                     <ArrowLeft className="w-5 h-5" />
                   </button>
 
-                  <div className="w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
-                    {(selectedChat.peer_name || 'U')[0].toUpperCase()}
+                  <div className="w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs overflow-hidden border border-brand-100 relative">
+                    {selectedChat.peer_avatar ? (
+                      <img
+                        src={getSafeImageUrl(selectedChat.peer_avatar)}
+                        alt={selectedChat.peer_name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const fallback = e.currentTarget.nextElementSibling;
+                          if (fallback) fallback.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    <span className={selectedChat.peer_avatar ? 'hidden' : ''}>
+                      {(selectedChat.peer_name || 'U')[0].toUpperCase()}
+                    </span>
                   </div>
 
                   <div className="min-w-0">
@@ -433,9 +473,11 @@ export default function Messages() {
                       </h3>
                       <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" title="Verified Campus Trader" />
                     </div>
-                    <p className="text-[11px] text-gray-500 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>Active on Campus</span>
+                    <p
+                      className="text-[11px] text-gray-500 truncate"
+                      title={selectedChat.peer_email || ''}
+                    >
+                      {selectedChat.peer_email || 'No email available'}
                     </p>
                   </div>
                 </div>
