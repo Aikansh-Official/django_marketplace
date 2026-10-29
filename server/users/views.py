@@ -1116,6 +1116,8 @@ class AuthStatusView(APIView):
 
 class CompleteIdVerificationView(APIView):
     permission_classes = (IsAuthenticated,)
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'signup'
 
     def post(self, request):
         user = request.user
@@ -1145,6 +1147,9 @@ class CompleteIdVerificationView(APIView):
 
         from marketplace.cloudinary_upload import upload_user_image_to_cloudinary
 
+        from .identity_verification import require_verified_identity
+        verified_data = require_verified_identity(id_card_image, user.username, user.full_name)
+
         cloudinary_id_card = upload_user_image_to_cloudinary(
             id_card_image, folder="campxchange/id_cards"
         )
@@ -1152,9 +1157,7 @@ class CompleteIdVerificationView(APIView):
         user.is_id_verified = True
         user.role = 'SELLER'
         user.id_card_image = cloudinary_id_card
-        id_card_data = request.data.get('id_card_data', None)
-        if id_card_data and isinstance(id_card_data, dict):
-            user.id_card_data = id_card_data
+        user.id_card_data = verified_data
         profile_photo = request.data.get('profile_photo', None) or request.data.get('profile_picture_url', None)
         if profile_photo:
             uploaded_photo = upload_user_image_to_cloudinary(profile_photo, folder="campxchange/profiles")
@@ -1194,6 +1197,8 @@ class UpgradeToSellerView(APIView):
       - otp (6-digit OTP sent to user's registered email)
     """
     permission_classes = (IsAuthenticated,)
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'signup'
 
     def post(self, request):
         user = request.user
@@ -1279,6 +1284,9 @@ class UpgradeToSellerView(APIView):
         # 5. Upload student ID and profile photo to Cloudinary in .webp format
         from marketplace.cloudinary_upload import upload_user_image_to_cloudinary
 
+        from .identity_verification import require_verified_identity
+        verified_data = require_verified_identity(id_card_image, user.username, user.full_name)
+
         cloudinary_id_card = upload_user_image_to_cloudinary(
             id_card_image, folder="campxchange/id_cards"
         )
@@ -1290,8 +1298,7 @@ class UpgradeToSellerView(APIView):
         user.is_id_verified = True
         user.role = 'SELLER'
         user.id_card_image = cloudinary_id_card
-        if id_card_data and isinstance(id_card_data, dict):
-            user.id_card_data = id_card_data
+        user.id_card_data = verified_data
         user.profile_photo = cloudinary_profile_photo
         user.profile_picture_url = cloudinary_profile_photo
         user.trust_score = user.calculate_trust_score()
@@ -1334,13 +1341,8 @@ class VerifyIdCardAIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        from .gemini_id_verifier import verify_student_id_with_gemini
-        result = verify_student_id_with_gemini(
-            image_base64=image,
-            target_reg_no=reg_no,
-            target_full_name=full_name,
-            target_university=university
-        )
+        from .identity_verification import verification_result
+        result = verification_result(image, reg_no, full_name)
 
         return Response(result, status=status.HTTP_200_OK)
 

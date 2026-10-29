@@ -10,6 +10,8 @@ from django.test import RequestFactory
 from django.middleware.csrf import get_token
 from rest_framework.exceptions import PermissionDenied
 from users.authentication import CookieJWTAuthentication
+from users.identity_verification import require_verified_identity
+from rest_framework.exceptions import ValidationError, APIException
 
 
 class StudentAdministrationSecurityTests(SimpleTestCase):
@@ -56,6 +58,12 @@ class SessionSecurityTests(SimpleTestCase):
             require_active_session(user, {'client_type': 'web', 'session_id': 'web-id'})
 
 
+    def test_suspended_user_is_rejected(self):
+        user = SimpleNamespace(is_active=False, web_session_id='web-id')
+        with self.assertRaises(AuthenticationFailed):
+            require_active_session(user, {'client_type': 'web', 'session_id': 'web-id'})
+
+
 class CookieCsrfSecurityTests(SimpleTestCase):
     def authenticate_request(self, request):
         user = SimpleNamespace(is_active=True, web_session_id='valid-session')
@@ -78,11 +86,29 @@ class CookieCsrfSecurityTests(SimpleTestCase):
         request.COOKIES['csrftoken'] = request.META['CSRF_COOKIE']
         self.assertIsNotNone(self.authenticate_request(request))
 
+
     def test_bearer_write_does_not_require_cookie_csrf(self):
         request = RequestFactory().post('/api/auth/profile/', HTTP_AUTHORIZATION='Bearer token')
         self.assertIsNotNone(self.authenticate_request(request))
 
-    def test_suspended_user_is_rejected(self):
-        user = SimpleNamespace(is_active=False, web_session_id='web-id')
-        with self.assertRaises(AuthenticationFailed):
-            require_active_session(user, {'client_type': 'web', 'session_id': 'web-id'})
+
+
+class IdentitySecurityTests(SimpleTestCase):
+    def test_forged_or_mismatched_identity_rejected(self):
+        for result in ({'success': True, 'is_valid': False},
+                       {'success': True, 'is_valid': True, 'extracted_reg_no': '99999999'}):
+            with patch('users.identity_verification.verification_result', return_value=result):
+                with self.assertRaises(ValidationError):
+                    require_verified_identity('image', '12345678', 'Test Student')
+
+    def test_service_failure_never_grants_seller_authority(self):
+        with patch('users.identity_verification.verification_result', return_value={'success': False}):
+            with self.assertRaises(APIException) as error:
+                require_verified_identity('image', '12345678', 'Test Student')
+            self.assertEqual(error.exception.status_code, 503)
+
+    def test_matching_server_result_is_accepted(self):
+        result = {'success': True, 'is_valid': True, 'extracted_reg_no': '12345678'}
+        with patch('users.identity_verification.verification_result', return_value=result):
+            self.assertEqual(require_verified_identity('image', '12345678', 'Test Student')['extracted_reg_no'], '12345678')
+

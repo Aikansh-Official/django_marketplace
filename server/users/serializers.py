@@ -229,6 +229,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             profile_photo = attrs.get('profile_photo')
             if not profile_photo or not isinstance(profile_photo, str) or len(profile_photo.strip()) < 100:
                 raise serializers.ValidationError({"profile_photo": "Live selfie photo is required for Seller registration."})
+            from .identity_verification import require_verified_identity
+            attrs['id_card_data'] = require_verified_identity(id_card_image, username, full_name)
+
             
         return attrs
 

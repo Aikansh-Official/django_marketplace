@@ -96,3 +96,17 @@ cannot reference private document assets.
 
 Validation: tests reject disguised HTML, SVG and invalid base64, and verify that
 a valid image keeps working with a safe filename and without appended script data.
+
+## 9. Seller identity verification
+
+Registration and both seller-upgrade endpoints previously granted verified seller
+status from image length and submitted metadata. They now require the existing
+server verification service to accept the exact image and account identity.
+Stored metadata comes from that result. A short-lived cache reuses a successful
+scan only for the same image, registration number and name, preserving the current
+scan-then-submit flow. Service failure cannot grant seller status.
+
+Validation: tests reject failed and mismatched verification, accept a matching
+server result, and return unavailable status when verification cannot run. Live
+document verification requires the deployment's existing service credentials;
+these credentials were not available for local validation.
