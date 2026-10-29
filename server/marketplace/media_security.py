@@ -50,24 +50,6 @@ def get_allowed_origins():
         if origin:
             allowed.add(origin.strip().rstrip('/'))
 
-    # Include local dev defaults
-    allowed.add("http://localhost:5173")
-    allowed.add("http://127.0.0.1:5173")
-    allowed.add("http://localhost:5174")
-    allowed.add("http://127.0.0.1:5174")
-    allowed.add("http://localhost:5175")
-    allowed.add("http://127.0.0.1:5175")
-    allowed.add("http://localhost:3000")
-    allowed.add("http://127.0.0.1:3000")
-    allowed.add("https://cxc.anshuman892494.online")
-    allowed.add("http://cxc.anshuman892494.online")
-    allowed.add("https://cxc-marketplace.vercel.app")
-    allowed.add("http://cxc-marketplace.vercel.app")
-
-    render_host = getattr(settings, 'RENDER_EXTERNAL_HOSTNAME', None)
-    if render_host:
-        allowed.add(f"https://{render_host}".rstrip('/'))
-
     return allowed
 
 
@@ -204,19 +186,6 @@ def is_origin_allowed(base_url, allowed_origins):
         return False
     if base_url in allowed_origins:
         return True
-    try:
-        parsed = urllib.parse.urlparse(base_url)
-        hostname = (parsed.hostname or '').lower()
-        if (
-            hostname.endswith('.anshuman892494.online') or
-            hostname == 'anshuman892494.online' or
-            hostname.endswith('.onrender.com') or
-            hostname.endswith('.vercel.app') or
-            hostname in ('localhost', '127.0.0.1')
-        ):
-            return True
-    except Exception:
-        pass
     return False
 
 

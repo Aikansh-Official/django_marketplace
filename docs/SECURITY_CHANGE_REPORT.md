@@ -22,3 +22,15 @@ serving previously cached private responses after deployment.
 
 Validation: tests exercise member-to-guest leakage, guest cache reuse, and a member
 request after a guest response has been cached.
+
+## 3. Browser origin trust
+
+Production CORS, CSRF and image-origin rules trusted every Vercel and Render
+tenant. These rules now trust exact configured application origins. The two
+existing HTTPS client origins remain enabled. Local development origins remain
+available with DEBUG=True. Extra admin or preview origins must be listed in
+CORS_ALLOWED_ORIGINS and CSRF_TRUSTED_ORIGINS. The Render hostname is still
+accepted when supplied by the hosting environment, without trusting all tenants.
+
+Validation: middleware tests reject unrelated hosting tenants and accept the
+existing application origin.

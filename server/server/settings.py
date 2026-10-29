@@ -55,8 +55,7 @@ if DEBUG and '*' not in ALLOWED_HOSTS:
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-if '.onrender.com' not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append('.onrender.com')
+
 
 
 
@@ -301,67 +300,27 @@ ANDROID_REFRESH_TOKEN_LIFETIME = timedelta(days=90)  # Android App session: 90 d
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 
+# Trust exact application origins; shared hosting suffixes are not trust boundaries.
 _DEFAULT_FRONTEND_ORIGINS = [
     "https://cxc.anshuman892494.online",
-    "http://cxc.anshuman892494.online",
     "https://cxc-marketplace.vercel.app",
-    "http://cxc-marketplace.vercel.app",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:5174",
-    "http://127.0.0.1:5174",
-    "http://localhost:5175",
-    "http://127.0.0.1:5175",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
 ]
-
-_extra_cors = os.environ.get('CORS_ALLOWED_ORIGINS', '')
-if _extra_cors:
-    CORS_ALLOWED_ORIGINS = _DEFAULT_FRONTEND_ORIGINS + [o.strip().rstrip('/') for o in _extra_cors.split(',') if o.strip()]
-else:
-    CORS_ALLOWED_ORIGINS = _DEFAULT_FRONTEND_ORIGINS
-
-CORS_ALLOWED_ORIGINS = list(dict.fromkeys(CORS_ALLOWED_ORIGINS))
-
-_extra_csrf = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
-if _extra_csrf:
-    CSRF_TRUSTED_ORIGINS = _DEFAULT_FRONTEND_ORIGINS + [o.strip().rstrip('/') for o in _extra_csrf.split(',') if o.strip()]
-else:
-    CSRF_TRUSTED_ORIGINS = _DEFAULT_FRONTEND_ORIGINS
-
-CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(CSRF_TRUSTED_ORIGINS))
-
-if "https://cxc.anshuman892494.online" not in CSRF_TRUSTED_ORIGINS:
-    CSRF_TRUSTED_ORIGINS.append("https://cxc.anshuman892494.online")
-if "https://*.anshuman892494.online" not in CSRF_TRUSTED_ORIGINS:
-    CSRF_TRUSTED_ORIGINS.append("https://*.anshuman892494.online")
-if "https://cxc-marketplace.vercel.app" not in CSRF_TRUSTED_ORIGINS:
-    CSRF_TRUSTED_ORIGINS.append("https://cxc-marketplace.vercel.app")
-if "https://*.vercel.app" not in CSRF_TRUSTED_ORIGINS:
-    CSRF_TRUSTED_ORIGINS.append("https://*.vercel.app")
-
-if RENDER_EXTERNAL_HOSTNAME:
-    render_origin = f"https://{RENDER_EXTERNAL_HOSTNAME}"
-    if render_origin not in CSRF_TRUSTED_ORIGINS:
-        CSRF_TRUSTED_ORIGINS.append(render_origin)
-if "https://*.onrender.com" not in CSRF_TRUSTED_ORIGINS:
-    CSRF_TRUSTED_ORIGINS.append("https://*.onrender.com")
-
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://.*\.vercel\.app$",
-    r"^https://.*\.anshuman892494\.online$",
-    r"^https://.*\.onrender\.com$",
-]
-
 if DEBUG:
-    CORS_ALLOWED_ORIGIN_REGEXES += [
-        r"^http://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.\d+\.\d+\.\d+)(:\d+)?$",
+    _DEFAULT_FRONTEND_ORIGINS += [
+        f"http://{host}:{port}"
+        for host in ('localhost', '127.0.0.1')
+        for port in (5173, 5174, 5175, 3000)
     ]
-    CSRF_TRUSTED_ORIGINS = CSRF_TRUSTED_ORIGINS + [
-        "http://10.119.170.28:5173",
-        "http://10.119.170.28:5174",
-    ]
+
+def configured_origins(name):
+    return list(dict.fromkeys(_DEFAULT_FRONTEND_ORIGINS + [
+        origin.strip().rstrip('/')
+        for origin in os.environ.get(name, '').split(',') if origin.strip()
+    ]))
+
+CORS_ALLOWED_ORIGINS = configured_origins('CORS_ALLOWED_ORIGINS')
+CSRF_TRUSTED_ORIGINS = configured_origins('CSRF_TRUSTED_ORIGINS')
+CORS_ALLOWED_ORIGIN_REGEXES = []
 
 from corsheaders.defaults import default_headers
 CORS_ALLOW_HEADERS = list(default_headers) + [
