@@ -120,3 +120,14 @@ are preserved.
 
 Validation: database-backed registration tests include expired verified records
 and a fresh verified record.
+
+## 11. Frontend dependency security
+
+Compatible lockfile updates remove the reported vulnerable Vite, redirect,
+source-map, selector-parser and validation-library versions. A targeted gRPC
+override updates Firebase's vulnerable transitive dependency without downgrading
+Firebase or changing the application framework.
+
+Validation: npm audit reports zero vulnerabilities for both frontends after the
+updates. Both production builds pass. These checks reflect the registry advisories
+available during this review and do not guarantee that dependencies have no flaws.
