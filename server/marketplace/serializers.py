@@ -521,6 +521,14 @@ class HandoverSessionSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        user = getattr(self.context.get('request'), 'user', None)
+        if not user or not user.is_authenticated or user.id != instance.offer.listing.seller_id:
+            data['token'] = None
+            data['pin_code'] = None
+        return data
+
     def get_is_completed(self, obj):
         return obj.status == 'USED' or (obj.offer and obj.offer.status == 'COMPLETED') or bool(obj.completed_at)
 
@@ -574,7 +582,7 @@ class OfferSerializer(serializers.ModelSerializer):
         if obj.status == 'ACCEPTED':
             session = obj.handover_sessions.filter(status='ACTIVE', expires_at__gt=timezone.now()).first()
             if session:
-                return HandoverSessionSerializer(session).data
+                return HandoverSessionSerializer(session, context=self.context).data
         return None
 
 

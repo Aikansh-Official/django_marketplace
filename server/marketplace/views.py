@@ -1,5 +1,6 @@
 import logging
 import random
+import secrets
 import datetime
 import django
 from django.conf import settings
@@ -800,7 +801,7 @@ class CreateOfferView(APIView):
             }
         )
 
-        serializer = OfferSerializer(offer)
+        serializer = OfferSerializer(offer, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -818,7 +819,7 @@ class ListingOffersView(APIView):
             return Response({'error': 'Only the seller can view incoming requests.'}, status=status.HTTP_403_FORBIDDEN)
 
         offers = Offer.objects.filter(listing=listing).select_related('buyer', 'listing').order_by('-created_at')
-        serializer = OfferSerializer(offers, many=True)
+        serializer = OfferSerializer(offers, many=True, context={'request': request})
         return Response(serializer.data)
 
 
@@ -930,7 +931,7 @@ class RespondOfferView(APIView):
                 }
             )
 
-        serializer = OfferSerializer(offer)
+        serializer = OfferSerializer(offer, context={'request': request})
         return Response(serializer.data)
 
 
@@ -997,7 +998,7 @@ class BuyerCounterRespondView(APIView):
                 link=f"/profile?tab=my-sales&offer={offer.id}"
             )
 
-        return Response(OfferSerializer(offer).data)
+        return Response(OfferSerializer(offer, context={'request': request}).data)
 
 
 class ReviewCreateView(APIView):
@@ -2033,7 +2034,7 @@ class GenerateHandoverQRView(APIView):
         if not session:
             return Response({'error': 'No handover session found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = HandoverSessionSerializer(session)
+        serializer = HandoverSessionSerializer(session, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, pk):
@@ -2055,7 +2056,7 @@ class GenerateHandoverQRView(APIView):
         HandoverSession.objects.filter(offer=offer, status='ACTIVE').update(status='EXPIRED')
 
         # Generate a unique 6-digit pin and configurable TTL
-        pin_code = f"{random.randint(100000, 999999)}"
+        pin_code = str(100000 + secrets.randbelow(900000))
         setting_expiry = PlatformSetting.objects.filter(key='handover_qr_expiry_minutes').first()
         expiry_minutes = int(setting_expiry.value) if (setting_expiry and setting_expiry.value.isdigit()) else 30
         expires_at = timezone.now() + datetime.timedelta(minutes=expiry_minutes)
@@ -2086,13 +2087,15 @@ class GenerateHandoverQRView(APIView):
             }
         )
 
-        serializer = HandoverSessionSerializer(session)
+        serializer = HandoverSessionSerializer(session, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class VerifyHandoverView(APIView):
     """Buyer scans QR or submits 6-digit PIN to verify handover details before final confirmation."""
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'handover'
 
     def post(self, request):
         token = request.data.get('token', '').strip()
@@ -2103,10 +2106,11 @@ class VerifyHandoverView(APIView):
 
         session = None
         if token:
-            session = HandoverSession.objects.select_related('offer', 'offer__listing', 'offer__listing__seller', 'offer__buyer').filter(token=token).first()
+            session = HandoverSession.objects.select_related('offer', 'offer__listing', 'offer__listing__seller', 'offer__buyer').filter(token=token, offer__buyer=request.user).first()
         elif pin_code:
             session = HandoverSession.objects.select_related('offer', 'offer__listing', 'offer__listing__seller', 'offer__buyer').filter(
                 pin_code=pin_code,
+                offer__buyer=request.user,
                 status='ACTIVE',
                 expires_at__gt=timezone.now()
             ).first()
@@ -2174,6 +2178,9 @@ class ConfirmHandoverView(APIView):
 
             offer = session.offer
             listing = offer.listing
+
+            if offer.status != 'ACCEPTED' or listing.status != 'PENDING':
+                return Response({'error': 'This deal is no longer active.'}, status=status.HTTP_400_BAD_REQUEST)
 
             # 1. Update HandoverSession
             session.status = 'USED'

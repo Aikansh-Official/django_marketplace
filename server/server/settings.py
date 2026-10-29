@@ -266,6 +266,7 @@ REST_FRAMEWORK = {
         'login': '100/minute' if DEBUG else '10/minute',
         'password_reset': '30/hour' if DEBUG else '5/hour',
         'image_upload': '200/hour' if DEBUG else '20/hour',
+        'handover': '10/minute',
     }
 }
 

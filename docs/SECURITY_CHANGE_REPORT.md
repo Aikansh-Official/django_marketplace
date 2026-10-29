@@ -71,3 +71,15 @@ Cloudinary deletion also checks the exact account and listing folder.
 Validation: traversal, encoded traversal, Windows drive paths, non-image files,
 private assets and foreign cloud accounts are rejected; existing local listing
 URLs and the configured Cloudinary listing format remain accepted.
+
+## 7. Handover verification
+
+Offer and handover-status responses exposed the QR token and PIN to buyers,
+allowing completion without receiving the seller's code. Secrets now appear only
+in seller responses; buyers still receive status information. PIN lookup is scoped
+to the intended buyer and rate-limited. PINs use cryptographic randomness, and
+confirmation rechecks that the offer and listing still represent an active deal.
+
+Validation: serializer tests preserve seller secrets and redact them for buyers
+and unrelated users while retaining status fields. Database transaction behavior
+is checked separately; production physical handover is not part of this review.

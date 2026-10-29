@@ -7,6 +7,7 @@ from marketplace.views import ListingListCreateView
 from django.test import override_settings
 from rest_framework.exceptions import ValidationError
 from marketplace.media_paths import local_media_path, validate_listing_image_url
+from marketplace.serializers import HandoverSessionSerializer
 
 
 class ListingCacheSecurityTests(SimpleTestCase):
@@ -51,3 +52,16 @@ class MediaPathSecurityTests(SimpleTestCase):
         for url in ('/media/listings/a.webp', 'http://localhost:8000/media/listings/a.jpg',
                     'https://res.cloudinary.com/test-cloud/image/upload/v123/campxchange/listings/a.webp'):
             self.assertEqual(validate_listing_image_url(url), url)
+
+
+class HandoverSecretSecurityTests(SimpleTestCase):
+    def test_only_seller_sees_handover_secrets(self):
+        session = SimpleNamespace(offer=SimpleNamespace(listing=SimpleNamespace(seller_id='seller')))
+        for identity, allowed in [('seller', True), ('buyer', False), ('outsider', False)]:
+            request = SimpleNamespace(user=SimpleNamespace(id=identity, is_authenticated=True))
+            with patch('rest_framework.serializers.ModelSerializer.to_representation',
+                       return_value={'token': 'secret-token', 'pin_code': '123456', 'status': 'ACTIVE'}):
+                data = HandoverSessionSerializer(context={'request': request}).to_representation(session)
+            self.assertEqual(data['token'], 'secret-token' if allowed else None)
+            self.assertEqual(data['pin_code'], '123456' if allowed else None)
+            self.assertEqual(data['status'], 'ACTIVE')
