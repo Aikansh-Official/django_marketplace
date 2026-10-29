@@ -47,3 +47,15 @@ Validation: tests cover valid web/Android sessions, cross-platform claims, missi
 claims, revoked sessions and suspended accounts. Legacy tokens without session
 claims require signing in again. Refresh-token replay within an otherwise active
 session remains a limitation until persistent token-family tracking is introduced.
+
+## 5. Cookie request forgery protection
+
+Cookie-authenticated writes and cookie-only refresh now enforce Django CSRF
+validation. Both frontends fetch a CSRF token for writes without a bearer token;
+bearer requests used by the web and Android clients remain supported. The student
+client's refresh request now also sends the configured application header,
+preventing refresh failures when that header is required by the server.
+
+Validation: tests reject an unprotected cookie write, accept a matching CSRF token,
+and preserve bearer authentication. A no-cache CSRF bootstrap endpoint supports
+browser clients hosted separately from the API.

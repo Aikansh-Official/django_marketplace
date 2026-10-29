@@ -1,4 +1,5 @@
 from django.urls import path
+from .csrf import csrf_token
 from .views import (
     RegisterView, UserListView, UserProfileView, CheckUsernameView,
     CheckPhoneView, CheckEmailView, CheckAvailabilityView,
@@ -13,6 +14,7 @@ from .views import (
 )
 
 urlpatterns = [
+    path('csrf/', csrf_token, name='csrf_token'),
     path('send-otp/', SendOTPView.as_view(), name='send_otp'),
     path('verify-otp/', VerifyOTPView.as_view(), name='verify_otp'),
     path('register/', RegisterView.as_view(), name='auth_register'),

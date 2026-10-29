@@ -12,7 +12,7 @@ const api = axios.create({
 
 // Request interceptor: attach token & app security key
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     config.headers = config.headers || {};
 
     const appSecurityKey = import.meta.env.VITE_APP_SECURITY_KEY;
@@ -26,6 +26,12 @@ api.interceptors.request.use(
     const token = localStorage.getItem('access');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    } else if (!['get', 'head', 'options'].includes((config.method || 'get').toLowerCase())) {
+      const { data } = await axios.get(`${API_BASE}/auth/csrf/`, {
+        withCredentials: true,
+        headers: appSecurityKey ? { 'X-App-Security-Key': appSecurityKey } : {},
+      });
+      config.headers['X-CSRFToken'] = data.csrfToken;
     }
 
     return config;
@@ -127,7 +133,10 @@ api.interceptors.response.use(
       try {
         const refreshRes = await axios.post(`${API_BASE}/auth/token/refresh/`, {
           refresh: refreshToken,
-        });
+        }, { headers: {
+          'X-Client-Type': 'web',
+          ...(import.meta.env.VITE_APP_SECURITY_KEY ? { 'X-App-Security-Key': import.meta.env.VITE_APP_SECURITY_KEY } : {}),
+        } });
 
         const newAccess = refreshRes.data.access;
         localStorage.setItem('access', newAccess);

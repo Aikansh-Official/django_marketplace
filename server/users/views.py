@@ -529,6 +529,9 @@ class GoogleLoginView(APIView):
 class CustomTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
         refresh_cookie_name = getattr(settings, 'SIMPLE_JWT', {}).get('AUTH_COOKIE_REFRESH', 'refresh_token')
+        if not request.data.get('refresh') and request.COOKIES.get(refresh_cookie_name):
+            from rest_framework.authentication import SessionAuthentication
+            SessionAuthentication().enforce_csrf(request)
         
         raw_refresh = request.data.get('refresh') or request.COOKIES.get(refresh_cookie_name)
         if not raw_refresh:

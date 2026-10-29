@@ -13,7 +13,7 @@ export const api = axios.create({
 });
 
 // Request interceptor: attach security key and bearer token
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(async (config) => {
   config.headers = config.headers || {};
 
   const appSecurityKey = import.meta.env.VITE_APP_SECURITY_KEY;
@@ -24,6 +24,12 @@ api.interceptors.request.use((config) => {
   const token = localStorage.getItem('admin_access');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  } else if (!['get', 'head', 'options'].includes((config.method || 'get').toLowerCase())) {
+    const { data } = await axios.get(`${API_BASE}/auth/csrf/`, {
+      withCredentials: true,
+      headers: appSecurityKey ? { 'X-App-Security-Key': appSecurityKey } : {},
+    });
+    config.headers['X-CSRFToken'] = data.csrfToken;
   }
 
   return config;

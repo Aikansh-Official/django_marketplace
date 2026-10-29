@@ -5,6 +5,11 @@ from users.serializers import AdminUserUpdateSerializer
 from users.views import UserAdminDetailView
 from users.session_security import require_active_session, revoke_user_sessions
 from rest_framework.exceptions import AuthenticationFailed
+from unittest.mock import patch
+from django.test import RequestFactory
+from django.middleware.csrf import get_token
+from rest_framework.exceptions import PermissionDenied
+from users.authentication import CookieJWTAuthentication
 
 
 class StudentAdministrationSecurityTests(SimpleTestCase):
@@ -49,6 +54,33 @@ class SessionSecurityTests(SimpleTestCase):
         revoke_user_sessions(user)
         with self.assertRaises(AuthenticationFailed):
             require_active_session(user, {'client_type': 'web', 'session_id': 'web-id'})
+
+
+class CookieCsrfSecurityTests(SimpleTestCase):
+    def authenticate_request(self, request):
+        user = SimpleNamespace(is_active=True, web_session_id='valid-session')
+        auth = CookieJWTAuthentication()
+        with patch.object(auth, 'get_validated_token', return_value={
+            'client_type': 'web', 'session_id': 'valid-session',
+        }), patch.object(auth, 'get_user', return_value=user):
+            return auth.authenticate(request)
+
+    def test_cookie_write_requires_csrf(self):
+        request = RequestFactory().post('/api/auth/profile/')
+        request.COOKIES['access_token'] = 'token'
+        with self.assertRaises(PermissionDenied):
+            self.authenticate_request(request)
+
+    def test_cookie_write_accepts_matching_csrf_token(self):
+        request = RequestFactory().post('/api/auth/profile/')
+        request.COOKIES['access_token'] = 'token'
+        request.META['HTTP_X_CSRFTOKEN'] = get_token(request)
+        request.COOKIES['csrftoken'] = request.META['CSRF_COOKIE']
+        self.assertIsNotNone(self.authenticate_request(request))
+
+    def test_bearer_write_does_not_require_cookie_csrf(self):
+        request = RequestFactory().post('/api/auth/profile/', HTTP_AUTHORIZATION='Bearer token')
+        self.assertIsNotNone(self.authenticate_request(request))
 
     def test_suspended_user_is_rejected(self):
         user = SimpleNamespace(is_active=False, web_session_id='web-id')
