@@ -298,10 +298,10 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("A maximum of 4 images is allowed per listing.")
         from .media_security import extract_raw_source_from_secure_url
         from .media_paths import validate_listing_image_url
-        for image in value or []:
-            if not is_base64_image(image):
-                validate_listing_image_url(extract_raw_source_from_secure_url(image))
-        return value
+        from .image_validation import normalized_data_uri
+        return [normalized_data_uri(image) if is_base64_image(image)
+                else validate_listing_image_url(extract_raw_source_from_secure_url(image))
+                for image in value or []]
 
     def validate(self, attrs):
         transaction_type = attrs.get('transaction_type', getattr(self.instance, 'transaction_type', 'SELL'))

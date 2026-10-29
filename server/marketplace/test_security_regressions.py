@@ -8,6 +8,10 @@ from django.test import override_settings
 from rest_framework.exceptions import ValidationError
 from marketplace.media_paths import local_media_path, validate_listing_image_url
 from marketplace.serializers import HandoverSessionSerializer
+from marketplace.image_validation import normalize_image
+from django.core.files.uploadedfile import SimpleUploadedFile
+import io
+from PIL import Image
 
 
 class ListingCacheSecurityTests(SimpleTestCase):
@@ -65,3 +69,22 @@ class HandoverSecretSecurityTests(SimpleTestCase):
             self.assertEqual(data['token'], 'secret-token' if allowed else None)
             self.assertEqual(data['pin_code'], '123456' if allowed else None)
             self.assertEqual(data['status'], 'ACTIVE')
+
+
+class ImageContentSecurityTests(SimpleTestCase):
+    def test_fake_image_and_svg_are_rejected(self):
+        for body in (b'<html><script>alert(1)</script></html>', b'<svg onload="alert(1)"/>'):
+            with self.assertRaises(ValidationError):
+                normalize_image(SimpleUploadedFile('photo.png', body, content_type='image/png'))
+
+    def test_valid_image_has_safe_extension_and_no_appended_payload(self):
+        stream = io.BytesIO()
+        Image.new('RGB', (3, 3)).save(stream, format='PNG')
+        result = normalize_image(SimpleUploadedFile('photo.html', stream.getvalue() + b'<script>attack</script>'))
+        self.assertEqual(result.name, 'image.webp')
+        self.assertEqual(result.content_type, 'image/webp')
+        self.assertNotIn(b'<script>', result.read())
+
+    def test_invalid_base64_rejected(self):
+        with self.assertRaises(ValidationError):
+            normalize_image('data:image/png;base64,!!!')

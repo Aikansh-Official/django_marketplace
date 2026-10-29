@@ -83,3 +83,16 @@ confirmation rechecks that the offer and listing still represent an active deal.
 Validation: serializer tests preserve seller secrets and redact them for buyers
 and unrelated users while retaining status fields. Database transaction behavior
 is checked separately; production physical handover is not part of this review.
+
+## 8. Image upload content validation
+
+Uploads previously trusted the supplied MIME type and filename, including during
+local fallback. Multipart listing/banner images and base64 listing/profile images
+are now decoded as bounded raster images and re-encoded as WebP. This removes
+active appended content and prevents HTML/SVG storage disguised as an image.
+Images are limited to 5 MB and 16 million pixels. Private document upload failures
+now return an error instead of storing unverified raw input. Profile image URLs
+cannot reference private document assets.
+
+Validation: tests reject disguised HTML, SVG and invalid base64, and verify that
+a valid image keeps working with a safe filename and without appended script data.

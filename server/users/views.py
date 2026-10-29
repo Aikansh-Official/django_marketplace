@@ -985,14 +985,10 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     def perform_update(self, serializer):
         from marketplace.cloudinary_upload import upload_user_image_to_cloudinary
         raw_photo = serializer.validated_data.get('profile_photo', None) or serializer.validated_data.get('profile_picture_url', None)
-        if raw_photo and isinstance(raw_photo, str):
-            if raw_photo.startswith('data:image/') or (len(raw_photo) > 100 and not raw_photo.startswith('http')):
-                cloudinary_url = upload_user_image_to_cloudinary(raw_photo, folder="campxchange/profiles")
-                serializer.validated_data['profile_photo'] = cloudinary_url
-                serializer.validated_data['profile_picture_url'] = cloudinary_url
-            elif raw_photo.startswith('http'):
-                serializer.validated_data['profile_photo'] = raw_photo
-                serializer.validated_data['profile_picture_url'] = raw_photo
+        if raw_photo:
+            uploaded_photo = upload_user_image_to_cloudinary(raw_photo, folder="campxchange/profiles")
+            serializer.validated_data['profile_photo'] = uploaded_photo
+            serializer.validated_data['profile_picture_url'] = uploaded_photo
 
         user = serializer.save()
         try:
@@ -1160,16 +1156,10 @@ class CompleteIdVerificationView(APIView):
         if id_card_data and isinstance(id_card_data, dict):
             user.id_card_data = id_card_data
         profile_photo = request.data.get('profile_photo', None) or request.data.get('profile_picture_url', None)
-        if profile_photo and isinstance(profile_photo, str):
-            if profile_photo.startswith('data:image/') or (len(profile_photo) > 100 and not profile_photo.startswith('http')):
-                uploaded_photo = upload_user_image_to_cloudinary(
-                    profile_photo, folder="campxchange/profiles"
-                )
-                user.profile_photo = uploaded_photo
-                user.profile_picture_url = uploaded_photo
-            elif profile_photo.startswith('http'):
-                user.profile_photo = profile_photo
-                user.profile_picture_url = profile_photo
+        if profile_photo:
+            uploaded_photo = upload_user_image_to_cloudinary(profile_photo, folder="campxchange/profiles")
+            user.profile_photo = uploaded_photo
+            user.profile_picture_url = uploaded_photo
         user.trust_score = user.calculate_trust_score()
         user.save()
 

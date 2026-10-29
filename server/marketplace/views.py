@@ -684,6 +684,9 @@ class UploadImageView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        from .image_validation import normalize_image
+        image_file = normalize_image(image_file)
+
         try:
             result = upload_image_to_cloudinary(image_file)
             uploaded_url = result.get('url')
@@ -3164,6 +3167,8 @@ class AdminBannerListCreateView(APIView):
         image_file = request.FILES.get('image') or request.FILES.get('file')
 
         if image_file:
+            from .image_validation import normalize_image
+            image_file = normalize_image(image_file)
             try:
                 upload_res = upload_image_to_cloudinary(image_file, folder="campxchange/banners")
                 data['image_url'] = upload_res['url']
@@ -3239,6 +3244,8 @@ class AdminBannerDetailView(APIView):
         old_image_url = banner.image_url
 
         if image_file:
+            from .image_validation import normalize_image
+            image_file = normalize_image(image_file)
             try:
                 upload_res = upload_image_to_cloudinary(image_file, folder="campxchange/banners")
                 data['image_url'] = upload_res['url']
