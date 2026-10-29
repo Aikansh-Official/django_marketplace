@@ -1171,6 +1171,9 @@ class ChatMessageListCreateView(APIView):
         except (Listing.DoesNotExist, User.DoesNotExist, Exception):
             return Response({'error': 'Listing or peer user not found.'}, status=status.HTTP_404_NOT_FOUND)
 
+        if listing.seller_id not in (request.user.id, peer.id) or request.user.id == peer.id:
+            return Response({'error': 'A listing conversation must include its seller.'}, status=status.HTTP_403_FORBIDDEN)
+
         messages = ChatMessage.objects.filter(
             listing=listing
         ).filter(
@@ -1220,9 +1223,14 @@ class ChatMessageListCreateView(APIView):
         except (Listing.DoesNotExist, User.DoesNotExist, Exception):
             return Response({'error': 'Listing or peer user not found.'}, status=status.HTTP_404_NOT_FOUND)
 
+        if listing.seller_id not in (request.user.id, peer.id):
+            return Response({'error': 'A listing conversation must include its seller.'}, status=status.HTTP_403_FORBIDDEN)
+
         message_text = request.data.get('message', '').strip()
         if not message_text:
             return Response({'error': 'Message cannot be empty.'}, status=status.HTTP_400_BAD_REQUEST)
+        if len(message_text) > 5000:
+            return Response({'error': 'Message must be at most 5000 characters.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if request.user == peer:
             return Response({'error': 'Cannot send messages to yourself.'}, status=status.HTTP_400_BAD_REQUEST)

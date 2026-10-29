@@ -203,6 +203,11 @@ class ListingSerializer(serializers.ModelSerializer):
             completed = obj.offers.filter(status='COMPLETED').order_by('-created_at').first()
             if completed:
                 request = self.context.get('request')
+                user = getattr(request, 'user', None)
+                if not user or not user.is_authenticated or not (
+                    user.id in (obj.seller_id, completed.buyer_id) or user.is_staff
+                ):
+                    return None
                 from .media_security import generate_secure_image_url
                 raw_photo = getattr(completed.buyer, 'profile_photo', None) or getattr(completed.buyer, 'profile_picture_url', None)
                 return {

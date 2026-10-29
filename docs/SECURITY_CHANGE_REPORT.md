@@ -140,3 +140,13 @@ or descriptions from becoming formulas when an administrator opens an export.
 
 Validation: Node tests cover formula prefixes, whitespace bypasses, quoted text,
 ordinary numbers and empty cells.
+
+## 13. Conversation and completed-trade privacy
+
+Listing chat now requires the seller to be one of the two participants, preventing
+arbitrary peer profile lookup and messages under unrelated listings. Messages have
+a 5,000-character bound. Completed-trade buyer details are visible only to that
+trade's participants and staff, rather than every listing visitor.
+
+Validation: database-backed tests reject unrelated peer access and preserve the
+normal buyer-to-seller conversation response.
