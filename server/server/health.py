@@ -2,9 +2,23 @@ from django.http import JsonResponse, HttpResponse
 from django.db import connection
 from django.conf import settings
 from django.utils import timezone
+from django.views.decorators.http import require_safe
 import logging
 
 logger = logging.getLogger(__name__)
+
+@require_safe
+def ready_check(request):
+    """Process readiness only: no database, user, storage, or business work."""
+    from .render_heartbeat import heartbeat_status
+    response = JsonResponse({
+        'ready': True,
+        'service': 'CampXChange API',
+        'heartbeat': heartbeat_status(),
+    })
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    return response
+
 
 def health_check(request):
     """

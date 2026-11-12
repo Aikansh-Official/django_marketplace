@@ -24,7 +24,7 @@ class DataSecurityMiddleware:
             if (
                 request.method == 'OPTIONS' or
                 path.startswith('/api/media/') or
-                path in ('/api/health/', '/health/', '/api/ping/', '/ping/', '/api/health', '/health', '/api/ping', '/ping', '/') or
+                path in ('/api/health/', '/health/', '/api/ping/', '/ping/', '/api/health', '/health', '/api/ping', '/ping', '/api/ready/', '/api/ready', '/') or
                 is_testing
             ):
                 return self.get_response(request)

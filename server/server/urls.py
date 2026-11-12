@@ -18,13 +18,14 @@ from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
 from django.views.static import serve
-from server.health import health_check, ping
+from server.health import health_check, ping, ready_check
 from marketplace.media_security import secure_image_proxy_view
 
 urlpatterns = [
     re_path(r'^$', ping, name='root-ping'),
     re_path(r'^ping/?$', ping, name='ping'),
     re_path(r'^api/ping/?$', ping, name='api-ping'),
+    re_path(r'^api/ready/?$', ready_check, name='api-ready-check'),
     re_path(r'^health/?$', health_check, name='health-check'),
     re_path(r'^api/health/?$', health_check, name='api-health-check'),
 
