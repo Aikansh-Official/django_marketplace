@@ -19,11 +19,12 @@ if (!firebaseConfig.apiKey) {
 }
 
 // Initialize Firebase app singleton
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+const isConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId);
+const app = isConfigured ? (getApps().length > 0 ? getApp() : initializeApp(firebaseConfig)) : null;
 
 // Initialize Analytics if supported
 let analytics = null;
-isAnalyticsSupported().then((supported) => {
+if (app) isAnalyticsSupported().then((supported) => {
   if (supported) {
     analytics = getAnalytics(app);
   }
@@ -32,7 +33,7 @@ isAnalyticsSupported().then((supported) => {
 export { analytics };
 
 // Initialize Firebase Authentication with Google Provider
-export const auth = getAuth(app);
+export const auth = app ? getAuth(app) : null;
 export const googleProvider = new GoogleAuthProvider();
 
 googleProvider.addScope('email');
@@ -44,7 +45,7 @@ googleProvider.setCustomParameters({
 // Safe async getter for Firebase Cloud Messaging
 export const getFirebaseMessaging = async () => {
   try {
-    if (typeof window !== "undefined" && 'serviceWorker' in navigator && 'Notification' in window) {
+    if (app && typeof window !== "undefined" && 'serviceWorker' in navigator && 'Notification' in window) {
       const { getMessaging, isSupported } = await import("firebase/messaging");
       const supported = await isSupported();
       if (supported) {

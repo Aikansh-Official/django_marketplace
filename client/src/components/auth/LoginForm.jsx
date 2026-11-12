@@ -38,7 +38,10 @@ export default function LoginForm({ onSwitch, onForgotPassword, onSuccess }) {
       window.location.reload();
     } catch (error) {
       console.error(error);
-      toast.error('Login failed. Please check your credentials.');
+      const serviceUnavailable = !error.response || error.response.status >= 500;
+      toast.error(serviceUnavailable
+        ? 'Sign-in is temporarily unavailable. Please try again shortly.'
+        : 'Login failed. Please check your credentials.');
     }
   };
 
@@ -46,6 +49,10 @@ export default function LoginForm({ onSwitch, onForgotPassword, onSuccess }) {
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true);
     try {
+      if (!auth) {
+        toast.error('Google sign-in is unavailable until Firebase is configured.');
+        return;
+      }
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
 
