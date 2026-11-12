@@ -17,8 +17,11 @@ def health_check(request):
 
     try:
         connection.ensure_connection()
-    except Exception as e:
-        logger.error(f"Database health check failed: {e}", exc_info=True)
+        # A cached client can exist even after the database becomes unreachable.
+        connection.database.command('ping')
+    except Exception:
+        # Driver errors can contain connection details; keep diagnostics private.
+        logger.error("Database health check failed")
         db_status = 'unhealthy'
         status_code = 503
 
