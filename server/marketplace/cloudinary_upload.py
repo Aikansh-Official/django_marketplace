@@ -17,7 +17,7 @@ def configure_cloudinary():
     )
 
 
-def upload_image_to_cloudinary(image_file, folder="campxchange/listings"):
+def upload_image_to_cloudinary(image_file, folder="campxchange/listings", owner_id=None):
     """
     Upload an image file to Cloudinary in .webp format.
 
@@ -28,6 +28,9 @@ def upload_image_to_cloudinary(image_file, folder="campxchange/listings"):
     Returns:
         dict with 'url' (secure URL) and 'public_id'
     """
+    from .mongodb_media import mongodb_media_enabled, store_image
+    if mongodb_media_enabled():
+        return store_image(image_file, folder=folder, owner_id=owner_id)
     configure_cloudinary()
 
     result = cloudinary.uploader.upload(
@@ -46,7 +49,7 @@ def upload_image_to_cloudinary(image_file, folder="campxchange/listings"):
     }
 
 
-def upload_base64_to_cloudinary(base64_data, folder="campxchange/listings"):
+def upload_base64_to_cloudinary(base64_data, folder="campxchange/listings", owner_id=None):
     """
     Upload a base64-encoded image string to Cloudinary in .webp format.
 
@@ -57,6 +60,9 @@ def upload_base64_to_cloudinary(base64_data, folder="campxchange/listings"):
     Returns:
         dict with 'url' (secure URL) and 'public_id'
     """
+    from .mongodb_media import mongodb_media_enabled, store_image
+    if mongodb_media_enabled():
+        return store_image(base64_data, folder=folder, owner_id=owner_id)
     configure_cloudinary()
 
     result = cloudinary.uploader.upload(
@@ -87,6 +93,15 @@ def upload_user_image_to_cloudinary(image_data, folder="campxchange/profiles", i
     from urllib.parse import urlsplit
     if not image_data:
         return None
+    from .mongodb_media import mongodb_media_enabled, store_image, is_mongodb_reference, get_image
+    if mongodb_media_enabled():
+        if is_mongodb_reference(image_data) and not is_private and 'id_cards' not in folder:
+            stored = get_image(image_data)
+            metadata = stored.metadata or {}
+            if not metadata.get('private', True) and metadata.get('folder') == 'campxchange/profiles':
+                return image_data
+            raise ValidationError('Please upload a new image for this profile or document.')
+        return store_image(image_data, folder=folder, private=is_private)['url']
     if is_url(image_data):
         parsed = urlsplit(image_data)
         cloud = settings.CLOUDINARY_CLOUD_NAME
@@ -172,6 +187,9 @@ def delete_image_from_cloudinary(image_url):
     """
     if not image_url or not isinstance(image_url, str):
         return False
+    from .mongodb_media import is_mongodb_reference, delete_image
+    if is_mongodb_reference(image_url):
+        return delete_image(image_url)
 
     # 1. Handle local media file fallback (e.g. /media/listings/...)
     try:

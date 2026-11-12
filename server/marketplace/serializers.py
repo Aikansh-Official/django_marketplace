@@ -304,9 +304,23 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
         from .media_security import extract_raw_source_from_secure_url
         from .media_paths import validate_listing_image_url
         from .image_validation import normalized_data_uri
-        return [normalized_data_uri(image) if is_base64_image(image)
-                else validate_listing_image_url(extract_raw_source_from_secure_url(image))
-                for image in value or []]
+        from .mongodb_media import is_mongodb_reference, validate_listing_reference
+        validated = []
+        for image in value or []:
+            if is_base64_image(image):
+                validated.append(normalized_data_uri(image))
+            else:
+                reference = validate_listing_image_url(extract_raw_source_from_secure_url(image))
+                if is_mongodb_reference(reference):
+                    request = self.context.get('request')
+                    user = getattr(request, 'user', None)
+                    can_edit = bool(user and user.is_authenticated and self.instance and (
+                        user.pk == self.instance.seller_id or user.is_superuser
+                        or user.has_admin_permission('listings')))
+                    retained = bool(can_edit and self.instance.images.filter(image_url=reference).exists())
+                    validate_listing_reference(reference, user, allow_existing=retained)
+                validated.append(reference)
+        return validated
 
     def validate(self, attrs):
         transaction_type = attrs.get('transaction_type', getattr(self.instance, 'transaction_type', 'SELL'))
@@ -342,6 +356,11 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
         - If it's a regular URL -> unwrap secure proxy to canonical URL and return
         """
         if is_base64_image(img_data):
+            from .mongodb_media import mongodb_media_enabled
+            if mongodb_media_enabled():
+                request = self.context.get('request')
+                user = getattr(request, 'user', None)
+                return upload_base64_to_cloudinary(img_data, owner_id=user.pk if user else None)['url']
             try:
                 result = upload_base64_to_cloudinary(img_data)
                 return result['url']
@@ -413,11 +432,15 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
         if not validated_data.get('contact_whatsapp') and getattr(seller, 'phone_number', None):
             validated_data['contact_whatsapp'] = seller.phone_number
 
+        from .mongodb_media import mongodb_media_enabled
+        # Do not create a listing that appears successful if durable storage fails.
+        processed_images = ([self._process_image(image) for image in uploaded_images]
+                            if mongodb_media_enabled() else None)
         listing = Listing.objects.create(**validated_data)
 
         # Process and create images
         for index, img_data in enumerate(uploaded_images):
-            image_url = self._process_image(img_data)
+            image_url = processed_images[index] if processed_images is not None else self._process_image(img_data)
             ListingImage.objects.create(
                 listing=listing,
                 image_url=image_url,
@@ -898,6 +921,14 @@ class ChatMessageSerializer(serializers.ModelSerializer):
 class BannerSerializer(serializers.ModelSerializer):
     image = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        from .mongodb_media import is_mongodb_reference
+        from .media_security import generate_secure_image_url
+        if is_mongodb_reference(data.get('image_url')):
+            data['image_url'] = generate_secure_image_url(data['image_url'])
+        return data
+
     class Meta:
         model = Banner
         fields = [
@@ -927,6 +958,12 @@ class BannerSerializer(serializers.ModelSerializer):
         image_input = attrs.pop('image', None)
         if image_input:
             if is_base64_image(image_input):
+                from .mongodb_media import mongodb_media_enabled
+                if mongodb_media_enabled():
+                    attrs['image_url'] = upload_base64_to_cloudinary(
+                        image_input, folder='campxchange/banners')['url']
+                    image_input = None
+            if is_base64_image(image_input):
                 try:
                     result = upload_base64_to_cloudinary(image_input, folder="campxchange/banners")
                     attrs['image_url'] = result['url']
@@ -949,6 +986,15 @@ class BannerSerializer(serializers.ModelSerializer):
             elif is_url(image_input):
                 attrs['image_url'] = image_input
 
+        from .mongodb_media import is_mongodb_reference, get_image
+        from .media_security import extract_raw_source_from_secure_url
+        if attrs.get('image_url'):
+            raw_url = extract_raw_source_from_secure_url(attrs['image_url'])
+            if is_mongodb_reference(raw_url):
+                metadata = get_image(raw_url).metadata or {}
+                if metadata.get('private', True) or metadata.get('folder') != 'campxchange/banners':
+                    raise serializers.ValidationError({'image': 'Use an uploaded banner image.'})
+                attrs['image_url'] = raw_url
         # Verify image_url is populated either from attrs or existing instance
         if not attrs.get('image_url') and not (self.instance and self.instance.image_url):
             raise serializers.ValidationError({'image': 'Banner image is required. Please upload an image or provide an image URL.'})

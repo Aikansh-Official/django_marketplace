@@ -119,6 +119,11 @@ def generate_secure_image_url(source_url, ttl_seconds=1800, request=None):
 
     rel_path = f"/api/media/secure-image/?src={src_encoded}&exp={exp}&sig={signature}"
 
+    # MongoDB images use the Pages same-origin proxy, including private-image cookies.
+    from .mongodb_media import is_mongodb_reference
+    if is_mongodb_reference(clean_url):
+        return rel_path
+
     if request:
         try:
             return request.build_absolute_uri(rel_path)
@@ -271,6 +276,26 @@ def secure_image_proxy_view(request):
         resp['Cache-Control'] = 'no-cache, no-store, must-revalidate'
         resp['Access-Control-Allow-Origin'] = '*'
         return resp
+
+    from .mongodb_media import is_mongodb_reference, get_image, can_read_private_image, ImageStorageUnavailable
+    if is_mongodb_reference(decoded_url):
+        from gridfs.errors import NoFile
+        from pymongo.errors import PyMongoError
+        try:
+            stored_image = get_image(decoded_url)
+            metadata = stored_image.metadata or {}
+            if metadata.get('private', True) and not can_read_private_image(request, decoded_url):
+                response = HttpResponseForbidden('Private image access denied.')
+            else:
+                response = HttpResponse(stored_image.read(), content_type='image/webp')
+                response['Content-Disposition'] = 'inline'
+        except NoFile:
+            response = HttpResponse('Image not found.', status=404)
+        except (ImageStorageUnavailable, PyMongoError):
+            response = HttpResponse('Image storage is unavailable.', status=503)
+        response['Cache-Control'] = 'no-store'
+        response['X-Content-Type-Options'] = 'nosniff'
+        return response
 
     # Check cache first (locmem / Redis cache)
     cache_key = f"cxc_sec_img_{hashlib.md5(decoded_url.encode()).hexdigest()}"

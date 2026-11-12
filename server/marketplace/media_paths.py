@@ -20,6 +20,9 @@ def local_media_path(url):
 
 def validate_listing_image_url(url):
     """Listing input cannot name private documents or arbitrary server files."""
+    from .mongodb_media import is_mongodb_reference
+    if is_mongodb_reference(url):
+        return url
     parsed = urlsplit(url)
     path = unquote(parsed.path)
     if path.startswith('/media/listings/'):

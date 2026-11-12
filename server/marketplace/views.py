@@ -688,16 +688,26 @@ class UploadImageView(APIView):
         image_file = normalize_image(image_file)
 
         try:
-            result = upload_image_to_cloudinary(image_file)
+            from .mongodb_media import mongodb_media_enabled
+            result = (upload_image_to_cloudinary(image_file, owner_id=request.user.pk)
+                      if mongodb_media_enabled() else upload_image_to_cloudinary(image_file))
             uploaded_url = result.get('url')
             if not uploaded_url:
                 raise ValueError("Cloudinary upload failed to produce a valid URL")
+            if mongodb_media_enabled():
+                from .media_security import generate_secure_image_url
+                uploaded_url = generate_secure_image_url(uploaded_url, request=request)
             return Response({
                 'url': uploaded_url,
                 'image_url': uploaded_url,
                 'public_id': result.get('public_id', ''),
             }, status=status.HTTP_200_OK)
         except Exception as e:
+            from .mongodb_media import mongodb_media_enabled
+            if mongodb_media_enabled():
+                logger.error('Durable image upload failed')
+                return Response({'error': 'Image storage is unavailable. Please try again later.'},
+                                status=status.HTTP_503_SERVICE_UNAVAILABLE)
             # Fallback to local storage if Cloudinary fails or credentials mismatch
             try:
                 import uuid
@@ -3184,6 +3194,10 @@ class AdminBannerListCreateView(APIView):
                 upload_res = upload_image_to_cloudinary(image_file, folder="campxchange/banners")
                 data['image_url'] = upload_res['url']
             except Exception as e:
+                from .mongodb_media import mongodb_media_enabled
+                if mongodb_media_enabled():
+                    return Response({'error': 'Image storage is unavailable. Please try again later.'},
+                                    status=status.HTTP_503_SERVICE_UNAVAILABLE)
                 logger.error(f"Cloudinary banner upload failed: {e}")
                 try:
                     import uuid
@@ -3263,6 +3277,10 @@ class AdminBannerDetailView(APIView):
                 if old_image_url and old_image_url != upload_res['url']:
                     delete_image_from_cloudinary(old_image_url)
             except Exception as e:
+                from .mongodb_media import mongodb_media_enabled
+                if mongodb_media_enabled():
+                    return Response({'error': 'Image storage is unavailable. Please try again later.'},
+                                    status=status.HTTP_503_SERVICE_UNAVAILABLE)
                 logger.error(f"Cloudinary banner replacement failed: {e}")
                 try:
                     import uuid
