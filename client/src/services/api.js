@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { nextReadRetryDelay, prepareReadRequest, waitForReadRetry } from './readRetry';
 
 export const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -13,6 +14,7 @@ const api = axios.create({
 // Request interceptor: attach token & app security key
 api.interceptors.request.use(
   async (config) => {
+    prepareReadRequest(config);
     config.headers = config.headers || {};
 
     const appSecurityKey = import.meta.env.VITE_APP_SECURITY_KEY;
@@ -63,7 +65,7 @@ api.interceptors.response.use(
     const data = error.response?.data;
 
     // 1. Maintenance Mode (503)
-    if (status === 503 && (data?.maintenance_mode || data?.error)) {
+    if (status === 503 && data?.maintenance_mode) {
       window.dispatchEvent(
         new CustomEvent('platform-maintenance', {
           detail: {
@@ -73,6 +75,14 @@ api.interceptors.response.use(
         })
       );
       return Promise.reject(error);
+    }
+
+    // A sleeping free API may briefly return gateway errors. Replay only reads;
+    // submitting a listing, message, offer or login must never be duplicated.
+    const retryDelay = nextReadRetryDelay(error);
+    if (retryDelay !== null) {
+      await waitForReadRetry(retryDelay, originalRequest.signal);
+      return api(originalRequest);
     }
 
     // 2. Account Suspension / Ban (403 or specific payload)

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { toggleSavedItem, isItemSaved } from '../utils/savedStore';
@@ -29,6 +29,7 @@ export default function Home() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const listingsController = useRef(null);
 
   // Filters State
   const [selectedCategory, setSelectedCategory] = useState(() => searchParams.get('category') || 'ALL');
@@ -69,7 +70,11 @@ export default function Home() {
   }, []);
 
   // Fetch Listings with Filters & AbortController to cancel stale in-flight requests
-  const fetchListings = async (signal) => {
+  const fetchListings = async () => {
+    listingsController.current?.abort();
+    const controller = new AbortController();
+    listingsController.current = controller;
+    const { signal } = controller;
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -96,6 +101,7 @@ export default function Home() {
       if (!Array.isArray(response.data)) {
         throw new Error('Unexpected marketplace response');
       }
+      if (signal.aborted) return;
       setListings(response.data);
       setError(null);
     } catch (err) {
@@ -105,15 +111,14 @@ export default function Home() {
       console.error('Failed to fetch listings', err);
       setError('The marketplace service is unavailable. Please try again shortly.');
     } finally {
-      setLoading(false);
+      if (!signal.aborted) setLoading(false);
     }
   };
 
   useEffect(() => {
-    const controller = new AbortController();
-    fetchListings(controller.signal);
+    fetchListings();
     return () => {
-      controller.abort();
+      listingsController.current?.abort();
     };
   }, [selectedCategory, transactionType, conditionFilter, sortBy, searchQuery]);
 
