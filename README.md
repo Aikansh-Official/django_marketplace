@@ -55,6 +55,12 @@ Complete production-grade native Kotlin + Jetpack Compose architectural blueprin
 
 ---
 
+## Hosted personal project
+
+See [Cloudflare deployment status and setup](docs/CLOUDFLARE_DEPLOYMENT.md).
+The two React interfaces are published; the hosted backend/database connection and
+the three test-account journeys are still pending.
+
 ## 🚀 Quick Start
 
 ### 1. Django Backend
