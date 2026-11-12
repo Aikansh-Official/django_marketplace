@@ -3,11 +3,13 @@
 Please refer to the comprehensive server documentation and run guide located at:
 👉 **[`SERVER_ARCHITECTURE_AND_SETUP.md`](../SERVER_ARCHITECTURE_AND_SETUP.md)**
 
+For a personal cloud database, see [MongoDB Atlas setup](../docs/ATLAS_SETUP.md).
+
 ### Quick Start
 ```bash
 # 1. Activate Virtual Environment
+.\venv\Scripts\Activate.ps1    # On Windows, from the repository root
 cd server
-.\venv\Scripts\Activate.ps1    # On Windows
 
 # 2. Install dependencies
 pip install -r requirements.txt
