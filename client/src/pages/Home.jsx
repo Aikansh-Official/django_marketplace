@@ -93,6 +93,9 @@ export default function Home() {
         `/marketplace/listings/?${params.toString()}`,
         { signal }
       );
+      if (!Array.isArray(response.data)) {
+        throw new Error('Unexpected marketplace response');
+      }
       setListings(response.data);
       setError(null);
     } catch (err) {
@@ -100,7 +103,7 @@ export default function Home() {
         return; // Silently ignore cancelled requests
       }
       console.error('Failed to fetch listings', err);
-      setError('Unable to load listings. Please make sure the server is running.');
+      setError('The marketplace service is unavailable. Please try again shortly.');
     } finally {
       setLoading(false);
     }
@@ -292,7 +295,7 @@ export default function Home() {
           <div className="text-center py-12 bg-white rounded-md border border-red-200 p-6 shadow-sm">
             <p className="text-red-600 font-bold text-sm mb-3">{error}</p>
             <button
-              onClick={fetchListings}
+              onClick={() => fetchListings()}
               className="bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold py-2 px-4 rounded-md transition-all shadow-sm"
             >
               Retry
