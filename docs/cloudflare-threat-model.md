@@ -2,8 +2,8 @@
 
 This model covers the new public Pages-to-Django boundary. Credentials, private media
 and account integrity depend on the existing Django checks and correct backend
-configuration. The proxy currently returns unavailable responses because no backend
-is configured. No live authenticated deployment is asserted.
+configuration. The personal backend is connected and 76 role-flow integration
+checks have passed. This focused model does not certify the whole application.
 
 ## Scope and assumptions
 
@@ -12,8 +12,10 @@ entry points and the Django settings/authentication boundary. Assumptions follow
 user's request for a public personal class project with separate admin, buyer and
 seller test accounts. The user requested no additional questions, so unresolved
 configuration is recorded rather than inferred as working. The original/team
-repositories and unrelated hosted services are outside scope. Backend credentials,
-media/email configuration and outbound database access remain unresolved.
+repositories and unrelated hosted services are outside scope. The scoped Atlas user,
+hosted network access and MongoDB media configuration are deployed. Email, external
+identity, push and AI verification providers remain unconfigured and outside the
+successful password-login acceptance evidence.
 
 ## System model
 
@@ -33,8 +35,9 @@ checks sessions (`users/session_security.py`), and uses MongoDB configured in
   CSRF, validation and throttling.
 - Django → Atlas: database records and credentials through the existing TLS-enabled
   MongoDB driver. Least-privilege database user and IP restrictions must be configured.
-- Django → Cloudinary/Resend: uploads and email through existing integrations.
-  These are currently unconfigured locally; successful calls are not claimed.
+- Django → Atlas GridFS: normalized images in the personal application database;
+  signed gateway reads additionally authorize private documents. Cloudinary remains
+  an optional alternative. Resend email is not configured and delivery is not claimed.
 - Build/source → Pages: only generated frontend assets are uploaded; server credentials
   and ignored local configuration are excluded. Deployment access is privileged.
 

@@ -58,8 +58,9 @@ Complete production-grade native Kotlin + Jetpack Compose architectural blueprin
 ## Hosted personal project
 
 See [Cloudflare deployment status and setup](docs/CLOUDFLARE_DEPLOYMENT.md).
-The two React interfaces are published; the hosted backend/database connection and
-the three test-account journeys are still pending.
+The React interfaces connect to Django on Render and the personal MongoDB Atlas
+database. Admin, buyer and seller test-account flows have passed live API checks.
+The deployment guide records evidence, setup commands and provider limitations.
 
 ## 🚀 Quick Start
 

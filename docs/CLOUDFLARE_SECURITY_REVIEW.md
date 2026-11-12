@@ -6,9 +6,11 @@ Scope: changes from `b87055c` for the personal Pages deployment. This is a focus
 review of the new proxy, build packaging, API base and touched sign-in/listing paths,
 not a new full audit of the application. No confirmed new exploitable vulnerability
 was found in that scope. Recommendation: conditional for frontend publication;
-**do not accept this as a working full-stack release** until live database, authentication,
-authorization and upload checks pass. Four mock-based proxy tests do not establish
-end-to-end security. Critical/high/medium/low confirmed new findings: 0/0/0/0.
+Live deployment verification now supplements the original source review: 76 backend
+integration checks passed, including database persistence, three-role authentication,
+authorization failures, images, chat, offers and handover. Both Pages proxies also
+passed read-only checks. These results do not establish complete application security.
+Critical/high/medium/low confirmed new findings in this review: 0/0/0/0.
 
 ## Changes and history
 
@@ -46,7 +48,37 @@ fixed-host proxying with authentication/Origin preservation, redirect handling,
 request-body forwarding, private response caching and sanitized connection failure.
 Client/admin builds and live Chrome checks are recorded in `CLOUDFLARE_DEPLOYMENT.md`.
 
-Production login/session renewal, multiple Set-Cookie behavior, cross-user access,
-file upload/download, throttling and database persistence still require the deployed
-Django server and its actual provider configuration. No penetration testing of any
-other user's service or the original/team repositories was performed.
+Production login, cookie/bearer authentication, cross-role access failures, image
+upload/read, offer/chat persistence and sequential duplicate handover rejection were
+exercised against the personal Render/Atlas deployment. Multiple Set-Cookie headers
+also passed a focused local proxy check. This was not concurrency/load testing;
+email signup/reset, external identity providers and rate-limit exhaustion remain
+outside the successful role-flow evidence. No penetration testing of any other user's
+service or the original/team repositories was performed.
+
+## Durable media addition
+
+`server/marketplace/mongodb_media.py` stores normalized WebP images in GridFS only
+when `MEDIA_STORAGE_BACKEND=mongodb`. Existing Cloudinary behavior remains the default.
+Opaque 192-bit references are served through the signed gateway, not a raw file route.
+New listing references must belong to the uploader; private IDs additionally require
+an active authenticated owner or student-management administrator. Storage failure
+does not silently fall back to ephemeral disk in MongoDB mode. Twenty-six focused
+tests passed, including nine real isolated local GridFS checks. The deployed image
+upload and read also passed. Atlas free storage is shared by records and images;
+capacity monitoring remains necessary.
+
+## Availability changes
+
+The Render-only loop calls a fixed public `/api/ready/` on the current service,
+validates TLS and a bounded `ready: true` response, refuses redirects and cleans up
+on worker shutdown. The new public endpoint does not read the database or user
+session; exact middleware exemptions leave protected API paths unchanged. Nineteen
+heartbeat/readiness checks passed, and a successful automatic heartbeat was observed
+after deployment. The real database-health probe remains separate.
+
+Read recovery applies only to GET/HEAD transport or 502/503/504 failures within a
+60-second budget. It does not replay login, messaging, offer or listing mutations,
+authentication errors, rate limits or explicit maintenance. Six focused tests and a
+temporary browser-only network-failure/recovery check passed. No security protection
+was disabled and the temporary test block was removed.
