@@ -39,6 +39,12 @@ export default function Home() {
   const [sortBy, setSortBy] = useState('newest');
   const [favorites, setFavorites] = useState({});
 
+  useEffect(() => {
+    const refresh = () => setFavorites({});
+    window.addEventListener('saved-items-updated', refresh);
+    return () => window.removeEventListener('saved-items-updated', refresh);
+  }, []);
+
   // Current User Profile & Role from Centralized AuthContext
   const { user: userProfile, isSeller, isBuyer } = useAuth();
 
@@ -151,10 +157,12 @@ export default function Home() {
     setSearchParams(newParams);
   };
 
-  const toggleFavorite = (e, listing) => {
+  const toggleFavorite = async (e, listing) => {
     e.preventDefault();
     e.stopPropagation();
-    const res = toggleSavedItem(listing);
+    let res;
+    try { res = await toggleSavedItem(listing); }
+    catch { toast.error('Could not update your wishlist. Please try again.'); return; }
     setFavorites((prev) => ({ ...prev, [listing.id]: res.isSaved }));
     if (res.isSaved) {
       toast.success(`Saved to your wishlist!`, { icon: '❤️' });

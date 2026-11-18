@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { 
@@ -7,7 +7,7 @@ import {
   ArrowUpRight, ShieldCheck, Calendar, DollarSign, Tag
 } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+import { API_BASE } from '../config/api';
 
 // Color palette for category donut chart
 const categoryColors = [
@@ -20,25 +20,42 @@ export default function Analytics() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(false);
+  const requestId = useRef(0);
   const [timeframe, setTimeframe] = useState('30d');
   const [activeChartMetric, setActiveChartMetric] = useState('turnover'); // 'turnover' | 'deals' | 'both'
   const [hoveredTimelinePoint, setHoveredTimelinePoint] = useState(null);
   const [hoveredCategory, setHoveredCategory] = useState(null);
 
   const fetchAnalytics = async (tf = timeframe, isManual = false) => {
+    const currentRequest = ++requestId.current;
     if (isManual) setRefreshing(true);
     else setLoading(true);
 
     try {
       const res = await axios.get(`${API_BASE}/marketplace/admin/analytics/?timeframe=${tf}`);
+      if (currentRequest !== requestId.current) return;
+      const requiredKpis = ['total_gmv', 'timeframe_gmv', 'total_completed_deals', 'timeframe_completed_deals',
+        'avg_deal_value', 'total_students', 'verified_students', 'verification_rate', 'active_listings',
+        'total_listings', 'sold_listings', 'new_students_timeframe'];
+      if (!res.data || typeof res.data !== 'object' || !res.data.kpis ||
+          requiredKpis.some((key) => !Number.isFinite(res.data.kpis[key]))) {
+        throw new Error('Invalid analytics response');
+      }
       setData(res.data);
+      setError(false);
       if (isManual) toast.success("Analytics data refreshed");
     } catch (err) {
+      if (currentRequest !== requestId.current) return;
       console.error("Failed to load analytics:", err);
+      setData(null);
+      setError(true);
       toast.error("Failed to load platform analytics");
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (currentRequest === requestId.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   };
 
@@ -193,7 +210,7 @@ export default function Analytics() {
     return { total, segments };
   }, [data]);
 
-  if (loading && !data) {
+  if (loading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -210,6 +227,18 @@ export default function Analytics() {
         </div>
         <div className="h-80 bg-white/80 rounded-md border border-gray-100 animate-pulse"></div>
       </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <section role="alert" className="rounded-md border border-amber-200 bg-amber-50 p-6 text-amber-950">
+        <h1 className="text-lg font-bold">Analytics unavailable</h1>
+        <p className="mt-2 text-sm">The latest data could not be loaded. No metrics are displayed until the connection is restored.</p>
+        <button type="button" onClick={() => fetchAnalytics(timeframe, true)} disabled={refreshing} className="mt-4 rounded-md bg-amber-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
+          {refreshing ? 'Checking…' : 'Try again'}
+        </button>
+      </section>
     );
   }
 

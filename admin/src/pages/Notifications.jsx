@@ -7,7 +7,7 @@ import {
   ExternalLink, Clock, Loader2, Eye
 } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+import { API_BASE } from '../config/api';
 
 export default function Notifications() {
   const [activeTab, setActiveTab] = useState('broadcast'); // 'broadcast' | 'direct' | 'history'

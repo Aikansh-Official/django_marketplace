@@ -29,10 +29,11 @@ const HandoverQRModal = lazy(() => import('../handover/HandoverQRModal'));
 const HandoverScannerModal = lazy(() => import('../handover/HandoverScannerModal'));
 const ReviewModal = lazy(() => import('../reviews/ReviewModal'));
 import { emitTradeEvent, TRADE_ACTIONS } from '../../utils/tradeEvents';
+import { prioritizeOffer, tradeSubTab } from '../../utils/profileNavigation';
 
-export default function OrdersSellsTab({ onListingsCountChange, profile, isSeller: isSellerProp }) {
+export default function OrdersSellsTab({ onListingsCountChange, profile, isSeller: isSellerProp, requestedTab, requestedOfferId }) {
   const isSeller = isSellerProp ?? (profile?.role === 'SELLER' || profile?.is_id_verified);
-  const [subTab, setSubTab] = useState(isSeller ? 'selling' : 'orders'); // 'selling' | 'orders'
+  const [subTab, setSubTab] = useState(() => tradeSubTab(requestedTab, isSeller)); // 'selling' | 'orders'
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [listings, setListings] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -45,8 +46,10 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
   useEffect(() => {
     if (!isSeller) {
       setSubTab('orders');
+    } else if (['my-orders', 'my_orders', 'my-sales', 'my_sales'].includes(requestedTab)) {
+      setSubTab(tradeSubTab(requestedTab, isSeller));
     }
-  }, [isSeller]);
+  }, [isSeller, requestedTab, requestedOfferId]);
 
   // Handover state
   const [showQRModal, setShowQRModal] = useState(false);
@@ -626,10 +629,10 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
               </div>
             ) : (
               <div className="space-y-3">
-                {orders.map((ord) => (
+                {prioritizeOffer(orders, requestedOfferId).map((ord) => (
                   <div
                     key={ord.id}
-                    className="bg-gray-50/80 border border-gray-200/80 rounded-md p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    className={`bg-gray-50/80 border rounded-md p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${String(ord.id) === requestedOfferId ? 'border-brand-500' : 'border-gray-200/80'}`}
                   >
                     <div className="flex items-center gap-3.5 min-w-0">
                       {ord.listing_image ? (
@@ -649,6 +652,7 @@ export default function OrdersSellsTab({ onListingsCountChange, profile, isSelle
                         </div>
                       )}
                       <div className="space-y-1 min-w-0">
+                        {String(ord.id) === requestedOfferId && <p className="text-xs font-bold text-brand-600">Requested deal</p>}
                         <div className="flex items-center gap-2">
                           <span
                             className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${

@@ -94,6 +94,28 @@ class CookieCsrfSecurityTests(SimpleTestCase):
 
 
 class IdentitySecurityTests(SimpleTestCase):
+    @patch('users.identity_verification.normalized_data_uri', return_value='normalized-image')
+    @patch('users.identity_verification.verify_student_id_with_gemini')
+    def test_scan_preview_rejects_model_match_with_wrong_extracted_number(self, verify, normalize):
+        from django.core.cache import cache
+        from users.identity_verification import verification_result
+        cache.clear()
+        verify.return_value = {'success': True, 'is_valid': True, 'extracted_reg_no': '99999999'}
+        result = verification_result('image', '12345678', 'Test Student')
+        self.assertFalse(result['is_valid'])
+        self.assertFalse(result['reg_matched'])
+
+    @patch('users.identity_verification.normalized_data_uri', return_value='normalized-image')
+    @patch('users.identity_verification.verify_student_id_with_gemini')
+    def test_matching_scan_is_reused_for_same_image_and_identity(self, verify, normalize):
+        from django.core.cache import cache
+        from users.identity_verification import verification_result
+        cache.clear()
+        verify.return_value = {'success': True, 'is_valid': True, 'extracted_reg_no': '12345678'}
+        self.assertTrue(verification_result('image', '12345678', 'Test Student')['is_valid'])
+        self.assertTrue(verification_result('image', '12345678', 'Test Student')['is_valid'])
+        verify.assert_called_once()
+
     def test_forged_or_mismatched_identity_rejected(self):
         for result in ({'success': True, 'is_valid': False},
                        {'success': True, 'is_valid': True, 'extracted_reg_no': '99999999'}):

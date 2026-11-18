@@ -226,7 +226,7 @@ export default function ProfileSidebar({
             </div>
           </div>
           <p className="text-[11px] text-gray-600 leading-snug">
-            Upgrade your buyer account in 3 quick steps to list books, cycles, and essentials.
+            Verify your student ID to start listing books, cycles, and essentials.
           </p>
           <button
             type="button"

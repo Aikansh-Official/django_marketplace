@@ -158,6 +158,9 @@ class VerifyOTPSerializer(serializers.Serializer):
     email = serializers.EmailField()
     otp = serializers.CharField(max_length=6)
 
+    def validate_email(self, value):
+        return value.strip().lower()
+
     def validate_otp(self, value):
         val = str(value).strip()
         if not val.isdigit() or len(val) != 6:
@@ -175,6 +178,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('username', 'email', 'password', 'password_confirm', 'full_name', 'phone_number', 'id_card_image', 'id_card_data', 'role', 'profile_photo')
+
+    def validate_email(self, value):
+        return value.strip().lower()
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:

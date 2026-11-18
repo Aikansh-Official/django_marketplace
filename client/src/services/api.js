@@ -26,6 +26,14 @@ api.interceptors.request.use(
     config.headers['X-Client-Type'] = 'web';
 
     const token = localStorage.getItem('access');
+    // Reject queued wishlist requests if the account changed before dispatch.
+    if (config.wishlistUserId) {
+      let userId = null;
+      try { userId = JSON.parse(localStorage.getItem('user') || 'null')?.id; } catch { /* invalid session */ }
+      if (!token || String(userId) !== String(config.wishlistUserId)) {
+        throw new Error('Account changed before wishlist request.');
+      }
+    }
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     } else if (!['get', 'head', 'options'].includes((config.method || 'get').toLowerCase())) {

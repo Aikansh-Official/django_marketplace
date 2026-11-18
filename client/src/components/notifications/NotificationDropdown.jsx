@@ -90,7 +90,7 @@ export default function NotificationDropdown({ isOpen, onClose, unreadCount, onN
     // Chat messages navigate directly to chat conversation
     if (notif.notification_type === 'NEW_CHAT_MESSAGE') {
       if (extra.listing_id && (extra.peer_id || extra.sender_id)) {
-        navigate(`/chat/${extra.listing_id}/${extra.peer_id || extra.sender_id}`);
+        navigate(`/messages/${extra.listing_id}/${extra.peer_id || extra.sender_id}`);
       } else {
         navigate('/messages');
       }

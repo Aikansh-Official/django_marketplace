@@ -7,7 +7,7 @@ import {
   Mail, MapPin, Tag, Key, ShieldAlert, Loader2, Copy, Check, AlertOctagon
 } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+import { API_BASE } from '../config/api';
 
 export default function Deals() {
   const [deals, setDeals] = useState([]);

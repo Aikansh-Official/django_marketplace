@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ProfileSidebar from '../components/profile/ProfileSidebar';
 import { getSavedCount } from '../utils/savedStore';
+import { normalizeProfileTab } from '../utils/profileNavigation';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -17,13 +18,6 @@ const UpdateSelfieModal = lazy(() => import('../components/profile/UpdateSelfieM
 
 import UniversalLoader from '../components/common/UniversalLoader';
 
-const getNormalizedTab = (tab) => {
-  if (!tab) return 'personal-info';
-  if (tab === 'verification') return 'id-verification';
-  if (tab === 'my-sales' || tab === 'my_sales' || tab === 'orders_sells') return 'orders-sells';
-  return tab;
-};
-
 export default function Profile() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -32,7 +26,7 @@ export default function Profile() {
 
   const rawTab = searchParams.get('tab');
   
-  const normalizedTab = getNormalizedTab(rawTab);
+  const normalizedTab = normalizeProfileTab(rawTab);
   const currentTabParam = normalizedTab;
   const [activeTab, setActiveTab] = useState(
     currentTabParam === 'notifications' ? 'personal-info' : currentTabParam
@@ -59,7 +53,7 @@ export default function Profile() {
   // Sync tab with URL query parameter
   useEffect(() => {
     const raw = searchParams.get('tab');
-    const tabFromUrl = getNormalizedTab(raw);
+    const tabFromUrl = normalizeProfileTab(raw);
     
     if (tabFromUrl === 'notifications') {
       navigate('/notifications', { replace: true });
@@ -200,6 +194,8 @@ export default function Profile() {
                 profile={profile}
                 isSeller={isSeller}
                 onListingsCountChange={setListingsCount}
+                requestedTab={rawTab}
+                requestedOfferId={searchParams.get('offer')}
               />
             )}
 

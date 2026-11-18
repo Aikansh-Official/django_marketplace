@@ -9,13 +9,14 @@ import {
 import { Link } from 'react-router-dom';
 import { APP_VERSION } from '../config/version';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+import { API_BASE } from '../config/api';
 
 export default function SystemHealth() {
   const [health, setHealth] = useState(null);
   const [loading, setLoading] = useState(true);
   const [diagnosing, setDiagnosing] = useState(false);
   const [lastCheckTime, setLastCheckTime] = useState(null);
+  const [error, setError] = useState(false);
 
   const fetchHealth = async (isManual = false) => {
     if (isManual) setDiagnosing(true);
@@ -23,11 +24,22 @@ export default function SystemHealth() {
 
     try {
       const res = await axios.get(`${API_BASE}/marketplace/admin/system-health/`);
+      if (!res.data || typeof res.data !== 'object' || !res.data.status ||
+          typeof res.data.database?.healthy !== 'boolean' || typeof res.data.cache?.healthy !== 'boolean' ||
+          typeof res.data.security?.debug_mode !== 'boolean' ||
+          typeof res.data.security?.data_security_middleware !== 'boolean' ||
+          typeof res.data.security?.httponly_cookies !== 'boolean' ||
+          typeof res.data.security?.rate_limiting_active !== 'boolean') {
+        throw new Error('Invalid diagnostics response');
+      }
       setHealth(res.data);
+      setError(false);
       setLastCheckTime(new Date());
       if (isManual) toast.success("Live diagnostics completed");
     } catch (err) {
       console.error("Failed to load system health:", err);
+      setHealth(null);
+      setError(true);
       toast.error("Failed to fetch system diagnostics");
     } finally {
       setLoading(false);
@@ -54,9 +66,22 @@ export default function SystemHealth() {
     );
   }
 
+  if (error || !health) {
+    return (
+      <section role="alert" className="rounded-md border border-amber-200 bg-amber-50 p-6 text-amber-950">
+        <h1 className="text-lg font-bold">System diagnostics unavailable</h1>
+        <p className="mt-2 text-sm">The latest check failed. The current status of the database and services is unknown.</p>
+        {lastCheckTime && <p className="mt-2 text-xs">Last successful check: {lastCheckTime.toLocaleTimeString()}</p>}
+        <button type="button" onClick={() => fetchHealth(true)} disabled={diagnosing} className="mt-4 rounded-md bg-amber-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
+          {diagnosing ? 'Checking…' : 'Try again'}
+        </button>
+      </section>
+    );
+  }
+
   const isHealthy = health?.status === 'HEALTHY';
-  const dbLatency = health?.database?.latency_ms || 0;
-  const cacheLatency = health?.cache?.latency_ms || 0;
+  const dbLatency = health?.database?.latency_ms;
+  const cacheLatency = health?.cache?.latency_ms;
   const security = health?.security || {};
   const metrics = health?.metrics || {};
   const env = health?.environment || {};
@@ -90,11 +115,11 @@ export default function SystemHealth() {
                   ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
                   : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
               }`}>
-                {env.environment || 'production'}
+                {env.environment || 'unknown'}
               </span>
             </div>
             <p className="text-xs text-gray-300 mt-1 flex items-center gap-2">
-              <span>All backend services and campus database connections operational</span>
+              <span>{isHealthy ? 'Database and cache checks passed' : 'One or more checks require attention'}</span>
               {lastCheckTime && (
                 <span className="text-gray-400 font-mono text-[11px]">
                   • Last checked: {lastCheckTime.toLocaleTimeString()}
@@ -126,9 +151,9 @@ export default function SystemHealth() {
             </span>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <p className="text-2xl font-black text-gray-900">{dbLatency}ms</p>
-            <span className="text-xs text-emerald-600 font-bold flex items-center gap-0.5">
-              <CheckCircle2 className="w-3 h-3" /> Connected
+            <p className="text-2xl font-black text-gray-900">{Number.isFinite(dbLatency) && dbLatency >= 0 ? `${dbLatency}ms` : 'N/A'}</p>
+            <span className={`text-xs font-bold flex items-center gap-0.5 ${health.database.healthy ? 'text-emerald-600' : 'text-amber-700'}`}>
+              {health.database.healthy ? 'Connected' : 'Unavailable'}
             </span>
           </div>
           <p className="text-[11px] text-gray-500 mt-1 font-mono">
@@ -139,7 +164,7 @@ export default function SystemHealth() {
               className={`h-full rounded-full transition-all ${
                 dbLatency < 50 ? 'bg-emerald-500' : (dbLatency < 150 ? 'bg-amber-500' : 'bg-rose-500')
               }`}
-              style={{ width: `${Math.min(100, (dbLatency / 200) * 100)}%` }}
+              style={{ width: `${Number.isFinite(dbLatency) && dbLatency >= 0 ? Math.min(100, (dbLatency / 200) * 100) : 0}%` }}
             />
           </div>
         </div>
@@ -153,9 +178,9 @@ export default function SystemHealth() {
             </span>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <p className="text-2xl font-black text-gray-900">{cacheLatency >= 0 ? `${cacheLatency}ms` : 'N/A'}</p>
-            <span className="text-xs text-emerald-600 font-bold flex items-center gap-0.5">
-              <CheckCircle2 className="w-3 h-3" /> Active
+            <p className="text-2xl font-black text-gray-900">{Number.isFinite(cacheLatency) && cacheLatency >= 0 ? `${cacheLatency}ms` : 'N/A'}</p>
+            <span className={`text-xs font-bold flex items-center gap-0.5 ${health.cache.healthy ? 'text-emerald-600' : 'text-amber-700'}`}>
+              {health.cache.healthy ? 'Active' : 'Unavailable'}
             </span>
           </div>
           <p className="text-[11px] text-gray-500 mt-1">Read/Write Round-Trip Ping</p>
@@ -173,8 +198,8 @@ export default function SystemHealth() {
             </span>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <p className="text-2xl font-black text-emerald-700">Enforced</p>
-            <span className="text-xs text-emerald-600 font-bold">5/5 Guards</span>
+            <p className="text-2xl font-black text-gray-900">Configuration</p>
+            <span className="text-xs text-gray-600 font-bold">See below</span>
           </div>
           <p className="text-[11px] text-gray-500 mt-1">Middleware & Token Protection</p>
           <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden mt-3">
@@ -219,7 +244,7 @@ export default function SystemHealth() {
                 <h2 className="text-base font-black text-gray-900">Security & Compliance Guardrails</h2>
               </div>
               <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">
-                Active & Enforced
+                Reported settings
               </span>
             </div>
 
@@ -228,16 +253,16 @@ export default function SystemHealth() {
               {/* Item 1 */}
               <div className="flex items-start justify-between p-3 rounded-md bg-gray-50 border border-gray-100">
                 <div className="flex items-center gap-3">
-                  <span className="p-1.5 bg-emerald-100 text-emerald-700 rounded-full">
-                    <CheckCircle2 className="w-4 h-4" />
+                  <span className={`p-1.5 rounded-full ${security.data_security_middleware ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {security.data_security_middleware ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
                   </span>
                   <div>
                     <h4 className="text-xs font-bold text-gray-900">DataSecurityMiddleware (App Security Key)</h4>
                     <p className="text-[11px] text-gray-500">Validates internal API authorization key across endpoints</p>
                   </div>
                 </div>
-                <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded uppercase">
-                  Protected
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase ${security.data_security_middleware ? 'text-emerald-700 bg-emerald-50' : 'text-amber-700 bg-amber-50'}`}>
+                  {security.data_security_middleware ? 'Configured' : 'Not configured'}
                 </span>
               </div>
 
@@ -248,12 +273,12 @@ export default function SystemHealth() {
                     <CheckCircle2 className="w-4 h-4" />
                   </span>
                   <div>
-                    <h4 className="text-xs font-bold text-gray-900">HttpOnly Session & JWT Storage</h4>
-                    <p className="text-[11px] text-gray-500">Tokens stored in secure HTTP-only cookies; immune to JavaScript XSS theft</p>
+                    <h4 className="text-xs font-bold text-gray-900">HttpOnly Session Cookie</h4>
+                    <p className="text-[11px] text-gray-500">Django session cookie HttpOnly setting. Other authentication tokens may use browser storage.</p>
                   </div>
                 </div>
                 <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded uppercase">
-                  Active
+                  {security.httponly_cookies ? 'Configured' : 'Not configured'}
                 </span>
               </div>
 
@@ -265,11 +290,11 @@ export default function SystemHealth() {
                   </span>
                   <div>
                     <h4 className="text-xs font-bold text-gray-900">Scoped Rate Limiting Throttling</h4>
-                    <p className="text-[11px] text-gray-500">Limits brute-force attempts on login, OTP, and listing creation</p>
+                    <p className="text-[11px] text-gray-500">Rate limiting reported by the server configuration</p>
                   </div>
                 </div>
                 <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded uppercase">
-                  Active
+                  {security.rate_limiting_active ? 'Reported active' : 'Not reported'}
                 </span>
               </div>
 
@@ -315,7 +340,7 @@ export default function SystemHealth() {
           </div>
 
           <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-            <span>Audit Trail Engine Active</span>
+            <span>Review administrative activity</span>
             <Link to="/audit-logs" className="font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1">
               View Audit History <ArrowRight className="w-3.5 h-3.5" />
             </Link>
@@ -343,26 +368,26 @@ export default function SystemHealth() {
 
               <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Python Runtime</span>
-                <p className="font-black text-gray-900 font-mono text-sm mt-0.5">v{env.python_version || '3.14'}</p>
+                <p className="font-black text-gray-900 font-mono text-sm mt-0.5">{env.python_version || 'Unavailable'}</p>
                 <p className="text-[10px] text-gray-500 mt-0.5">Core interpreter</p>
               </div>
 
               <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Django Framework</span>
-                <p className="font-black text-gray-900 font-mono text-sm mt-0.5">v{env.django_version || '6.1'}</p>
+                <p className="font-black text-gray-900 font-mono text-sm mt-0.5">{env.django_version || 'Unavailable'}</p>
                 <p className="text-[10px] text-gray-500 mt-0.5">REST Framework API</p>
               </div>
 
               <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Operating System</span>
-                <p className="font-black text-gray-900 font-mono text-sm mt-0.5">{env.os_platform || 'Windows'}</p>
+                <p className="font-black text-gray-900 font-mono text-sm mt-0.5">{env.os_platform || 'Unavailable'}</p>
                 <p className="text-[10px] text-gray-500 mt-0.5">Host kernel</p>
               </div>
 
               <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Database Driver</span>
-                <p className="font-black text-gray-900 font-mono text-sm mt-0.5">{health?.database?.engine || 'postgresql'}</p>
-                <p className="text-[10px] text-gray-500 mt-0.5">SQL Engine</p>
+                <p className="font-black text-gray-900 font-mono text-sm mt-0.5">{health?.database?.engine || 'Unavailable'}</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">Database engine</p>
               </div>
 
             </div>

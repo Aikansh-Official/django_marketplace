@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { getAuthStatus, invalidateAuthStatusCache } from '../services/api';
+import { setWishlistUser } from '../utils/savedStore';
 
 const AuthContext = createContext(null);
 
@@ -137,6 +138,10 @@ export function AuthProvider({ children }) {
 
   // Derived role values memoized for speed
   const isAuthenticated = useMemo(() => Boolean(accessToken && user), [accessToken, user]);
+
+  useEffect(() => {
+    setWishlistUser(isAuthenticated ? user?.id : null);
+  }, [isAuthenticated, user?.id]);
 
   const isSeller = useMemo(() => {
     return Boolean(

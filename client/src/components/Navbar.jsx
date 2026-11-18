@@ -1,4 +1,5 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import {
   Menu,
   X,
@@ -52,8 +53,10 @@ export default function Navbar() {
     const handleSavedUpdate = (e) => {
       setSavedCount(e.detail?.count ?? getSavedCount());
     };
+    const handleError = (event) => toast.error(event.detail);
     window.addEventListener('saved-items-updated', handleSavedUpdate);
-    return () => window.removeEventListener('saved-items-updated', handleSavedUpdate);
+    window.addEventListener('wishlist-error', handleError);
+    return () => { window.removeEventListener('saved-items-updated', handleSavedUpdate); window.removeEventListener('wishlist-error', handleError); };
   }, []);
 
   // Sync search input with URL search query parameter

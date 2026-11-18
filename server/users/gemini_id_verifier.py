@@ -199,10 +199,10 @@ def verify_student_id_with_gemini(
                         
                         # Compute overall validation status
                         is_valid = bool(
-                            parsed_json.get("is_valid_id_card") and
-                            parsed_json.get("is_lpu_card") and
-                            parsed_json.get("reg_matched") and
-                            parsed_json.get("name_matched")
+                            parsed_json.get("is_valid_id_card") is True and
+                            parsed_json.get("is_lpu_card") is True and
+                            parsed_json.get("reg_matched") is True and
+                            parsed_json.get("name_matched") is True
                         )
 
                         reason = parsed_json.get("rejection_reason")
@@ -219,9 +219,9 @@ def verify_student_id_with_gemini(
                         return {
                             "success": True,
                             "is_valid": is_valid,
-                            "reg_matched": bool(parsed_json.get("reg_matched")),
-                            "name_matched": bool(parsed_json.get("name_matched")),
-                            "univ_matched": bool(parsed_json.get("is_lpu_card")),
+                            "reg_matched": parsed_json.get("reg_matched") is True,
+                            "name_matched": parsed_json.get("name_matched") is True,
+                            "univ_matched": parsed_json.get("is_lpu_card") is True,
                             "extracted_reg_no": parsed_json.get("extracted_reg_no"),
                             "extracted_name": parsed_json.get("extracted_name"),
                             "university_name": parsed_json.get("university_name"),

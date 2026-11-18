@@ -45,6 +45,7 @@ export default function RegisterStepIdCard({
         <p className="text-sm text-gray-500 mt-1">
           Capture your front student ID card photo to verify your registration details
         </p>
+        <p className="text-xs text-gray-500 mt-2">Your ID photo, name and registration number are sent to Google Gemini for verification.</p>
       </div>
 
       {/* Mobile-Only ID Card Camera Viewport (Rendered only on < md screens) */}

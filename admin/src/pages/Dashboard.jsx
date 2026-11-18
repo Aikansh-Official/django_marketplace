@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { Users, ShoppingBag, CheckCircle, AlertTriangle, Tag, MapPin, ArrowRight, TrendingUp } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+import { API_BASE } from '../config/api';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({

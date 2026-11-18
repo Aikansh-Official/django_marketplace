@@ -48,6 +48,9 @@ MANIFEST
 .env
 .env.*
 !.env.example
+# Firebase service-account private keys
+serviceAccountKey.json
+*firebase-adminsdk*.json
 venv/
 env/
 ENV/

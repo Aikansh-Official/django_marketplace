@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { X, Trash2, ExternalLink, Heart, ShoppingBag, MapPin, Tag } from 'lucide-react';
-import { getSavedItems, removeSavedItem } from '../utils/savedStore';
+import { getSavedItems, getWishlistStatus, refreshWishlist, removeSavedItem } from '../utils/savedStore';
 import { getSafeImageUrl } from '../utils/imageUrl';
 
 export default function SavedItemsDrawer({ isOpen, onClose }) {
   const [items, setItems] = useState(() => getSavedItems());
+  const [wishlistStatus, setWishlistStatus] = useState(getWishlistStatus());
 
   useEffect(() => {
     if (isOpen) {
@@ -15,6 +17,7 @@ export default function SavedItemsDrawer({ isOpen, onClose }) {
     }
 
     const handleUpdate = (e) => {
+      setWishlistStatus(getWishlistStatus());
       if (e.detail?.items) {
         setItems(e.detail.items);
       } else {
@@ -84,7 +87,9 @@ export default function SavedItemsDrawer({ isOpen, onClose }) {
 
           {/* Items List */}
           <div className="flex-1 overflow-y-auto p-5 divide-y divide-gray-100">
-            {items.length === 0 ? (
+            {wishlistStatus !== 'ready' ? (
+              <div className="p-6 text-sm text-gray-600">{wishlistStatus === 'loading' ? 'Loading your wishlist…' : <>Wishlist unavailable. <button onClick={refreshWishlist} className="underline">Try again</button></>}</div>
+            ) : items.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center px-4 py-12">
                 <div className="w-16 h-16 rounded-md bg-orange-50 border border-orange-100 flex items-center justify-center text-brand-500 mb-4 shadow-inner">
                   <ShoppingBag className="w-8 h-8 text-brand-400" />
@@ -179,7 +184,7 @@ export default function SavedItemsDrawer({ isOpen, onClose }) {
                               <ExternalLink className="w-3.5 h-3.5" />
                             </Link>
                             <button
-                              onClick={() => removeSavedItem(item.id)}
+                              onClick={() => removeSavedItem(item.id).catch(() => toast.error('Could not update your wishlist. Please try again.'))}
                               className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
                               title="Remove from wishlist"
                             >

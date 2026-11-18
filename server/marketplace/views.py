@@ -704,7 +704,8 @@ class UploadImageView(APIView):
             }, status=status.HTTP_200_OK)
         except Exception as e:
             from .mongodb_media import mongodb_media_enabled
-            if mongodb_media_enabled():
+            from django.conf import settings
+            if mongodb_media_enabled() or not settings.DEBUG:
                 logger.error('Durable image upload failed')
                 return Response({'error': 'Image storage is unavailable. Please try again later.'},
                                 status=status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -891,7 +892,7 @@ class RespondOfferView(APIView):
                     title=f"Item Reserved: '{listing.title}'",
                     message=f"Another student's request was accepted for '{listing.title}'.",
                     listing=listing,
-                    link=f"/product/{listing.id}"
+                    link=f"/listing/{listing.id}"
                 )
 
         elif action == 'REJECT':
@@ -906,7 +907,7 @@ class RespondOfferView(APIView):
                 title=f"Request Declined for '{listing.title}'",
                 message=f"{seller_display} declined your purchase request for '{listing.title}'.",
                 listing=listing,
-                link=f"/product/{listing.id}"
+                link=f"/listing/{listing.id}"
             )
 
         elif action == 'COUNTER':
@@ -1261,7 +1262,7 @@ class ChatMessageListCreateView(APIView):
             title=f"Message from {sender_name}",
             message=f'Re: "{listing.title}" — {message_text[:80]}',
             listing=listing,
-            link=f"/chat/{listing.id}/{request.user.id}",
+            link=f"/messages/{listing.id}/{request.user.id}",
             extra_data={
                 'listing_id': str(listing.id),
                 'peer_id': str(request.user.id),
@@ -1502,17 +1503,26 @@ class TestFCMPushView(APIView):
             notification_type='GENERAL',
             priority='NORMAL',
             link=link,
-            send_push=True
+            send_push=False
         )
 
+        delivered_count = 0
+        if is_ready and notif and devices:
+            delivered_count = NotificationService.send_fcm_push(
+                user=request.user, title=title, message=message, link=link,
+                data={'notification_id': str(notif.id), 'type': 'GENERAL'}
+            )
+
         return Response({
-            'success': True,
+            'success': delivered_count > 0,
             'firebase_admin_initialized': is_ready,
             'active_devices_count': device_count,
+            'accepted_devices_count': delivered_count,
             'devices': [{'id': d.id, 'device_type': d.device_type, 'name': d.device_name} for d in devices],
             'notification_id': notif.id if notif else None,
             'mode': 'REAL_FCM' if is_ready else 'FALLBACK_SIMULATED',
-            'message': 'Test push notification dispatched!' if is_ready else 'Notification saved to DB. Note: Firebase Admin is running in Fallback mode (missing service account credentials).'
+            'message': ('Push accepted by Firebase for at least one device.' if delivered_count else
+                        'Push was not accepted for any device. Check Firebase configuration and device registration.')
         })
 
 
@@ -2333,7 +2343,7 @@ class CancelDealView(APIView):
                 title=notif_title,
                 message=notif_msg,
                 listing=listing,
-                link=f"/product/{listing.id}",
+                link=f"/listing/{listing.id}",
                 extra_data={
                     'deal_id': str(offer.id),
                     'offer_id': str(offer.id),
@@ -2434,7 +2444,7 @@ class AdminDealActionView(APIView):
                     title=f"Campus Deal Cancelled by Admin: '{listing.title}'",
                     message=f"Campus Administration cancelled deal #{offer.id} for '{listing.title}'.{reason_msg}",
                     listing=listing,
-                    link=f"/product/{listing.id}",
+                    link=f"/listing/{listing.id}",
                     extra_data={
                         'deal_id': str(offer.id),
                         'offer_id': str(offer.id),
@@ -2450,7 +2460,7 @@ class AdminDealActionView(APIView):
                     title=f"Campus Deal Cancelled by Admin: '{listing.title}'",
                     message=f"Campus Administration cancelled deal #{offer.id} for '{listing.title}'. The listing has been restored to Active marketplace.{reason_msg}",
                     listing=listing,
-                    link=f"/product/{listing.id}",
+                    link=f"/listing/{listing.id}",
                     extra_data={
                         'deal_id': str(offer.id),
                         'offer_id': str(offer.id),

@@ -11,14 +11,16 @@ import {
   Eye,
   MessageSquare
 } from 'lucide-react';
-import { getSavedItems, removeSavedItem } from '../../utils/savedStore';
+import { getSavedItems, getWishlistStatus, refreshWishlist, removeSavedItem } from '../../utils/savedStore';
 import { getSafeImageUrl } from '../../utils/imageUrl';
 
 export default function SavedItemsTab({ onSavedCountChange }) {
   const [savedItems, setSavedItems] = useState(getSavedItems());
+  const [wishlistStatus, setWishlistStatus] = useState(getWishlistStatus());
 
   useEffect(() => {
     const handleSavedUpdated = () => {
+      setWishlistStatus(getWishlistStatus());
       const items = getSavedItems();
       setSavedItems(items);
       if (onSavedCountChange) onSavedCountChange(items.length);
@@ -28,10 +30,12 @@ export default function SavedItemsTab({ onSavedCountChange }) {
     return () => window.removeEventListener('saved-items-updated', handleSavedUpdated);
   }, [onSavedCountChange]);
 
-  const handleRemove = (e, id, title) => {
+  const handleRemove = async (e, id, title) => {
     e.preventDefault();
     e.stopPropagation();
-    const updated = removeSavedItem(id);
+    let updated;
+    try { updated = await removeSavedItem(id); }
+    catch { toast.error('Could not update your wishlist. Please try again.'); return; }
     setSavedItems(updated);
     if (onSavedCountChange) onSavedCountChange(updated.length);
     toast.success(`Removed "${title.substring(0, 20)}..." from saved items.`);
@@ -55,7 +59,9 @@ export default function SavedItemsTab({ onSavedCountChange }) {
         </span>
       </div>
 
-      {savedItems.length === 0 ? (
+      {wishlistStatus !== 'ready' ? (
+        <div className="p-6 text-sm text-gray-600">{wishlistStatus === 'loading' ? 'Loading your wishlist…' : <>Wishlist unavailable. <button onClick={refreshWishlist} className="underline">Try again</button></>}</div>
+      ) : savedItems.length === 0 ? (
         <div className="bg-white border border-gray-200/90 rounded-md p-12 text-center shadow-sm">
           <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center mx-auto mb-3">
             <Heart className="w-6 h-6" />

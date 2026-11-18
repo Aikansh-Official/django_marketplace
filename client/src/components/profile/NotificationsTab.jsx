@@ -50,11 +50,19 @@ export default function NotificationsTab({ onUnreadCountChange, onNavigateTab })
           toast.error(res.reason || 'Could not enable notifications.');
         }
       } else {
+        // Browser permission alone does not mean the device was registered.
+        const registration = await requestNotificationPermissionAndRegister();
+        if (!registration.success) {
+          toast.error('Could not register this device for notifications.');
+          return;
+        }
         const res = await sendTestPushNotification();
         if (res?.mode === 'FALLBACK_SIMULATED') {
           toast.error('Server running in fallback mode (missing Firebase credentials). Real push not delivered.', { duration: 5000 });
+        } else if (!res?.success) {
+          toast.error(res?.message || 'The test alert could not be sent.');
         } else {
-          toast.success('Test alert dispatched to registered devices! Check PC/phone notification tray.');
+          toast.success('Firebase accepted the test alert. Check your notification tray.');
         }
       }
     } catch (err) {
@@ -101,6 +109,9 @@ export default function NotificationsTab({ onUnreadCountChange, onNavigateTab })
     } catch {
       toast.error('Failed to update preference.');
       setPreferences((prev) => ({ ...prev, [key]: !nextVal }));
+      if (key === 'sound_enabled') {
+        localStorage.setItem('cxc_sound_enabled', String(!nextVal));
+      }
     }
   };
 

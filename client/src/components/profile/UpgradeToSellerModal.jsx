@@ -7,8 +7,6 @@ import {
   X,
   Camera,
   Check,
-  ArrowRight,
-  ArrowLeft,
   Loader2,
   Upload,
   Store,
@@ -22,21 +20,15 @@ import {
   Activity,
   Sparkles
 } from 'lucide-react';
-import {
-  extractLpuCardDetails,
-  checkImageAuthenticity,
-  preprocessImageForOcr
-} from '../../utils/idCardVerification';
+import { checkImageAuthenticity } from '../../utils/idCardVerification';
 import { compressImageToDataUrl } from '../../utils/compressImage';
-import { preloadVisionDetectors } from '../../utils/faceLivenessDetector';
-import RegisterStepSelfie from '../auth/steps/RegisterStepSelfie';
 
 export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgradeSuccess }) {
-  const [currentStep, setCurrentStep] = useState(1); // 1: ID Card, 2: Selfie, 3: Email OTP
   const [loading, setLoading] = useState(false);
 
   // Step 1: ID Card State
   const [idFrontImage, setIdFrontImage] = useState(null);
+  const [verifiedIdImage, setVerifiedIdImage] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [scanStatus, setScanStatus] = useState('');
@@ -50,27 +42,15 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
   });
   const fileInputRef = useRef(null);
 
-  // Step 2: Selfie State
-  const [selfieImage, setSelfieImage] = useState(null);
-
-  // Step 3: OTP State
-  const [otpCode, setOtpCode] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpSending, setOtpSending] = useState(false);
-
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
-      setCurrentStep(1);
       setIdFrontImage(null);
+      setVerifiedIdImage(null);
       setIsIdVerified(false);
       setExtractedCardData(null);
       setRejectionInfo(null);
       setVerificationDetails({ regMatched: false, nameMatched: false, univMatched: false });
-      setSelfieImage(null);
-      setOtpCode('');
-      setOtpSent(false);
-      preloadVisionDetectors();
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -89,7 +69,6 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
   // Clean username: remove any leading @ symbol and trim
   const username = String(profile?.username || storedUser?.username || '').replace(/^@/, '').trim();
   const fullName = profile?.full_name || profile?.first_name || storedUser?.full_name || storedUser?.first_name || '';
-  const email = profile?.email || storedUser?.email || '';
 
   if (!isOpen) return null;
 
@@ -129,6 +108,8 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
     setScanProgress(15);
     setScanStatus('Scanning photo authenticity...');
     setRejectionInfo(null);
+    setIsIdVerified(false);
+    setVerifiedIdImage(null);
 
     try {
       // 1. Authenticity check
@@ -144,7 +125,9 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
 
       setScanProgress(35);
       setScanStatus('Optimizing image for scanning...');
-      const optimizedImage = await compressImageToDataUrl(idFrontImage, 1280, 0.85);
+      const optimizedImage = await compressImageToDataUrl(idFrontImage, {
+        maxWidth: 1280, maxHeight: 900, quality: 0.85,
+      });
 
       setScanProgress(60);
       setScanStatus('Scanning & verifying ID card credentials...');
@@ -167,6 +150,7 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
       });
 
       if (aiResponse.is_valid) {
+        setVerifiedIdImage({ original: idFrontImage, scanned: optimizedImage });
         setIsIdVerified(true);
         setExtractedCardData({
           program: aiResponse.program || 'Student',
@@ -201,67 +185,17 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
     }
   };
 
-  // Send OTP for Step 3
-  const handleSendOtp = async () => {
-    if (!email) {
-      toast.error('No email address associated with account.');
-      return;
-    }
-    setOtpSending(true);
-    try {
-      await api.post('/auth/send-otp/', { email, purpose: 'upgrade' });
-      setOtpSent(true);
-      toast.success(`Verification code sent to ${email}`);
-    } catch (e) {
-      const msg =
-        e.response?.data?.error ||
-        e.response?.data?.email?.[0] ||
-        e.response?.data?.detail ||
-        'Failed to send OTP code.';
-      toast.error(msg);
-    } finally {
-      setOtpSending(false);
-    }
-  };
-
-  // Transition to step 3 and trigger OTP
-  const handleProceedToStep3 = async () => {
-    if (!selfieImage) {
-      toast.error('Please capture or upload your selfie photo first.');
-      return;
-    }
-    setCurrentStep(3);
-    if (!otpSent) {
-      await handleSendOtp();
-    }
-  };
-
   // Final upgrade submission to backend
   const handleFinalUpgrade = async () => {
-    if (!otpCode || otpCode.length !== 6) {
-      toast.error('Please enter the 6-digit verification code.');
-      return;
-    }
-
     setLoading(true);
     try {
-      let compressedForDb = idFrontImage;
-      try {
-        compressedForDb = await compressImageToDataUrl(idFrontImage, {
-          maxWidth: 1000,
-          maxHeight: 700,
-          quality: 0.75,
-        });
-      } catch (compErr) {
-        console.warn('Compression before upgrade failed, using original:', compErr);
+      if (!isIdVerified || verifiedIdImage?.original !== idFrontImage) {
+        throw new Error('Please scan your current ID card before upgrading.');
       }
 
       const payload = {
         reg_no: username,
-        id_card_image: compressedForDb,
-        id_card_data: extractedCardData || {},
-        profile_photo: selfieImage,
-        otp: otpCode.trim()
+        id_card_image: verifiedIdImage.scanned
       };
 
       const res = await api.post('/auth/upgrade-to-seller/', payload);
@@ -288,20 +222,14 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
       console.error('Upgrade Error:', err);
       const errMsg =
         err.response?.data?.error ||
-        err.response?.data?.otp?.[0] ||
         err.response?.data?.detail ||
-        'Upgrade failed. Please check your verification code.';
+        err.message ||
+        'Upgrade failed. Please try again.';
       toast.error(errMsg);
     } finally {
       setLoading(false);
     }
   };
-
-  const steps = [
-    { num: 1, label: 'Student ID Card' },
-    { num: 2, label: 'Selfie Verification' },
-    { num: 3, label: 'Email OTP' }
-  ];
 
   return createPortal(
     <div
@@ -336,58 +264,17 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
           </div>
         </div>
 
-        {/* Stepper Progress */}
-        <div className="px-6 pt-5 pb-3 border-b border-gray-100 bg-gray-50/50">
-          <div className="flex items-center justify-between max-w-md mx-auto">
-            {steps.map((item, idx) => {
-              const isCompleted = currentStep > item.num;
-              const isCurrent = currentStep === item.num;
-              return (
-                <React.Fragment key={item.num}>
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all shadow-2xs ${
-                        isCompleted
-                          ? 'bg-emerald-600 text-white'
-                          : isCurrent
-                          ? 'bg-brand-500 text-white ring-4 ring-brand-500/20 font-black'
-                          : 'bg-gray-200 text-gray-400 font-medium'
-                      }`}
-                    >
-                      {isCompleted ? <Check className="w-3.5 h-3.5" /> : item.num}
-                    </div>
-                    <span
-                      className={`text-[10px] sm:text-[11px] mt-1 font-bold tracking-tight text-center ${
-                        isCurrent ? 'text-brand-600' : isCompleted ? 'text-emerald-700' : 'text-gray-400'
-                      }`}
-                    >
-                      {item.label}
-                    </span>
-                  </div>
-                  {idx < steps.length - 1 && (
-                    <div
-                      className={`flex-1 h-0.5 mx-2 -mt-4 transition-all ${
-                        currentStep > idx + 1 ? 'bg-emerald-500' : 'bg-gray-200'
-                      }`}
-                    />
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Modal Body */}
         <div className="p-6">
           {/* ============================================================ */}
           {/* STEP 1: STUDENT ID CARD UPLOAD & SCAN */}
           {/* ============================================================ */}
-          {currentStep === 1 && (
             <div className="space-y-4">
               <div className="text-center">
                 <h3 className="text-base font-bold text-gray-900">
                   Upload Student ID Card
                 </h3>
+                <p className="text-xs text-gray-500 mt-2">Your ID photo, name and registration number are sent to Google Gemini for verification.</p>
                 <p className="text-xs text-gray-500 mt-0.5">
                   Ensure registration number <strong>{username}</strong> and your name are clearly visible.
                 </p>
@@ -617,98 +504,16 @@ export default function UpgradeToSellerModal({ isOpen, onClose, profile, onUpgra
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setCurrentStep(2)}
+                    onClick={handleFinalUpgrade}
+                    disabled={loading}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-md transition-all shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer"
                   >
-                    <span>Proceed to Step 2: Selfie Verification</span>
-                    <ArrowRight className="w-4 h-4" />
+                    {loading ? 'Upgrading account...' : 'Complete upgrade to seller'}
                   </button>
                 )}
               </div>
             </div>
-          )}
 
-          {/* ============================================================ */}
-          {/* STEP 2: LIVE SELFIE VERIFICATION */}
-          {/* ============================================================ */}
-          {currentStep === 2 && (
-            <div className="space-y-4">
-              <RegisterStepSelfie
-                selfieImage={selfieImage}
-                setSelfieImage={setSelfieImage}
-                onProceed={handleProceedToStep3}
-                onBack={() => setCurrentStep(1)}
-              />
-            </div>
-          )}
-
-          {/* ============================================================ */}
-          {/* STEP 3: EMAIL OTP VERIFICATION & UPGRADE */}
-          {/* ============================================================ */}
-          {currentStep === 3 && (
-            <div className="space-y-4">
-              <div className="text-center">
-                <h3 className="text-base font-bold text-gray-900">
-                  Confirm With Email Code
-                </h3>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  6-digit security code sent to <strong className="text-gray-800">{email}</strong>
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 text-center">
-                  Enter 6-Digit OTP
-                </label>
-                <input
-                  type="text"
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  className="w-full bg-gray-50 hover:bg-white focus:bg-white border border-gray-200 text-gray-900 text-center font-black tracking-[0.4em] text-2xl rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all placeholder:text-gray-300"
-                  placeholder="••••••"
-                  maxLength={6}
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleFinalUpgrade}
-                disabled={loading || otpCode.length !== 6}
-                className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 px-4 rounded-md transition-all shadow-md text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Upgrading Account to Seller...</span>
-                  </>
-                ) : (
-                  <>
-                    <Store className="w-4 h-4" />
-                    <span>Complete Upgrade & Become Seller</span>
-                  </>
-                )}
-              </button>
-
-              <div className="flex items-center justify-between text-xs pt-2">
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(2)}
-                  className="text-gray-500 hover:text-gray-700 font-semibold flex items-center gap-1 cursor-pointer"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  Back to Selfie
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSendOtp}
-                  disabled={otpSending || loading}
-                  className="text-brand-600 hover:text-brand-700 font-bold hover:underline cursor-pointer disabled:opacity-50"
-                >
-                  {otpSending ? 'Sending...' : 'Resend Code'}
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>,

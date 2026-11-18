@@ -116,16 +116,14 @@ export default function AuthLeftPanel({
             {/* Verification Status Pill */}
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold border border-white/25 mb-2 shadow-2xs">
               <BadgeCheck className="w-4 h-4 text-white" />
-              <span>{selfieImage ? 'ID & Face Verified' : 'ID Verified'}</span>
+              <span>ID Verified</span>
             </div>
 
             <h3 className="text-xl sm:text-2xl font-black text-white font-display tracking-tight leading-tight">
-              {selfieImage ? 'Student Verified' : 'Student ID Verified'}
+              Student ID Verified
             </h3>
             <p className="text-white/85 text-xs mt-0.5 mb-3">
-              {selfieImage
-                ? 'ID Card & Live Selfie matched successfully'
-                : 'Credentials matched successfully'}
+              {selfieImage ? 'ID credentials matched and selfie captured' : 'Credentials matched successfully'}
             </p>
 
             {/* ID Card Display Card */}

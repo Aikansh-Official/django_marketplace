@@ -363,8 +363,14 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
                 return upload_base64_to_cloudinary(img_data, owner_id=user.pk if user else None)['url']
             try:
                 result = upload_base64_to_cloudinary(img_data)
+                if not result.get('url'):
+                    raise ValueError('Image storage did not return a URL')
                 return result['url']
             except Exception as e:
+                from django.conf import settings
+                from rest_framework.exceptions import APIException
+                if not settings.DEBUG:
+                    raise APIException('Image storage is unavailable. Please try again later.') from e
                 # Fallback: decode base64 and save to local storage
                 try:
                     import base64
@@ -380,8 +386,7 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
                     saved_path = default_storage.save(filename, ContentFile(file_content))
                     return f"{settings.MEDIA_URL}{saved_path}"
                 except Exception:
-                    # Store base64 data URI directly if local save fails
-                    return img_data
+                    raise APIException('Image storage is unavailable. Please try again later.')
         elif is_url(img_data):
             import os
             from django.conf import settings
@@ -432,15 +437,13 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
         if not validated_data.get('contact_whatsapp') and getattr(seller, 'phone_number', None):
             validated_data['contact_whatsapp'] = seller.phone_number
 
-        from .mongodb_media import mongodb_media_enabled
-        # Do not create a listing that appears successful if durable storage fails.
-        processed_images = ([self._process_image(image) for image in uploaded_images]
-                            if mongodb_media_enabled() else None)
+        # Process images first so storage failures cannot leave a partial listing.
+        processed_images = [self._process_image(image) for image in uploaded_images]
         listing = Listing.objects.create(**validated_data)
 
         # Process and create images
         for index, img_data in enumerate(uploaded_images):
-            image_url = processed_images[index] if processed_images is not None else self._process_image(img_data)
+            image_url = processed_images[index]
             ListingImage.objects.create(
                 listing=listing,
                 image_url=image_url,
@@ -452,6 +455,8 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         uploaded_images = validated_data.pop('uploaded_images', None)
         primary_index = validated_data.pop('primary_image_index', 0)
+        canonical_urls = ([self._process_image(img_data) for img_data in uploaded_images if img_data]
+                          if uploaded_images is not None else None)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -462,7 +467,6 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
             from .cloudinary_upload import extract_cloudinary_public_id
 
             # 1. Process and un-wrap incoming images to canonical storage URLs
-            canonical_urls = [self._process_image(img_data) for img_data in uploaded_images if img_data]
             if not canonical_urls:
                 return instance
 

@@ -7,7 +7,7 @@ import {
   ShieldAlert, Tag, Sparkles, X, Loader2
 } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+import { API_BASE } from '../config/api';
 
 export default function Reports() {
   const [activeTab, setActiveTab] = useState('queue'); // 'queue' | 'banned_words'

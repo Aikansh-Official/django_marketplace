@@ -1,6 +1,13 @@
 import os
 import logging
+import json
+from urllib import request as urlrequest
 from django.conf import settings
+from django.core.mail import EmailMultiAlternatives, get_connection
+from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.core.validators import URLValidator, validate_email
+from django.utils.html import escape
+from urllib.parse import urlsplit
 
 logger = logging.getLogger(__name__)
 
@@ -15,13 +22,38 @@ BORDER_LIGHT = "#E5E7EB"
 BG_PAGE = "#F9FAFB"
 
 
+def _frontend_url():
+    # Keep every email tied to this deployment, never a request-supplied host.
+    value = str(getattr(settings, 'FRONTEND_URL', '')).split(',')[0].strip().rstrip('/')
+    try:
+        URLValidator(schemes=['http', 'https'])(value)
+        parsed = urlsplit(value)
+        if (any(c.isspace() or c in '\"\'<>\\' for c in value) or
+                parsed.username or parsed.password or parsed.query or parsed.fragment or
+                (parsed.scheme != 'https' and not (
+                    settings.DEBUG and parsed.hostname in ('localhost', '127.0.0.1', '::1')))):
+            raise ValidationError('Invalid frontend URL')
+    except (ValidationError, ValueError):
+        raise ImproperlyConfigured('FRONTEND_URL must be a valid HTTPS website URL.') from None
+    return value
+
+
+def _reset_url(value):
+    frontend = urlsplit(_frontend_url())
+    try:
+        URLValidator(schemes=['http', 'https'])(value)
+        reset = urlsplit(value)
+        if (reset.username or reset.password or
+                (reset.scheme, reset.hostname, reset.port) !=
+                (frontend.scheme, frontend.hostname, frontend.port)):
+            raise ValidationError('Invalid reset URL')
+    except (ValidationError, ValueError, TypeError):
+        raise ValueError('Password reset links must use the configured frontend origin.') from None
+    return value
+
+
 def _get_base_template(title: str, preheader: str, content_html: str) -> str:
-    base_frontend = getattr(settings, 'FRONTEND_URL', 'https://cxc.anshuman892494.online')
-    if ',' in base_frontend:
-        base_frontend = base_frontend.split(',')[0].strip()
-    base_frontend = base_frontend.rstrip('/')
-    if not base_frontend.startswith('http'):
-        base_frontend = f"https://{base_frontend}"
+    base_frontend = _frontend_url()
     logo_url = f"{base_frontend}/favicon.png"
     
     return f"""<!DOCTYPE html>
@@ -29,7 +61,7 @@ def _get_base_template(title: str, preheader: str, content_html: str) -> str:
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{title}</title>
+  <title>{escape(title)}</title>
   <style>
     body, table, td, a {{ -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }}
     table, td {{ mso-table-lspace: 0pt; mso-table-rspace: 0pt; }}
@@ -62,8 +94,8 @@ def _get_base_template(title: str, preheader: str, content_html: str) -> str:
               <table role="presentation" cellpadding="0" cellspacing="0" align="center">
                 <tr>
                   <td align="center">
-                    <a href="https://cxc.anshuman892494.online" target="_blank" style="text-decoration: none;">
-                      <img src="{logo_url}" height="28" alt="CampXChange" style="height: 28px; width: auto; vertical-align: middle; margin-right: 10px; display: inline-block;" />
+                    <a href="{escape(base_frontend)}" target="_blank" style="text-decoration: none;">
+                      <img src="{escape(logo_url)}" height="28" alt="CampXChange" style="height: 28px; width: auto; vertical-align: middle; margin-right: 10px; display: inline-block;" />
                       <span style="font-size: 22px; font-weight: 800; color: {TEXT_DARK}; vertical-align: middle; letter-spacing: -0.5px; display: inline-block;">Camp<span style="color: {BRAND_ORANGE};">XChange</span></span>
                     </a>
                   </td>
@@ -127,7 +159,7 @@ def get_otp_email_template(otp_code: str, email: str) -> tuple[str, str, str]:
         <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: {BRAND_ORANGE_HOVER}; margin-bottom: 6px;">
           Verification Code
         </div>
-        <div class="otp-code">{otp_code}</div>
+        <div class="otp-code">{escape(otp_code)}</div>
         <div style="font-size: 12px; color: #9A3412; margin-top: 8px; font-weight: 500;">
           Valid for 10 minutes &bull; Single-use only
         </div>
@@ -158,7 +190,7 @@ Never share this code with anyone.
 If you did not request this, please ignore this email.
 
 CampXChange — Student Marketplace
-https://cxc.anshuman892494.online
+{_frontend_url()}
 """
     return subject, html, text
 
@@ -176,15 +208,15 @@ def get_password_reset_otp_template(otp_code: str, email: str, name: str = "") -
         Reset Your Password
       </h1>
       <p style="font-size: 14px; line-height: 1.6; color: #4B5563; margin: 0 0 16px;">
-        {greeting}<br>
-        We received a verified request to reset the password for your student account associated with <strong>{email}</strong>.
+        {escape(greeting)}<br>
+        We received a verified request to reset the password for your student account associated with <strong>{escape(email)}</strong>.
       </p>
 
       <div class="otp-box">
         <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: {BRAND_ORANGE_HOVER}; margin-bottom: 6px;">
           Password Reset Code
         </div>
-        <div class="otp-code">{otp_code}</div>
+        <div class="otp-code">{escape(otp_code)}</div>
         <div style="font-size: 12px; color: #9A3412; margin-top: 8px; font-weight: 500;">
           Valid for 10 minutes &bull; Single-use only
         </div>
@@ -217,7 +249,7 @@ Never share this code with anyone.
 If you did not request a password reset, please ignore this email.
 
 CampXChange — Student Marketplace
-https://cxc.anshuman892494.online
+{_frontend_url()}
 """
     return subject, html, text
 
@@ -229,18 +261,19 @@ def get_password_reset_template(reset_url: str, email: str, name: str = "") -> t
     subject = "Reset your CampXChange password"
     preheader = "We received a request to reset your CampXChange password."
     greeting = f"Hello {name}," if name else "Hello Student,"
+    reset_url = _reset_url(reset_url)
 
     content = f"""
       <h1 style="font-size: 20px; font-weight: 700; color: {TEXT_DARK}; margin: 0 0 12px;">
         Reset Your Password
       </h1>
       <p style="font-size: 14px; line-height: 1.6; color: #4B5563; margin: 0 0 16px;">
-        {greeting}<br>
-        We received a request to reset your password for your account associated with <strong>{email}</strong>.
+        {escape(greeting)}<br>
+        We received a request to reset your password for your account associated with <strong>{escape(email)}</strong>.
       </p>
 
       <div style="text-align: center; margin: 26px 0;">
-        <a href="{reset_url}" target="_blank" class="btn">
+        <a href="{escape(reset_url)}" target="_blank" class="btn">
           Reset Password
         </a>
       </div>
@@ -271,7 +304,7 @@ def get_welcome_email_template(name: str, email: str, role: str = "BUYER") -> tu
     subject = "Welcome to CampXChange! 🎓"
     preheader = "Your student account is verified. Start exploring campus deals."
     display_name = name or "Student"
-    frontend_url = getattr(settings, 'FRONTEND_URL', 'https://cxc.anshuman892494.online')
+    frontend_url = _frontend_url()
 
     is_seller = str(role).upper() == 'SELLER'
     role_label = "Verified Student Seller" if is_seller else "Student Buyer"
@@ -294,7 +327,7 @@ def get_welcome_email_template(name: str, email: str, role: str = "BUYER") -> tu
 
     content = f"""
       <h1 style="font-size: 20px; font-weight: 700; color: {TEXT_DARK}; margin: 0 0 12px;">
-        Welcome to CampXChange, {display_name}! 🎉
+        Welcome to CampXChange, {escape(display_name)}! 🎉
       </h1>
       <p style="font-size: 14px; line-height: 1.6; color: #4B5563; margin: 0 0 16px;">
         Your student account is now verified and active. You are part of your campus's official student-to-student marketplace.
@@ -318,7 +351,7 @@ def get_welcome_email_template(name: str, email: str, role: str = "BUYER") -> tu
       </div>
 
       <div style="text-align: center; margin: 26px 0;">
-        <a href="{frontend_url}" target="_blank" class="btn">
+        <a href="{escape(frontend_url)}" target="_blank" class="btn">
           {"Go to Seller Dashboard" if is_seller else "Explore Campus Deals"}
         </a>
       </div>
@@ -344,19 +377,13 @@ def send_email_via_resend(to_email: str, subject: str, html_content: str, text_c
     Dispatches email using Resend API.
     """
     api_key = getattr(settings, 'RESEND_API_KEY', '') or os.environ.get('RESEND_API_KEY', '')
-    from_email = getattr(settings, 'RESEND_FROM_EMAIL', '') or os.environ.get('RESEND_FROM_EMAIL', 'CampXChange <noreply@cxc.anshuman892494.online>')
+    from_email = getattr(settings, 'RESEND_FROM_EMAIL', '') or os.environ.get('RESEND_FROM_EMAIL', 'CampXChange <onboarding@resend.dev>')
+    reply_to = (getattr(settings, 'RESEND_REPLY_TO_EMAIL', '') or
+                os.environ.get('RESEND_REPLY_TO_EMAIL', '')).strip()
 
     if not api_key or api_key.strip() == '' or 'your_resend_api_key' in api_key.lower():
         logger.warning('Email delivery unavailable: provider is not configured.')
-        if not settings.DEBUG:
-            return {"success": False, "mock": False, "error": "Email delivery is unavailable."}
-        if settings.DEBUG:
-            print(f"\n==================== [DEV RESEND EMAIL TO: {to_email}] ====================")
-            print(f"Subject: {subject}")
-            print(f"From: {from_email}")
-            print(text_content)
-            print("========================================================================\n")
-        return {"success": True, "mock": True, "message": "Email logged.", "id": "mock_delivery"}
+        return {"success": False, "mock": False, "error": "Email delivery is unavailable."}
 
     try:
         import resend
@@ -368,36 +395,124 @@ def send_email_via_resend(to_email: str, subject: str, html_content: str, text_c
             "subject": subject,
             "html": html_content,
             "text": text_content,
-            "reply_to": "support@cxc.anshuman892494.online",
             "headers": {
                 "X-Entity-Ref-ID": f"cxc-mail-{to_email}",
             }
         }
+        if reply_to:
+            # This is an operator-configured mailbox, never a fabricated support address.
+            validate_email(reply_to)
+            params['reply_to'] = reply_to
 
         response = resend.Emails.send(params)
-        email_id = getattr(response, 'id', None) or (response.get('id') if isinstance(response, dict) else str(response))
+        email_id = response.get('id') if isinstance(response, dict) else getattr(response, 'id', None)
+        if not isinstance(email_id, str) or not email_id.strip():
+            logger.error('Email provider returned no message identifier.')
+            return {"success": False, "mock": False, "error": "Email delivery is unavailable."}
         logger.info(f"Successfully dispatched email to {to_email} via Resend. Message ID: {email_id}")
         return {"success": True, "mock": False, "id": email_id, "message": "Email sent successfully via Resend."}
-    except Exception as e:
-        logger.exception(f"Failed to send email to {to_email} via Resend: {str(e)}")
-        return {"success": False, "mock": False, "error": str(e)}
+    except Exception as error:
+        # Provider exceptions can echo request bodies, OTPs and API credentials.
+        logger.error('Email provider delivery failed (%s).', type(error).__name__)
+        return {"success": False, "mock": False, "error": "Email delivery is unavailable."}
+
+
+def send_email_via_smtp(to_email, subject, html_content, text_content):
+    """Send through an authenticated SMTP mailbox with an encrypted connection."""
+    user = settings.SMTP_USER.strip()
+    password = settings.SMTP_PASSWORD
+    sender = settings.SMTP_FROM_EMAIL.strip() or user
+    use_ssl, use_tls = settings.SMTP_USE_SSL, settings.SMTP_USE_TLS
+    if not user or not password or not settings.SMTP_HOST or use_ssl == use_tls:
+        logger.warning('Email delivery unavailable: SMTP configuration is incomplete.')
+        return {'success': False, 'mock': False, 'error': 'Email delivery is unavailable.'}
+    try:
+        connection = get_connection(
+            backend='django.core.mail.backends.smtp.EmailBackend',
+            host=settings.SMTP_HOST, port=settings.SMTP_PORT, username=user,
+            password=password, use_ssl=use_ssl, use_tls=use_tls, timeout=15,
+        )
+        message = EmailMultiAlternatives(subject, text_content, sender, [to_email], connection=connection)
+        message.attach_alternative(html_content, 'text/html')
+        if message.send() != 1:
+            raise RuntimeError('SMTP message was not accepted')
+        return {'success': True, 'mock': False, 'message': 'Email accepted by SMTP server.'}
+    except Exception as error:
+        logger.error('Email provider delivery failed (%s).', type(error).__name__)
+        return {'success': False, 'mock': False, 'error': 'Email delivery is unavailable.'}
+
+
+class _NoEmailRedirects(urlrequest.HTTPRedirectHandler):
+    """Never send an email API key or OTP to a redirected destination."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def send_email_via_brevo(to_email, subject, html_content, text_content):
+    """Send via Brevo's HTTPS API, including on hosts that block SMTP."""
+    api_key = settings.BREVO_API_KEY.strip()
+    sender = settings.BREVO_FROM_EMAIL.strip()
+    if not api_key or not sender:
+        logger.warning('Email delivery unavailable: Brevo is not configured.')
+        return {'success': False, 'mock': False, 'error': 'Email delivery is unavailable.'}
+    try:
+        validate_email(sender)
+        validate_email(to_email)
+        payload = {
+            'sender': {'email': sender, 'name': settings.BREVO_FROM_NAME},
+            'to': [{'email': to_email}],
+            'subject': subject,
+            'htmlContent': html_content,
+        }
+        req = urlrequest.Request(
+            'https://api.brevo.com/v3/smtp/email',
+            data=json.dumps(payload).encode('utf-8'),
+            headers={'api-key': api_key, 'content-type': 'application/json', 'accept': 'application/json'},
+            method='POST',
+        )
+        opener = urlrequest.build_opener(_NoEmailRedirects())
+        with opener.open(req, timeout=15) as response:
+            if response.status != 201:
+                raise ValueError('Email provider did not accept the request')
+            response_data = json.loads(response.read(65537))
+        message_id = response_data.get('messageId')
+        if not isinstance(message_id, str) or not message_id.strip():
+            raise ValueError('Email provider did not return a message ID')
+        return {'success': True, 'mock': False, 'message': 'Email accepted by provider.'}
+    except Exception as error:
+        # Provider responses can contain credentials, email addresses, or OTPs.
+        logger.error('Email provider delivery failed (%s).', type(error).__name__)
+        return {'success': False, 'mock': False, 'error': 'Email delivery is unavailable.'}
+
+
+def _send_template(to_email, template, *args):
+    try:
+        subject, html, text = template(*args)
+    except (ImproperlyConfigured, ValueError):
+        logger.warning('Email delivery unavailable: website links are not configured safely.')
+        return {'success': False, 'mock': False, 'error': 'Email delivery is unavailable.'}
+    if settings.EMAIL_PROVIDER == 'resend':
+        return send_email_via_resend(to_email, subject, html, text)
+    if settings.EMAIL_PROVIDER == 'brevo':
+        return send_email_via_brevo(to_email, subject, html, text)
+    if settings.EMAIL_PROVIDER == 'smtp':
+        return send_email_via_smtp(to_email, subject, html, text)
+    logger.warning('Email delivery unavailable: unknown provider.')
+    return {'success': False, 'mock': False, 'error': 'Email delivery is unavailable.'}
 
 
 def send_otp_email(to_email: str, otp_code: str) -> dict:
-    subject, html, text = get_otp_email_template(otp_code, to_email)
-    return send_email_via_resend(to_email, subject, html, text)
+    return _send_template(to_email, get_otp_email_template, otp_code, to_email)
 
 
 def send_password_reset_otp_email(to_email: str, otp_code: str, name: str = "") -> dict:
-    subject, html, text = get_password_reset_otp_template(otp_code, to_email, name)
-    return send_email_via_resend(to_email, subject, html, text)
+    return _send_template(to_email, get_password_reset_otp_template, otp_code, to_email, name)
 
 
 def send_password_reset_email(to_email: str, reset_url: str, name: str = "") -> dict:
-    subject, html, text = get_password_reset_template(reset_url, to_email, name)
-    return send_email_via_resend(to_email, subject, html, text)
+    return _send_template(to_email, get_password_reset_template, reset_url, to_email, name)
 
 
 def send_welcome_email(to_email: str, name: str = "", role: str = "BUYER") -> dict:
-    subject, html, text = get_welcome_email_template(name, to_email, role=role)
-    return send_email_via_resend(to_email, subject, html, text)
+    return _send_template(to_email, get_welcome_email_template, name, to_email, role)

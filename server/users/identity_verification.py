@@ -16,6 +16,13 @@ def verification_result(image, reg_no, full_name):
             image_base64=image, target_reg_no=identity[1],
             target_full_name=identity[2], target_university='Lovely Professional University',
         )
+        # A model's reported match must agree with the extracted registration number.
+        # Apply the same check during the preview and final submission.
+        if result.get('success') is True and result.get('is_valid') is True:
+            extracted = ''.join(c for c in str(result.get('extracted_reg_no') or '') if c.isdigit())
+            if extracted != identity[1]:
+                result = {**result, 'is_valid': False, 'reg_matched': False,
+                          'reason': 'Registration number does not match the ID card.'}
         if result.get('success') is True and result.get('is_valid') is True:
             cache.set(key, result, 600)
     return result

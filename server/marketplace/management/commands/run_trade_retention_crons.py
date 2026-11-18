@@ -76,7 +76,7 @@ class Command(BaseCommand):
                     message="Items with multiple clear photos and flexible pricing sell 3x faster on campus! Tap to review your listing.",
                     notification_type='GENERAL',
                     priority='NORMAL',
-                    link=f"/product/{listing.id}",
+                    link=f"/listing/{listing.id}",
                     listing=listing,
                     extra_data={'listing_id': str(listing.id), 'action': 'LISTING_TIP'}
                 )

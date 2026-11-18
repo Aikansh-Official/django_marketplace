@@ -142,21 +142,10 @@ export default function IdVerificationTab({ profile, onProfileUpdated, onOpenSel
 
       if (aiResponse.is_valid) {
         // MATCH SUCCESSFUL! Update backend DB model CustomUser.is_id_verified = True
-        try {
-          let compressedForDb = idFrontImage;
-          try {
-            compressedForDb = await compressImageToDataUrl(idFrontImage, {
-              maxWidth: 1000,
-              maxHeight: 700,
-              quality: 0.75,
-            });
-          } catch (compErr) {
-            console.warn('Compression before upload failed, using original:', compErr);
-          }
-
-          await api.post('/auth/verify-id/', {
+        // Send the same image that was scanned so the server can reuse its verified result.
+        await api.post('/auth/verify-id/', {
             reg_no: registeredRegNo,
-            id_card_image: compressedForDb,
+            id_card_image: compressedForAi,
             id_card_data: {
               program: aiResponse.program || 'Student',
               validity: aiResponse.valid_upto || 'Active',
@@ -164,10 +153,7 @@ export default function IdVerificationTab({ profile, onProfileUpdated, onOpenSel
               regNo: aiResponse.extracted_reg_no || registeredRegNo,
               fullName: aiResponse.extracted_name || studentName
             }
-          });
-        } catch (apiErr) {
-          console.warn('Backend verify-id call:', apiErr?.response?.data || apiErr.message);
-        }
+        });
 
         setRejectionInfo(null);
         setIsEditing(false);
@@ -188,7 +174,7 @@ export default function IdVerificationTab({ profile, onProfileUpdated, onOpenSel
       }
     } catch (err) {
       console.error('ID verification error:', err);
-      const errMsg = err.response?.data?.reason || err.response?.data?.error || err.message || 'ID card scanning failed. Please try again.';
+      const errMsg = err.response?.data?.reason || err.response?.data?.error || err.response?.data?.detail || err.message || 'ID card scanning failed. Please try again.';
       toast.error(errMsg);
       setRejectionInfo({ reason: errMsg });
     } finally {
@@ -322,26 +308,26 @@ export default function IdVerificationTab({ profile, onProfileUpdated, onOpenSel
             <div className="pt-2">
               <div className="mb-1.5">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-                  Verified Selfie Photo
+                  Profile Photo
                 </span>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 p-3 rounded-md bg-gray-50 border border-gray-200/80">
                 <div className="flex items-center gap-3.5 min-w-0">
                   <img
                     src={profile.profile_photo}
-                    alt="Verified Live Selfie"
+                    alt="Profile photo"
                     className="w-14 h-14 sm:w-16 sm:h-16 rounded-md object-cover border-2 border-emerald-500 shadow-xs flex-shrink-0"
                   />
                   <div className="min-w-0">
                     <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
                       <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      Live Selfie Verified
+                      Photo Added
                     </span>
                     <p className="text-xs font-bold text-gray-900 mt-1 truncate">
                       {studentName || 'Student'}
                     </p>
                     <p className="text-[11px] text-gray-500 mt-0.5">
-                      Face identity authenticated with student credentials
+                      Your profile photo
                     </p>
                   </div>
                 </div>
@@ -358,7 +344,7 @@ export default function IdVerificationTab({ profile, onProfileUpdated, onOpenSel
           ) : (
             <div className="pt-2">
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">
-                Verified Selfie Photo
+                Profile Photo
               </span>
               <div className="flex items-center justify-between gap-3.5 p-3.5 rounded-md bg-amber-50/60 border border-amber-200/80">
                 <div className="flex items-center gap-3 min-w-0">
@@ -370,7 +356,7 @@ export default function IdVerificationTab({ profile, onProfileUpdated, onOpenSel
                       No Live Selfie Attached
                     </span>
                     <p className="text-[11px] text-gray-500 mt-0.5">
-                      Take a live selfie to verify your face identity and earn +3 trust points.
+                      Add a selfie to your profile.
                     </p>
                   </div>
                 </div>
@@ -415,8 +401,9 @@ export default function IdVerificationTab({ profile, onProfileUpdated, onOpenSel
             Student ID Card Verification
           </h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            Upload your physical student ID card photo to verify your identity and unlock a 100/100 trust score.
+            Upload your physical student ID card photo to verify your student details.
           </p>
+          <p className="text-xs text-gray-500 mt-2">Your ID photo, name and registration number are sent to Google Gemini for verification.</p>
         </div>
 
         {isEditing && (

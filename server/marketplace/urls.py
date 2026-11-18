@@ -1,3 +1,4 @@
+from .wishlist_views import WishlistView, WishlistItemView
 from django.urls import path
 from .views import (
     ListingListCreateView, ListingDetailView, MyListingsView,
@@ -23,6 +24,8 @@ from .views import (
 )
 
 urlpatterns = [
+    path('wishlist/', WishlistView.as_view(), name='wishlist'),
+    path('wishlist/<str:pk>/', WishlistItemView.as_view(), name='wishlist-item'),
     path('listings/', ListingListCreateView.as_view(), name='listing-list-create'),
     path('listings/<str:pk>/', ListingDetailView.as_view(), name='listing-detail'),
     path('listings/<str:pk>/status/', ToggleListingStatusView.as_view(), name='toggle-listing-status'),

@@ -8,7 +8,7 @@ import {
   Image as ImageIcon, RefreshCw
 } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+import { API_BASE } from '../config/api';
 
 const QUICK_LINK_PRESETS = [
   { label: 'All Listings', url: '/' },

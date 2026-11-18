@@ -179,6 +179,8 @@ function App() {
                       }
                     />
                     <Route path="/listing/:id" element={<ProductDetail />} />
+                    {/* Keep older saved notification links usable. */}
+                    <Route path="/product/:id" element={<ProductDetail />} />
                     <Route path="/about" element={<About />} />
                     <Route path="/guidelines" element={<Guidelines />} />
                     <Route path="/privacy" element={<Privacy />} />
@@ -215,6 +217,10 @@ function App() {
                           <Messages />
                         </ProtectedRoute>
                       }
+                    />
+                    <Route
+                      path="/chat/:listingId/:peerId"
+                      element={<ProtectedRoute><Messages /></ProtectedRoute>}
                     />
                     <Route
                       path="/profile"

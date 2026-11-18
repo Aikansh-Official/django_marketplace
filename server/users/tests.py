@@ -174,7 +174,7 @@ class UserSecurityTests(TestCase):
         mock_resp.read.return_value = json.dumps(mock_payload).encode('utf-8')
         mock_resp.__enter__.return_value = mock_resp
 
-        with patch('urllib.request.urlopen', return_value=mock_resp):
+        with patch('users.views.verify_google_token', return_value=(mock_payload, None)):
             res = self.client.post('/api/auth/google/', {'credential': 'fake_google_id_token'})
             self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
             self.assertEqual(res.data.get('code'), 'NOT_REGISTERED')
@@ -211,7 +211,7 @@ class UserSecurityTests(TestCase):
         mock_resp.read.return_value = json.dumps(mock_payload).encode('utf-8')
         mock_resp.__enter__.return_value = mock_resp
 
-        with patch('urllib.request.urlopen', return_value=mock_resp):
+        with patch('users.views.verify_google_token', return_value=(mock_payload, None)):
             res = self.client.post('/api/auth/google/', {'credential': 'valid_google_id_token'})
             self.assertEqual(res.status_code, status.HTTP_200_OK)
             self.assertIn('access', res.data)
@@ -293,7 +293,8 @@ class UserSecurityTests(TestCase):
         mock_resp.read.return_value = json.dumps(mock_firebase_payload).encode('utf-8')
         mock_resp.__enter__.return_value = mock_resp
 
-        with patch('urllib.request.urlopen', return_value=mock_resp):
+        from django.test import override_settings
+        with override_settings(FIREBASE_API_KEY='test-only-key'), patch('urllib.request.urlopen', return_value=mock_resp):
             res = self.client.post('/api/auth/google/', {'credential': 'valid_firebase_jwt_id_token'})
             self.assertEqual(res.status_code, status.HTTP_200_OK)
             self.assertIn('access', res.data)

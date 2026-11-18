@@ -166,7 +166,7 @@ export default function MyReportsTab() {
                       <Tag className="w-3.5 h-3.5 text-brand-500" />
                       <span>Reported Item:</span>
                       <Link
-                        to={`/product/${report.listing}`}
+                        to={`/listing/${report.listing}`}
                         className="font-bold text-brand-600 hover:underline inline-flex items-center gap-1"
                       >
                         {report.listing_title || `Listing #${report.listing}`}

@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import ThemeBackground from '../components/ThemeBackground';
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+import { API_BASE } from '../config/api';
 
 export default function Login({ setAuth }) {
   const [username, setUsername] = useState('');

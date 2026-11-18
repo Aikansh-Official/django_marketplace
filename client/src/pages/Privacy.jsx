@@ -95,6 +95,7 @@ export default function Privacy() {
                 </h3>
                 <p className="text-xs text-gray-600 leading-relaxed mb-3">
                   Students may optionally upload a photo of their physical LPU student ID card to earn the <strong>"LPU Verified"</strong> badge and increase their campus Trust Score.
+                  The photo and the name and registration number entered for verification are sent to Google's Gemini service for analysis.
                 </p>
                 <div className="p-3 bg-white rounded-md border border-gray-100 text-xs text-gray-600 space-y-1">
                   <p className="flex items-center gap-1.5 font-medium text-emerald-700">
@@ -103,7 +104,7 @@ export default function Privacy() {
                   </p>
                   <p className="flex items-center gap-1.5 font-medium text-emerald-700">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                    <strong>Protected Storage:</strong> Stored securely in verified server directories and accessible only during verification.
+                    <strong>Private storage:</strong> The saved ID image is restricted to the account owner and authorized administrators.
                   </p>
                 </div>
               </div>
@@ -128,7 +129,7 @@ export default function Privacy() {
                   D. Browser Local Storage Data
                 </h3>
                 <p className="text-xs text-gray-600 leading-relaxed">
-                  For your convenience, your browser stores temporary session tokens (<code className="bg-white px-1 py-0.5 rounded-md border border-gray-200">access</code> and <code className="bg-white px-1 py-0.5 rounded-md border border-gray-200">refresh</code>) so you don't need to re-login every time you open the site. Your bookmarked wishlist items (<code className="bg-white px-1 py-0.5 rounded-md border border-gray-200">campxchange_saved_items</code>) are also stored locally on your device.
+                  For your convenience, your browser stores temporary session tokens (<code className="bg-white px-1 py-0.5 rounded-md border border-gray-200">access</code> and <code className="bg-white px-1 py-0.5 rounded-md border border-gray-200">refresh</code>) so you don't need to re-login every time you open the site. When you are signed in, wishlist items are stored with your account. Guest bookmarks remain on this browser.
                 </p>
               </div>
 

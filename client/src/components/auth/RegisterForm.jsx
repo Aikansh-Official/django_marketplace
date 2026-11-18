@@ -81,6 +81,7 @@ export default function RegisterForm({
 
   // Role management
   const [internalRole, setInternalRole] = useState('BUYER');
+  const [verifiedIdImage, setVerifiedIdImage] = useState(null);
   const selectedRole = propSelectedRole !== undefined ? propSelectedRole : internalRole;
   const setSelectedRole = propSetSelectedRole || setInternalRole;
 
@@ -327,6 +328,8 @@ export default function RegisterForm({
     setScanProgress(15);
     setScanStatus('Optimizing ID card image...');
     setRejectionInfo(null);
+    setIsIdVerified(false);
+    setVerifiedIdImage(null);
 
     try {
       // 1. Client-Side Document Authenticity & Spoof Filter
@@ -342,7 +345,9 @@ export default function RegisterForm({
 
       setScanProgress(35);
       setScanStatus('Optimizing image for scanning...');
-      const optimizedImage = await compressImageToDataUrl(idFrontImage, 1280, 0.85);
+      const optimizedImage = await compressImageToDataUrl(idFrontImage, {
+        maxWidth: 1280, maxHeight: 900, quality: 0.85,
+      });
 
       setScanProgress(60);
       setScanStatus('Scanning & verifying ID card credentials...');
@@ -366,6 +371,7 @@ export default function RegisterForm({
 
       if (aiResponse.is_valid) {
         // MATCH SUCCESSFUL!
+        setVerifiedIdImage({ original: idFrontImage, scanned: optimizedImage });
         setIsIdVerified(true);
         setExtractedCardData({
           program: aiResponse.program || 'Student',
@@ -464,26 +470,15 @@ export default function RegisterForm({
 
     setIsLoading(true);
     try {
-      // Compress verified ID card image right before saving to DB
-      let compressedIdCardImage = null;
-      if (selectedRole === 'SELLER' && isIdVerified && idFrontImage) {
-        try {
-          compressedIdCardImage = await compressImageToDataUrl(idFrontImage, {
-            maxWidth: 1000,
-            maxHeight: 700,
-            quality: 0.75,
-          });
-        } catch (compErr) {
-          console.warn('ID compression failed before upload, using original:', compErr);
-          compressedIdCardImage = idFrontImage;
-        }
+      if (selectedRole === 'SELLER' && (!isIdVerified || verifiedIdImage?.original !== idFrontImage)) {
+        throw new Error('Please scan your current ID card before creating a seller account.');
       }
 
       // Include compressed verified ID card image, card data, and selfie profile photo if seller
       const payload = {
         ...data,
         role: selectedRole,
-        id_card_image: compressedIdCardImage,
+        id_card_image: selectedRole === 'SELLER' ? verifiedIdImage.scanned : null,
         id_card_data: selectedRole === 'SELLER' && isIdVerified && extractedCardData ? extractedCardData : {},
         profile_photo: selectedRole === 'SELLER' && selfieImage ? selfieImage : null
       };
@@ -523,7 +518,7 @@ export default function RegisterForm({
         });
         if (!handled) toast.error(errorsData.detail || 'Registration failed.');
       } else {
-        toast.error('An unexpected error occurred during registration.');
+        toast.error(error.message || 'An unexpected error occurred during registration.');
       }
     }
     setIsLoading(false);

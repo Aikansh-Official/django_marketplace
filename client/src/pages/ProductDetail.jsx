@@ -150,16 +150,21 @@ export default function ProductDetail() {
       const saved = isItemSaved(id);
       setIsSaved((prev) => (prev !== saved ? saved : prev));
     }
+    const refresh = () => setIsSaved(isItemSaved(id));
+    window.addEventListener('saved-items-updated', refresh);
+    return () => window.removeEventListener('saved-items-updated', refresh);
   }, [id]);
 
-  const handleToggleSave = () => {
+  const handleToggleSave = async () => {
     if (!listing) return;
     if (!isAuthenticated) {
       toast('Please log in to save items to your wishlist.', { icon: '🔒' });
       triggerLogin();
       return;
     }
-    const res = toggleSavedItem(listing);
+    let res;
+    try { res = await toggleSavedItem(listing); }
+    catch { toast.error('Could not update your wishlist. Please try again.'); return; }
     setIsSaved(res.isSaved);
     if (res.isSaved) {
       toast.success('Saved to your Wishlist!', { icon: '❤️' });

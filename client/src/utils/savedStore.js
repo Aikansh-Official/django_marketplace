@@ -1,82 +1,94 @@
-// Utility for managing saved / bookmarked marketplace listings
-const STORAGE_KEY = 'campxchange_saved_items';
-const LEGACY_STORAGE_KEY = 'lputrade_saved_items';
+import api from '../services/api';
 
+// Old unscoped wishlists are intentionally not imported: their owner is unknown.
+const GUEST_KEY = 'campxchange_guest_saved_items';
+let activeUserId = null;
+let accountItems = [];
+let loading = false;
+let failed = false;
+let generation = 0;
+const pending = new Set();
+
+function guestItems() {
+  try {
+    const data = JSON.parse(localStorage.getItem(GUEST_KEY) || '[]');
+    return Array.isArray(data) ? data : [];
+  } catch { return []; }
+}
+function notify() {
+  const items = getSavedItems();
+  window.dispatchEvent(new CustomEvent('saved-items-updated', { detail: { count: items.length, items, loading } }));
+}
+function currentStoredUserId() {
+  try {
+    if (!localStorage.getItem('access')) return null;
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    return user?.id ? String(user.id) : null;
+  } catch { return null; }
+}
 export const getSavedItems = () => {
+  const current = currentStoredUserId();
+  if (current !== activeUserId) return [];
+  return current ? accountItems : guestItems();
+};
+export const getWishlistStatus = () => currentStoredUserId() !== activeUserId || loading ? 'loading' : failed ? 'error' : 'ready';
+export const refreshWishlist = () => setWishlistUser(activeUserId, true);
+export const getSavedCount = () => getSavedItems().length;
+export const isItemSaved = (id) => Boolean(id && getSavedItems().some(item => String(item.id) === String(id)));
+
+// Bind all account operations to a stable user id, not a buyer/seller role.
+export async function setWishlistUser(userId, force = false) {
+  const next = userId ? String(userId) : null;
+  if (activeUserId === next && !force) return;
+  activeUserId = next;
+  accountItems = [];
+  failed = false;
+  const requestGeneration = ++generation;
+  loading = Boolean(next);
+  notify();
+  if (!next) return;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    console.error('Error loading saved items:', e);
-    return [];
+    const response = await api.get('/marketplace/wishlist/', { wishlistUserId: next });
+    if (generation === requestGeneration && currentStoredUserId() === next) accountItems = Array.isArray(response.data) ? response.data : [];
+  } catch {
+    if (generation === requestGeneration) {
+      failed = true;
+      window.dispatchEvent(new CustomEvent('wishlist-error', { detail: 'Could not load your wishlist. Please try again.' }));
+    }
+  } finally {
+    if (generation === requestGeneration) { loading = false; notify(); }
   }
-};
+}
 
-export const isItemSaved = (id) => {
-  if (!id) return false;
-  const items = getSavedItems();
-  return items.some((item) => String(item.id) === String(id));
-};
-
-export const toggleSavedItem = (listing) => {
-  if (!listing || !listing.id) return { isSaved: false, count: 0 };
-  const items = getSavedItems();
-  const index = items.findIndex((item) => String(item.id) === String(listing.id));
-  
-  let newItems;
-  let isSaved;
-
-  if (index >= 0) {
-    newItems = items.filter((item) => String(item.id) !== String(listing.id));
-    isSaved = false;
+export async function toggleSavedItem(listing) {
+  if (!listing?.id) throw new Error('Listing unavailable.');
+  const id = String(listing.id);
+  if (pending.has(id)) throw new Error('Please wait for the previous wishlist change.');
+  if (loading || failed || currentStoredUserId() !== activeUserId) throw new Error('Wishlist is unavailable. Please try again.');
+  const exists = isItemSaved(id);
+  const currentGeneration = generation;
+  if (activeUserId) {
+    pending.add(id);
+    try {
+      if (exists) await api.delete(`/marketplace/wishlist/${encodeURIComponent(id)}/`, { wishlistUserId: activeUserId });
+      else {
+        const response = await api.put(`/marketplace/wishlist/${encodeURIComponent(id)}/`, null, { wishlistUserId: activeUserId });
+        if (generation === currentGeneration) accountItems = [response.data, ...accountItems.filter(item => String(item.id) !== id)];
+      }
+      if (generation !== currentGeneration || currentStoredUserId() !== activeUserId) throw new Error('Account changed. Please try again.');
+      if (exists) accountItems = accountItems.filter(item => String(item.id) !== id);
+    } finally { pending.delete(id); }
   } else {
-    // Keep clean normalized structure
-    const coverImage = listing.images?.find((img) => img.is_primary)?.image_url 
-      || listing.images?.[0]?.image_url 
-      || listing.image 
-      || null;
-
-    const normalized = {
-      id: listing.id,
-      title: listing.title,
-      price: listing.price,
-      transaction_type: listing.transaction_type || 'SELL',
-      condition: listing.condition || 'GOOD',
-      location: listing.location || 'Campus',
-      category: listing.category || { name: 'General' },
-      images: listing.images || (coverImage ? [{ image_url: coverImage, is_primary: true }] : []),
-      seller: listing.seller || null,
-      created_at: listing.created_at || new Date().toISOString(),
-      saved_at: new Date().toISOString()
-    };
-
-    newItems = [normalized, ...items];
-    isSaved = true;
+    const items = guestItems();
+    const next = exists ? items.filter(item => String(item.id) !== id) : [listing, ...items];
+    localStorage.setItem(GUEST_KEY, JSON.stringify(next));
   }
-
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newItems));
-  } catch (e) {
-    console.error('Error saving item to localStorage:', e);
-  }
-
-  window.dispatchEvent(new CustomEvent('saved-items-updated', { detail: { count: newItems.length, items: newItems } }));
-  return { isSaved, count: newItems.length };
-};
-
-export const removeSavedItem = (id) => {
-  if (!id) return;
-  const items = getSavedItems();
-  const newItems = items.filter((item) => String(item.id) !== String(id));
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newItems));
-  } catch (e) {
-    console.error('Error removing saved item:', e);
-  }
-  window.dispatchEvent(new CustomEvent('saved-items-updated', { detail: { count: newItems.length, items: newItems } }));
-  return newItems;
-};
-
-export const getSavedCount = () => {
-  return getSavedItems().length;
-};
+  notify();
+  return { isSaved: !exists, count: getSavedCount() };
+}
+export async function removeSavedItem(id) {
+  const item = getSavedItems().find(item => String(item.id) === String(id));
+  if (!item) throw new Error('Item is no longer in this wishlist.');
+  await toggleSavedItem(item);
+  return getSavedItems();
+}

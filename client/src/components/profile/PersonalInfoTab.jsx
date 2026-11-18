@@ -99,8 +99,17 @@ export default function PersonalInfoTab({ profile, onProfileUpdated, onUpgradeCl
   const handleTestPush = async () => {
     setTestingPush(true);
     try {
-      await sendTestPushNotification();
-      toast.success('Test notification triggered!');
+      const registration = await requestNotificationPermissionAndRegister();
+      if (!registration.success) {
+        toast.error('Could not register this device for notifications.');
+        return;
+      }
+      const result = await sendTestPushNotification();
+      if (!result?.success) {
+        toast.error(result?.message || 'Test notification could not be sent.');
+      } else {
+        toast.success('Firebase accepted the test alert. Check your notification tray.');
+      }
     } catch (err) {
       toast.error('Test notification failed.');
     } finally {

@@ -64,6 +64,10 @@ The deployment guide records evidence, setup commands and provider limitations.
 
 ## 🚀 Quick Start
 
+For the personal environment files, API credentials, email, ID scanning and
+Firebase setup, see [Personal setup and integrations](docs/PERSONAL_SETUP.md).
+See also [architecture](docs/ARCHITECTURE.md) and [main flows](docs/FLOWS.md).
+
 ### 1. Django Backend
 ```bash
 cd server
@@ -94,4 +98,7 @@ Then configure Retrofit `BASE_URL` to `http://127.0.0.1:8000/`.
 ## 🔒 Security Highlights
 - **Rate-Limited Auth Endpoints:** Scoped rate throttles (`5/min` for signup/OTP, `10/min` for login).
 - **Encrypted Database OTPs:** OTPs are symmetrically encrypted at rest with Fernet cryptography before database insertion.
-- **Strict Role Gating:** Buyer accounts cannot list items until completing physical ID card OCR scan and live selfie verification.
+- **Seller Role Gating:** Seller registration requires ID verification and a
+  submitted selfie. An existing buyer can upgrade using ID verification alone,
+  retaining their account and password. The server does not independently establish
+  selfie liveness; an automated ID scan is not proof of a person's identity.

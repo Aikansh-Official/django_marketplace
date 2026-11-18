@@ -73,6 +73,27 @@ class MongoMediaUnitTests(SimpleTestCase):
         self.assertEqual(result['url'], 'https://example.test/photo.webp')
         upload.assert_called_once()
 
+    @override_settings(MEDIA_STORAGE_BACKEND='cloudinary', DEBUG=False)
+    def test_cloudinary_failure_does_not_silently_save_locally_in_production(self):
+        request = APIRequestFactory().post('/api/marketplace/upload-image/',
+                                          {'image': test_image()}, format='multipart')
+        force_authenticate(request, user=user('uploader'))
+        with patch('marketplace.views.upload_image_to_cloudinary', side_effect=RuntimeError('unavailable')), \
+                patch('django.core.files.storage.default_storage.save') as disk:
+            response = UploadImageView.as_view()(request)
+        self.assertEqual(response.status_code, 503)
+        disk.assert_not_called()
+
+    @override_settings(MEDIA_STORAGE_BACKEND='cloudinary', DEBUG=False)
+    def test_cloudinary_failure_does_not_create_partial_listing(self):
+        from rest_framework.exceptions import APIException
+        serializer = ListingCreateUpdateSerializer(context={'request': SimpleNamespace(user=user('uploader'))})
+        with patch('marketplace.serializers.upload_base64_to_cloudinary', side_effect=RuntimeError('unavailable')), \
+                patch('marketplace.models.Listing.objects.create') as create:
+            with self.assertRaises(APIException):
+                serializer.create({'seller': user('uploader'), 'uploaded_images': ['data:image/png;base64,test']})
+        create.assert_not_called()
+
 
 @override_settings(MEDIA_STORAGE_BACKEND='mongodb', CORS_ALLOWED_ORIGINS=['https://example.test'])
 class MongoMediaLiveTests(SimpleTestCase):

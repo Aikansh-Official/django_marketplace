@@ -73,7 +73,8 @@ export const getNotificationPermission = () => {
  * Registers the background Service Worker with Firebase configuration parameters
  */
 export const registerServiceWorker = async () => {
-  if (!isNotificationSupported()) return null;
+  if (!isNotificationSupported() || !firebaseConfig.apiKey || !firebaseConfig.projectId ||
+      !firebaseConfig.messagingSenderId || !firebaseConfig.appId) return null;
   try {
     const params = new URLSearchParams({
       apiKey: firebaseConfig.apiKey || '',
@@ -103,46 +104,36 @@ export const requestNotificationPermissionAndRegister = async () => {
   }
 
   try {
+    const messaging = await getFirebaseMessaging();
+    if (!messaging || !firebaseConfig.messagingSenderId) {
+      return { success: false, reason: 'MESSAGING_UNAVAILABLE' };
+    }
+
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
       return { success: false, reason: 'PERMISSION_DENIED', permission };
     }
 
-    let swRegistration = await registerServiceWorker();
-    if (navigator.serviceWorker && navigator.serviceWorker.ready) {
-      try {
-        const readyRegistration = await navigator.serviceWorker.ready;
-        if (readyRegistration) swRegistration = readyRegistration;
-      } catch (_) {}
-    }
-
-    const messaging = await getFirebaseMessaging();
-
-    if (!messaging) {
-      return { success: false, reason: 'MESSAGING_UNAVAILABLE' };
-    }
+    const swRegistration = await registerServiceWorker();
+    if (!swRegistration) return { success: false, reason: 'SERVICE_WORKER_UNAVAILABLE' };
 
     const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-    if (!vapidKey) {
-    }
-
     const { getToken } = await import('firebase/messaging');
 
     const token = await getToken(messaging, {
       vapidKey: vapidKey || undefined,
-      serviceWorkerRegistration: swRegistration || undefined
+      serviceWorkerRegistration: swRegistration
     });
 
     if (token) {
-      // Save locally
-      localStorage.setItem(FCM_TOKEN_STORAGE_KEY, token);
-
       // Register device token with Django backend
       await api.post('/marketplace/notifications/register-device/', {
         registration_id: token,
         device_type: 'WEB',
         device_name: `${navigator.platform || 'Desktop'} Web Browser`
       });
+      // Keep the token only after the backend has accepted the registration.
+      localStorage.setItem(FCM_TOKEN_STORAGE_KEY, token);
 
       // Also subscribe to global campus announcements topic (ExamPoint architecture)
       try {
@@ -313,11 +304,6 @@ export const sendTestPushNotification = async () => {
     }
     return res.data;
   } catch (err) {
-    // Fallback to local browser notification only if backend is unreachable
-    triggerBrowserNotification('CampXChange Browser Alert', {
-      body: 'Browser push notifications are enabled (local offline test).',
-      link: '/notifications'
-    });
     throw err;
   }
 };

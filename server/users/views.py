@@ -335,22 +335,25 @@ def verify_google_token(credential):
                     if claims and claims.get('email'):
                         return claims, None
         except Exception as e:
-            logger.debug(f"Firebase identity lookup did not match (will test tokeninfo): {e}")
+            # Request exceptions can contain the API key or a credential.
+            logger.debug('Firebase identity lookup failed (%s).', type(e).__name__)
 
-    # 2. Fallback to Google OAuth2 tokeninfo endpoint
+    # Google OAuth ID tokens must be issued to this deployment's client ID.
+    client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '').strip()
+    if not client_id:
+        return None, 'TOKEN_VERIFY_ERROR'
     try:
-        tokeninfo_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={credential}"
-        req = urllib.request.Request(tokeninfo_url, headers={'User-Agent': 'CampXChange-Auth/1.0'})
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            if resp.status == 200:
-                resp_data = json.loads(resp.read().decode('utf-8'))
-                claims = extract_google_user_claims(resp_data)
-                if claims and claims.get('email'):
-                    return claims, None
-                return None, 'INVALID_TOKEN'
-            return None, 'INVALID_TOKEN'
+        from google.auth.transport import requests as google_requests
+        from google.oauth2 import id_token
+        resp_data = id_token.verify_oauth2_token(credential, google_requests.Request(), client_id)
+        claims = extract_google_user_claims(resp_data)
+        if claims and claims.get('email'):
+            return claims, None
+        return None, 'INVALID_TOKEN'
+    except ValueError:
+        return None, 'INVALID_TOKEN'
     except Exception as e:
-        logger.warning(f"Google tokeninfo verification failed: {e}")
+        logger.warning('Google token verification failed (%s).', type(e).__name__)
         return None, 'TOKEN_VERIFY_ERROR'
 
 
@@ -697,20 +700,16 @@ class SendOTPView(APIView):
                 defaults={'otp': encrypted_otp, 'is_verified': False, 'created_at': timezone.now(), 'attempts': 0}
             )
             
-            # Send verification email via Resend HTML email service
+            # Send verification email using the configured provider.
             mail_result = send_otp_email(email, otp)
-            if not mail_result.get('success', False) and not mail_result.get('mock', False):
+            if not mail_result.get('success', False):
                 logger.warning(f"Failed to send OTP email to {email}: {mail_result.get('error')}")
-                if not settings.DEBUG:
-                    return Response(
-                        {"error": "Failed to send verification email. Please check your address or try again later."},
-                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                    )
+                return Response(
+                    {"error": "Failed to send verification email. Please check your address or try again later."},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE
+                )
 
             logger.info(f'OTP generated and sent for {email}')
-            if settings.DEBUG:
-                print(f"\n=========================================\n[CAMPXCHANGE OTP FOR {email}]: {otp}\n=========================================\n")
-                logger.debug(f'[DEV ONLY] OTP for {email}: {otp}')
             
             return Response({"message": "Verification code sent to your email successfully."})
         except Exception as e:
@@ -768,20 +767,16 @@ class ForgotPasswordRequestView(APIView):
                 attempts=0
             )
 
-            # Send OTP email via Resend
+            # Send OTP email using the configured provider.
             name_to_greet = user.full_name or user.first_name or user.username
             mail_res = send_password_reset_otp_email(clean_email, otp, name_to_greet)
 
-            if not mail_res.get('success', False) and not mail_res.get('mock', False):
-                logger.warning(f"Resend password reset OTP delivery issue for {clean_email}: {mail_res.get('error')}")
-                if not settings.DEBUG:
-                    return Response(
-                        {"error": "Failed to deliver verification code email. Please try again in a moment."},
-                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                    )
-
-            if settings.DEBUG:
-                print(f"\n=========================================\n[PASSWORD RESET OTP FOR {clean_reg} ({clean_email})]: {otp}\n=========================================\n")
+            if not mail_res.get('success', False):
+                logger.warning(f"Password reset OTP delivery issue for {clean_email}: {mail_res.get('error')}")
+                return Response(
+                    {"error": "Failed to deliver verification code email. Please try again in a moment."},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE
+                )
 
             return Response({
                 "message": f"A 6-digit verification code has been sent to {clean_email}.",
@@ -1192,9 +1187,7 @@ class UpgradeToSellerView(APIView):
     Requires:
       - reg_no (must match user.username)
       - id_card_image (base64 image of physical student ID)
-      - profile_photo (base64 selfie photo)
-      - id_card_data (extracted OCR metadata, optional)
-      - otp (6-digit OTP sent to user's registered email)
+    The existing account, password, and profile photo remain unchanged.
     """
     permission_classes = (IsAuthenticated,)
     throttle_classes = [ScopedRateThrottle]
@@ -1212,9 +1205,6 @@ class UpgradeToSellerView(APIView):
 
         reg_no = str(request.data.get('reg_no', '')).strip() or user.username
         id_card_image = request.data.get('id_card_image', None)
-        id_card_data = request.data.get('id_card_data', {})
-        profile_photo = request.data.get('profile_photo', None)
-        otp = str(request.data.get('otp', '')).strip()
 
         # 1. Match registration number against account (ignore leading @)
         clean_user_reg = str(user.username).strip().lstrip('@')
@@ -1233,65 +1223,13 @@ class UpgradeToSellerView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 3. Check selfie verification photo
-        if not profile_photo or not isinstance(profile_photo, str) or len(profile_photo) < 100:
-            return Response(
-                {"error": "A clear selfie photo is required to verify identity against your student ID card."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # 4. Check email verification code
-        if not otp or len(otp) != 6:
-            return Response(
-                {"error": "Please enter the 6-digit verification code sent to your email."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        record = OTPVerification.objects.filter(email__iexact=user.email).order_by('-created_at').first()
-        if not record:
-            return Response(
-                {"error": "No verification code was sent to this email. Please request a code first."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if record.is_locked():
-            return Response(
-                {"error": "Too many failed OTP attempts. Please request a new code."},
-                status=status.HTTP_429_TOO_MANY_REQUESTS
-            )
-
-        if not record.is_valid():
-            return Response(
-                {"error": "Verification code has expired. Please request a new code."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        from server.crypto import decrypt_data
-        stored_otp = decrypt_data(record.otp)
-
-        if stored_otp != otp:
-            record.attempts += 1
-            record.save(update_fields=['attempts'])
-            remaining = max(0, record.MAX_ATTEMPTS - record.attempts)
-            return Response(
-                {"error": f"Invalid verification code. {remaining} attempt(s) remaining."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        record.is_verified = True
-        record.save()
-
-        # 5. Upload student ID and profile photo to Cloudinary in .webp format
-        from marketplace.cloudinary_upload import upload_user_image_to_cloudinary
-
+        # The server independently verifies the submitted image against the signed-in account.
         from .identity_verification import require_verified_identity
         verified_data = require_verified_identity(id_card_image, user.username, user.full_name)
 
+        from marketplace.cloudinary_upload import upload_user_image_to_cloudinary
         cloudinary_id_card = upload_user_image_to_cloudinary(
             id_card_image, folder="campxchange/id_cards"
-        )
-        cloudinary_profile_photo = upload_user_image_to_cloudinary(
-            profile_photo, folder="campxchange/profiles"
         )
 
         # 6. Successfully upgrade Buyer to Verified Seller
@@ -1299,13 +1237,8 @@ class UpgradeToSellerView(APIView):
         user.role = 'SELLER'
         user.id_card_image = cloudinary_id_card
         user.id_card_data = verified_data
-        user.profile_photo = cloudinary_profile_photo
-        user.profile_picture_url = cloudinary_profile_photo
         user.trust_score = user.calculate_trust_score()
         user.save()
-
-        # Invalidate OTP record so it cannot be reused
-        record.delete()
 
         logger.info(f"User {user.username} successfully upgraded from BUYER to SELLER via UpgradeToSellerView.")
         return Response({

@@ -9,7 +9,7 @@ import {
   Coffee, Sparkles, Package, Music, Briefcase, Glasses, Layers, Tag
 } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+import { API_BASE } from '../config/api';
 
 // Available curated icons with labels and categories
 const AVAILABLE_ICONS = [

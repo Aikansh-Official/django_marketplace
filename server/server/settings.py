@@ -224,9 +224,21 @@ WHITENOISE_MANIFEST_STRICT = False
 
 
 # Resend Email & Service Configuration
+EMAIL_PROVIDER = os.environ.get('EMAIL_PROVIDER', 'resend').strip().lower()
+SMTP_HOST = os.environ.get('SMTP_HOST', 'smtp.hostinger.com')
+SMTP_PORT = int(os.environ.get('SMTP_PORT', '465'))
+SMTP_USER = os.environ.get('SMTP_USER', '')
+SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
+SMTP_FROM_EMAIL = os.environ.get('SMTP_FROM_EMAIL', '')
+SMTP_USE_SSL = os.environ.get('SMTP_USE_SSL', 'True').lower() == 'true'
+SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'False').lower() == 'true'
 RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
-RESEND_FROM_EMAIL = os.environ.get('RESEND_FROM_EMAIL', 'CampXChange <noreply@cxc.anshuman892494.online>')
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://cxc.anshuman892494.online')
+RESEND_FROM_EMAIL = os.environ.get('RESEND_FROM_EMAIL', 'CampXChange <onboarding@resend.dev>')
+RESEND_REPLY_TO_EMAIL = os.environ.get('RESEND_REPLY_TO_EMAIL', '')
+BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '')
+BREVO_FROM_EMAIL = os.environ.get('BREVO_FROM_EMAIL', '')
+BREVO_FROM_NAME = os.environ.get('BREVO_FROM_NAME', 'CampXChange')
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173' if DEBUG else '')
 PASSWORD_RESET_TIMEOUT_SECONDS = int(os.environ.get('PASSWORD_RESET_TIMEOUT_SECONDS', '900'))  # 15 minutes
 
 # Google OAuth Configuration
