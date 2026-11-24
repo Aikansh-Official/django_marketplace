@@ -1,0 +1,121 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Lock, User, Loader2 } from 'lucide-react';
+import logoImg from '../assets/CampusXChange_Logo.webp';
+import toast from 'react-hot-toast';
+import ThemeBackground from '../components/ThemeBackground';
+import axios from 'axios';
+
+import { API_BASE } from '../config/api';
+
+export default function Login({ setAuth }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // 1. Get Tokens
+      const loginRes = await axios.post(`${API_BASE}/auth/login/`, {
+        username,
+        password
+      });
+
+      if (loginRes.data.access) {
+        localStorage.setItem('admin_access', loginRes.data.access);
+        localStorage.setItem('admin_refresh', loginRes.data.refresh);
+      }
+
+      // 2. Fetch Profile or use returned user data to check Admin status
+      let profileData = loginRes.data.user;
+      if (!profileData) {
+        const profileRes = await axios.get(`${API_BASE}/auth/profile/`);
+        profileData = profileRes.data;
+      }
+
+      if (profileData && (profileData.is_staff || profileData.is_superuser)) {
+        // Success - store in localStorage and update state
+        localStorage.setItem('admin_user', JSON.stringify(profileData));
+        setAuth(true);
+        navigate('/');
+      } else {
+        localStorage.removeItem('admin_access');
+        localStorage.removeItem('admin_refresh');
+        localStorage.removeItem('admin_user');
+        throw new Error('You do not have administrative privileges.');
+      }
+
+    } catch (err) {
+      const errMsg = err.response?.data?.detail || err.response?.data?.error || err.message || 'Login failed. Please try again.';
+      toast.error(errMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden font-sans">
+      <ThemeBackground />
+
+      {/* Login Card */}
+      <div className="w-full max-w-md bg-white/80 backdrop-blur-md border border-white/20 p-10 rounded-md shadow-2xl relative z-10">
+
+        <div className="flex flex-col items-center mb-8">
+          <div className="mb-3 flex items-center justify-center hover:scale-105 transition-transform duration-300">
+            <img src={logoImg} alt="CampXChange Logo" className="h-16 w-auto object-contain" />
+          </div>
+          <p className="text-brand-500 text-xs tracking-[0.3em] font-bold mt-1">ADMIN PORTAL</p>
+        </div>
+
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div>
+            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-wider mb-2">Username or Email</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <User className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                className="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-md pl-12 pr-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all placeholder-gray-400"
+                placeholder="admin"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-wider mb-2">Password</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Lock className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full bg-gray-50 border border-gray-200 text-gray-900 font-medium rounded-md pl-12 pr-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all placeholder-gray-400"
+                placeholder="••••••••"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-4 px-4 rounded-md shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed mt-4 active:scale-[0.98]"
+          >
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign in'}
+          </button>
+        </form>
+
+      </div>
+    </div>
+  );
+}

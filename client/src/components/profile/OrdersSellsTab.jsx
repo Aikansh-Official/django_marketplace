@@ -1,0 +1,894 @@
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
+import api from '../../services/api';
+import toast from 'react-hot-toast';
+import { getSafeImageUrl } from '../../utils/imageUrl';
+import {
+  Package,
+  Plus,
+  Eye,
+  Edit3,
+  Trash2,
+  ExternalLink,
+  MapPin,
+  Clock,
+  ShoppingBag,
+  MessageSquare,
+  CheckCircle2,
+  Calendar,
+  Layers,
+  ArrowRight,
+  TrendingUp,
+  Tag,
+  QrCode,
+  Camera,
+  Star
+} from 'lucide-react';
+const HandoverQRModal = lazy(() => import('../handover/HandoverQRModal'));
+const HandoverScannerModal = lazy(() => import('../handover/HandoverScannerModal'));
+const ReviewModal = lazy(() => import('../reviews/ReviewModal'));
+import { emitTradeEvent, TRADE_ACTIONS } from '../../utils/tradeEvents';
+import { prioritizeOffer, tradeSubTab } from '../../utils/profileNavigation';
+
+export default function OrdersSellsTab({ onListingsCountChange, profile, isSeller: isSellerProp, requestedTab, requestedOfferId }) {
+  const isSeller = isSellerProp ?? (profile?.role === 'SELLER' || profile?.is_id_verified);
+  const [subTab, setSubTab] = useState(() => tradeSubTab(requestedTab, isSeller)); // 'selling' | 'orders'
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [listings, setListings] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [deleteModalId, setDeleteModalId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Sync subTab if isSeller changes
+  useEffect(() => {
+    if (!isSeller) {
+      setSubTab('orders');
+    } else if (['my-orders', 'my_orders', 'my-sales', 'my_sales'].includes(requestedTab)) {
+      setSubTab(tradeSubTab(requestedTab, isSeller));
+    }
+  }, [isSeller, requestedTab, requestedOfferId]);
+
+  // Handover state
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [activeOfferForQR, setActiveOfferForQR] = useState(null);
+  const [showScannerModal, setShowScannerModal] = useState(false);
+  const [selectedOrderForScanner, setSelectedOrderForScanner] = useState(null);
+
+  // Review modal state
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewTargetDeal, setReviewTargetDeal] = useState(null);
+  const [respondingToCounter, setRespondingToCounter] = useState(false);
+
+  const handleOpenQRForListing = async (listingId) => {
+    try {
+      const res = await api.get(`/marketplace/listings/${listingId}/offers/`);
+      const acceptedOffer = res.data.find((o) => o.status === 'ACCEPTED');
+      if (acceptedOffer) {
+        const listing = listings.find((l) => l.id === listingId);
+        setActiveOfferForQR({
+          ...acceptedOffer,
+          location: listing?.location,
+          image: listing?.images?.[0]?.image_url || acceptedOffer.listing_image
+        });
+        setShowQRModal(true);
+      } else {
+        toast.error('No accepted deal found for this reserved listing.');
+      }
+    } catch (err) {
+      toast.error('Failed to load offer details.');
+    }
+  };
+
+  const handleCancelDeal = async (offerId) => {
+    const targetOrder = orders.find((o) => o.id === offerId);
+    const isPending = targetOrder?.status === 'PENDING';
+    const confirmPrompt = isPending
+      ? 'Are you sure you want to withdraw your purchase request?'
+      : 'Are you sure you want to cancel this campus deal? The item will be made available again.';
+
+    if (!window.confirm(confirmPrompt)) {
+      return;
+    }
+    try {
+      await api.post(`/marketplace/offers/${offerId}/cancel/`);
+      toast.success(isPending ? 'Purchase request withdrawn.' : 'Deal cancelled. Listing restored to Active.');
+      fetchMyOffers(false);
+      if (isSeller) fetchMyListings(false);
+      emitTradeEvent(TRADE_ACTIONS.DEAL_CANCELLED, { offerId });
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to cancel deal.');
+    }
+  };
+
+  const handleBuyerCounterRespond = async (offerId, action) => {
+    setRespondingToCounter(true);
+    try {
+      await api.post(`/marketplace/offers/${offerId}/counter-respond/`, { action });
+      toast.success(action === 'ACCEPT' ? 'Counter-offer accepted! Deal is now reserved.' : 'Counter-offer declined.');
+      fetchMyOffers(false);
+      emitTradeEvent(TRADE_ACTIONS.COUNTER_RESPONDED, { offerId, action });
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to respond to counter-offer.');
+    } finally {
+      setRespondingToCounter(false);
+    }
+  };
+
+  const handleHandoverSuccess = () => {
+    setShowQRModal(false);
+    setShowScannerModal(false);
+    fetchMyOffers(false);
+    if (isSeller) fetchMyListings(false);
+    emitTradeEvent(TRADE_ACTIONS.DEAL_COMPLETED, {});
+  };
+
+  const fetchMyOffers = async (silent = false) => {
+    if (!silent) setLoadingOrders(true);
+    try {
+      const res = await api.get('/marketplace/my-offers/');
+      setOrders(res.data);
+    } catch (err) {
+      console.error('Failed to load my offers', err);
+    } finally {
+      if (!silent) setLoadingOrders(false);
+    }
+  };
+
+  const fetchMyListings = async (silent = false) => {
+    if (!isSeller) return;
+    if (!silent) setLoading(true);
+    try {
+      const url =
+        statusFilter === 'ALL'
+          ? '/marketplace/my-listings/'
+          : `/marketplace/my-listings/?status=${statusFilter}`;
+      const res = await api.get(url);
+      setListings(res.data);
+      if (onListingsCountChange) {
+        onListingsCountChange(res.data.length);
+      }
+    } catch (err) {
+      console.error('Failed to load my listings', err);
+      if (!silent) toast.error('Could not load listings.');
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  };
+
+  // Initial tab and filter changes load
+  useEffect(() => {
+    if (!isSeller) {
+      fetchMyOffers(false);
+    } else if (subTab === 'selling') {
+      fetchMyListings(false);
+    } else if (subTab === 'orders') {
+      fetchMyOffers(false);
+    }
+  }, [statusFilter, subTab, isSeller]);
+
+  // Real-Time Auto-Refresh & Synchronization Engine for Orders & Sells
+  useEffect(() => {
+    let isSubscribed = true;
+
+    const performSync = (silent = true) => {
+      if (!isSubscribed || document.visibilityState === 'hidden') return;
+      if (isSeller && subTab === 'selling') {
+        fetchMyListings(silent);
+      } else {
+        fetchMyOffers(silent);
+      }
+    };
+
+    // Auto-refresh interval (every 12s fallback; event-driven for instant sync)
+    const interval = setInterval(() => {
+      performSync(true);
+    }, 12000);
+
+    const handleSyncEvent = () => {
+      performSync(true);
+    };
+
+    const handleStorage = (e) => {
+      if (e.key === 'deal_completed_event' || e.key === 'trade_updated_event') {
+        performSync(true);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        performSync(true);
+      }
+    };
+
+    window.addEventListener('deal-completed', handleSyncEvent);
+    window.addEventListener('trade-updated', handleSyncEvent);
+    window.addEventListener('storage', handleStorage);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
+
+    return () => {
+      isSubscribed = false;
+      clearInterval(interval);
+      window.removeEventListener('deal-completed', handleSyncEvent);
+      window.removeEventListener('trade-updated', handleSyncEvent);
+      window.removeEventListener('storage', handleStorage);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
+    };
+  }, [isSeller, subTab, statusFilter]);
+
+  const handleStatusChange = async (listingId, newStatus) => {
+    const currentItem = listings.find((l) => l.id === listingId);
+    if (currentItem?.status === 'SOLD') {
+      toast.error('This item has already been marked as Sold and cannot be changed.');
+      return;
+    }
+    try {
+      await api.patch(
+        `/marketplace/listings/${listingId}/status/`,
+        { status: newStatus }
+      );
+      toast.success(`Listing status marked as ${newStatus}`);
+      fetchMyListings();
+    } catch (err) {
+      console.error('Failed to change status', err);
+      toast.error(err.response?.data?.error || 'Failed to update status.');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteModalId) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/marketplace/listings/${deleteModalId}/`);
+      toast.success('Listing permanently removed.');
+      setDeleteModalId(null);
+      fetchMyListings();
+    } catch (err) {
+      console.error('Failed to delete listing', err);
+      toast.error('Failed to delete listing.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const totalListings = listings.length;
+  const activeCount = listings.filter((l) => l.status === 'ACTIVE').length;
+  const soldCount = listings.filter((l) => l.status === 'SOLD').length;
+  const totalViews = listings.reduce((acc, curr) => acc + (curr.views_count || 0), 0);
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'ACTIVE':
+        return (
+          <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            Active
+          </span>
+        );
+      case 'PENDING':
+        return (
+          <span className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            Reserved
+          </span>
+        );
+      case 'SOLD':
+        return (
+          <span className="inline-flex items-center gap-1 bg-gray-100 border border-gray-300 text-gray-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+            Sold
+          </span>
+        );
+      case 'HIDDEN':
+        return (
+          <span className="inline-flex items-center gap-1 bg-purple-50 border border-purple-200 text-purple-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+            Hidden
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      {isSeller ? (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 pb-4">
+          <div className="flex items-center gap-2 bg-gray-100/80 p-1 rounded-md w-fit">
+            <button
+              type="button"
+              onClick={() => setSubTab('selling')}
+              className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${
+                subTab === 'selling'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Package className="w-4 h-4 text-brand-500" />
+              My Sell Listings ({totalListings})
+            </button>
+            <button
+              type="button"
+              onClick={() => setSubTab('orders')}
+              className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${
+                subTab === 'orders'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <ShoppingBag className="w-4 h-4 text-emerald-600" />
+              My Orders & Trades ({orders.length})
+            </button>
+          </div>
+
+          {subTab === 'selling' && (
+            <Link
+              to="/sell"
+              className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold py-2.5 px-4 rounded-md transition-all shadow-sm hover:shadow-md self-start sm:self-auto"
+            >
+              <Plus className="w-4 h-4" />
+              Post New Listing
+            </Link>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-md border border-emerald-200 shadow-2xs">
+              <ShoppingBag className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-extrabold text-gray-900 tracking-tight">
+                My Orders & Campus Deals
+              </h2>
+              <p className="text-xs text-gray-500">
+                Track your item purchase offers, meetup status, and order history
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-gray-700 bg-gray-100 px-3 py-1 rounded-full border border-gray-200">
+            {orders.length} {orders.length === 1 ? 'Offer' : 'Offers'}
+          </span>
+        </div>
+      )}
+
+      {isSeller && subTab === 'selling' ? (
+        <>
+          {/* Metrics Row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
+            <div className="bg-white border border-gray-200/90 rounded-md p-3 sm:p-4 shadow-sm">
+              <div className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">
+                Total Listings
+              </div>
+              <div className="text-xl sm:text-2xl font-black text-gray-900 mt-1">{totalListings}</div>
+            </div>
+            <div className="bg-white border border-gray-200/90 rounded-md p-3 sm:p-4 shadow-sm">
+              <div className="text-[10px] font-extrabold text-emerald-600 uppercase tracking-wider">
+                Active Now
+              </div>
+              <div className="text-xl sm:text-2xl font-black text-emerald-700 mt-1">{activeCount}</div>
+            </div>
+            <div className="bg-white border border-gray-200/90 rounded-md p-3 sm:p-4 shadow-sm">
+              <div className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">
+                Items Sold
+              </div>
+              <div className="text-xl sm:text-2xl font-black text-gray-700 mt-1">{soldCount}</div>
+            </div>
+            <div className="bg-white border border-gray-200/90 rounded-md p-3 sm:p-4 shadow-sm">
+              <div className="text-[10px] font-extrabold text-brand-600 uppercase tracking-wider">
+                Total Views
+              </div>
+              <div className="text-xl sm:text-2xl font-black text-brand-700 mt-1">{totalViews}</div>
+            </div>
+          </div>
+
+          {/* Status Filter Buttons */}
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 -mx-1 px-1 touch-pan-x scrollbar-none">
+            {[
+              { key: 'ALL', label: 'All Items' },
+              { key: 'ACTIVE', label: 'Active' },
+              { key: 'PENDING', label: 'Reserved' },
+              { key: 'SOLD', label: 'Sold' },
+              { key: 'HIDDEN', label: 'Hidden' }
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setStatusFilter(tab.key)}
+                className={`px-3 py-1.5 text-xs font-bold rounded-md whitespace-nowrap transition-all ${
+                  statusFilter === tab.key
+                    ? 'bg-gray-900 text-white shadow-sm'
+                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Listings List */}
+          {loading ? (
+            <div className="flex justify-center items-center py-20 bg-white rounded-md border border-gray-200">
+              <div className="w-8 h-8 border-3 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : listings.length === 0 ? (
+            <div className="bg-white border border-gray-200/90 rounded-md p-8 sm:p-12 text-center shadow-sm">
+              <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="text-sm font-bold text-gray-900">No listings found</h3>
+              <p className="text-xs text-gray-500 mt-1 mb-5">
+                You do not have any items in the selected status filter.
+              </p>
+              <Link
+                to="/sell"
+                className="bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-5 rounded-md text-xs inline-flex items-center gap-2 shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Sell an Item Now
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-3.5">
+              {listings.map((item) => {
+                const cover =
+                  item.images?.find((i) => i.is_primary)?.image_url ||
+                  item.images?.[0]?.image_url;
+
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-white border border-gray-200/90 rounded-md p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3.5 sm:gap-4 shadow-sm hover:border-gray-300 transition-all"
+                  >
+                    {/* Left Thumbnail & Info */}
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                      {/* Responsive thumbnail size */}
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-md bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-200 flex items-center justify-center">
+                        {cover ? (
+                          <img
+                            src={getSafeImageUrl(cover)}
+                            alt={item.title}
+                            loading="lazy"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <Package className="w-7 h-7 text-gray-300" />
+                        )}
+                      </div>
+
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(item.status)}
+                          <span className="text-[11px] text-gray-400 font-semibold">
+                            {item.category?.name}
+                          </span>
+                          {item.status === 'SOLD' && item.completed_offer ? (
+                            <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              Sold to {item.completed_offer.buyer_name || item.completed_offer.buyer_reg}
+                            </span>
+                          ) : (item.offers_count > 0 || item.total_offers_count > 0) ? (
+                            <Link
+                              to={`/listing/${item.id}`}
+                              className="inline-flex items-center gap-1 bg-brand-50 border border-brand-200 text-brand-700 text-[10px] font-bold px-2 py-0.5 rounded-full hover:bg-brand-100 transition-colors"
+                            >
+                              <ShoppingBag className="w-3 h-3 text-brand-500" />
+                              {item.offers_count || item.total_offers_count} {(item.offers_count || item.total_offers_count) === 1 ? 'Buyer Request' : 'Buyer Requests'}
+                            </Link>
+                          ) : null}
+                        </div>
+
+                        <Link
+                          to={`/listing/${item.id}`}
+                          className="font-bold text-sm text-gray-900 hover:text-brand-600 truncate block transition-colors"
+                        >
+                          {item.title}
+                        </Link>
+
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                          <span className="font-black text-gray-900">
+                            {item.transaction_type === 'DONATE' ? 'Free' : `Rs ${item.price}`}
+                          </span>
+                          <span>•</span>
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                            {item.location}
+                          </span>
+                          <span>•</span>
+                          <span className="flex items-center gap-1">
+                            <Eye className="w-3.5 h-3.5 text-gray-400" />
+                            {item.views_count || 0} views
+                          </span>
+                          <span>•</span>
+                          <span className="flex items-center gap-1">
+                            <ShoppingBag className="w-3.5 h-3.5 text-gray-400" />
+                            {item.total_offers_count || item.offers_count || 0} requests
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Action Controls */}
+                    <div className="flex flex-wrap items-center gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-gray-100">
+                      {item.status === 'PENDING' && (
+                        <button
+                          onClick={() => handleOpenQRForListing(item.id)}
+                          className="bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-3 py-2 rounded-md shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                          title="Generate Handover QR & PIN"
+                        >
+                          <QrCode className="w-3.5 h-3.5" />
+                          Handover QR
+                        </button>
+                      )}
+
+                      {item.offers_count > 0 && item.status !== 'PENDING' && (
+                        <Link
+                          to={`/listing/${item.id}`}
+                          className="bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-3 py-2 rounded-md shadow-xs flex items-center gap-1.5 transition-all"
+                        >
+                          <ShoppingBag className="w-3.5 h-3.5" />
+                          Review ({item.offers_count})
+                        </Link>
+                      )}
+
+                      {item.status === 'SOLD' ? (
+                        <span className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-md px-3 py-2 text-xs font-bold flex items-center gap-1 select-none">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          Sold
+                        </span>
+                      ) : (
+                        <select
+                          value={item.status}
+                          onChange={(e) => handleStatusChange(item.id, e.target.value)}
+                          className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-xs font-bold text-gray-700 outline-none focus:ring-2 focus:ring-brand-500 transition-all cursor-pointer"
+                        >
+                          <option value="ACTIVE">Mark Active</option>
+                          <option value="PENDING">Mark Reserved</option>
+                          <option value="SOLD">Mark Sold</option>
+                          <option value="HIDDEN">Mark Hidden</option>
+                        </select>
+                      )}
+
+                      <Link
+                        to={`/listing/${item.id}`}
+                        className="bg-gray-50 hover:bg-gray-100 text-gray-700 p-2.5 rounded-md transition-colors border border-gray-200"
+                        title="View Listing"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </Link>
+
+                      {item.status !== 'SOLD' && (
+                        <Link
+                          to={`/edit-listing/${item.id}`}
+                          className="bg-gray-50 hover:bg-gray-100 text-gray-700 p-2.5 rounded-md transition-colors border border-gray-200"
+                          title="Edit Listing"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </Link>
+                      )}
+
+                      <button
+                        onClick={() => setDeleteModalId(item.id)}
+                        className="bg-red-50 hover:bg-red-100 text-red-600 p-2.5 rounded-md transition-colors border border-red-100"
+                        title="Delete Listing"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      ) : (
+        /* Real Orders & Trade Offers View from Database */
+        <div className="space-y-4">
+          <div className="bg-white rounded-md border border-gray-200/90 p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div>
+                <h3 className="text-xs font-extrabold text-gray-900 uppercase tracking-wider">
+                  Campus Trade Deals & Offers
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Offers and purchase inquiries you have submitted to sellers.
+                </p>
+              </div>
+              <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
+                {orders.length} Offers
+              </span>
+            </div>
+
+            {loadingOrders ? (
+              <div className="flex justify-center items-center py-16">
+                <div className="w-8 h-8 border-3 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : orders.length === 0 ? (
+              <div className="py-12 text-center space-y-3">
+                <ShoppingBag className="w-12 h-12 text-gray-300 mx-auto" />
+                <h4 className="text-sm font-bold text-gray-800">No active trade deals or offers yet</h4>
+                <p className="text-xs text-gray-500 max-w-sm mx-auto">
+                  When you submit an offer or coordinate a campus meetup for an item, it will be tracked here.
+                </p>
+                <div className="pt-2">
+                  <Link
+                    to="/"
+                    className="inline-flex items-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white font-bold py-2 px-4 rounded-md text-xs transition-colors shadow-sm"
+                  >
+                    Browse Campus Marketplace
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {prioritizeOffer(orders, requestedOfferId).map((ord) => (
+                  <div
+                    key={ord.id}
+                    className={`bg-gray-50/80 border rounded-md p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${String(ord.id) === requestedOfferId ? 'border-brand-500' : 'border-gray-200/80'}`}
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      {ord.listing_image ? (
+                        <img
+                          src={getSafeImageUrl(ord.listing_image)}
+                          alt=""
+                          loading="lazy"
+                          className="w-14 h-14 rounded-md object-cover flex-shrink-0 border border-gray-200"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-14 h-14 rounded-md bg-gray-200 flex items-center justify-center text-gray-400 flex-shrink-0">
+                          <Package className="w-6 h-6" />
+                        </div>
+                      )}
+                      <div className="space-y-1 min-w-0">
+                        {String(ord.id) === requestedOfferId && <p className="text-xs font-bold text-brand-600">Requested deal</p>}
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                              ord.status === 'COMPLETED'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : ord.status === 'ACCEPTED'
+                                ? 'bg-blue-100 text-blue-800'
+                                : ord.status === 'REJECTED'
+                                ? 'bg-rose-100 text-rose-800'
+                                : ord.status === 'CANCELLED'
+                                ? 'bg-gray-200 text-gray-700'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}
+                          >
+                            {ord.status === 'COMPLETED'
+                              ? '🎉 Purchased & Verified'
+                              : ord.status === 'ACCEPTED'
+                              ? 'Deal Accepted (Meetup Pending)'
+                              : ord.status === 'REJECTED'
+                              ? 'Request Declined'
+                              : ord.status === 'CANCELLED'
+                              ? 'Deal Cancelled'
+                              : 'Pending Seller Response'}
+                          </span>
+                          <span className="text-[11px] text-gray-400">
+                            {new Date(ord.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+
+                        <Link
+                          to={`/listing/${ord.listing}`}
+                          className="font-bold text-sm text-gray-900 hover:text-brand-600 truncate block"
+                        >
+                          {ord.listing_title}
+                        </Link>
+
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600">
+                          <span className="font-black text-gray-900">
+                            Purchase Price: ₹{ord.offer_amount}
+                          </span>
+                          <span>•</span>
+                          <span>
+                            Seller: <strong>{ord.seller_name || `@${ord.seller_reg}`}</strong>
+                          </span>
+                          {ord.meetup_location && (
+                            <>
+                              <span>•</span>
+                              <span className="flex items-center gap-1 text-gray-500">
+                                <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                                {ord.meetup_location}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        {ord.status === 'CANCELLED' && ord.cancellation_reason && (
+                          <div className="text-xs text-red-700 bg-red-50/90 border border-red-200 p-2 rounded mt-1">
+                            <strong>Cancellation Notice:</strong> {ord.cancellation_reason}
+                          </div>
+                        )}
+                        {ord.status === 'COMPLETED' && (
+                          <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 mt-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            Verified Handover (+5 Trust Points Awarded)
+                          </div>
+                        )}
+                        {ord.buyer_message && (
+                          <p className="text-xs text-gray-500 italic mt-1 bg-white/60 p-1.5 rounded border border-gray-100">
+                            Your Note: "{ord.buyer_message}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-200/60 w-full sm:w-auto">
+                      {ord.status === 'COUNTERED' && (
+                        <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                          <button
+                            onClick={() => handleBuyerCounterRespond(ord.id, 'ACCEPT')}
+                            disabled={respondingToCounter}
+                            className="flex-1 sm:flex-initial min-h-[38px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-2xs transition-all cursor-pointer flex items-center justify-center"
+                            title="Accept proposed counter-offer"
+                          >
+                            Accept Rs {ord.counter_amount}
+                          </button>
+                          <button
+                            onClick={() => handleBuyerCounterRespond(ord.id, 'REJECT')}
+                            disabled={respondingToCounter}
+                            className="flex-1 sm:flex-initial min-h-[38px] bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold text-xs px-2.5 py-2 rounded-lg transition-all cursor-pointer flex items-center justify-center"
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      )}
+
+                      {ord.status === 'PENDING' && (
+                        <button
+                          onClick={() => handleCancelDeal(ord.id)}
+                          className="min-h-[36px] px-3 py-1.5 rounded-lg border border-rose-200 text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer flex items-center justify-center shrink-0 shadow-2xs"
+                          title="Withdraw Purchase Request"
+                        >
+                          Withdraw Request
+                        </button>
+                      )}
+
+                      {ord.status === 'ACCEPTED' && (
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <button
+                            onClick={() => {
+                              setSelectedOrderForScanner(ord);
+                              setShowScannerModal(true);
+                            }}
+                            className="flex-1 sm:flex-initial min-h-[38px] bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                          >
+                            <Camera className="w-3.5 h-3.5" />
+                            <span>Complete Handover</span>
+                          </button>
+                          <button
+                            onClick={() => handleCancelDeal(ord.id)}
+                            className="min-h-[38px] px-3 py-2 rounded-lg border border-gray-300 text-xs font-bold text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+                            title="Cancel Deal"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+
+                      {ord.status === 'COMPLETED' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReviewTargetDeal({
+                              id: ord.id,
+                              listingTitle: ord.listing_title,
+                              peerName: ord.seller_name || `@${ord.seller_reg}`
+                            });
+                            setShowReviewModal(true);
+                          }}
+                          className="w-full sm:w-auto min-h-[38px] bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-xs px-3 py-2 rounded-lg shadow-2xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                          <span>Review Seller</span>
+                        </button>
+                      )}
+
+                      <Link
+                        to={`/listing/${ord.listing}`}
+                        className="w-full sm:w-auto min-h-[38px] px-3.5 py-2 rounded-lg border border-gray-300 text-xs font-bold text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-2xs flex items-center justify-center"
+                      >
+                        View Listing
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal - Portal to document.body for full-screen coverage */}
+      {deleteModalId &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+            <div className="bg-white border border-gray-200 rounded-xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+              <div className="text-center">
+                <h3 className="text-base font-extrabold text-gray-900">Delete Listing?</h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  This item will be permanently deleted and removed from the marketplace.
+                </p>
+              </div>
+              <div className="flex gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setDeleteModalId(null)}
+                  className="flex-1 bg-white border border-gray-300 text-gray-700 py-2.5 rounded-md font-bold text-xs hover:bg-gray-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={deleting}
+                  onClick={handleDelete}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-md font-bold text-xs disabled:opacity-50 transition-colors cursor-pointer"
+                >
+                  {deleting ? 'Deleting...' : 'Delete Permanently'}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Lazy Loaded Modals wrapped in Suspense */}
+      <Suspense fallback={null}>
+        {/* Handover QR Modal (for Seller) */}
+        {showQRModal && activeOfferForQR && (
+          <HandoverQRModal
+            offerId={activeOfferForQR.id}
+            listingId={activeOfferForQR.listing || activeOfferForQR.listing_id}
+            listingTitle={activeOfferForQR.listing_title}
+            buyerName={activeOfferForQR.buyer_name || activeOfferForQR.buyer_reg}
+            price={activeOfferForQR.offer_amount}
+            location={activeOfferForQR.location}
+            image={activeOfferForQR.image}
+            existingSession={activeOfferForQR.active_handover}
+            onClose={() => setShowQRModal(false)}
+            onComplete={handleHandoverSuccess}
+          />
+        )}
+
+        {/* Handover Scanner Modal (for Buyer) */}
+        {showScannerModal && (
+          <HandoverScannerModal
+            listingId={selectedOrderForScanner?.listing}
+            defaultOfferId={selectedOrderForScanner?.id}
+            onClose={() => setShowScannerModal(false)}
+            onSuccess={handleHandoverSuccess}
+          />
+        )}
+
+        {/* Review Modal */}
+        {showReviewModal && reviewTargetDeal && (
+          <ReviewModal
+            dealId={reviewTargetDeal.id}
+            listingTitle={reviewTargetDeal.listingTitle}
+            reviewedUserName={reviewTargetDeal.peerName}
+            onClose={() => {
+              setShowReviewModal(false);
+              setReviewTargetDeal(null);
+            }}
+            onSuccess={() => {
+              fetchMyOffers();
+            }}
+          />
+        )}
+      </Suspense>
+    </div>
+  );
+}

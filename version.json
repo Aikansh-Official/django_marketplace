@@ -1,0 +1,14 @@
+{
+  "version": "2.4.0",
+  "name": "CampXChange",
+  "releaseStage": "Stable",
+  "releaseDate": "October 2026",
+  "client": {
+    "appName": "CampXChange",
+    "buildName": "CampXChange v2.4.0"
+  },
+  "admin": {
+    "appName": "CampXChange Admin Portal",
+    "buildName": "CampXChange Admin v2.4.0"
+  }
+}
